@@ -1,0 +1,1 @@
+exports.vm = require("VM");
