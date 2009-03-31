@@ -34,15 +34,15 @@
  */
 
 /**
- *  @file	Curses_module.h		Symbols shared between classes/objects in CGI module.
+ *  @file	cgi_module.h		Symbols shared between classes/objects in cgi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
  *  @version	$Id: cgi_module.h,v 1.1 2009/03/30 23:55:44 wes Exp $
  */
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.cgi"
-const char *query_InitObject(JSContext *cx, JSObject *obj);
-const char *PHPSession_InitClass(JSContext *cx, JSObject *obj);
+JSObject *query_InitObject(JSContext *cx, JSObject *obj);
+JSObject *PHPSession_InitClass(JSContext *cx, JSObject *obj);
 JSBool query_FiniObject(JSContext *cx, JSObject *obj);
 JSBool PHPSession_FiniClass(JSContext *cx, JSObject *obj);
 
