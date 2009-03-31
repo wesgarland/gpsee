@@ -1,8 +1,8 @@
-#! ../gsr -dd
+#! /usr/bin/gsr -dd
 
-const Curses = require("Curses");
-const MozShell = require("MozShell");
-const VM = require("VM");
+const Curses = require("curses");
+const MozShell = require("mozshell");
+const VM = require("vm");
 
 MozShell.quit = function() { require("System").exit(0); };
 
