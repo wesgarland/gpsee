@@ -37,12 +37,12 @@
  *  @file	PHPSession_class.c	A Spidermonkey class for reading PHP session files with libphpsess.so
  *  @author	Wes Garland
  *  @date	Dec 2007
- *  @version	$Id: PHPSession_class.c,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: PHPSession_class.c,v 1.2 2009/03/31 15:12:13 wes Exp $
  */
-static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.2 2009/03/31 15:12:13 wes Exp $";
 
 #include "gpsee.h"
-#include "CGI_module.h"
+#include "cgi_module.h"
 
 #if defined(HAVE_APR)
 #include <phpsess.h>
@@ -189,7 +189,7 @@ JSBool PHPSession_FiniClass(JSContext *cx, JSObject *proto)
   return JS_TRUE;
 }
 
-const char *PHPSession_InitClass(JSContext *cx, JSObject *obj)
+JSObject *PHPSession_InitClass(JSContext *cx, JSObject *obj)
 {
   static JSClass phpsess_class = 
   {
@@ -223,6 +223,6 @@ const char *PHPSession_InitClass(JSContext *cx, JSObject *obj)
 		   NULL, 		/* static_ps - props struct for constructor */
 		   NULL);		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
-  return MODULE_ID;
+  return proto;
 }
 #endif /* HAVE_APR */

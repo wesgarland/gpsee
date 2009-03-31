@@ -42,6 +42,7 @@ ifeq ($(STREAM),surelynx)
 LDFLAGS 		+= -lphpsess -lcgihtml
 else
 EXTRA_MODULE_OBJS	+= cgihtml.a
+CPPFLAGS		+= -Icgihtml
 ifeq ($(APR_PROJECT),True)
 EXTRA_MODULE_OBJS	+= phpsess.o
 endif
