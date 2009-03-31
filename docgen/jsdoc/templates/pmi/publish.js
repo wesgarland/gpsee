@@ -181,3 +181,4 @@ function resolveLinks(str, from) {
 	);
 	
 	return str;
+}
