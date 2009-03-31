@@ -37,7 +37,9 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
-include ../local_config.mk
+GPSEE_SRC_DIR ?= ..
+include $(GPSEE_SRC_DIR)/system_detect.mk
+include $(GPSEE_SRC_DIR)/local_config.mk
 
 SPIDERMONKEY_SRC	?= $(HOME)/hg/tracemonkey/js/src
 JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
@@ -66,7 +68,7 @@ ifeq (X,X$(filter $(UNAME_MACHINE),sun4u sun4v sun4u1))
 CONFIGURE_OPTIONS	+= --enable-js-ultrasparc
 endif
 
-# Solaris? Use the NSPR in SUNWpr, SUNWprd packages
+# Solaris? Use the NSPR in SUNWpr, SUNWprd packages (requires patch for bug 475654)
 ifeq ($(UNAME_SYSTEM),SunOS)
 CONFIGURE_OPTIONS	+= --with-system-nspr
 endif

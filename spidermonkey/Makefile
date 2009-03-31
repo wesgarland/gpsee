@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.1 2009/03/30 23:55:45 wes Exp $ 
+## @version	$Id: Makefile,v 1.2 2009/03/31 14:30:19 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -44,7 +44,7 @@
 ## and install it under GPSEE_PREFIX.
 ##
 ## @note We do not support SpiderMonkey releases prior to autoconf,
-##       although the ../spidermonkey-legacy directory might.
+##       which arrived with version 1.8.1.
 ##
 ## @bug DRELEASE and PROFILE are not finished yet.
 
@@ -68,11 +68,14 @@ ifneq (X$(INCLUDE_DIR),X)
 CONFIGURE_OPTIONS	+= --includedir=$(INCLUDE_DIR)
 endif
 
-# XXX Disabled due to mozilla bug, bindir not getting set in Makefile
-# XXX Feb 2009 Wes
 ifneq (X$(BIN_DIR),X)
 CONFIGURE_OPTIONS	+= --bindir=$(BIN_DIR)
+JS_CONFIG_DIR		= $(BIN_DIR)
+else
+JS_CONFIG_DIR		= $(JSAPI_PREFIX)/bin
 endif
+
+JS_CONFIG ?= $(JS_CONFIG_DIR)/js-config 
 
 # Debug build?
 ifneq (X,X$(filter $(BUILD),DEBUG))
@@ -123,7 +126,7 @@ help:
 
 all:	build
 
-$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in
+$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 
 $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
@@ -136,18 +139,20 @@ build: $(SPIDERMONKEY_BUILD)/Makefile
 
 install: build
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) install
-	@[ -f $(BIN_DIR)/js-config ] || echo "**** js-config was not installed. Build incomplete." 
-	@[ -f $(BIN_DIR)/js-config ]
+	@[ -f $(JS_CONFIG) ] || echo "**** js-config was not installed. Build incomplete." 
+	@[ -f $(JS_CONFIG) ] || echo "**** js-config should have been installed as $(JS_CONFIG)." 
+	@[ -f $(JS_CONFIG) ] || echo "**** Abort."
+	@[ -f $(JS_CONFIG) ]
 	@echo "# Generated on `date` by $(USER)" > vars.mk
-	@echo "JSAPI_INCLUDE_DIR=$(shell $(BIN_DIR)/js-config --includedir)" >> vars.mk
-	@echo "JSAPI_LIB_DIR=$(shell $(BIN_DIR)/js-config --libdir)" >> vars.mk
-	@echo "JSAPI_LIBS=$(shell $(BIN_DIR)/js-config --libs)" >> vars.mk
-	@echo "JSAPI_CFLAGS=$(shell $(BIN_DIR)/js-config --cflags)" >> vars.mk
+	@echo "JSAPI_INCLUDE_DIR=$(shell $(JS_CONFIG) --includedir)" >> vars.mk
+	@echo "JSAPI_LIB_DIR=$(shell $(JS_CONFIG) --libdir)" >> vars.mk
+	@echo "JSAPI_LIBS=$(shell $(JS_CONFIG) --libs)" >> vars.mk
+	@echo "JSAPI_CFLAGS=$(shell $(JS_CONFIG) --cflags)" >> vars.mk
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
 	@echo "SPIDERMONKEY_BUILD=$(SPIDERMONKEY_BUILD)" >> vars.mk
 	@echo ""
-	@echo " * Build Complete"
+	@echo " * SpiderMonkey Build & Installation Complete: you can build GPSEE now."
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
