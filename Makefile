@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.1 2009/03/30 23:55:43 wes Exp $
+## @version	$Id: Makefile,v 1.2 2009/03/31 15:13:57 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -44,9 +44,9 @@
 export BUILD	= DEBUG
 export STREAM	= unix
 
-ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[A-Z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[A-Z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		= PairODice DBConnectionHandle DBEntry
-INTERNAL_MODULES 	= VM System
+ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
+IGNORE_MODULES		= pairodice
+INTERNAL_MODULES 	= vm system
 
 top: all
 
@@ -101,7 +101,7 @@ EXPORT_HEADERS		= gpsee.h gpsee_lock.c gpsee_flock.h
 LOADLIBES		+= -l$(GPSEE_LIBNAME) $(JSAPI_LIBS)
 LIB_MOZJS		= $(JSAPI_LIB_DIR)/libmozjs.so
 
-.PHONY:	all clean real-clean depend show-modules build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
+.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
 all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
 install: sm-install
@@ -209,6 +209,3 @@ docs::
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
-
-backup::
-	tar -zcvf $(HOME)/gpsee-backup.tar.gz `find $(GPSEE_SRC_DIR) -type f | egrep '\.[ch]~*$|\.mk|^[A-Z][A-Z]*|Makefile|\.jsdoc$|\.js$|\.e4x$'`

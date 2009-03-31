@@ -33,7 +33,7 @@
 # ***** END LICENSE BLOCK ***** 
 #
 HOSTNAME		?= $(shell hostname)
-GPSEE_LIBNAME		= open_gpsee
+GPSEE_LIBNAME		= gpsee
 
 CPPFLAGS 		+= $(EXTRA_CPPFLAGS)
 LDFLAGS 		+= -L$(SOLIB_DIR) -R$(SOLIB_DIR) $(EXTRA_LDFLAGS)  

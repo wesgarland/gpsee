@@ -37,7 +37,7 @@
  *  @file	cgi_module.h		Symbols shared between classes/objects in cgi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: cgi_module.h,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: cgi_module.h,v 1.2 2009/03/31 15:12:44 wes Exp $
  */
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.cgi"

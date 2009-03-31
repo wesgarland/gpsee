@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.2 2009/03/31 15:13:57 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.2  2009/03/31 15:13:57  wes
+ *  Updated to reflect correct module name cases and build unix stream
+ *
  *  Revision 1.1  2009/03/30 23:55:43  wes
  *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
  *
@@ -69,7 +72,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.1 2009/03/30 23:55:43 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.2 2009/03/31 15:13:57 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -311,8 +314,8 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  *  @warning	This function will panic if the interpreter cannot allocate 
  *		enough memory to prepare the exception-throwing message.
  *
- *  @note	This function uses the APR SureLynx makeLogFormat_r() function,
- *		so %m will work, and so will addPercentM_Handler().
+ *  @note	This function uses the APR SureLynx gpsee_makeLogFormat() function,
+ *		so %m will work, and so will addPercentM_Handler() with surelynx.
 */
 JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
 {
@@ -327,7 +330,7 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": out of memory in gpsee_throw!");
 
   va_start(ap, fmt);
-  length = vsnprintf(message, GPSEE_MAX_THROW_MESSAGE_SIZE, makeLogFormat_r(fmt, fmtNew), ap);
+  length = vsnprintf(message, GPSEE_MAX_THROW_MESSAGE_SIZE, gpsee_makeLogFormat(fmt, fmtNew), ap);
   va_end(ap);
 
   if (length <= 0)

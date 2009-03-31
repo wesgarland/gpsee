@@ -33,13 +33,13 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.1 2009/03/30 23:55:43 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.2 2009/03/31 15:13:57 wes Exp $";
 
 /**
  *  @file 	gpsee_unix.c		Functions for UNIX world normally provided by SureLynx libs.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_unix.c,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_unix.c,v 1.2 2009/03/31 15:13:57 wes Exp $
  */
 
 #include "gpsee.h"
@@ -111,7 +111,7 @@ void gpsee_log(signed int pri, const char *fmt, ...)
     char		fmtBuf[GPSEE_MAX_LOG_MESSAGE_SIZE];
 
     va_start(ap, fmt);
-    vfprintf(stderr, makeLogFormat_r(fmt, bufBuf), ap);
+    vfprintf(stderr, gpsee_makeLogFormat(fmt, fmtBuf), ap);
     fputc('\n', stderr);
   }
   va_end(ap);

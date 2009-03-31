@@ -32,6 +32,7 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
+AWK			?= awk
 UNAME_MACHINE		?= $(shell uname -m)
 UNAME_SYSTEM		?= $(shell uname -s)
 UNAME_RELEASE		?= $(shell uname -r)
