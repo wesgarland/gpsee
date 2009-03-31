@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.2 2009/03/31 15:13:57 wes Exp $
+## @version	$Id: Makefile,v 1.3 2009/03/31 19:34:02 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -201,11 +201,11 @@ gsr: gsr.o
 
 JSDOC_DIR=/opt/jsdoc-toolkit
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
-JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs
+JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
 JSDOC=cd "$(JSDOC_DIR)" && java -jar jsrun.jar app/run.js -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
 
 docs::
-	@[ -d docs ] || mkdir docs
+	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
