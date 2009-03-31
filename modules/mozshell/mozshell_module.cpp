@@ -41,7 +41,7 @@
  *
  *  @author	Wes Garland, PageMail, Inc.,  wes@page.ca
  *  @date	Jan 2009
- *  @version	$Id: mozshell_module.cpp,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: mozshell_module.cpp,v 1.2 2009/03/31 15:09:17 wes Exp $
  */
 
 #define _GPSEE_INTERNALS
@@ -59,7 +59,7 @@ FILE *stdout = NULL;
 FILE *stderr = NULL;
 #endif
 
-extern "C" { const char *MozShell_InitModule(JSContext *cx, JSObject *moduleObject); }
+extern "C" { const char *mozshell_InitModule(JSContext *cx, JSObject *moduleObject); }
 
 extern FILE *gOutFile;
 
@@ -295,7 +295,7 @@ static FILE *capture_redirTempFile(FILE *which)
  *  defines methods based on the shell_functions in js.cpp, and attaches
  *  the environment variable.
  */
-const char *MozShell_InitModule(JSContext *cx, JSObject *moduleObject)
+const char *mozshell_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   JSObject	*envobj;
   extern	char **environ;
@@ -304,7 +304,8 @@ const char *MozShell_InitModule(JSContext *cx, JSObject *moduleObject)
   CheckHelpMessages();
   setlocale(LC_ALL, "");
 
-  gStackBase = (jsuword)gpsee_stackBase;
+#warning "FIXME Stack base implementation changed in js.cpp"
+//  gStackBase = (jsuword)gpsee_stackBase;
 
   if (!JS_DefineFunctions(cx, moduleObject, shell_functions))
     return NULL;
