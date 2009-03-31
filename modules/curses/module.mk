@@ -33,7 +33,7 @@
 # ***** END LICENSE BLOCK ***** 
 #
 NCURSES_LIB_NAME	?= ncurses
-EXTRA_MODULE_OBJS	= Curses_Window.o Curses_Keyboard.o
+EXTRA_MODULE_OBJS	= curses_Window.o curses_keyboard.o
 LDFLAGS 		+= -l$(NCURSES_LIB_NAME)
 
 build_debug_module:

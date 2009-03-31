@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: curses_module.c,v 1.2 2009/03/31 15:10:36 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.2 2009/03/31 15:10:36 wes Exp $";
 
 #include "gpsee.h"
 #include <stdlib.h>
@@ -49,7 +49,7 @@ static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.1 20
 #include <string.h>
 #include <curses.h>
 #include <signal.h>
-#include "Curses_module.h"
+#include "curses_module.h"
 
 /** Curses-mode error logger.
  *  Writing directly to stdout/stderr once curses has control of the

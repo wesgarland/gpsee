@@ -34,13 +34,13 @@
  */
 
 /**
- *  @file	Curses_module.h		Symbols shared between classes/objects in curses module.
+ *  @file	curses_module.h		Symbols shared between classes/objects in curses module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: curses_module.h,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: curses_module.h,v 1.2 2009/03/31 15:10:36 wes Exp $
  */
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.curses"
 JSObject *Window_InitClass(JSContext *cx, JSObject *obj);
-JSObject *Keyboard_InitObject(JSContext *cx, JSObject *obj);
+JSObject *keyboard_InitObject(JSContext *cx, JSObject *obj);
 
