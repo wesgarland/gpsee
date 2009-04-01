@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.1 2009/03/30 23:55:43 wes Exp $
+ * @version	$Id: gsr.c,v 1.2 2009/04/01 20:04:36 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.1 2009/03/30 23:55:43 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.2 2009/04/01 20:04:36 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -145,7 +145,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
 #if defined(__SURELYNX__)
 		  "SureLynx "
 #endif
-		  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - Script runner embedding Mozilla SpiderMonkey.\n"
+		  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
 		  "Copyright (c) 2007-2009 PageMail, Inc. All Rights Reserved.\n"
 		  "\n"
 		  "As an interpreter: #! %s {-/*flags*/}\n"
@@ -397,6 +397,8 @@ PRIntn prmain(PRIntn argc, char **argv)
   int			fiArg = 0;
   int			skipSheBang = 0;
   int			exitCode;
+
+  gpsee_openlog(gpsee_basename(argv[0]));
 
 #if defined(__SURELYNX__)
   permanent_pool = apr_initRuntime();

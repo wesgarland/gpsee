@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.3 2009/03/31 19:34:02 wes Exp $
+## @version	$Id: Makefile,v 1.4 2009/04/01 20:04:36 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -157,32 +157,34 @@ build_debug_modules:
 
 build_debug: build_debug_modules
 
-gpsee_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
-gpsee_src.tar.gz:: 
+GPSEE_RELEASE=0.2-pre1
+gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
+gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
 	@$(RM) $(TMPFILE) || true
-	ls $(PROGS:=.c) $(GPSEE_SOURCES) Doxyfile Makefile *.mk [A-Z][A-Z]* licenses/* \
+	ls $(PROGS:=.c) $(GPSEE_SOURCES) Doxyfile Makefile *.mk [A-Z][A-Z][A-Z][A-Z]* \
 		gpsee.jsdoc gpsee_*.[ch] gpsee.h \
 		| sort -u >> $(TMPFILE)
+	find licenses -type f >> $(TMPFILE)
 	find modules -type f >> $(TMPFILE)
 	find sample_programs -type f >> $(TMPFILE)
 	find tests -type f >> $(TMPFILE)
 	find docgen -type f >> $(TMPFILE)
 	ls spidermonkey/Makefile spidermonkey/*sample >> $(TMPFILE)
 	find unix_modules -type f >> $(TMPFILE) 
-	find apache_modules -type f >> $(TMPFILE) || [ ! -d apache_modules ]
-	[ ! -d gpsee ] || rm -rf gpsee
-	egrep -v 'depend.mk$$|~$$|surelynx|^.hg$$|^CVS$$|,v$$|\.[ao]$$|\.so$$' \
+	find apr_modules -type f >> $(TMPFILE) || [ ! -d apr_modules ]
+	[ ! -d gpsee-$(GPSEE_RELEASE) ] || rm -rf gpsee-$(GPSEE_RELEASE)
+	egrep -v 'depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.so$$|^[	 ]*$$' \
 		$(TMPFILE) | gtar -T - -zcf $@
 	@echo $(TMPFILE)
 
 src-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
-src-dist:: COUNT=$(shell ls gpsee*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
-src-dist:: gpsee_src.tar.gz
-	[ ! -d gpsee-$(DATE_STAMP)-$(COUNT) ] || rmdir gpsee-$(DATE_STAMP)-$(COUNT)
-	mkdir gpsee-$(DATE_STAMP)-$(COUNT)
-	cd gpsee-$(DATE_STAMP)-$(COUNT) && gtar -zxf ../gpsee_src.tar.gz
-	gtar -zcvf gpsee-$(DATE_STAMP)-$(COUNT).tar.gz gpsee-$(DATE_STAMP)-$(COUNT)
-	rm -rf gpsee-$(DATE_STAMP)-$(COUNT)
+src-dist:: COUNT=$(shell ls gpsee-$(GPSEE_RELEASE)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
+src-dist:: gpsee-$(GPSEE_RELEASE)_src.tar.gz
+	[ ! -d gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT) ] || rmdir gpsee-$(GPSEE_RELEASE)
+	mkdir gpsee-$(GPSEE_RELEASE)
+	cd gpsee-$(GPSEE_RELEASE) && gtar -zxf ../gpsee-$(GPSEE_RELEASE)_src.tar.gz
+	gtar -zcvf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT).tar.gz gpsee-$(GPSEE_RELEASE)
+	rm -rf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT)
 
 bin-dist:: TARGET=$(UNAME_SYSTEM)-$(UNAME_RELEASE)-$(UNAME_MACHINE)
 bin-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
