@@ -1,9 +1,9 @@
-var a = require("Thread");
-require("Thread");
-require("Thread");
-require("Thread");
-require("Thread");
-require("Thread");
-var b = require("Thread");
+var a = require("thread");
+require("thread");
+require("thread");
+require("thread");
+require("thread");
+require("thread");
+var b = require("thread");
 
 print(a===b ? 'PASS' : 'FAIL');

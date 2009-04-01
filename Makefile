@@ -104,16 +104,19 @@ LIB_MOZJS		= $(JSAPI_LIB_DIR)/libmozjs.so
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
 all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
-install: sm-install
+install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXTRA_CLEAN_RULE=clean_modules
-clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_unix.o ./gpsee_apr.o))
+clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o))
 real-clean: clean
 	cd spidermonkey && $(MAKE) clean
 
 sm-install:
 	cd spidermonkey && $(MAKE) BUILD=$(BUILD) install
+
+gsr-link:
+	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
 
 gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\"
 

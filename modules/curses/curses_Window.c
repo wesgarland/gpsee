@@ -647,8 +647,6 @@ static JSBool window_getKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 static JSBool Window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   win_hnd_t	*hnd;
-  jsval		false = JSVAL_FALSE;
-  jsval		true  = JSVAL_TRUE;
 
   /* Window() called as function. */   
   if (JS_IsConstructing(cx) != JS_TRUE)
@@ -702,7 +700,7 @@ static JSBool Window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 			 x, y, height, width);
 
     JS_SetParent(cx, obj, JSVAL_TO_OBJECT(argv[0]));
-    JS_DefineProperty(cx, obj, "fullscreen", false, JS_PropertyStub, JS_PropertyStub,
+    JS_DefineProperty(cx, obj, "fullscreen", JSVAL_FALSE, JS_PropertyStub, JS_PropertyStub,
 		      JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY );
 
     JS_DefineProperty(cx, obj, "height", INT_TO_JSVAL(height), JS_PropertyStub, JS_PropertyStub,
@@ -720,7 +718,7 @@ static JSBool Window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     int iX, iY;
 
     hnd->window = newwin(0,0,0,0);
-    JS_DefineProperty(cx, obj, "fullscreen", true, JS_PropertyStub, JS_PropertyStub,
+    JS_DefineProperty(cx, obj, "fullscreen", JSVAL_TRUE, JS_PropertyStub, JS_PropertyStub,
 		      JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY );
 
     getmaxyx(hnd->window, iY, iX);
@@ -738,10 +736,13 @@ static JSBool Window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
   JS_SetPrivate(cx, obj, hnd);
 
   /* Supply default values when "undefined" is not acceptable and there is no prop getter */
-  JS_SetProperty(cx, obj, "scrolling", &true);
+  {
+    jsval dummy = JSVAL_TRUE;
+    JS_SetProperty(cx, obj, "scrolling", &dummy);
+  }
   scrollok(hnd->window, TRUE);
 
-  meta(hnd->window,TRUE);
+  meta(hnd->window, TRUE);
   keypad(hnd->window, TRUE);
   wrefresh(hnd->window);
   immedok(hnd->window, TRUE);

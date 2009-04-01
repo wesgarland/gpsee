@@ -41,7 +41,7 @@ endif
 ifeq ($(STREAM),surelynx)
 LDFLAGS 		+= -lphpsess -lcgihtml
 else
-EXTRA_MODULE_OBJS	+= cgihtml.a
+EXTRA_MODULE_OBJS	+= cgihtml/cgihtml.a
 CPPFLAGS		+= -Icgihtml
 ifeq ($(APR_PROJECT),True)
 EXTRA_MODULE_OBJS	+= phpsess.o
@@ -51,8 +51,8 @@ endif
 build:
 	cd ../.. && make 
 
-cgihtml.a: cgihtml/cgihtml.a
-	cp cgihtml/cgihtml.a .
+cgihtml/cgihtml.a: $(wildcard cgihtml/*.[ch])
+	cd cgihtml && make "CFLAGS=$(CFLAGS)"
 
-cgihtml/cgihtml.a:
-	cd cgihtml && make
+clean: OBJS += $(wildcard cgihtml/*.o)
+	
