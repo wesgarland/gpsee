@@ -56,6 +56,7 @@ AUTOCONF		?= autoconf-2.13
 TR			?= tr
 
 CONFIGURE_OPTIONS	+= --enable-threadsafe
+CONFIGURE_OPTIONS	+= --with-system-nspr
 SM_MAKE_OPTIONS		?= -j3
 
 SM_CFLAGS		+= 
@@ -67,9 +68,3 @@ UNAME_SYSTEM		?= $(shell uname -s)
 ifeq (X,X$(filter $(UNAME_MACHINE),sun4u sun4v sun4u1))
 CONFIGURE_OPTIONS	+= --enable-js-ultrasparc
 endif
-
-# Solaris? Use the NSPR in SUNWpr, SUNWprd packages (requires patch for bug 475654)
-ifeq ($(UNAME_SYSTEM),SunOS)
-CONFIGURE_OPTIONS	+= --with-system-nspr
-endif
-
