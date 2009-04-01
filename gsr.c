@@ -468,9 +468,26 @@ PRIntn prmain(PRIntn argc, char **argv)
 	    flags = flags_storage;
 	  }
 
-	  *flag_p++ = optopt;
+	  *flag_p++ = c;
 	}
 	break;
+
+	case '?':
+	{
+	  char buf[32];
+
+	  snprintf(buf, sizeof(buf), "Invalid option: %c\n", optopt);
+	  fatal(buf);
+	}
+
+	case ':':
+	{
+	  char buf[32];
+
+	  snprintf(buf, sizeof(buf), "Missing parameter to option '%c'\n", optopt);
+	  fatal(buf);
+	}
+
       }
     } /* getopt wend */
 
