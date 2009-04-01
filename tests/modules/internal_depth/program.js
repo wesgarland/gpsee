@@ -1,4 +1,4 @@
 var a = require("reqVM");
-var b = require("VM");
+var b = require("vm");
 
 print(a.vm===b ? 'PASS' : 'FAIL');
