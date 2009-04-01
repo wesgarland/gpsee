@@ -1,1 +1,1 @@
-exports.vm = require("VM");
+exports.vm = require("vm");

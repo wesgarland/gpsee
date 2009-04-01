@@ -137,3 +137,47 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
   return buf;
 }
 
+int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
+{
+#if defined(GPSEE_SUNOS_SYSTEM)
+  return resolvepath(path, buf, bufsiz);
+#else
+  char  *mBuf;
+  char  *rp;
+  int   ret;
+
+  errno = 0;
+
+  if (bufsiz < PATH_MAX)
+    mBuf = malloc(PATH_MAX);
+  else
+    mBuf = buf;
+
+  if (!mBuf)
+  {
+    if (!errno)
+      errno = EINVAL;
+    return -1;
+  }
+
+  rp = realpath(path, mBuf);
+  if (rp != buf)
+  {
+    char *s = gpsee_cpystrn(buf, rp, bufsiz);
+    if (s - buf == bufsiz) /* overrun */
+    {
+      errno = ENAMETOOLONG;
+      ret = -1;
+    }
+    else
+      ret = s - buf;
+  }
+  else
+    ret = strlen(buf);
+
+  if (mBuf != buf)
+    free(mBuf);
+
+  return ret;
+#endif
+}

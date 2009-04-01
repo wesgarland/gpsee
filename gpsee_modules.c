@@ -240,7 +240,7 @@ static const char *generateCanonicalName(const char *moduleDir, const char *modu
   *s = (char)0;
 
   /* tmpBuf is directory-only: resolve .., links, etc into cnBuf */
-  i = resolvepath(tmpBuf, cnBuf, cnBuf_size);
+  i = gpsee_resolvepath(tmpBuf, cnBuf, cnBuf_size);
   if ((i >= cnBuf_size - 1) || (i <= 0))
     return NULL;
   else
@@ -1088,7 +1088,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
 
   if (scriptFilename[0] == '/')
   {
-    i = resolvepath(scriptFilename, cnBuf, sizeof(cnBuf));
+    i = gpsee_resolvepath(scriptFilename, cnBuf, sizeof(cnBuf));
   }
   else
   {
@@ -1103,7 +1103,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     if (gpsee_catstrn(tmpBuf, scriptFilename, sizeof(tmpBuf)) == 0)
       return "buffer overrun";
 
-    i = resolvepath(tmpBuf, cnBuf, sizeof(cnBuf));
+    i = gpsee_resolvepath(tmpBuf, cnBuf, sizeof(cnBuf));
   }
   if ((i >= sizeof(cnBuf) - 1) || (i <= 0))
     return "buffer overrun";

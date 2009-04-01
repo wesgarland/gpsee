@@ -45,4 +45,4 @@ GPSEE_PREFIX_DIR	= /opt/local/gpsee
 endif
 
 GPSEE_PREFIX_DIR	?= /usr/local/gpsee
-
+GSR_SHEBANG_LINK	?= /usr/bin/gsr
