@@ -52,7 +52,6 @@
 #endif
 
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-#define	gpsee_log(level, a...) 		syslog(level, a)
 #define	gpsee_printf(a...)		printf(a)
 
 typedef void * rc_list;					/**< opaque dictionary */
