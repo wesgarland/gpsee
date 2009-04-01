@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.2 2009/03/31 15:13:57 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.3 2009/04/01 20:05:49 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.3  2009/04/01 20:05:49  wes
+ *  Fixed double-uncaught-log
+ *
  *  Revision 1.2  2009/03/31 15:13:57  wes
  *  Updated to reflect correct module name cases and build unix stream
  *
@@ -72,7 +75,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.2 2009/03/31 15:13:57 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.3 2009/04/01 20:05:49 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -216,13 +219,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
   if (jsi->errorLogger)
     jsi->errorLogger(cx, er_pfx, message);
   else
-  {
-#if !defined(__SURELYNX__)
-    if (loglevel != SLOG_DEBUG && gpsee_verbosity(0))
-      gpsee_printf("%s %s\n", er_pfx, message);
-#endif
     gpsee_log(loglevel, "%s %s", er_pfx, message);
-  }
 }
 
 /** API-Compatible with Print() in js.c. Uses more RAM, but much less likely
