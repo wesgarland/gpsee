@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.2 2009/04/01 20:05:49 wes Exp $
  */
 
 #define SLOG_EMERG	LOG_EMERG
@@ -65,8 +65,6 @@ rc_bool		rc_bool_value(rc_list rc, const char *key);					/**< Dictionary bool lo
 rcFILE 		*rc_openfile(int argc, char * const argv[]);					/**< Open based on progname */
 int 		rc_close(rcFILE *rcFile);							/**< Close what we opened */
 rc_list 	rc_readfile(rcFILE *rcFile);							/**< Read what we opened */
-
-const char 	*makeLogFormat_r(const char *fmt, char *fmtNew);				/**< Process %m etc like syslog */
 
 #if !defined(min)
 # define min(a,b) ({__typeof__(a) _a=(a); __typeof__(b) _b=(b); _a < _b ? _a : _b;})
