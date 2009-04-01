@@ -45,7 +45,9 @@ static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.1 20
  
 #include "gpsee.h"
 #include <prinit.h>
-#include <sys/loadavg.h>
+#if defined(GPSEE_SUNOS_SYSTEM)
+# include <sys/loadavg.h>
+#endif
 #include <math.h>
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.system"

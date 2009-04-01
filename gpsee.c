@@ -496,7 +496,7 @@ int gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *private
   jsi->branchCB_Privs[cbIdx] = private;
   jsi->branchCB_Masks[cbIdx] = zeroMask | GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY;
 
-  jsi->branchCB_Masks[cbIdx + 1] = NULL;
+  jsi->branchCB_Masks[cbIdx + 1] = 0;
 
 #if 0
   JS_SetBranchCallback(cx, gpsee_branchCallback);

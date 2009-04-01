@@ -163,6 +163,7 @@ char *			gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
 size_t 			gpsee_catstrn(char *dst, const char *src, size_t dst_size);
 const char *		gpsee_basename(const char *filename);
 const char *		gpsee_dirname(const char *filename, char *buf, size_t bufLen);
+int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 void __attribute__((noreturn)) panic(const char *message);
 
 /* management routines */
@@ -217,7 +218,7 @@ static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, 
  *  @example    if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
  */
 #include <gpsee_lock.c>
-static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv)
+static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
 {
   return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE;
 }
@@ -229,6 +230,10 @@ static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, 
 #else
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	1024
 const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
+#endif
+
+#if !defined(PATH_MAX)
+# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
 #endif
 
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
@@ -249,6 +254,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <sys/types.h>
 #  include <sys/wait.h>
 #  include <gpsee_unix.h>
+#  include <stdarg.h>
 # endif
 #endif
 
