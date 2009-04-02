@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.4 2009/04/01 20:04:36 wes Exp $
+## @version	$Id: Makefile,v 1.5 2009/04/01 22:30:55 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
