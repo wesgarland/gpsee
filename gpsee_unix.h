@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.2 2009/04/01 20:05:49 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.3 2009/04/01 22:30:55 wes Exp $
  */
 
 #define SLOG_EMERG	LOG_EMERG

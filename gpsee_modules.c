@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.2 2009/04/01 22:30:55 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -72,7 +72,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.1 2009/03/30 23:55:43 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.2 2009/04/01 22:30:55 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"

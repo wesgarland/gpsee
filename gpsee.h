@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.2 2009/04/01 22:30:55 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.2  2009/04/01 22:30:55  wes
+ *  Bugfixes for getopt, linux build, and module-case in tests
+ *
  *  Revision 1.1  2009/03/30 23:55:43  wes
  *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
  *
