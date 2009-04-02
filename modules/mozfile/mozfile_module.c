@@ -47,7 +47,7 @@
  *   real file module some day.
  *
  *   @author	Netscape/Mozilla
- *   @version   $Id: mozfile_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *   @version   $Id: mozfile_module.c,v 1.2 2009/04/02 16:20:36 wes Exp $
  *   @date	pre-1998
  *
  *   @note	Some methods have been castrated due to dependence on Spidermonkey
@@ -55,7 +55,7 @@
  *		throw a gpsee-style exception.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: mozfile_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: mozfile_module.c,v 1.2 2009/04/02 16:20:36 wes Exp $";
 
 #include "gpsee.h"
 
@@ -64,7 +64,7 @@ static const char __attribute__((unused)) rcsid[]="$Id: mozfile_module.c,v 1.1 2
 JSClass js_FileClass;
 static JSObject *myModuleObject;
 
-#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.moz-file"
+#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.mozfile"
 #undef JS_ASSERT
 #define JS_ASSERT(a) GPSEE_ASSERT(a)
 
