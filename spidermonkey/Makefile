@@ -136,6 +136,18 @@ $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_co
 
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
+	@echo ""
+	@echo " * SpiderMonkey is now built, but needs to be installed. Before installation,"
+	@echo "   please insure that the target directory, $(JSAPI_PREFIX),"
+	@echo "   exists and that you have permission to write in it. Then run make install."
+	@echo ""
+
+JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
+ifeq ($(shell uname -s),Darwin)
+JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
+	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
+	$(filter -Wl%,$(JSAPI_LDFLAGS))
+endif
 
 install: build
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) install
@@ -146,7 +158,8 @@ install: build
 	@echo "# Generated on `date` by $(USER)" > vars.mk
 	@echo "JSAPI_INCLUDE_DIR=$(shell $(JS_CONFIG) --includedir)" >> vars.mk
 	@echo "JSAPI_LIB_DIR=$(shell $(JS_CONFIG) --libdir)" >> vars.mk
-	@echo "JSAPI_LIBS=$(shell $(JS_CONFIG) --libs)" >> vars.mk
+#	@echo "JSAPI_LIBS=$(shell $(JS_CONFIG) --libs)" >> vars.mk
+	@echo "JSAPI_LIBS=$(JSAPI_LDFLAGS)" >> vars.mk
 	@echo "JSAPI_CFLAGS=$(shell $(JS_CONFIG) --cflags)" >> vars.mk
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
@@ -182,7 +195,7 @@ build_debug:
 $(SPIDERMONKEY_SRC)/configure.in:
 	@echo > /dev/stderr
 	@echo " *** Please install autoconf-enabled SpiderMonkey in $(SPIDERMONKEY_SRC)," >/dev/stderr
-	@echo " or edit ./local_config.mk to tell me where it is." >/dev/stderr
+	@echo "     or edit ./local_config.mk to tell me where it is." >/dev/stderr
 	@echo > /dev/stderr
 	@[ X = Y ]
 
@@ -206,4 +219,8 @@ local_config.mk:
 
 
 
-
+test::
+	@echo $(shell $(JS_CONFIG) --libs)
+	@echo
+	@echo
+	@echo $(JSAPI_LDFLAGS)

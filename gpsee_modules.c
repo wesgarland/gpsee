@@ -78,7 +78,6 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.2 20
 #include "gpsee.h"
 #include "gpsee_private.h"
 #include <dlfcn.h>
-#include <link.h>
 
 #define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 
@@ -750,7 +749,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     }
 
     /* Try native and native+script */
-    retval = snprintf(fnBuf, sizeof(fnBuf), "%s_module.so", cname);
+    retval = snprintf(fnBuf, sizeof(fnBuf), "%s_module." DSO_EXTENSION, cname);
     if (retval <= 0 || retval >= sizeof(fnBuf))
     {
       *errorMessage_p = "path buffer overrun";

@@ -98,8 +98,9 @@ EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee_lock.c gpsee_flock.h
 
-LOADLIBES		+= -l$(GPSEE_LIBNAME) $(JSAPI_LIBS)
-LIB_MOZJS		= $(JSAPI_LIB_DIR)/libmozjs.so
+LOADLIBES		+= -l$(GPSEE_LIBNAME) 
+EXTRA_LDFLAGS		+= $(JSAPI_LIBS)
+LIB_MOZJS		= $(JSAPI_LIB_DIR)/libmozjs.$(SOLIB_EXT)
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
 all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
@@ -118,7 +119,7 @@ sm-install:
 gsr-link:
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
 
-gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\"
+gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\" -DDSO_EXTENSION=\"$(SOLIB_EXT)\"
 
 $(PROGS): $(addsuffix .o,$(PROGS))
 
@@ -143,7 +144,7 @@ show_modules:
 	@echo "DSO Modules:"
 	@echo "$(SO_MODULES)" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 	@echo
-	@echo "Documented Modules:
+	@echo "Documented Modules:"
 	@echo  $(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)) |\
 		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 
@@ -176,7 +177,7 @@ gpsee-$(GPSEE_RELEASE)_src.tar.gz::
 	find unix_modules -type f >> $(TMPFILE) 
 	find apr_modules -type f >> $(TMPFILE) || [ ! -d apr_modules ]
 	[ ! -d gpsee-$(GPSEE_RELEASE) ] || rm -rf gpsee-$(GPSEE_RELEASE)
-	egrep -v 'depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.so$$|^[	 ]*$$' \
+	egrep -v 'depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.$(SOLIB_EXT)$$|^[	 ]*$$' \
 		$(TMPFILE) | gtar -T - -zcf $@
 	@echo $(TMPFILE)
 

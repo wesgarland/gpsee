@@ -52,6 +52,10 @@
 #include <fcntl.h>
 #define GPSEE_DEBUG_MODULE_MAX_OUTPUT_BUFFER_SIZE		1024 * 64  /**< 64K oughtta be long enough for anybody */
 
+#if defined(GPSEE_SUNOS_SYSTEM)
+# define tmpnam(s) tmpnam_r(s)
+#endif
+
 #ifdef stdout
 #undef stdout
 #undef stderr
@@ -264,11 +268,11 @@ static FILE *capture_redirTempFile(FILE *which)
   FILE		*tmpFile;
   int		fd;
 
-  fd = open(tmpnam_r(tmpfn), O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK, 0600);	
+  fd = open(tmpnam(tmpfn), O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK, 0600);	
   if ((fd == -1) && (errno == EEXIST)) /* highly improbable tmpnam collision? Try once more then bail. */
   {
     sleep(0);
-    fd = open(tmpnam_r(tmpfn), O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK, 0600);	
+    fd = open(tmpnam(tmpfn), O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK, 0600);	
   }
 
   if (fd == -1)
@@ -276,7 +280,7 @@ static FILE *capture_redirTempFile(FILE *which)
 
   tmpFile = fdopen(fd, "w+");	
 #if 0
-  tmpFile = fopen(tmpnam_r(tmpfn), "w+");
+  tmpFile = fopen(tmpnam(tmpfn), "w+");
   if (!tmpFile)
     return NULL;
 #endif
