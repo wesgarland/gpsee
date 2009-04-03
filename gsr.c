@@ -61,6 +61,9 @@ static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.3 2009/04/01 2
 
 #include <prinit.h>
 #include "gpsee.h"
+#if defined(GPSEE_DARWIN_SYSTEM)
+#include <crt_externs.h>
+#endif
 
 #if defined(__SURELYNX__)
 # define NO_APR_SURELYNX_NAMESPACE_POISONING
@@ -522,9 +525,12 @@ PRIntn prmain(PRIntn argc, char **argv)
 
   if (strchr(flags, 'a'))
   {
+#if defined(GPSEE_DARWIN_SYSTEM)
+    script_environ = (char * const *)_NSGetEnviron();
+#else
     extern char * const *environ[];
-
     script_environ = *environ;
+#endif
   }
 
   loadRuntimeConfig(scriptFilename, flags, argc, argv);

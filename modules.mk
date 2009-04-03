@@ -47,7 +47,7 @@ ifneq ($(MAKECMDGOALS),depend)
 endif
 -include module.mk
 
-MODULE_OBJ ?= $(filter-out $(MODULE), $(MODULE:.a=.o) $(MODULE:.so=.o)) 
+MODULE_OBJ ?= $(filter-out $(MODULE), $(MODULE:.a=.o) $(MODULE:.$(SOLIB_EXT)=.o)) 
 
 $(MODULE): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
 .PHONY: build_debug_module

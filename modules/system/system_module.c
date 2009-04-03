@@ -152,7 +152,7 @@ static JSBool system_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	break;
 
       case ERANGE:
-	snprintf(buf, sizeof(buf), "Error number #%i (description more than %i bytes)", errnum, sizeof(buf) -1);
+	snprintf(buf, sizeof(buf), "Error number #%i (description more than %ld bytes)", errnum, sizeof(buf) -1);
 	break;
     }
   }
@@ -313,7 +313,8 @@ static JSBool system_system(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   if (*buf)
   {
     depth = JS_SuspendRequest(cx);
-    exitCode = WEXITSTATUS(system(buf));
+    exitCode = system(buf);
+    exitCode = WEXITSTATUS(exitCode);
     JS_ResumeRequest(cx, depth);
 
     *rval = INT_TO_JSVAL(exitCode);
