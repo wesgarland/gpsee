@@ -1,10 +1,7 @@
 #! /usr/bin/gsr -dd
 
 const Curses = require("curses");
-const MozShell = require("mozshell");
 const VM = require("vm");
-
-MozShell.quit = function() { require("System").exit(0); };
 
 Curses.Window.prototype.writeln = function()
 {
@@ -247,6 +244,7 @@ function readline(window, history, clipboard, prompt, maxlen)
 	newInput.length = 1;
 	break;
 
+      case 'BACKSPACE':
       case '^?':
       case '^H':
 	if (pos == 0)
@@ -422,6 +420,39 @@ function readline(window, history, clipboard, prompt, maxlen)
   return null;
 }
 
+function tryRequireMozShell(print)
+{
+  var MozShell;
+
+  try {
+    MozShell = require("mozshell");
+  }
+  catch(e) {
+    print("Exception thrown loading mozshell module: " + e);
+    print("");
+    print("**** Mozilla JS Shell commands will not be available for this session, and");
+    print("**** your code may be evaluated in the wrong context.");
+    print("");
+
+    MozShell =
+    {
+      evalcx: function(code, sandbox)
+              {
+                with(sandbox)
+                {
+                  return eval(code);
+                }
+              }
+    };
+  }
+  finally 
+  {
+    MozShell.quit = function() { System.exit(0); };
+  }
+
+  return MozShell;
+}
+
 function main()
 {
   var history = new History();
@@ -429,6 +460,7 @@ function main()
   var buffer = "";
   var prompt;
   var pendingHistory;
+  var MozShell;
 
   function print()
   {
@@ -438,6 +470,8 @@ function main()
     window.cursorPosition.x = 0;
     window.cursorPosition.y++;
   }
+
+  MozShell = tryRequireMozShell(print);
 
   MozShell.debugPrint = function()
   {
@@ -495,7 +529,8 @@ function main()
       resultPane.inner.lnwrite(MozShell.evalcx(buffer, sandbox));
       /* resultPane.inner.lnwrite(eval(buffer)); */
       /* resultPane.inner.lnwrite(MozShell.evalcx(MozShell, buffer)); */
-      MozShell.print(); /* flush scanRedirCaches */
+      if (MozShell.print) 
+        MozShell.print(); /* flush scanRedirCaches */
     } 
     catch(e) 
     {
