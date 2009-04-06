@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.5 2009/04/01 22:30:55 wes Exp $
+## @version	$Id: Makefile,v 1.6 2009/04/06 21:05:14 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -149,7 +149,6 @@ show_modules:
 		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 
 clean_modules:
-#	@$(foreach DIR, $(dir $(AR_MODULE_FILES) $(SO_MODULE_FILES)), echo && echo " * Cleaning $(DIR)" && cd "$(DIR)" && make -f "$(GPSEE_SRC_DIR)/modules.mk" clean && cd "$(GPSEE_SRC_DIR)";)
 	@$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(dir $(MODULE))" && make -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) clean && cd "$(GPSEE_SRC_DIR)";)
 
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
