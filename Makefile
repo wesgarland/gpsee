@@ -54,6 +54,10 @@ GPSEE_SRC_DIR ?= $(shell pwd)
 export GPSEE_SRC_DIR
 PWD = $(shell pwd)
 
+# Must define GPSEE_LIBRARY above system_detect.mk so platform
+# includes can do target-based build variable overrides
+GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
+
 include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/local_config.mk
@@ -202,7 +206,6 @@ bin-dist:: install
 		$(LIB_MOZJS)
 
 $(GPSEE_LIBRARY): $(GPSEE_OBJS)
-
 gsr: $(GPSEE_LIBRARY)
 gsr: gsr.o
 
@@ -216,3 +219,5 @@ docs::
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
+
+
