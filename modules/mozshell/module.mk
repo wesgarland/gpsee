@@ -33,21 +33,14 @@
 # ***** END LICENSE BLOCK ***** 
 #
 # Automated release build of the shell yielded:
-#
-#	c++ -o js.o -c  -DEXPORT_JS_API -DOSTYPE=\"SunOS5\" -DOSARCH=SunOS 
-#	-I/export/home/wes/mozilla-hg/tracemonkey/js/src -I.. -I/export/home/wes/mozilla-hg/tracemonkey/js/src/shell 
-#	-I.  -I../dist/include   -I../dist/include -I/usr/include/mps -I/sdk/include    -fPIC  -I/usr/openwin/include 
-#	-fno-rtti -fno-exceptions -Wno-long-long -pedantic -fno-strict-aliasing -fshort-wchar -pthreads  
-#	-DNDEBUG -DTRIMMED -O  -I/usr/openwin/include -DMOZILLA_CLIENT 
-#	-include ../mozilla-config.h -Wp,-MD,.deps/js.pp /export/home/wes/mozilla-hg/tracemonkey/js/src/shell/js.cpp
-#
-#	c++ -o js -I/usr/openwin/include 
-#	-fno-rtti -fno-exceptions -Wno-long-long -pedantic -fno-strict-aliasing -fshort-wchar -pthreads  
-#	-DNDEBUG -DTRIMMED -O  js.o    -lpthread  -z ignore -R '$ORIGIN:$ORIGIN/..'  -Wl,-rpath-link,/bin -Wl,-rpath-link,/lib  
-#	-L../dist/bin -L../dist/lib -L/usr/lib/mps -R/usr/lib/mps -lnspr4 ../editline/libeditline.a ../libjs_static.a -lsocket -ldl -lm      
 WARNINGS := $(filter-out -Wstrict-prototypes -Wshadow -Wcast-align, $(WARNINGS))
 
 CXXFLAGS += -DEXPORT_JS_API -DMOZILLA_CLIENT -include $(SPIDERMONKEY_BUILD)/mozilla-config.h
 CXXFLAGS := $(CXXFLAGS) -I$(SPIDERMONKEY_BUILD)/dist/include -I$(SPIDERMONKEY_BUILD) -I$(SPIDERMONKEY_SRC)
-#include $(SPIDERMONKEY_BUILD)/shell/Makefile
-#include $(SPIDERMONKEY_BUILD)/config/autoconf.mk
+
+ifdef MOZ_SHARK
+CFLAGS += -F/System/Library/PrivateFrameworks
+CXXFLAGS += -F/System/Library/PrivateFrameworks
+LDFLAGS += -F/System/Library/PrivateFrameworks -framework CHUD
+endif
+

@@ -38,3 +38,6 @@ REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
 LD			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_LD)
 REAL_CC			 = gcc
 CC			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
+
+$(GPSEE_LIBRARY): LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
+
