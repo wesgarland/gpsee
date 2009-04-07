@@ -136,11 +136,13 @@ $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_co
 
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
+ifneq ($(QUIET),True)
 	@echo ""
 	@echo " * SpiderMonkey is now built, but needs to be installed. Before installation,"
 	@echo "   please insure that the target directory, $(JSAPI_PREFIX),"
 	@echo "   exists and that you have permission to write in it. Then run make install."
 	@echo ""
+endif
 
 JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
 ifeq ($(shell uname -s),Darwin)
@@ -164,8 +166,10 @@ install: build
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
 	@echo "SPIDERMONKEY_BUILD=$(SPIDERMONKEY_BUILD)" >> vars.mk
+ifneq ($(QUIET),True)
 	@echo ""
 	@echo " * SpiderMonkey Build & Installation Complete: you can build GPSEE now."
+endif
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
@@ -214,13 +218,3 @@ local_config.mk:
 	@echo
 	@echo
 	@[ X = Y ]
-
-
-
-
-
-test::
-	@echo $(shell $(JS_CONFIG) --libs)
-	@echo
-	@echo
-	@echo $(JSAPI_LDFLAGS)

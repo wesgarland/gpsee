@@ -1,3 +1,5 @@
+#! /bin/sh
+#
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -32,27 +34,52 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-EXTRA_MODULE_OBJS	= query_object.o
 
-ifeq ($(APR_PROJECT),True)
-EXTRA_MODULES_OBJS	+= PHPSession_class.o
-endif
+##
+## @file	darwin-ld.sh	Darwin linker that knows how to munge install_paths
+##				This is unfortunately necessary as the Mozilla's
+##				libmozjs.dylib is installed with an @execution_path-
+##				relative install name, which otherwise forces all
+##				GPSEE programs (including file-interpreter scripts)
+##				to need a copy of libmozjs.dylib in their directory!
+##
+##				This program can be used in the general case for 
+##				rewriting install paths. Each line of stdin is
+##				an old/new path pair. Each path is expected to
+##				be parseable, by shell IFS, as discrete arguments.
+##				To give nice make output, call it with it with @;
+##				it will echo the sub-commands to stdout.
+##
+## @author	Wes Garland, PageMail, Inc., <wes@page.ca>
+## @date	Apr 2009
+## @version	$Id:$
+##
 
-ifeq ($(STREAM),surelynx)
-LDFLAGS 		+= -lphpsess -lcgihtml
-else
-EXTRA_MODULE_OBJS	+= cgihtml/cgihtml.a
-CPPFLAGS		+= -Icgihtml
-ifeq ($(APR_PROJECT),True)
-EXTRA_MODULE_OBJS	+= phpsess.o
-endif
-endif
+argv="$*"
 
-build:
-	cd ../.. && make 
+outfile="`
+  while [ "$2" ]
+  do
+    [ "$1" = "-o" ] && echo "$2" && shift
+    shift
+  done | head -1
+`"
 
-cgihtml/cgihtml.a: $(wildcard cgihtml/*.[ch])
-	cd cgihtml && make "CFLAGS=$(CFLAGS)"
+if [ ! "$outfile" ]; then
+  $argv
+  exit $?
+fi
 
-clean: OBJS += $(wildcard cgihtml/*.o)
+echo $argv
 
+$argv && while read old new;
+do
+  echo install_name_tool -change "$old" "$new" "$outfile"
+  if [ "$new" ]; then
+    install_name_tool -change "$old" "$new" "$outfile"
+  else
+    echo " * Error: new library not specified!" > /dev/stderr
+  fi
+done
+
+exit $?
