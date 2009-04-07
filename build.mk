@@ -35,6 +35,7 @@
 BIN_DIR			?= $(GPSEE_PREFIX_DIR)/bin
 SOLIB_DIR		?= $(GPSEE_PREFIX_DIR)/lib
 LIBEXEC_DIR		?= $(GPSEE_PREFIX_DIR)/libexec
+LIB_MOZJS		?= $(JSAPI_LIB_DIR)/libmozjs.$(SOLIB_EXT)
 
 LDFLAGS_SOLIB_DIRS 	?= $(foreach DIR, $(SOLIB_DIRS), -L$(DIR) -Wl,-rpath $(DIR))
 LDFLAGS_ARLIB_DIRS	?= $(foreach DIR, $(ARLIB_DIRS), -L$(DIR))

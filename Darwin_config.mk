@@ -1,5 +1,3 @@
-# -*- Mode: makefile -*-
-#
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -13,16 +11,13 @@
 # for the specific language governing rights and limitations under the
 # License.
 #
-# The Original Code is Spidermonkey build system.
+# The Initial Developer of the Original Code is PageMail, Inc.
 #
-# The Initial Developer of the Original Code is
-# The Mozilla Foundation.
-# Portions created by the Initial Developer are Copyright (C) 2008
-# the Initial Developer. All Rights Reserved.
+# Portions created by the Initial Developer are 
+# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
-# Ted Mielczarek <ted.mielczarek@gmail.com>
-#
+# 
 # Alternatively, the contents of this file may be used under the terms of
 # either of the GNU General Public License Version 2 or later (the "GPL"),
 # or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
@@ -35,38 +30,14 @@
 # the provisions above, a recipient may use your version of this file under
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
-# ***** END LICENSE BLOCK *****
+# ***** END LICENSE BLOCK ***** 
+#
+SOLIB_EXT	 	 = dylib
+LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
+REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
+LD			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_LD)
+REAL_CC			 = gcc
+CC			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
 
-DEPTH		= ..
-topsrcdir	= /export/home/wes/mozilla-hg/tracemonkey/js/src
-srcdir		= /export/home/wes/mozilla-hg/tracemonkey/js/src/shell
-VPATH		= /export/home/wes/mozilla-hg/tracemonkey/js/src/shell
+$(GPSEE_LIBRARY): LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
 
-include $(DEPTH)/config/autoconf.mk
-
-PROGRAM         = js$(BIN_SUFFIX)
-CPPSRCS		= js.cpp
-
-DEFINES         += -DEXPORT_JS_API
-
-LIBS      = $(NSPR_LIBS) $(EDITLINE_LIBS) $(DEPTH)/$(LIB_PREFIX)js_static.$(LIB_SUFFIX)
-
-LOCAL_INCLUDES += -I$(topsrcdir) -I..
-
-ifdef _MSC_VER
-ifdef WINCE
-WIN32_EXE_LDFLAGS += -ENTRY:mainACRTStartup
-endif
-endif
-
-include $(topsrcdir)/config/rules.mk
-
-ifdef MOZ_SHARK
-CFLAGS += -F/System/Library/PrivateFrameworks
-CXXFLAGS += -F/System/Library/PrivateFrameworks
-LDFLAGS += -F/System/Library/PrivateFrameworks -framework CHUD
-endif
-
-# People expect the js shell to wind up in the top-level JS dir.
-libs::
-	$(INSTALL) $(IFLAGS2) $(PROGRAM) $(DEPTH)

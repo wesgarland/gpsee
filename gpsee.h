@@ -241,8 +241,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
 # if defined(GPSEE_SURELYNX_STREAM)
-#  define NO_SURELYNX_INT_TYPEDEFS
-#  define NO_APR_SURELYNX_NAMESPACE_POISONING
+#  include <gpsee_surelynx.h>
 #  include <apr_surelynx.h>
 #  undef __FUNCTION__
 # elif defined(GPSEE_UNIX_STREAM)

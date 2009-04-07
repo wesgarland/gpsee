@@ -54,6 +54,10 @@ GPSEE_SRC_DIR ?= $(shell pwd)
 export GPSEE_SRC_DIR
 PWD = $(shell pwd)
 
+# Must define GPSEE_LIBRARY above system_detect.mk so platform
+# includes can do target-based build variable overrides
+GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
+
 include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/local_config.mk
@@ -70,8 +74,11 @@ SO_MODULE_DIRS_ALL	= $(SO_MODULE_DIRS_GLOBAL) $(SO_MODULE_DIRS_STREAM)
 AR_MODULE_FILES		= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
 SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(SOLIB_EXT))
 
+# PROGS must appear before build.mk until darwin-ld.sh is obsolete.
+PROGS		 	= gsr
+
 spidermonkey/vars.mk:
-	cd spidermonkey && $(MAKE) BUILD=$(BUILD) install
+	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=True install
 include spidermonkey/vars.mk
 ifdef SPIDERMONKEY_SRC
 export SPIDERMONKEY_SRC
@@ -90,7 +97,6 @@ ifneq ($(STREAM),surelynx)
 GPSEE_OBJS		+= gpsee_$(STREAM).o
 endif
 
-PROGS		 	= gsr
 AUTOGEN_HEADERS		+= modules.h
 EXPORT_PROGS	 	= $(PROGS) 
 EXPORT_SCRIPTS		= sample_programs/jsie.js
@@ -100,7 +106,6 @@ EXPORT_HEADERS		= gpsee.h gpsee_lock.c gpsee_flock.h
 
 LOADLIBES		+= -l$(GPSEE_LIBNAME) 
 EXTRA_LDFLAGS		+= $(JSAPI_LIBS)
-LIB_MOZJS		= $(JSAPI_LIB_DIR)/libmozjs.$(SOLIB_EXT)
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
 all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
@@ -114,7 +119,7 @@ real-clean: clean
 	cd spidermonkey && $(MAKE) clean
 
 sm-install:
-	cd spidermonkey && $(MAKE) BUILD=$(BUILD) install
+	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=True install
 
 gsr-link:
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
@@ -200,7 +205,6 @@ bin-dist:: install
 		$(LIB_MOZJS)
 
 $(GPSEE_LIBRARY): $(GPSEE_OBJS)
-
 gsr: $(GPSEE_LIBRARY)
 gsr: gsr.o
 
@@ -214,3 +218,5 @@ docs::
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
+
+
