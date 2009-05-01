@@ -38,10 +38,10 @@
  *				which isn't available from JavaScript.
  *  @author     Wes Garland
  *  @date       Oct 2007
- *  @version    $Id: system_module.c,v 1.2 2009/04/01 22:30:55 wes Exp $
+ *  @version    $Id: system_module.c,v 1.3 2009/05/01 19:01:46 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.2 2009/04/01 22:30:55 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.3 2009/05/01 19:01:46 wes Exp $";
  
 #include "gpsee.h"
 #include <prinit.h>
@@ -152,7 +152,7 @@ static JSBool system_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	break;
 
       case ERANGE:
-	snprintf(buf, sizeof(buf), "Error number #%i (description more than %lu bytes)", errnum, sizeof(buf) -1);
+	snprintf(buf, sizeof(buf), "Error number #%i (description more than %u bytes)", errnum, sizeof(buf) -1);
 	break;
     }
   }
