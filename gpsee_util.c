@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.2 2009/04/01 22:30:55 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.3 2009/05/01 18:55:58 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.2 2009/04/01 22:30:55 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.3 2009/05/01 18:55:58 wes Exp $:";
 
 #include "gpsee.h"
 
@@ -102,6 +102,9 @@ const char *gpsee_basename(const char *fullpath)
 
   if (!slash)
     return fullpath;
+
+  if (!slash[1])
+    return "/";
 
   return slash + 1;
 }
