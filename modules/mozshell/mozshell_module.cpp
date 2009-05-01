@@ -41,7 +41,7 @@
  *
  *  @author	Wes Garland, PageMail, Inc.,  wes@page.ca
  *  @date	Jan 2009
- *  @version	$Id: mozshell_module.cpp,v 1.2 2009/03/31 15:09:17 wes Exp $
+ *  @version	$Id: mozshell_module.cpp,v 1.3 2009/05/01 18:57:49 wes Exp $
  */
 
 #define _GPSEE_INTERNALS
