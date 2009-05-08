@@ -36,13 +36,14 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.6 2009/04/06 21:05:14 wes Exp $
+## @version	$Id: Makefile,v 1.7 2009/05/08 18:22:50 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
 
 export BUILD	= DEBUG
 export STREAM	= unix
+SUBMAKE_QUIET	= False
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
 IGNORE_MODULES		= pairodice
@@ -50,9 +51,9 @@ INTERNAL_MODULES 	= vm system
 
 top: all
 
+PWD = $(shell pwd)
 GPSEE_SRC_DIR ?= $(shell pwd)
 export GPSEE_SRC_DIR
-PWD = $(shell pwd)
 
 # Must define GPSEE_LIBRARY above system_detect.mk so platform
 # includes can do target-based build variable overrides
@@ -61,6 +62,8 @@ GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
 include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/local_config.mk
+
+export GPSEE_SRC_DIR
 
 AR_MODULES		= $(filter $(INTERNAL_MODULES), $(ALL_MODULES))
 SO_MODULES		= $(filter-out $(INTERNAL_MODULES), $(ALL_MODULES))
@@ -78,7 +81,7 @@ SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(
 PROGS		 	= gsr
 
 spidermonkey/vars.mk:
-	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=True install
+	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=$(SUBMAKE_QUIET) install
 include spidermonkey/vars.mk
 ifdef SPIDERMONKEY_SRC
 export SPIDERMONKEY_SRC
@@ -104,8 +107,8 @@ EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee_lock.c gpsee_flock.h
 
-LOADLIBES		+= -l$(GPSEE_LIBNAME) 
-EXTRA_LDFLAGS		+= $(JSAPI_LIBS)
+LOADLIBES		+= -l$(GPSEE_LIBNAME)
+$(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
 all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
@@ -114,7 +117,7 @@ install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXTRA_CLEAN_RULE=clean_modules
-clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o))
+clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
 real-clean: clean
 	cd spidermonkey && $(MAKE) clean
 
@@ -154,7 +157,11 @@ show_modules:
 		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 
 clean_modules:
-	@$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(dir $(MODULE))" && make -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) clean && cd "$(GPSEE_SRC_DIR)";)
+	$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), \
+	echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
+	ls && \
+	make -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
+	)
 
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
 build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES)::
@@ -204,8 +211,8 @@ bin-dist:: install
 		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
 		$(LIB_MOZJS)
 
-$(GPSEE_LIBRARY): $(GPSEE_OBJS)
-gsr: $(GPSEE_LIBRARY)
+$(GPSEE_LIBRARY): $(GPSEE_OBJS) $(AR_MODULE_FILES)
+
 gsr: gsr.o
 
 JSDOC_DIR=/opt/jsdoc-toolkit
@@ -218,5 +225,3 @@ docs::
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
-
-

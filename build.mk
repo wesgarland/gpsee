@@ -72,6 +72,6 @@ CFLAGS                  += $(EXTRA_CFLAGS)
 		$(AR_RU) $@ $(VERSION_O) $^
 		$(RANLIB) $@
 
--include $(PLATFORM)_rules.mk
-
+-include $(GPSEE_SRC_DIR)/$(STREAM)_rules.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_rules.mk
 
