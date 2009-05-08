@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.2 2009/04/01 22:30:55 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.3 2009/05/08 18:18:38 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.3  2009/05/08 18:18:38  wes
+ *  Added fieldSize, offsetOf and gpsee_isFalsy()
+ *
  *  Revision 1.2  2009/04/01 22:30:55  wes
  *  Bugfixes for getopt, linux build, and module-case in tests
  *
@@ -80,6 +83,14 @@
 #define GPSEE_MAJOR_VERSION_NUMBER	        0
 #define GPSEE_MINOR_VERSION_NUMBER		2
 #define GPSEE_MICRO_VERSION_NUMBER		0
+
+#if !defined(fieldSize)
+# define fieldSize(st, field)    sizeof(((st *)NULL)->field)
+#endif
+ 
+#if !defined(offsetOf)
+# define offsetOf(st, field)     ((size_t)((void *)&(((st *)NULL)->field)))
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -167,6 +178,9 @@ size_t 			gpsee_catstrn(char *dst, const char *src, size_t dst_size);
 const char *		gpsee_basename(const char *filename);
 const char *		gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
+#define 		gpsee_isFalsy(cx, v) (!JSVAL_IS_NULL(v) && !JSVAL_IS_VOID(v) && (v != JSVAL_FALSE) && (v != JSVAL_ZERO) \
+					      && (!JSVAL_IS_STRING(v) || (v != JS_GetEmptyStringValue (cx))))
+
 void __attribute__((noreturn)) panic(const char *message);
 
 /* management routines */
