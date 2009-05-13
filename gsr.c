@@ -286,14 +286,11 @@ static FILE *openScriptFile(gpsee_interpreter_t *jsi, const char *scriptFilename
     {
       jsi->linenoOffset += 1;
 
-      if (fgets(line, sizeof(line), file))
+      do  /* consume entire first line, regardless of length */
       {
-	do  /* consume entire first line, regardless of length */
-	{
-	  if (strchr(line, '\n'))
-	    break;
-	} while(fgets(line, sizeof(line), file));
-      }
+        if (strchr(line, '\n'))
+          break;
+      } while(fgets(line, sizeof(line), file));
     }
   }
 
