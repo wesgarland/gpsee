@@ -178,8 +178,23 @@ size_t 			gpsee_catstrn(char *dst, const char *src, size_t dst_size);
 const char *		gpsee_basename(const char *filename);
 const char *		gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
-#define 		gpsee_isFalsy(cx, v) (!JSVAL_IS_NULL(v) && !JSVAL_IS_VOID(v) && (v != JSVAL_FALSE) && (v != JSVAL_ZERO) \
-					      && (!JSVAL_IS_STRING(v) || (v != JS_GetEmptyStringValue (cx))))
+
+static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
+{
+  if (JSVAL_IS_STRING(v))
+    return (v == JS_GetEmptyStringValue (cx));
+
+  switch(v)
+  {
+    case JSVAL_NULL:
+    case JSVAL_VOID:
+    case JSVAL_FALSE:
+    case JSVAL_ZERO:
+      return 1;
+    default:
+      return 0;
+  }
+}
 
 void __attribute__((noreturn)) panic(const char *message);
 
