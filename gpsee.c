@@ -615,6 +615,8 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
 
   gpsee_initializeModuleSystem(cx);
 
+  interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
+
   return interpreter;
 }
 

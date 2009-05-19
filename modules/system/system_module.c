@@ -218,6 +218,8 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   const char	*scriptFilename;
   JSString	*scriptFilename_jsstr;
   JSBool	retval;
+  int           failure;
+  const char    *errmsg;
 
   switch(argc)
   {
@@ -246,6 +248,8 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   if (!scriptFilename[0])
     return gpsee_throw(cx, MODULE_ID ".include.filename: Unable to determine script filename");
 
+  //log_somehow("system_include(\"%s\")\n", scriptFilename);
+
   errno = 0;
   if (access(scriptFilename, F_OK))
     return gpsee_throw(cx, MODULE_ID ".include.file: %s - %s", scriptFilename, strerror(errno));
@@ -253,15 +257,15 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   JS_AddNamedRoot(cx, &scriptFilename_jsstr, "System.include.scriptFilename_jsstr");
 
   errno = 0;
-  script = JS_CompileFile(cx, thisObj, scriptFilename);
-  if (!script)
-  {
-    JS_RemoveRoot(cx, &scriptFilename_jsstr);
-    return gpsee_throw(cx, MODULE_ID ".include.compile: Error compiling %s (OS reports %s)", scriptFilename, strerror(errno));
-  }
+  failure = gpsee_compileScript(cx, scriptFilename, NULL, &script, thisObj, &scrobj, &errmsg);
+
   JS_RemoveRoot(cx, &scriptFilename_jsstr);
 
-  scrobj = JS_NewScriptObject(cx, script);
+  if (failure)
+    return gpsee_throw(cx, MODULE_ID ".include.compile: Error compiling \"%s\": %s (OS reports %s)",
+           scriptFilename, errmsg, strerror(errno));
+
+  /* TODO should we be doing this in gpsee_compileScript()? */
   JS_AddNamedRoot(cx, &scrobj, "include_scrobj");
   retval = JS_ExecuteScript(cx, thisObj, script, rval);
   JS_RemoveRoot(cx, &scrobj);
