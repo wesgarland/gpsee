@@ -78,6 +78,11 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.2 20
 #include "gpsee.h"
 #include "gpsee_private.h"
 #include <dlfcn.h>
+#include "jsxdrapi.h"
+#include "gpsee_xdrfile.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 
@@ -610,6 +615,253 @@ static void finalizeModuleObject(JSContext *cx, JSObject *moduleObject)
   return;
 }
 
+/** Reformat a filename such that /original/path/original.name becomes /original/path/.original.namec
+ *
+ *  @param      cx            JSContext needed for JS_strdup() et al
+ *  @param      filename      Filename of Javascript code module
+ *  @param      buf           Pointer to buffer into which the result is put
+ *  @param      buflen        Size of buffer 'buf'
+ *
+ *  @returns    Zero on success, non-zero on failure
+ */
+static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, size_t buflen)
+{
+  char dir[PATH_MAX];
+
+  if (!filename || !filename[0])
+    return -1;
+
+  if (!gpsee_dirname(filename, dir, PATH_MAX))
+    return -1;
+
+  if (snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
+  {
+    /* Report paths over PATH_MAX */
+    gpsee_log(SLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%d) bytes",
+              filename, PATH_MAX);
+    return -1;
+  }
+
+  return 0;
+}
+
+/**
+ *  Load a JavaScript-language source code file, passing back a compiled JSScript object and a "script object"
+ *  instantiated for the benefit of the garbage collector, *or* an error message.
+ *
+ *  Returns zero on success; non-zero on failure.
+ *
+ *  For the compiler cache to be available, scriptFilename must be specified. To skip over the shebang (#!) header of a
+ *  GPSEE program, the scriptFile parameter must be an open FILE with read access whose seek position reflects the end
+ *  of the header and the beginning of Javascript code that Spidermonkey's Javascript parser will not be offended by.
+ *  
+ *  The JSScript returned has a well defined relationship with the garbage collector via the JSObject passed back
+ *  through the scriptObject parameter created with JS_NewScriptObject().
+ *  
+ *  @param    cx                  The JSAPI context to be associated with the return values of this function.
+ *  @param    scriptFilename      Filename to Javascript source code file (optional.)
+ *  @param    scriptFile          Open readable stdio FILE representing beginning of Javascript source code.
+ *  @param    script              The address where a pointer to the new JSScript will be stored.
+ *  @param    scope               The address of the JSObject that will represent the 'this' variable for the script.
+ *  @param    scriptObject        The address where a pointer to a new "scrobj" will be stored.
+ *  @param    errorMessage        The address where a pointer to an error message will be stored in case of error.
+ *
+ *  @returns  Zero on success; non-zero on error
+ */
+int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
+                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage)
+{
+  gpsee_interpreter_t *jsi;
+  char cache_filename[PATH_MAX];
+  int useCompilerCache;
+  unsigned int fileHeaderOffset;
+  struct stat source_st;
+  FILE *cache_file = NULL;
+
+  *script = NULL;
+  *scriptObject = NULL;
+
+  /* Open the script file if it hasn't been yet */
+  if (!scriptFile)
+  {
+    if (!(scriptFile = fopen(scriptFilename, "r")))
+    {
+      gpsee_log(SLOG_NOTICE, "could not open script \"%s\" %m", scriptFilename);
+      *errorMessage = "could not open script";
+      return -1;
+    }
+  }
+
+  /* Acquire read lock for script file */
+  if (scriptFile)
+    gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
+
+  /* Should we use the compiler cache at all? */
+  /* Check the compiler cache setting in our gpsee_interpreter_t struct */
+  jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  useCompilerCache = jsi->useCompilerCache;
+
+  /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
+   * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */
+  fileHeaderOffset = scriptFile ? ftell(scriptFile) : 0;
+
+  /* Before we compile the script, let's check the compiler cache */
+  if (useCompilerCache && make_jsc_filename(cx, scriptFilename, cache_filename, sizeof(cache_filename)) == 0)
+  {
+    /* We have acquired a filename */
+    struct stat cache_st;
+    JSXDRState *xdr;
+    unsigned int fho;
+
+    /* Let's compare the last-modification times of the Javascript source code and its precompiled counterpart */
+    /* stat source code file */
+    if (fstat(fileno(scriptFile), &source_st))
+    {
+      /* We have already opened the script file, I can think of no reason why stat() would fail. */
+      useCompilerCache = 0;
+      gpsee_log(SLOG_EMERG, "could not stat() script \"%s\" %m", scriptFilename);
+      goto cache_read_end;
+    }
+
+    /* Open the cache file, in a rather specific way */
+    if (!(cache_file = fopen(cache_filename, "r")))
+    {
+      dprintf(__FILE__":%d: could not load from compiler cache \"%s\" (%m)\n", __LINE__, cache_filename);
+      goto cache_read_end;
+    }
+    /* Acquire read lock for file */
+    gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH);
+
+    /* stat compiler cache file */
+    if (fstat(fileno(cache_file), &cache_st))
+    {
+      dprintf("could not stat() compiler cache \"%s\"\n", cache_filename);
+      goto cache_read_end;
+    }
+
+    /* Compare last modification times to see if the compiler cache has been invalidated by a change to the
+     * source code file */
+    if (cache_st.st_mtime < source_st.st_mtime)
+      goto cache_read_end;
+
+    /* Let's ask Spidermonkey's XDR API for a deserialization context */
+    if ((xdr = gpsee_XDRNewFile(cx, JSXDR_DECODE, cache_filename, cache_file)))
+    {
+      uint32 ino, size, mtime;
+      /* We match some metadata embedded in the cache file against the source code file as it exists now to determine
+       * if the source code file has been changed more recently than its compiler cache file was updated. */
+      JS_XDRUint32(xdr, &ino);
+      JS_XDRUint32(xdr, &size);
+      JS_XDRUint32(xdr, &mtime);
+      JS_XDRUint32(xdr, &fho);
+      if ((ino != source_st.st_ino) || (size != source_st.st_size) || (mtime != source_st.st_mtime)
+      ||  (fileHeaderOffset != fho))
+      {
+        /* Compiler cache invalidated by change in inode / filesize / mtime */
+          gpsee_log(SLOG_DEBUG, "stat() data invalidates cache file \"%s\" versus source code file \"%s\""
+                                " (inode %d %d size %d %d mtime %d %d fho %d %d)",
+                                cache_filename, scriptFilename,
+                                ino, (int)source_st.st_ino,
+                                size, (int)source_st.st_size,
+                                mtime, (int)source_st.st_mtime,
+                                fho, fileHeaderOffset);
+      } else {
+        /* Now we attempt to deserialize a JSScript */
+        if (!JS_XDRScript(xdr, script))
+        {
+          /* Failure */
+          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed deserializing \"%s\" from cache file \"%s\"", scriptFilename,
+                    cache_filename);
+        } else {
+          /* Success */
+          gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
+                    cache_filename);
+        }
+      }
+      /* We are done with our deserialization context */
+      JS_XDRDestroy(xdr);
+    }
+  }
+
+  cache_read_end:
+
+  /* Was the precompiled script thawed from the cache? If not, we must compile it */
+  if (!*script)
+  {
+    /* Do we already have this file open? */
+    if (scriptFile)
+    {
+      /* Acquire read lock for file */
+      gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
+      /* Compile script */
+      *script = JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
+    } else {
+      /* Compile script */
+      *script = JS_CompileFile(cx, scope, scriptFilename);
+    }
+    if (!script)
+    {
+      *errorMessage = "could not compile script";
+      return -1;
+    }
+
+    /* Should we freeze the compiled script for the compiler cache? */
+    if (useCompilerCache)
+    {
+      JSXDRState *xdr;
+      int cache_fd;
+      /* Remove the previous cache file, assuming we can */
+      unlink(cache_filename);
+      /* Open the cache file, in a rather specific way */
+      if(((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0) ||
+         ((cache_file = fdopen(cache_fd, "w")) == NULL))
+      {
+        dprintf(__FILE__":%d: could not create compiler cache \"%s\" (%m)\n", __LINE__, cache_filename);
+        goto cache_read_end;
+      }
+      /* Acquire write lock for file */
+      gpsee_flock(cache_fd, GPSEE_LOCK_EX);
+      /* Let's ask Spidermonkey's XDR API for a serialization context */
+      if ((xdr = gpsee_XDRNewFile(cx, JSXDR_ENCODE, NULL, cache_file)))
+      {
+        /* We will mark the file with some data about its source code file to aid in detecting whether the source code
+         * has changed more recently than it has been recompiled to its cache */
+        JS_XDRUint32(xdr, (uint32*)&source_st.st_ino);
+        JS_XDRUint32(xdr, (uint32*)&source_st.st_size);
+        JS_XDRUint32(xdr, (uint32*)&source_st.st_mtime);
+        JS_XDRUint32(xdr, &fileHeaderOffset);
+        /* Now we attempt to serialize a JSScript to the compiler cache file */
+        if (!JS_XDRScript(xdr, script))
+        {
+          /* Failure */
+          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed serializing \"%s\" to cache file \"%s\"", scriptFilename,
+                    cache_filename);
+        } else {
+          /* Success */
+          gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
+                    scriptFilename, cache_filename);
+        }
+        /* We are done with our serialization context */
+        JS_XDRDestroy(xdr);
+      }
+      fclose(cache_file);
+      close(cache_fd);
+    }
+  }
+
+  /* We must associate a GC object with the JSScript to protect it from the GC */
+  *scriptObject = JS_NewScriptObject(cx, *script);
+  if (!*scriptObject)
+  {
+    *errorMessage = "unable to create module's script object";
+    return -1;
+  }
+  /* This will protect it from the GC */
+  //JS_AddNamedRoot(cx, scriptObject, scriptFilename);
+
+  return 0;
+}
+
 /**
  *  Load a JavaScript-language module. These modules conform to the ServerJS Securable Modules
  *  proposal at https://wiki.mozilla.org/ServerJS/Modules/SecurableModules.
@@ -629,15 +881,14 @@ static void finalizeModuleObject(JSContext *cx, JSObject *moduleObject)
  */
 static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
-  module->script = JS_CompileFile(cx, module->scope, filename);
-  if (!module->script)
-    return "unable to compile module";
+  const char *errorMessage;
+  dprintf("loadJSModule(\"%s\")\n", filename);
 
-  module->scrobj = JS_NewScriptObject(cx, module->script);
-  if (!module->scrobj)
-    return "unable to create module's script object";
+  if (gpsee_compileScript(cx, filename, NULL, &module->script,
+      module->scope, &module->scrobj, &errorMessage))
+    return errorMessage;
 
-  return NULL; /* no error = success*/
+  return NULL;
 }
 
 /**
@@ -793,7 +1044,6 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     if (access(fnBuf, F_OK) == 0)
     {
       module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
-      module->cname = strdup(cname);
       *errorMessage_p = loadJSModule(cx, module, fnBuf);
       if (*errorMessage_p)
 	goto fail;
@@ -880,6 +1130,7 @@ static moduleHandle_t *loadInternalModule(JSContext *cx, moduleHandle_t *parentM
 static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module)
 {
   JSObject	*moduleScope = module->scope;
+  dprintf("initializeModule(%s)\n", module->cname);
 
   if (module->init)
   {
@@ -1130,22 +1381,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("Program module root is %s\n", jsi->programModule_dir);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
-  if (scriptFile)
-    module->script = JS_CompileFileHandle(cx, module->scope, scriptFilename, scriptFile);  
-  else
-    module->script = JS_CompileFile(cx, module->scope, scriptFilename);
-  if (!module->script)
-  {
-    errorMessage = "could not compile script";
+  if (gpsee_compileScript(cx, scriptFilename, scriptFile, &module->script,
+      module->scope, &module->scrobj, &errorMessage))
     goto fail;
-  }
-
-  module->scrobj = JS_NewScriptObject(cx, module->script);
-  if (!module->scrobj)
-  {
-    errorMessage = "unable to create module's script object";
-    goto fail;
-  }
 
   if (initializeModule(cx, module))
   {

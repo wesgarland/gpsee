@@ -137,6 +137,7 @@ typedef struct
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
 #endif
+  unsigned int          useCompilerCache:1;     /* Do we use the compiler cache? */
 } gpsee_interpreter_t;
 
 /* core routines */
