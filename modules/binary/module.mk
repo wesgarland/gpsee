@@ -32,39 +32,13 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-HOSTNAME		?= $(shell hostname)
-GPSEE_LIBNAME		= gpsee
+EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o Binary.o
 
-# Compilation tools
-CC		= gcc
-CXX		= g++
-LD		= gcc -shared
-LEX		?= lex
-YACC		?= yacc
-CPP		?= gcc -E
-AR		?= ar
-AR_RU		?= $(AR) -ru
-SO_AR		?= $(LD) $(LDFLAGS) -o
-RANLIB		?= ranlib
-MAKEDEPEND	?= gcc -E -MM -MG
-
-# Shell tools
-CP		?= cp -f
-MV		?= mv -f
-RM		?= rm -f
-MKDIR		?= mkdir -p
-GREP		?= grep
-CHMOD		?= chmod
-CHOWN		?= chown
-AWK		?= awk
-TR		?= tr
-SED		?= sed
-
-# File extensions; EXE_EXT includes dot if required
-OBJ_EXT		?=o
-EXE_EXT		?=
-LIB_EXT		?=a
-SOLIB_EXT	?=so
-
-ICONV_LIB_NAME	= iconv
-EXTRA_CPPFLAGS	+= -DHAVE_ICONV
+ifneq (X$(ICONV_LIB_NAME),X)
+#LDFLAGS			+= -liconv
+build_debug_module:
+	@echo " - iconv library is named $(NCURSES_LIB_NAME)"
+else
+build_debug_module:
+	@echo " - iconv library is not specified; assuming it is present in libc"
+endif
