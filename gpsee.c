@@ -569,6 +569,8 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript context!");
 
+  JS_CStringsAreUTF8();
+
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))
   {
