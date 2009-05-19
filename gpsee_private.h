@@ -40,8 +40,9 @@
  *  @version	$Id: gpsee_private.h,v 1.1 2009/03/30 23:55:43 wes Exp $
  */
 
+#include "jsapi.h"
 void 			gpsee_initializeModuleSystem(JSContext *cx);
 void 			gpsee_shutdownModuleSystem(JSContext *cx);
-
-
+int                     gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
+                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage);
 

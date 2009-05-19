@@ -129,6 +129,7 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
   {
     buf[0] = '.';
     buf[1] = (char)0;
+    return buf;
   }
 
   if ((slash - fullpath) >= bufLen)

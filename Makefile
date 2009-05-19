@@ -92,7 +92,7 @@ endif
 include build.mk
 -include depend.mk
 
-GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c
+GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c gpsee_xdrfile.c
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
 GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
 

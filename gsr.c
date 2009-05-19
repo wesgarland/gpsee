@@ -144,49 +144,50 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
   spaces[sizeof(spaces) - 1] = (char)0;
 
   gpsee_printf(
-		  "\n"
+                  "\n"
 #if defined(__SURELYNX__)
-		  "SureLynx "
+                  "SureLynx "
 #endif
-		  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
-		  "Copyright (c) 2007-2009 PageMail, Inc. All Rights Reserved.\n"
-		  "\n"
-		  "As an interpreter: #! %s {-/*flags*/}\n"
-		  "As a command:      %s "
+                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
+                  "Copyright (c) 2007-2009 PageMail, Inc. All Rights Reserved.\n"
+                  "\n"
+                  "As an interpreter: #! %s {-/*flags*/}\n"
+                  "As a command:      %s "
 #if defined(__SURELYNX__)
-		                        "{-r file} [-D file] "
+                                        "{-r file} [-D file] "
 #endif
-  		                                            "[-z #] [-n] <[-c code]|[-f filename]>\n"
-		  "                   %s {-/*flags*/} {[--] [arg...]}\n"
-		  "Command Options:\n"
+                                                              "[-z #] [-n] <[-c code]|[-f filename]>\n"
+                  "                   %s {-/*flags*/} {[--] [arg...]}\n"
+                  "Command Options:\n"
                   "    -c code     Specifies literal JavaScript code to execute\n"
                   "    -f filename Specifies the filename containing code to run\n"
-		  "    -F filename Like -f, but skip shebang if present.\n"
-		  "    -h          Display this help\n"
+                  "    -F filename Like -f, but skip shebang if present.\n"
+                  "    -h          Display this help\n"
                   "    -n          Engine will load and parse, but not run, the script\n"
 #if defined(__SURELYNX__)
                   "    -D file     Specifies a debug output file\n"
                   "    -r file     Specifies alternate interpreter RC file\n"
 #endif
-		  "    flags       A series of one-character flags which can be used\n"
+                  "    flags       A series of one-character flags which can be used\n"
                   "                in either file interpreter or command mode\n"
-		  "    --          Arguments after -- are passed to the script\n"
+                  "    --          Arguments after -- are passed to the script\n"
                   "\n"
-		  "Valid Flags:\n"
-		  "    a - Allow (read-only) access to caller's environment\n"
-		  "    d - Increase verbosity\n"
-		  "    e - Do not limit regexps to n^3 levels of backtracking\n"
-		  "    J - Disable nanojit\n"
-		  "    S - Disable Strict mode\n"
-		  "    R - Load RC file for interpreter (" PRODUCT_SHORTNAME ") based on\n"
+                  "Valid Flags:\n"
+                  "    a - Allow (read-only) access to caller's environment\n"
+          "    C - Disables compiler caching via JSScript XDR serialization\n"
+                  "    d - Increase verbosity\n"
+                  "    e - Do not limit regexps to n^3 levels of backtracking\n"
+                  "    J - Disable nanojit\n"
+                  "    S - Disable Strict mode\n"
+                  "    R - Load RC file for interpreter (" PRODUCT_SHORTNAME ") based on\n"
                   "        script filename.\n"
-		  "    W - Do not report warnings\n"
-		  "    x - Parse <!-- comments --> as E4X tokens\n"
+                  "    W - Do not report warnings\n"
+                  "    x - Parse <!-- comments --> as E4X tokens\n"
 #ifdef JS_GC_ZEAL
-		  "    z - Increase GC Zealousness\n"
+                  "    z - Increase GC Zealousness\n"
 #endif /* JS_GC_ZEAL */
                   "\n",
-		  argv_zero, argv_zero, spaces);
+                  argv_zero, argv_zero, spaces);
   exit(1);
 }
 
@@ -205,10 +206,16 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 
   jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT | JSOPTION_COMPILE_N_GO;
 
+  /* Iterate over each flag */
   for (f=flags; *f; f++)
   {
     switch(*f)
     {
+      /* 'C' flag disables compiler cache */
+      case 'C':
+        jsi->useCompilerCache = 0;
+        break;
+
       case 'R':	/* Handled in loadRuntimeConfig() */
       case 'a':	/* Handled in prmain() */
 	break;
@@ -286,14 +293,11 @@ static FILE *openScriptFile(gpsee_interpreter_t *jsi, const char *scriptFilename
     {
       jsi->linenoOffset += 1;
 
-      if (fgets(line, sizeof(line), file))
+      do  /* consume entire first line, regardless of length */
       {
-	do  /* consume entire first line, regardless of length */
-	{
-	  if (strchr(line, '\n'))
-	    break;
-	} while(fgets(line, sizeof(line), file));
-      }
+        if (strchr(line, '\n'))
+          break;
+      } while(fgets(line, sizeof(line), file));
     }
   }
 
@@ -407,6 +411,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   permanent_pool = apr_initRuntime();
 #endif
 
+  /* Print usage and exit if no arguments were given */
   if (argc < 2)
     usage(argv[0]);
 
