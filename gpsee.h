@@ -284,6 +284,8 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <errno.h>
 #  include <limits.h>
 #  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <fcntl.h>
 #  include <sys/wait.h>
 #  include <gpsee_unix.h>
 #  include <stdarg.h>

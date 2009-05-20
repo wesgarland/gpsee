@@ -43,7 +43,6 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_flock.c,v 1.1 2009
 
 #if !defined(HAVE_FLOCK)
 #include <gpsee.h>
-#include <fcntl.h>
 
 /** Implement advisory file lock with fcntl using flock semantics.
  *
