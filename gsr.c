@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.3 2009/04/01 22:30:55 wes Exp $
+ * @version	$Id: gsr.c,v 1.4 2009/05/21 19:12:18 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.3 2009/04/01 22:30:55 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.4 2009/05/21 19:12:18 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -570,6 +570,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   gpsee_destroyInterpreter(jsi);
+  JS_Shutdown();
 
   return exitCode;
 }
