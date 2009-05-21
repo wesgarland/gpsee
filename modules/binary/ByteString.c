@@ -614,7 +614,7 @@ static void ByteString_Finalize(JSContext *cx, JSObject *obj)
     return;
 
   if (hnd->buffer)
-    JS_free(cx, hnd);
+    JS_free(cx, hnd->buffer);
 
   JS_free(cx, hnd);
 
