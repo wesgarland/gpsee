@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.5 2009/05/19 21:27:28 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.6 2009/05/27 04:29:18 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.6  2009/05/27 04:29:18  wes
+ *  Refactored interpreter creation to allow better GPSEE/JSAPI mapping
+ *
  *  Revision 1.5  2009/05/19 21:27:28  wes
  *  Made C Strings UTF-8
  *
@@ -81,7 +84,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.5 2009/05/19 21:27:28 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.6 2009/05/27 04:29:18 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -529,12 +532,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   return 0;
 }
 
-/** Instanciate a JavaScript interpreter -- i.e. a runtime,
- *  a context, a global object.
- *
- *  @returns	A handle to the interpreter, ready for use.
- */
-gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * const script_environ[])
+JSClass *gpsee_getGlobalClass()
 {
   /** Global object's class definition */
   static JSClass global_class = 
@@ -552,6 +550,56 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
     JSCLASS_NO_OPTIONAL_MEMBERS
   };
 
+  return &global_class;
+}
+
+/** Initialize a global (or global-like) object. This task is normally performed by gpsee_createInterpreter. 
+ *  This function attaches gpsee-specific prototypes to the object, after initializing it with 
+ *  JS_InitStandardClasses(). It does NOT call JS_SetGlobalObject(), or provide global object GC roots.
+ *
+ *  @param	cx		JavaScript context
+ *  @param	obj		The object to modify
+ *  @param	script_argv	Argument vector for the script (not the interpreter)
+ *  @param	script_env	Environment variables for the script (often, but not always, 
+ *  				the same as the interpreter)
+ *
+ *  @returns	JS_TRUE on success.  Failure may leave obj partially initialized.
+ */
+JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[])
+{
+  if (JS_InitStandardClasses(cx, obj) != JS_TRUE)
+    return JS_FALSE;
+
+  if (JS_DefineProperty(cx, obj, "gpseeNamespace", 
+		    STRING_TO_JSVAL(JS_NewStringCopyZ(cx, GPSEE_GLOBAL_NAMESPACE_NAME)), NULL, NULL, 0) != JS_TRUE)
+    return JS_FALSE;
+
+  if (JS_DefineFunction(cx, obj, "print", gpsee_global_print, 0, 0) == NULL)
+    return JS_FALSE;
+
+  if (script_argv)
+    gpsee_createJSArray_fromVector(cx, obj, "arguments", script_argv);
+
+  if (script_environ)
+    gpsee_createJSArray_fromVector(cx, obj, "environ", script_environ);
+
+  if (JS_DefineFunction(cx, obj, "loadModule", gpsee_loadModule, 0, 0) == NULL)
+    return JS_FALSE;
+
+  if (JS_DefineFunction(cx, obj, "require", gpsee_loadModule, 0, 0) == NULL)
+    return JS_FALSE;
+
+  return JS_TRUE;
+}
+
+/** Instanciate a JavaScript interpreter -- i.e. a runtime,
+ *  a context, a global object.
+ *
+ *  @returns	A handle to the interpreter, ready for use.
+ */
+gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * const script_environ[])
+{
+  JSClass		*global_class = gpsee_getGlobalClass();
   const char		*jsVersion;
   JSRuntime		*rt;
   JSContext 		*cx;
@@ -584,25 +632,14 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
-  interpreter->globalObj = JS_NewObject(cx, &global_class, NULL, NULL);
+  interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
   if (!interpreter->globalObj)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create global object!");
 
   JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Technically, probably unnecessary but WTH */
- 
-  if (JS_InitStandardClasses(cx, interpreter->globalObj) != JS_TRUE)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize standard classes!");
 
-  JS_DefineProperty(cx, interpreter->globalObj, "gpseeNamespace", 
-		    STRING_TO_JSVAL(JS_NewStringCopyZ(cx, GPSEE_GLOBAL_NAMESPACE_NAME)), NULL, NULL, 0);
-
-  JS_DefineFunction(cx, interpreter->globalObj, "print", gpsee_global_print, 0, 0);
-
-  gpsee_createJSArray_fromVector(cx, interpreter->globalObj, "arguments", script_argv);
-  gpsee_createJSArray_fromVector(cx, interpreter->globalObj, "environ", script_environ);
-
-  JS_DefineFunction(cx, interpreter->globalObj, "loadModule", gpsee_loadModule, 0, 0);
-  JS_DefineFunction(cx, interpreter->globalObj, "require", gpsee_loadModule, 0, 0);
+  if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
+    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
 
 #if defined(JS_THREADSAFE)
   interpreter->primordialThread	= PR_GetCurrentThread();

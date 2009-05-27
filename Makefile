@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.7 2009/05/08 18:22:50 wes Exp $
+## @version	$Id: Makefile,v 1.8 2009/05/27 04:38:44 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -46,7 +46,7 @@ export STREAM	= unix
 SUBMAKE_QUIET	= False
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		= pairodice
+IGNORE_MODULES		= pairodice file
 INTERNAL_MODULES 	= vm system
 
 top: all
@@ -100,12 +100,13 @@ ifneq ($(STREAM),surelynx)
 GPSEE_OBJS		+= gpsee_$(STREAM).o
 endif
 
-AUTOGEN_HEADERS		+= modules.h
-EXPORT_PROGS	 	= $(PROGS) 
+AUTOGEN_HEADERS		+= modules.h gpsee_config.h
+EXPORT_PROGS	 	= $(PROGS) gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
-EXPORT_HEADERS		= gpsee.h gpsee_lock.c gpsee_flock.h
+EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h 
+EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
 LOADLIBES		+= -l$(GPSEE_LIBNAME)
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
@@ -184,11 +185,11 @@ gpsee-$(GPSEE_RELEASE)_src.tar.gz::
 	find sample_programs -type f >> $(TMPFILE)
 	find tests -type f >> $(TMPFILE)
 	find docgen -type f >> $(TMPFILE)
-	ls spidermonkey/Makefile spidermonkey/*sample >> $(TMPFILE)
+	ls spidermonkey/Makefile spidermonkey/*.sample >> $(TMPFILE)
 	find unix_modules -type f >> $(TMPFILE) 
 	find apr_modules -type f >> $(TMPFILE) || [ ! -d apr_modules ]
 	[ ! -d gpsee-$(GPSEE_RELEASE) ] || rm -rf gpsee-$(GPSEE_RELEASE)
-	egrep -v 'depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.$(SOLIB_EXT)$$|^[	 ]*$$' \
+	egrep -v 'core$$|depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.$(SOLIB_EXT)$$|^[	 ]*$$' \
 		$(TMPFILE) | gtar -T - -zcf $@
 	@echo $(TMPFILE)
 
@@ -225,3 +226,41 @@ docs::
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
+
+README2: 
+	lynx -dump -display_charset=US-ASCII -force_html -image_links=off -nocolor -noexec -nolist -nolog -nonumbers -nopause -noredir -noreverse \
+	     -nostatus -notitle -nounderline -pseudo_inlines=off -stderr -underline_links=off -underscore=on -width=80 \
+	     http://kenai.com/projects/gpsee/pages/BuildingGPSEE > $@
+
+gpsee_config.h: Makefile $(wildcard *.mk)
+	@echo " * Generating $@"
+	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
+	@$(foreach DEFINE, $(GPSEE_C_DEFINES), echo "#define $(DEFINE)" | sed "s/=/ /" >> $@;)
+	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
+	@echo "#define GPSEE_$(shell echo $(STREAM) | $(TR) a-z A-Z)_STREAM" >> $@
+	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) a-z A-Z)_SYSTEM" >> $@
+
+gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk
+	@echo " * Generating $@"
+	@$(SED) \
+		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
+		-e 's;@@LDFLAGS@@;$(LDFLAGS) -l$(GPSEE_LIBNAME) $(JSAPI_LIBS);g'\
+		-e 's;@@CPPFLAGS@@;$(CPPFLAGS);g'\
+		-e 's;@@CXXFLAGS@@;$(CXXFLAGS);g'\
+		-e 's;@@LOADLIBES@@;$(LOADLIBES);g'\
+		-e 's;@@GPSEE_PREFIX_DIR@@;$(GPSEE_PREFIX_DIR);g'\
+		-e 's;@@LIBEXEC_DIR@@;$(LIBEXEC_DIR);g'\
+		-e 's;@@BIN_DIR@@;$(BIN_DIR);g'\
+		-e 's;@@SOLIB_DIR@@;$(SOLIB_DIR);g'\
+		-e 's;@@GPSEE_RELEASE@@;$(GPSEE_RELEASE);g'\
+		-e 's;@@STREAM@@;$(STREAM);g'\
+		-e 's;@@BUILD@@;$(BUILD);g'\
+		-e 's;@@INCLUDE_DIR@@;$(INCLUDE_DIR);g'\
+		-e 's;@@EXPORT_LIBS@@@;$(EXPORT_LIBS);g'\
+		-e 's;@@GPSEE_SRC@@;$(GPSEE_SRC_DIR);g'\
+		-e 's;@@SPIDERMONKEY_SRC@@;$(SPIDERMONKEY_SRC);g'\
+		-e 's;@@SPIDERMONKEY_BUILD@@;$(SPIDERMONKEY_BUILD);g'\
+		-e 's;@@OUTSIDE_MK@@;$(GPSEE_SRC_DIR)/outside.mk;g'\
+	< gpsee-config.template > gpsee-config
+	chmod 755 gpsee-config
+

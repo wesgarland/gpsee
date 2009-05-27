@@ -35,7 +35,7 @@
 
 /**
  *  @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
- *  @version	$Id:$
+ *  @version	$Id: gpsee_xdrfile.h,v 1.2 2009/05/27 04:51:44 wes Exp $
  *  @date	May 2009
  *  @file	gpsee_xdrfile.h         API for JSXDR implementation using stdio.h FILE API (fwrite()
  *                                      et al.) and kernel API memory mapping when possible
