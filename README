@@ -3,7 +3,7 @@ Thanks for downloading GPSEE!
 Please visit the wiki at http://kenai.com/projects/gpsee/pages/Home for the
 most recent documentation and build instructions.
 
-GPSEE - ("gyspy") - the General Purpose SpiderMonkey Embedding Ecosystem.
+GPSEE - ("gypsy") - the General Purpose SpiderMonkey Embedding Ecosystem.
 
    GPSEE augments Mozilla's SpiderMonkey JavaScript interpreter.
    Designed to allow modular addition of custom objects and classes
@@ -65,10 +65,29 @@ Building GPSEE
 
      * These directions assume a certain level of familiarity with your
        development toolchain and operating system. If these directions
-       don't make sense to you, find somebody locally (e.g. your
-       sysadmin) who can help.
-     _________________________________________________________________
+       don't make sense to you, find somebody locally (e.g. your sysadmin)
+       who can help.
+     __________________________________________________________________
 
+   Contents
+     * 1 Release Notes
+     * 2 System Requirements
+     * 3 Getting GPSEE
+
+     * 3.1 Summary
+
+     4 Getting SpiderMonkey
+     * 4.1 Summary
+
+     5 Building SpiderMonkey
+     * 5.1 Summary
+
+     6 Building GPSEE
+     * 6.1 Summary
+
+     7 I don't have root
+
+     8 What Now?
 
                                  Release Notes
 
@@ -81,11 +100,11 @@ Building GPSEE
    2008).
 
    Additionally, our last round of testing on Mac OS/X Leopard (December
-   2007) had problems with dylib paths. This was not a problem then, as
-   we simply linked all our libraries statically on Mac. Now that we have
-   DSO native modules, this may no longer be a reasonable solution. If
-   you are trying to build on Mac, you may need to do some Makefile
-   tweaking. Mac Developer/Build-System Feedback Sought.
+   2007) had problems with dylib paths. This was not a problem then, as we
+   simply linked all our libraries statically on Mac. Now that we have DSO
+   native modules, this may no longer be a reasonable solution. If you are
+   trying to build on Mac, you may need to do some Makefile tweaking. Mac
+   Developer/Build-System Feedback Sought.
 
                               System Requirements
 
@@ -93,9 +112,22 @@ Building GPSEE
           + Mac OS/X 10.5 and Cygwin should work, but are untested
      * gcc 3.4 or better
      * GNU make 3.8 or better
+     * GNU autoconf-2.13 (exactly 2.13), named autoconf-2.13
      * NSPR (Netscape Portable Runtime) 4.7 or better
      * SpiderMonkey 1.8.1 (or better) souce code
+     * NCurses or Solaris Curses (if you want to use the curses module
+       or jsie.js)
+     * Typical shell tools: awk, sed, grep, tr, mv, cp...
      * Any dependencies of above requirements.
+
+If building on Solaris
+
+   Until Mozilla lands bug 475654, you will need to apply this patch to
+   allow SpiderMonkey to build with the Sun-supplied NSPR. From your
+   tracemonkey directory, invoke /usr/sfw/bin/gpatch -p1 <
+   /path/to/downloaded_file. You will also need NSPR 4.7 or better, which
+   is supplied with Sun package SUNWpr, patch level -17 or better, of
+   patch 119213 (or 119214 for Solaris x86).
 
                                  Getting GPSEE
 
@@ -106,29 +138,29 @@ Summary
 
      * Don't copy: think
 
- [~]$ mkdir -p hg/gpsee
- [~]$ cd hg/gpsee
- [~/hg/gpsee]$ hg clone
+ [~]$ mkdir hg
+ [~]$ cd hg
+ [~/hg/gpsee]$ hg clone http://kenai.com/hg/gpsee~src
  [~/hg/gpsee]$ cd
 
-                             Getting SpiderMonkey
+                              Getting SpiderMonkey
 
    If your operating system shipped with a version of SpiderMonkey, it is
    almost certainly unsuitable for use with GPSEE. GPSEE builds use JSAPI
-   1.8.1 (unreleased), and require specific information about
-   SpiderMonkey which is only provided by the SpiderMonkey build system.
-   That's okay: GPSEE will install its own JSAPI libraries and headers,
-   where they shouldn't interfere with anything else.
+   1.8.1 (unreleased), and require specific information about SpiderMonkey
+   which is only provided by the SpiderMonkey build system. That's okay:
+   GPSEE will install its own JSAPI libraries and headers, where they
+   shouldn't interfere with anything else.
 
    You can follow Mozilla's directions for getting the latestest
    SpiderMonkey code, or you can download the jsapi-gpsee tar ball from
    our Kenai downloads page. Since Mozilla's mercurial repository is
    always in a state of flux, it is possible that recent changes will
-   break GPSEE. The jsapi-gpsee tar ball is "known to work", however we
-   do encourage people to try the latest, bleeding-edge code from
-   Mozilla's tracemonkey tree -- their quality control is excellent. The
-   most likely candidate for breakage is the MozShell module, which can
-   be disabled in the GPSEE Makefile.
+   break GPSEE. The jsapi-gpsee tar ball is "known to work", however we do
+   encourage people to try the latest, bleeding-edge code from Mozilla's
+   tracemonkey tree -- their quality control is excellent. The most likely
+   candidate for breakage is the MozShell module, which can be disabled in
+   the GPSEE Makefile.
 
    If you downloaded a tar ball rather than cloning an hg repository, you
    will need to untar it before building SpiderMonkey.
@@ -137,20 +169,20 @@ Summary
 
      * Don't copy: think
 
- [~]$ mkdir -p hg/gpsee
- [~]$ cd hg/tracemonkey
- [~/hg/tracemonkey]$ hg clone
+ [~]$ mkdir hg
+ [~]$ cd hg
+ [~/hg/tracemonkey]$ hg clone http://hg.mozilla.org/tracemonkey
  [~/hg/tracemonkey]$ cd
 
                              Building SpiderMonkey
 
-   In the GPSEE distribution tree, you will find a spidermonkey
-   directory, with a local_config.mk.sample file. Copy that to
-   local_config.mk and edit it to suit your system. The most important
-   variable to change is SPIDERMONKEY_SRC -- this is the fully-qualified
-   path to the js/src directory in your SpiderMonkey source code tree.
+   In the GPSEE distribution tree, you will find a spidermonkey directory,
+   with a local_config.mk.sample file. Copy that to local_config.mk and
+   edit it to suit your system. The most important variable to change is
+   SPIDERMONKEY_SRC -- this is the fully-qualified path to the js/src
+   directory in your SpiderMonkey source code tree.
 
-   Once you are satisfied this file is correct, make build from the GPSEE
+   When you are satisfied this file is correct, make build from the GPSEE
    spidermonkey directory. This will configure, and build SpiderMonkey
    based on the spidermonkey/local_config.mk file you just customized.
 
@@ -158,6 +190,9 @@ Summary
    installation directory, give that directory appropriate permissions,
    then install SpiderMonkey in it by running make install from the
    spidermonkey directory.
+
+   If you have problems building SpiderMonkey as described, you can query
+   the build system with make build_debug; that may offer clues.
 
 Summary
 
@@ -170,7 +205,7 @@ Summary
  # ^D
  [~/hg/gpsee/spidermonkey]$ make install
 
-                                Building GPSEE
+                                 Building GPSEE
 
      * edit local_config.mk if you want to change your GPSEE install
        location. Default is /usr/local/gpsee, except for Darwin
@@ -188,9 +223,12 @@ Summary
      * Don't copy: think
 
  [~/hg/gpsee/spidermonkey]$ su
- # mkdir -p /usr/local/gpsee
- # chown wes:coders /usr/local/gpsee
+ # mkdir -p /usr/local/gpsee/bin
+ # mkdir -p /usr/local/gpsee/libexec
+ # chown -R wes:coders /usr/local/gpsee
  # chmod 775 /usr/local/gpsee
+ # chmod 775 /usr/local/gpsee/bin
+ # chmod 775 /usr/local/gpsee/libexec
  # ln -s /usr/local/gpsee/bin/gsr /usr/bin/gsr
  # ^D
  [~/hg/gpsee]$ make install
@@ -199,9 +237,8 @@ Summary
 
    That's unfortunate. You can install GPSEE in your home directory by
    editing local_config.mk appropriately, however you will have to edit
-   any externally-sourced GPSEE scripts which run [57]gsr in file
-   interpreter mode so that the shebang (#! line) correctly identifies
-   your build.
+   any externally-sourced GPSEE scripts which run gsr in file interpreter
+   mode so that the shebang (#! line) correctly identifies your build.
 
                                    What Now?
 
