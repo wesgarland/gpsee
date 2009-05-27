@@ -33,13 +33,13 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.2 2009/03/31 15:13:57 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.3 2009/05/27 04:31:41 wes Exp $";
 
 /**
  *  @file 	gpsee_unix.c		Functions for UNIX world normally provided by SureLynx libs.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_unix.c,v 1.2 2009/03/31 15:13:57 wes Exp $
+ *  @version	$Id: gpsee_unix.c,v 1.3 2009/05/27 04:31:41 wes Exp $
  */
 
 #include "gpsee.h"
@@ -94,10 +94,16 @@ void gpsee_log(signed int pri, const char *fmt, ...)
       break;
     case 1:
       if ((pri == LOG_DEBUG) || (pri == LOG_INFO))
-      {
 	printToStderr = 0;
-	break;
-      }
+      else
+	printToStderr = 1;
+      break;
+    case 2:
+      if (pri == LOG_DEBUG)
+	printToStderr = 0;
+      else
+	printToStderr = 1;
+      break;
     default:
       printToStderr = 1;
       break;
