@@ -41,15 +41,11 @@
  *
  *  @author	Wes Garland, PageMail, Inc.,  wes@page.ca
  *  @date	Jan 2009
- *  @version	$Id: mozshell_module.cpp,v 1.3 2009/05/01 18:57:49 wes Exp $
+ *  @version	$Id: mozshell_module.cpp,v 1.4 2009/05/27 04:45:41 wes Exp $
  */
 
 #define _GPSEE_INTERNALS
 #include <gpsee.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #define GPSEE_DEBUG_MODULE_MAX_OUTPUT_BUFFER_SIZE		1024 * 64  /**< 64K oughtta be long enough for anybody */
 
 #if defined(GPSEE_SUNOS_SYSTEM)
