@@ -37,7 +37,7 @@
  *  @file	gpsee_private.h		Private interfaces for use within GPSEE.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: gpsee_private.h,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_private.h,v 1.3 2009/05/27 04:51:44 wes Exp $
  */
 
 #include "jsapi.h"
