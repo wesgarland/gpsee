@@ -32,39 +32,47 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-HOSTNAME		?= $(shell hostname)
-GPSEE_LIBNAME		= gpsee
 
-# Compilation tools
-CC		= gcc
-CXX		= g++
-LD		= gcc -shared
-LEX		?= lex
-YACC		?= yacc
-CPP		?= gcc -E
-AR		?= ar
-AR_RU		?= $(AR) -ru
-SO_AR		?= $(LD) $(LDFLAGS) -o
-RANLIB		?= ranlib
-MAKEDEPEND	?= gcc -E -MM -MG
+## @file	Makefile	Makefile to build the Mozilla JS Shell with GPSEE. 
+##				Requires that GPSEE already be built and installed.
+## @author	Wes Garland, PageMail, Inc., wes@page.ca
+## @date	May 2009
+## @version	$Id: Makefile,v 1.1 2009/05/27 04:16:27 wes Exp $
 
-# Shell tools
-CP		?= cp -f
-MV		?= mv -f
-RM		?= rm -f
-MKDIR		?= mkdir -p
-GREP		?= grep
-CHMOD		?= chmod
-CHOWN		?= chown
-AWK		?= awk
-TR		?= tr
-SED		?= sed
+top: gpsee-js
 
-# File extensions; EXE_EXT includes dot if required
-OBJ_EXT		?=o
-EXE_EXT		?=
-LIB_EXT		?=a
-SOLIB_EXT	?=so
+GPSEE_CONFIG=../../gpsee-config
+include $(shell $(GPSEE_CONFIG) --outside.mk)
 
-ICONV_LIB_NAME	= iconv
-GPSEE_C_DEFINES	+= HAVE_ICONV
+GPSEE_INCLUDE_DIR	?= $(shell $(GPSEE_CONFIG) --includedir)
+SPIDERMONKEY_BUILD	?= $(shell $(GPSEE_CONFIG) --spidermonkey-build)
+SHELL_BUILD		= $(SPIDERMONKEY_BUILD)/shell
+EXTRA_CLEAN_RULE	= clean_shell_build
+GPSEE_JS_CXXFLAGS	= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSEE_CONFIG) --cppflags)
+GPSEE_JS_LDFLAGS	= $(shell $(GPSEE_CONFIG) --ldflags)
+PROGS			= gpsee-js
+
+$(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
+	$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
+	echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+
+$(SHELL_BUILD)/gpsee-js.cpp: gpsee-js.cpp
+	$(CP) gpsee-js.cpp $@
+
+gpsee-js: $(SHELL_BUILD)/gpsee-js.mk
+	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
+	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk "CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
+	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
+
+clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
+	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk clean
+
+
+
+
+
+
+
+
+
+

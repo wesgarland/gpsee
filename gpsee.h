@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.3 2009/05/08 18:18:38 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.4 2009/05/27 04:38:44 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.4  2009/05/27 04:38:44  wes
+ *  Improved build configuration for out-of-tree GPSEE embeddings
+ *
  *  Revision 1.3  2009/05/08 18:18:38  wes
  *  Added fieldSize, offsetOf and gpsee_isFalsy()
  *
@@ -58,6 +61,7 @@
 #endif
 
 #include <jsapi.h>
+#include "gpsee_config.h"
 
 #if !defined(_GPSEE_INTERNALS)
 /** Intercept calls to JS_InitClass to insure proper class naming */
@@ -66,7 +70,7 @@
 # define GPSEE_CLASS_NAME(a)	MODULE_ID "." #a
 # define JS_GetGlobalObject(cx)			deprecated(gpsee_getModuleScope)		/**< @deprecated in favour of gpsee_getModuleScope () */
 # define JS_GetContextPrivate(cx,data)     	deprecated(gpsee_getContextPrivate)		/**< @deprecated in favour of gpsee_getContextPrivate() */
-# define JS_SetContextPrivate(cx,data)      	deprecated(gpsee_setContextPrivate)		/**< @deprecated in favour of gpsee_setContextPrivate() */
+# define JS_SetContextPrivate(cx,data)      	deprecated(gpsee_getContextPrivate)		/**< @deprecated in favour of gpsee_setContextPrivate() */
 #endif
 
 #if defined(JS_THREADSAFE)
@@ -151,6 +155,7 @@ typedef struct
   unsigned int          useCompilerCache:1;     /* Do we use the compiler cache? */
 } gpsee_interpreter_t;
 
+
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
@@ -167,6 +172,8 @@ JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto
 					const char *moduleID);
 JSObject *		gpsee_getModuleObject(JSContext *cx, const char *moduleID);
 const char *		gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
+JSBool 			gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
+JSClass	*		gpsee_getGlobalClass();
 
 /* support routines */
 signed int		gpsee_verbosity(signed int changeBy);
@@ -284,6 +291,8 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <errno.h>
 #  include <limits.h>
 #  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <fcntl.h>
 #  include <sys/wait.h>
 #  include <gpsee_unix.h>
 #  include <stdarg.h>
