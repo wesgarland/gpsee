@@ -38,20 +38,23 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses_module.c,v 1.2 2009/03/31 15:10:36 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.1 2009/05/27 04:48:36 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.2 2009/03/31 15:10:36 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.1 2009/05/27 04:48:36 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
 
-/* BE and LE flavours of UTF-16 do not emit the BOM */
+/** BE and LE flavours of UTF-16 do not emit the BOM. JS Strings are BOM-less and in machine order. */
 #if defined(_BIG_ENDIAN) || (defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDAN)
 # define DEFAULT_UTF_16_FLAVOUR "utf-16BE"
 #else
 # define DEFAULT_UTF_16_FLAVOUR "utf-16LE"
 #endif
+
+/** A neutral character set that anything can be transcoded to/from */
+#define NEUTRAL_CHARSET	"utf-8"
 
 extern JSClass *byteArray_class;
 extern JSClass *byteString_class;
@@ -228,6 +231,46 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
   depth = JS_SuspendRequest(cx);
   cd = iconv_open(targetCharset, sourceCharset);
   JS_ResumeRequest(cx, depth);
+  
+#if !defined(HAVE_IDENTITY_TRANSCODING_ICONV)
+  /* Some iconv() implementations cannot do identity or near-identity transcode operations,
+   * such as transcoding from UTF-16BE to UCS2 or UCS2 to UTF-16. Solaris 10 is an offender.
+   * 
+   * In order to make this less painful for the programmer, we make it more expensive by 
+   * transcoding to/from an intermediate neutral character set, such as UCS4 or UTF-8.
+   */
+  if (cd == (iconv_t)-1)
+  {
+    iconv_t	cd1;
+    iconv_t	cd2; 
+
+    depth = JS_SuspendRequest(cx);
+    if ((cd1 = iconv_open(targetCharset, NEUTRAL_CHARSET)) != (iconv_t)-1)
+      iconv_close(cd1);
+
+    if ((cd2 = iconv_open(NEUTRAL_CHARSET, sourceCharset)) != (iconv_t)-1)
+      iconv_close(cd2);
+    JS_ResumeRequest(cx, depth);
+
+    if (cd1 != (iconv_t)-1 && cd2 != (iconv_t)-1)
+    {
+      JSBool		b;
+      unsigned char	*ibufp;
+      size_t		ibufsz;
+
+      if (transcodeBuf_toBuf(cx, NEUTRAL_CHARSET, sourceCharset, &ibufp, &ibufsz, inputBuffer, inputBufferLength, throwPrefix) == JS_TRUE)
+      {
+	b = transcodeBuf_toBuf(cx, targetCharset, NEUTRAL_CHARSET, outputBuffer_p, outputBufferLength_p, ibufp, ibufsz, throwPrefix);
+	JS_free(cx, ibufp);
+	if (b == JS_TRUE)
+	  return JS_TRUE;
+      }      
+
+      return JS_TRUE;
+    }
+  }
+#endif
+
   if (cd == (iconv_t)-1)
     return gpsee_throw(cx, "%s.transcode: Cannot transcode from %s to %s", throwPrefix, sourceCharset, targetCharset);
 
