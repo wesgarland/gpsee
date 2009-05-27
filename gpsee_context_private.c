@@ -40,7 +40,7 @@
  *						similar functionality.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_context_private.c,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_context_private.c,v 1.2 2009/05/27 04:36:56 wes Exp $
  *
  *  @note	If anything (class, module, etc) in the embedding makes use of this mechanism for context-private
  *		storage, *everything* must be make use it for content-private storage.
@@ -49,7 +49,7 @@
  *		for JS_SetContextCallback -- they probably don't work as expected.
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.1 2009/03/30 23:55:43 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.2 2009/05/27 04:36:56 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -136,7 +136,7 @@ JSBool gpsee_contextCallback(JSContext *cx, uintN contextOp)
  *  a segment of memory that is unique across (cx,id). The first time a particular
  *  segment of memory is returned, it is initialized to all-zeroes.
  *
- *  @param	The context
+ *  @param	cx 		A JavaScript context. Must be in a request.
  *  @param	id		A unique non-zero number identifying the storage owner.
  *				Convention says	that id for module-context is a static variable set to MODULE_ID, 
  *				and that id for class-context is the static class pointer (clasp).
@@ -174,8 +174,6 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
   size_t			i;
   void				*retval;
   gpsee_context_private_t 	*hnd;
-
-  JS_BeginRequest(cx);			/* enforces correct cx thread so we can do without locking */
 
   hnd = JS_GetContextPrivate(cx);
   if (!hnd)
@@ -222,7 +220,6 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
     retval = cb;
 
   out:
-  JS_EndRequest(cx);
   return retval;
 }	
 
