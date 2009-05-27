@@ -32,39 +32,27 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-HOSTNAME		?= $(shell hostname)
-GPSEE_LIBNAME		= gpsee
+#
+# Generic Makefile for building GPSEE programs outside the GPSEE tree. 
+# Not mandatory, but allows third-party programs the option of getting 
+# build system information from GPSEE rather than their own autoconf.
+#
+# If gpsee-config is not on the path, it should be specified on the make
+# command line, e.g. make GPSEE_CONFIG=/opt/gpsee/bin/gpsee-config
+#
 
-# Compilation tools
-CC		= gcc
-CXX		= g++
-LD		= gcc -shared
-LEX		?= lex
-YACC		?= yacc
-CPP		?= gcc -E
-AR		?= ar
-AR_RU		?= $(AR) -ru
-SO_AR		?= $(LD) $(LDFLAGS) -o
-RANLIB		?= ranlib
-MAKEDEPEND	?= gcc -E -MM -MG
+GPSEE_CONFIG 	?= gpsee-config
+GPSEE_SRC_DIR	?= $(shell $(GPSEE_CONFIG) --gpsee-src)
+STREAM		?= $(shell $(GPSEE_CONFIG) --stream)
 
-# Shell tools
-CP		?= cp -f
-MV		?= mv -f
-RM		?= rm -f
-MKDIR		?= mkdir -p
-GREP		?= grep
-CHMOD		?= chmod
-CHOWN		?= chown
-AWK		?= awk
-TR		?= tr
-SED		?= sed
+include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
+include $(GPSEE_SRC_DIR)/system_detect.mk
+-include $(GPSEE_SRC_DIR)/local_config.mk
+include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
+include $(GPSEE_SRC_DIR)/build.mk
+ifneq ($(MAKECMDGOALS),depend)
+-include depend.mk
+endif
 
-# File extensions; EXE_EXT includes dot if required
-OBJ_EXT		?=o
-EXE_EXT		?=
-LIB_EXT		?=a
-SOLIB_EXT	?=so
-
-ICONV_LIB_NAME	= iconv
-GPSEE_C_DEFINES	+= HAVE_ICONV
+debug:
+	@echo STREAM=$(STREAM)

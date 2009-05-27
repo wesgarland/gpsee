@@ -6,8 +6,8 @@ ifneq ($(MAKECMDGOALS),all-clean)
 ifneq ($(MAKECMDGOALS),build_debug)
 depend depend.mk: 	XFILES=$(sort $(filter %.c %.cc %.cpp %.cxx,$(DEPEND_FILES)))
 depend depend.mk: 	Makefile $(DEPEND_FILES)
-			@echo " * Building dependencies for: $(XFILES)"
-			$(if $(XFILES), $(MAKEDEPEND) $(MDFLAGS) $(CPPFLAGS) -DMAKEDEPEND $(XFILES) > $@)
+			$(if $(XFILES), @echo " * Building dependencies for: $(XFILES)")
+			$(if $(XFILES), @$(MAKEDEPEND) $(MDFLAGS) $(CPPFLAGS) -DMAKEDEPEND $(XFILES) > $@)
 			@touch depend.mk
 endif # goal = build_debug
 endif # goal = all-clean
@@ -44,6 +44,7 @@ ifneq (X$(EXPORT_LIBS)$(EXPORT_LIBEXEC_OBJS),X)
 		@make install-solibs
 endif
 		@make install-nodeps
+		@make srcmaint
 
 install-nodeps:
 		@$(if $(XPROGS),[ -d $(BIN_DIR) ] || mkdir -p $(BIN_DIR))
@@ -57,7 +58,9 @@ install-nodeps:
 srcmaint:	XLIBS =$(strip $(filter %.$(LIB_EXT),$(EXPORT_LIBS)))
 srcmaint:	XHEADERS =$(strip $(EXPORT_HEADERS))
 srcmaint:	$(strip $(filter %.$(LIB_EXT),$(EXPORT_LIBS))) $(EXPORT_HEADERS)
+ifneq (X,X$(STATICLIB_DIR))
 		@$(if $(XLIBS), [ -d $(STATICLIB_DIR) ] || mkdir -p $(STATICLIB_DIR))
 		$(if $(XLIBS), $(CP) $(XLIBS) $(STATICLIB_DIR))
+endif
 		@$(if $(XHEADERS), [ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR))
 		$(if $(XHEADERS), $(CP) $(XHEADERS) $(INCLUDE_DIR))
