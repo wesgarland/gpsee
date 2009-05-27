@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.2 2009/04/01 22:30:55 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.3 2009/05/27 04:23:01 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -72,7 +72,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.2 2009/04/01 22:30:55 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.3 2009/05/27 04:23:01 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -637,8 +637,8 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
   if (snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
   {
     /* Report paths over PATH_MAX */
-    gpsee_log(SLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%d) bytes",
-              filename, PATH_MAX);
+    gpsee_log(SLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%lu) bytes",
+              filename, (unsigned long)PATH_MAX);
     return -1;
   }
 
@@ -686,7 +686,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   {
     if (!(scriptFile = fopen(scriptFilename, "r")))
     {
-      gpsee_log(SLOG_NOTICE, "could not open script \"%s\" %m", scriptFilename);
+      gpsee_log(SLOG_NOTICE, "could not open script \"%s\" (%m)", scriptFilename);
       *errorMessage = "could not open script";
       return -1;
     }
@@ -719,7 +719,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     {
       /* We have already opened the script file, I can think of no reason why stat() would fail. */
       useCompilerCache = 0;
-      gpsee_log(SLOG_EMERG, "could not stat() script \"%s\" %m", scriptFilename);
+      gpsee_log(SLOG_EMERG, "could not stat() script \"%s\" (%m)", scriptFilename);
       goto cache_read_end;
     }
 
