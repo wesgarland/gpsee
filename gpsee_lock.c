@@ -149,6 +149,22 @@ js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
 }
 #pragma asm full_optimization js_CompareAndSwap
 
+#elif defined(__GNUC__) && defined(__x86_64__)
+static JS_ALWAYS_INLINE int
+NativeCompareAndSwap(jsword *w, jsword ov, jsword nv)
+{
+    unsigned int res;
+
+    __asm__ __volatile__ (
+                          "lock\n"
+                          "cmpxchgq %2, (%1)\n"
+                          "sete %%al\n"
+                          "movzbl %%al, %%eax\n"
+                          : "=a" (res)
+                          : "r" (w), "r" (nv), "a" (ov)
+                          : "cc", "memory");
+    return (int)res;
+}
 #elif defined(SOLARIS) && defined(sparc) && defined(ULTRA_SPARC)
 
 static JS_INLINE int __attribute__((unused))
