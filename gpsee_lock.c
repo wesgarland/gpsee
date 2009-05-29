@@ -151,7 +151,7 @@ js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
 
 #elif defined(__GNUC__) && defined(__x86_64__)
 static JS_ALWAYS_INLINE int
-NativeCompareAndSwap(jsword *w, jsword ov, jsword nv)
+js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
 {
     unsigned int res;
 
