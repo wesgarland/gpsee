@@ -1,0 +1,247 @@
+/** @namespace 		gpsee.module.ca.page.moz-shell
+ *  @description 	<p>Module which provides Mozilla's JS Shell functions. Not suitable
+ *			for production work -- may be unstable. Module implemented by
+ *			wrapping js.cpp with preprocessor macros, redirecting stdout/stderr
+ *			to temp files which are then read back into strings, and a few
+ *			other nasty tricks.  Output is done with JavaScript functions
+ *			debugPrint and errorPrint, which are located on <pre>this</pre>'s scope
+ *			chain.
+ *			</p><p>
+ * 			Documentation is up to date for 1.8.1-pre Feb 2009 shell.
+ *			</p>
+ *
+ *  @author		Wes Garland, PageMail, Inc., wes@page.ca
+ */
+
+var MozShell = function() {
+
+/** Get or set JavaScript version number 
+ *  @param	number
+ */
+function version(){};
+
+/** Get or toggle JavaScript options 
+ *  @param	option(s)
+ */
+function options(){};
+
+/** Load files named by string arguments 
+ *  @param	filename
+ */
+function load(['foo.js' ...]){};
+
+/** Read a single line from stdin 
+ */
+function readline(){};
+
+/** Evaluate and print expressions 
+ *  <p>
+ *    <b>note</b>:	Implementation is different than GPSEE's built-in (global) print, but semantics
+ *			should be close enough to not matter so long as you want to infact redirect the
+ *			output of this function like all others in this module.
+ *  </p>
+ *  @param	expression(s)
+ */
+function print([exp ...]){};
+
+/** Display usage and help messages
+ *  @param	function 	[optional] Function about which print help.
+ */
+function help([name ...]){};
+
+/** Quit the shell */
+function quit(){};
+
+/** Run the garbage collector */
+function gc(){};
+
+/**
+ *  Wrapper for JS_SetGCParameter.
+
+ *  @param	name	either 'maxBytes' or 'maxMallocBytes'
+ *  @param	value	must be convertable to a positive uint32
+ */
+function gcparam(name, value){};
+
+/**   Count the number of live GC things in the heap or things reachable from
+ * function start when it is given and is not null. kind is either 'all'
+ * (default) count all things or one of 'object', 'double', 'string', 'function',
+ * 'qname', 'namespace', 'xml' to count only things of that kind
+ *
+ *  @param	start	[optional if no kind] a function
+ *  @param	kind	[optional] Type of GC things to count
+ */
+function countHeap(start, kind){};
+
+/** How zealous the garbage collector should be 
+ *  @param	level	0 = normal, 1 = gc often, 2 = gc all the time
+ */
+function gczeal(level){};
+
+/** Trap bytecode execution 
+ *  @param	fun [optional if no pc] 	function
+ *  @param	pc [optional if not exp]	program counter
+ *  @param	exp				expression
+ */
+function trap(fun, pc, exp){};
+
+/** Remove a trap 
+ *  @param fun			function
+ *  @param [optional] pc	program counter
+ */
+function untrap(fun[, pc]){};
+
+/** Map line number to PC 
+ *  @param fun [optional]
+ *  @param pc
+ */
+function line2pc(fun, line){};
+
+/** Map PC to line number 
+ *  @param fun
+ *  @param pc [optional]
+ */
+function pc2line(fun, pc){};
+
+/** Query/set script stack quota 
+ *  @param number
+ */
+function stackQuota(){};
+
+/** Check if strings are UTF-8 encoded 
+ */
+function stringsAreUTF8(){};
+
+/** Perform UTF-8 tests (modes are 1 to 4) 
+ */
+function testUTF8(mode){};
+
+/** Throw an error from JS_ReportError 
+ */
+function throwError(){};
+
+/** Disassemble functions into bytecodes 
+ *  @param 	 fun [optional]
+ */
+function dis(){};
+
+/** Disassemble script file into bytecodes 
+ *  @param filename		Filename of script to disassemble.
+ */
+function disfile(filename){};
+
+/** Disassemble functions with source lines 
+ *  @param	func
+ */
+function dissrc(fun){};
+
+/**   
+ *  Interface to JS_DumpHeap with output sent to file.
+ *
+ *  @param	filename	[optional if no start]
+ *  @param	start		[optional if no toFind]
+ *  @param	toFind		[optional if no maxDepth]
+ *  @param	maxDepth	[optional if no toIgnore]
+ *  @param	toIgnore	[optional]
+ */
+function dumpHeap(filename, start, toFind, maxDepth, toIgnore){};
+
+/** Show source notes for functions 
+ *  @param fun
+ */
+function notes(fun){};
+
+/** Turn tracing on or off 
+ *  @param toggle	true or false
+ */
+function tracing(toggle){};
+
+/** Dump 'arena', 'atom', 'global' stats 
+ *  @param	string(s)
+ */
+function stats([string ...]){};
+
+/** Show build date and time */
+function build(){};
+
+/** Clear properties of object 
+ *  @param	obj [optional] object
+ */
+function clear([obj]){};
+
+/** Internalize str in the atom table 
+ *  @param	str	String to internalize
+ */
+function intern(str){};
+
+/** Clone function object
+ *  @param	fun	Function to clone
+ *  @param	scope	[optional] scope
+ */
+function clone(fun[, scope]){};
+
+/** Seal object, or object graph if deep 
+ *
+ *  @param	object
+ *  @param	deep	[optional] true or false
+
+ */
+function seal(obj[, deep]){};
+
+/** Get the property descriptors for obj 
+ *  @param obj
+ */
+function getpda(obj){};
+
+/** Get script line extent 
+ *  @param obj
+ */
+function getslx(obj){};
+
+/** Testing hook for JS_ValueToInt32
+ *  @param	n	number
+ */
+function toint32(n){};
+
+/** Evaluate s in optional sandbox object o.
+ *  @param	s	String of JavaScript to execute.
+ *  @param	o	Sandbox object
+ *  @returns  	<ul>
+ *  		  <li>if (s == '' && !o), returns new o with eager standard classes.
+ *  		  <li>if (s == 'lazy' && !o), return new o with lazy standard classes
+ *		</ul>
+ */
+function evalcx(s[, o]){};
+  
+/** Get the shape of object. Object shape is an implementation
+ *  detail in SpiderMonkey which describes what properties exist. 
+ *  Objects of the same shape share details in the property cache.
+ *
+ *  @param obj		Object to examine
+ */
+function shapeOf(obj){};
+
+/** Pause execution.
+ *  @param	dt	Seconds to sleep
+ */
+function sleep(dt){};
+
+/** Call functions concurrently (ignoring errors).
+ *
+ *  @param	fns	An array containing functions to run.
+ */
+function scatter(fns){};
+
+/** Read filename into returned string.
+ *  @param	filename	Filename to read, relative to the runing directory.
+ */
+function snarf(filename){};
+
+/**
+ *  Get/Set the limit in seconds for the execution time for the current context.
+ *  A negative value (default) means that the execution time is unlimited.
+ * 
+ *  @param	seconds		Time limit
+ */
+function timeout(seconds){};
+}
