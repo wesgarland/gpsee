@@ -799,7 +799,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       /* Compile script */
       *script = JS_CompileFile(cx, scope, scriptFilename);
     }
-    if (!script)
+    if (!*script)
     {
       *errorMessage = "could not compile script";
       return -1;
