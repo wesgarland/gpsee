@@ -196,7 +196,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 			  const char *throwPrefix)
 {
   iconv_t	cd;
-  const char 	*inbuf;
+  char *inbuf;
   char	*outbuf, *outbufStart;
   size_t	inbytesleft, outbytesleft;
   size_t	allocBytes, result;
@@ -295,7 +295,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 #endif
 
   inbytesleft  = inputBufferLength;
-  inbuf 	 = (const char *)inputBuffer;
+  inbuf 	 = (char *)inputBuffer;
   outbuf	 = outbufStart;
 
   do
@@ -344,7 +344,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
       outbufStart = newBuf;
   }
 
-  *outputBuffer_p = outbufStart;
+  *outputBuffer_p = (unsigned char*)outbufStart;
   return JS_TRUE;
 }
 /**
@@ -387,7 +387,7 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
       return JS_FALSE;
     }
 
-    if (JS_EncodeCharacters(cx, string_chars, string_length, *bufp, lenp) == JS_FALSE)
+    if (JS_EncodeCharacters(cx, string_chars, string_length, (char*)*bufp, lenp) == JS_FALSE)
     {
       JS_free(cx, *bufp);
       return JS_FALSE;
@@ -406,3 +406,112 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
     return transcodeBuf_toBuf(cx, charset, DEFAULT_UTF_16_FLAVOUR, bufp, lenp, (const unsigned char *)string_chars, string_length * 2, throwPrefix);
 #endif
 }
+
+/** Implements Binary::length getter.
+ *
+ *  @param	cx		JavaScript context
+ *  @param	obj		A ByteString object
+ *  @param	id		unused
+ *  @param	vp		The length, on successful return.
+ *  @returns	JS_TRUE on success; otherwise JS_FALSE and a pending exception is set.
+ */
+JSBool byteThing_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp, const char const * className)
+{
+  byteThing_handle_t *hnd = JS_GetInstancePrivate(cx, obj, byteString_clasp, NULL);
+
+  if (!hnd)
+    return gpsee_throw(cx, MODULE_ID "%s.length.get.invalid: property getter applied the wrong object type", className);
+
+  if (((jsval)hnd->length == hnd->length) && INT_FITS_IN_JSVAL(hnd->length))
+  {
+    *vp = INT_TO_JSVAL(hnd->length);
+    return JS_TRUE;
+  }
+
+  return JS_NewNumberValue(cx, hnd->length, vp);
+}
+
+/** Coerce a jsval to a size_t. TODO I would like to see more advanced argument processing available as part of GPSEE's core module support.
+ *
+ *  TODO remove methodName?
+ *
+ *  @returns  NULL on success; pointer to error message on error
+ */
+const char * byteThing_val2size(JSContext *cx, jsval val, size_t *retval, const char const * methodName)
+{
+  //static char errmsg[256];
+  jsdouble temp;
+
+  /* TODO more detailed error reporting! */
+  if (!JS_ValueToNumber(cx, val, &temp) || !JSDOUBLE_IS_FINITE(temp))
+  {
+    return "invalid type";
+  }
+
+  /* Reject negative values */
+  if (temp < 0.0)
+    return "negative number is invalid";
+
+  /* Ensure value fits into size_t */
+  if (temp != (size_t)temp)
+  {
+    return "invalid value";
+  }
+
+  /* Success! */
+  *retval = (size_t)temp;
+  return NULL;
+}
+
+/** Coerce a function argument to a size_t. TODO I would like to see more advanced argument processing available as part of
+ *  GPSEE's core module support.
+ *
+ *  @param      cx            Your JSContext
+ *  @param      argc          Number of JSFastNative arguments
+ *  @param      vp            JSAPI stack
+ *  @param      retval          Address at which to store the result
+ *  @param      argn          Index of argument to process
+ *  @param      mayDefault    Whether or not this argument has a default value
+ *  @param      defaultSize   A default value for this argument
+ *  @param      methodName    Used for error reporting
+ *
+ *  @returns    JS_TRUE on success
+ *
+ *  This function is to be called from within the execution of a JSFastNative. It will prepare an argument of type size_t,
+ *  and is very convenient in that it is quite thorough and throws exceptions in a uniform way.
+ */
+JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, uintN argn, size_t min, size_t max,
+                          JSBool mayDefault, size_t defaultSize, const char const *methodName)
+{
+  const char * errmsg;
+  jsval * argv = JS_ARGV(cx, vp);
+
+  /* Is the argument vector shorter than expected? */
+  if (argn >= argc)
+  {
+    /* Is there a default value to fall back on? */
+    if (!mayDefault)
+    {
+      return gpsee_throw(cx, "%s.arguments.%d: too few arguments", methodName, argn);
+    }
+    /* Default */
+    *retval = defaultSize;
+    return JS_TRUE;
+  }
+
+  /* Try to convert jsval to size_t */
+  if ((errmsg = byteThing_val2size(cx, argv[argn], retval, methodName)))
+    return gpsee_throw(cx, "%s.arguments.%d: %s", methodName, argn, errmsg);
+
+  /* Check lower bound */
+  if (*retval < min)
+    return gpsee_throw(cx, "%s.arguments.%d.underflow: expected value not less than %u, got %u", methodName, argn, min, *retval);
+
+  /* Check upper bound */
+  if (*retval > max)
+    return gpsee_throw(cx, "%s.arguments.%d.overflow: expected value not greater than %u, got %u", methodName, argn, max, *retval);
+
+  /* Success! */
+  return JS_TRUE;
+}
+

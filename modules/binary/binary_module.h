@@ -63,6 +63,11 @@ JSBool 		transcodeBuf_toBuf	(JSContext *cx, const char *targetCharset, const cha
 					 const char *throwPrefix);
 JSObject	*byteString_fromCArray	(JSContext *cx, const unsigned char *buffer, size_t length, JSObject *obj, int stealBuffer);
 JSObject 	*byteArray_fromCArray	(JSContext *cx, const unsigned char *buffer, size_t length, JSObject *obj, int stealBuffer);
+JSBool          byteThing_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp, const char const * className);
+/* TODO I would like to see more advanced argument processing available as part of GPSEE's core module support. */
+const char * byteThing_val2size(JSContext *cx, jsval val, size_t *rval, const char const * methodName);
+JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *rval, uintN argn, size_t min, size_t max,
+                          JSBool mayDefault, size_t defaultSize, const char const *methodName);
 
 extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
