@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.3 2009/05/27 04:51:45 wes Exp $ 
+## @version	$Id: Makefile,v 1.4 2009/06/11 17:01:27 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -79,7 +79,7 @@ JS_CONFIG ?= $(JS_CONFIG_DIR)/js-config
 
 # Debug build?
 ifneq (X,X$(filter $(BUILD),DEBUG))
-CONFIGURE_OPTIONS       += --enable-debug
+CONFIGURE_OPTIONS       += --enable-debug --disable-optimize
 endif
 
 # Debug or Debug-Release build? Enable ability for zealous GC
@@ -134,6 +134,11 @@ $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_co
 	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
+reconfigure::
+	rm $(SPIDERMONKEY_SRC)/configure
+	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
+	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
+
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
 ifneq ($(QUIET),True)
@@ -186,14 +191,14 @@ build_debug:
 	@echo
 	@echo "This is a $($(BUILD)) build."
 	@echo "It will be installed under $(JSAPI_PREFIX)"
-	@echo " - libmozjs.$(SO_SUFFIX) will be installed in $(LIB_DIR)"
+	@echo " - libmozjs will be installed in $(LIB_DIR)"
 	@echo " - headers will be installed in $(INCLUDE_DIR)"
 	@echo 
 	@echo "Make will be invoked in $(SPIDERMONKEY_BUILD) as:"
 	@echo "  $(SM_MAKE)"
 	@echo
 	@echo "Configure will be invoked as:"
-	@echo "./configure $(CONFIGURE_OPTIONS)"
+	@echo "$(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
 
 $(SPIDERMONKEY_SRC)/configure.in:
