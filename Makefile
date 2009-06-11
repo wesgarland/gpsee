@@ -36,7 +36,7 @@
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.8 2009/05/27 04:38:44 wes Exp $
+## @version	$Id: Makefile,v 1.9 2009/06/11 16:58:28 wes Exp $
 
 # BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
 # STREAM	unix | surelynx | apr
@@ -46,7 +46,7 @@ export STREAM	= unix
 SUBMAKE_QUIET	= False
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		= pairodice file
+IGNORE_MODULES		= pairodice file ffi
 INTERNAL_MODULES 	= vm system
 
 top: all
@@ -78,7 +78,7 @@ AR_MODULE_FILES		= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(
 SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(SOLIB_EXT))
 
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
-PROGS		 	= gsr
+PROGS		 	= gsr minimal
 
 spidermonkey/vars.mk:
 	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=$(SUBMAKE_QUIET) install
@@ -101,7 +101,7 @@ GPSEE_OBJS		+= gpsee_$(STREAM).o
 endif
 
 AUTOGEN_HEADERS		+= modules.h gpsee_config.h
-EXPORT_PROGS	 	= $(PROGS) gpsee-config
+EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
@@ -129,8 +129,6 @@ gsr-link:
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
 
 gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\" -DDSO_EXTENSION=\"$(SOLIB_EXT)\"
-
-$(PROGS): $(addsuffix .o,$(PROGS))
 
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X) 
 DEPEND_FILES_X	+= $(SO_MODULE_FILES:.$(SOLIB_EXT)=.X)) $(wildcard $(AR_MODULE_FILES:.$(LIB_EXT)=.X))
