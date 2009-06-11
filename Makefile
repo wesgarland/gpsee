@@ -112,7 +112,7 @@ LOADLIBES		+= -l$(GPSEE_LIBNAME)
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
-all install: $(GPSEE_OBJS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+build all install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
 install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)

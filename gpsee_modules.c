@@ -422,8 +422,8 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
   module = *moduleSlot;
   module->slot = moduleSlot - jsi->modules;
 
-  dprintf("allocated new module slot for %s in slot %i at 0x%p\n", 
-	  cname ? moduleShortName(cname) : "program module", moduleSlot - jsi->modules, module);
+  dprintf("allocated new module slot for %s in slot %ld at 0x%p\n", 
+	  cname ? moduleShortName(cname) : "program module", (long int)(moduleSlot - jsi->modules), module);
 
   if (cname)
   {

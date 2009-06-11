@@ -60,8 +60,44 @@
 # define JS_DEBUG 1	/** Missing in early 1.8.1-pre */
 #endif
 
-#include <jsapi.h>
+
+#if defined(GPSEE_SURELYNX_STREAM)
+# define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
+# define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
+#else
+# define GPSEE_MAX_LOG_MESSAGE_SIZE	1024
+const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
+#endif
+
+#if !defined(PATH_MAX)
+# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
+#endif
+
 #include "gpsee_config.h"
+#if !defined(NO_GPSEE_SYSTEM_INCLUDES)
+# if defined(GPSEE_SURELYNX_STREAM)
+#  include <gpsee_surelynx.h>
+#  include <apr_surelynx.h>
+#  undef __FUNCTION__
+# elif defined(GPSEE_UNIX_STREAM)
+#  define _GNU_SOURCE
+#  include <unistd.h>
+#  include <stdio.h>
+#  include <stdlib.h>
+#  include <string.h>
+#  include <syslog.h>
+#  include <sys/file.h>
+#  include <errno.h>
+#  include <limits.h>
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <fcntl.h>
+#  include <sys/wait.h>
+#  include <stdarg.h>
+# endif
+#endif
+
+#include <jsapi.h>
 
 #if !defined(_GPSEE_INTERNALS)
 /** Intercept calls to JS_InitClass to insure proper class naming */
@@ -264,41 +300,10 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 }
 #endif
 
-#if defined(GPSEE_SURELYNX_STREAM)
-# define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
-# define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
-#else
-# define GPSEE_MAX_LOG_MESSAGE_SIZE	1024
-const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
+#if defined(GPSEE_UNIX_STREAM)
+# include <gpsee_unix.h>
 #endif
-
-#if !defined(PATH_MAX)
-# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
-#endif
-
-#if !defined(NO_GPSEE_SYSTEM_INCLUDES)
-# if defined(GPSEE_SURELYNX_STREAM)
-#  include <gpsee_surelynx.h>
-#  include <apr_surelynx.h>
-#  undef __FUNCTION__
-# elif defined(GPSEE_UNIX_STREAM)
-#  include <stdio.h>
-#  include <unistd.h>
-#  include <stdlib.h>
-#  include <string.h>
-#  include <syslog.h>
-#  include <sys/file.h>
-#  include <errno.h>
-#  include <limits.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#  include <fcntl.h>
-#  include <sys/wait.h>
-#  include <gpsee_unix.h>
-#  include <stdarg.h>
-# endif
-#endif
-
+	
 #include <gpsee_flock.h>
 
 const char *gpsee_makeLogFormat_r(const char *fmt, char *fmtNew);

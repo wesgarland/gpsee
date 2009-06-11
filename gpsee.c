@@ -177,7 +177,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     er_lineno[0] = (char)0;
 
   if (report->tokenptr && report->linebuf)
-    snprintf(er_charno, sizeof(er_charno), "ch %u ", report->tokenptr - report->linebuf);
+    snprintf(er_charno, sizeof(er_charno), "ch %ld ", (long int)(report->tokenptr - report->linebuf));
   else
     er_charno[0] = (char)0;
 

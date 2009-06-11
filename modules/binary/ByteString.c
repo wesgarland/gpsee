@@ -46,6 +46,15 @@
  */
 
 static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.1 2009/05/27 04:51:45 wes Exp $";
+
+#if 0
+#include "gpsee_config.h"
+#if defined(HAVE_MEMRCHR)
+# define _GNU_SOURCE
+# include <string.h> /* unistd.h can poison memrchr somehow on Debian squeeze/sid, maybe others */
+#endif
+#endif
+
 #include "gpsee.h"
 #include "binary_module.h"
 
