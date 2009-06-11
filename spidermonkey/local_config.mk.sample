@@ -51,7 +51,6 @@ BUILD 			?= DEBUG
 
 LIB_DIR			?= $(JSAPI_PREFIX)/lib
 INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
-SO_SUFFIX		?= so
 AUTOCONF		?= autoconf-2.13
 TR			?= tr
 
