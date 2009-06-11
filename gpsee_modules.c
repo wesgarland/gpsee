@@ -747,24 +747,34 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     /* Let's ask Spidermonkey's XDR API for a deserialization context */
     if ((xdr = gpsee_XDRNewFile(cx, JSXDR_DECODE, cache_filename, cache_file)))
     {
-      uint32 ino, size, mtime;
+      uint32 ino, size, mtime, cstrRutf8;
+      /* These JS_XDR*() functions de/serialize (in our case: deserialize) data to/from the underlying cache file */
       /* We match some metadata embedded in the cache file against the source code file as it exists now to determine
        * if the source code file has been changed more recently than its compiler cache file was updated. */
       JS_XDRUint32(xdr, &ino);
       JS_XDRUint32(xdr, &size);
       JS_XDRUint32(xdr, &mtime);
       JS_XDRUint32(xdr, &fho);
-      if ((ino != source_st.st_ino) || (size != source_st.st_size) || (mtime != source_st.st_mtime)
-      ||  (fileHeaderOffset != fho))
+      /* SpiderMonkey has an option to interpret "C strings" (ostensibly, 8-bit character strings passed between
+       * spidermonkey and external code) as UTF-8 (as opposed to some default character encoding I have been un-
+       * able to ascertain.) This option can only be set *before* the instantiation of the SpiderMonkey runtime
+       * singleton, and so is constant during the lifecycle of the main program module. It is thought by Wes that
+       * it may affect the XDR form of a compiled script, although I am not as sure about that. Below, then, we
+       * invalidate any compiler cache resulting from a different "cstrRutf8" setting. */
+      JS_XDRUint32(xdr, &cstrRutf8);
+      /* Compare the results of the deserialization */
+      if (ino != source_st.st_ino || size != source_st.st_size || mtime != source_st.st_mtime
+      ||  fileHeaderOffset != fho || cstrRutf8 != (uint32)JS_CStringsAreUTF8())
       {
         /* Compiler cache invalidated by change in inode / filesize / mtime */
-          gpsee_log(SLOG_DEBUG, "stat() data invalidates cache file \"%s\" versus source code file \"%s\""
-                                " (inode %d %d size %d %d mtime %d %d fho %d %d)",
-                                cache_filename, scriptFilename,
+          gpsee_log(SLOG_DEBUG, "cache file \"%s\" invalidated"
+                                " (inode %d %d size %d %d mtime %d %d fho %d %d cstrRutf8 %d %d)",
+                                cache_filename,
                                 ino, (int)source_st.st_ino,
                                 size, (int)source_st.st_size,
                                 mtime, (int)source_st.st_mtime,
-                                fho, fileHeaderOffset);
+                                fho, fileHeaderOffset,
+                                cstrRutf8, JS_CStringsAreUTF8());
       } else {
         /* Now we attempt to deserialize a JSScript */
         if (!JS_XDRScript(xdr, script))
@@ -799,7 +809,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       /* Compile script */
       *script = JS_CompileFile(cx, scope, scriptFilename);
     }
-    if (!script)
+    if (!*script)
     {
       *errorMessage = "could not compile script";
       return -1;
@@ -824,12 +834,16 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       /* Let's ask Spidermonkey's XDR API for a serialization context */
       if ((xdr = gpsee_XDRNewFile(cx, JSXDR_ENCODE, NULL, cache_file)))
       {
+        /* See above in the deserialization routine for a description of "cstrRutf8." */
+        uint32 cstrRutf8 = JS_CStringsAreUTF8();
         /* We will mark the file with some data about its source code file to aid in detecting whether the source code
          * has changed more recently than it has been recompiled to its cache */
         JS_XDRUint32(xdr, (uint32*)&source_st.st_ino);
         JS_XDRUint32(xdr, (uint32*)&source_st.st_size);
         JS_XDRUint32(xdr, (uint32*)&source_st.st_mtime);
         JS_XDRUint32(xdr, &fileHeaderOffset);
+        /* The return value of JS_CStringsAreUTF8() affects the XDR subsystem */
+        JS_XDRUint32(xdr, &cstrRutf8);
         /* Now we attempt to serialize a JSScript to the compiler cache file */
         if (!JS_XDRScript(xdr, script))
         {

@@ -459,6 +459,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	  break;
 
 	case 'a':
+    case 'C':
 	case 'd':
 	case 'e':
 	case 'J':
@@ -533,8 +534,8 @@ PRIntn prmain(PRIntn argc, char **argv)
 #if defined(GPSEE_DARWIN_SYSTEM)
     script_environ = (char * const *)_NSGetEnviron();
 #else
-    extern char * const *environ[];
-    script_environ = *environ;
+    extern char **environ;
+    script_environ = (char * const *) *environ;
 #endif
   }
 
