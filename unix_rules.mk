@@ -1,3 +1,4 @@
+ifneq ($(NO_BUILD_RULES),TRUE)
 # Standard targets
 ifneq ($(MAKECMDGOALS),install-nodeps)
 ifneq ($(MAKECMDGOALS),clean)
@@ -64,3 +65,4 @@ ifneq (X,X$(STATICLIB_DIR))
 endif
 		@$(if $(XHEADERS), [ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR))
 		$(if $(XHEADERS), $(CP) $(XHEADERS) $(INCLUDE_DIR))
+endif
