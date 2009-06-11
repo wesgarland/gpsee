@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.6 2009/05/27 04:29:18 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.7 2009/06/11 17:17:10 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.7  2009/06/11 17:17:10  wes
+ *  C strings are now UTF8
+ *
  *  Revision 1.6  2009/05/27 04:29:18  wes
  *  Refactored interpreter creation to allow better GPSEE/JSAPI mapping
  *
@@ -84,7 +87,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.6 2009/05/27 04:29:18 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.7 2009/06/11 17:17:10 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -604,7 +607,9 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   JSRuntime		*rt;
   JSContext 		*cx;
   gpsee_interpreter_t	*interpreter;
-  
+
+  JS_SetCStringsAreUTF8();
+
   interpreter = calloc(sizeof(*interpreter), 1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
@@ -619,8 +624,6 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   /* Create the default context, used for the primordial thread */
   if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript context!");
-
-  JS_CStringsAreUTF8();
 
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))
