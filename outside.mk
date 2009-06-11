@@ -53,6 +53,3 @@ include $(GPSEE_SRC_DIR)/build.mk
 ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
-
-debug:
-	@echo STREAM=$(STREAM)
