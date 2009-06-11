@@ -144,7 +144,7 @@ void capture_outputString(JSContext *cx, JSObject *obj, int isError, const char 
    * when we are in curses mode, etc.
    */
 
-  if (isError == (int)gErrFile)
+  if (isError)
     funName = (char *)"errorPrint";
   else
     funName = (char *)"debugPrint";

@@ -197,7 +197,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 {
   iconv_t	cd;
   const char 	*inbuf;
-  char	*outbuf, *outbufStart;
+  char	        *outbuf, *outbufStart;
   size_t	inbytesleft, outbytesleft;
   size_t	allocBytes, result;
   jsrefcount	depth;
@@ -283,17 +283,6 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     return JS_FALSE;
   }
 
-#if 0
-  /* A different case is when inbuf is NULL or *inbuf is NULL, but outbuf is not NULL and *outbuf is
-   * not NULL. In this case, the iconv function attempts to set cd's conversion state to the initial
-   * state and store a corresponding shift sequence at *outbuf. 
-   */
-  inbuf = NULL;
-  outbuf = outbufStart;
-  outbytesleft = allocBytes;
-  printf ("XXX %i %x %x, %i/%i bytes left\n", iconv(cd, &inbuf, 0, &outbuf, &outbytesleft), outbuf[0], outbuf[1], outbytesleft, allocBytes);
-#endif
-
   inbytesleft  = inputBufferLength;
   inbuf 	 = (const char *)inputBuffer;
   outbuf	 = outbufStart;
@@ -303,7 +292,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     outbytesleft = allocBytes - (outbuf - outbufStart);
 
     depth = JS_SuspendRequest(cx);
-    result = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+    result = iconv(cd, (char **/*GNU has wrong prototype*/)&inbuf, &inbytesleft, &outbuf, &outbytesleft);
     JS_ResumeRequest(cx, depth);
 
     if (result == -1)
@@ -344,7 +333,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
       outbufStart = newBuf;
   }
 
-  *outputBuffer_p = outbufStart;
+  *outputBuffer_p = (unsigned char *)outbufStart;
   return JS_TRUE;
 }
 /**
