@@ -235,7 +235,11 @@ README2:
 gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo " * Generating $@"
 	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
-	@$(foreach DEFINE, $(GPSEE_C_DEFINES), echo "#define $(DEFINE)" | sed "s/=/ /" >> $@;)
+	echo "$(foreach DEFINE, $(GPSEE_C_DEFINES),@#if !defined($(DEFINE))@# define $(DEFINE)@#endif@)" \
+		| $(TR) @ '\n' | $(SED) -e "s/=/ /" >> $@
+	@echo "#if defined(HAVE_IDENTITY_TRANSCODING_ICONV) && !defined(HAVE_ICONV)" >> $@
+	@echo "# define HAVE_ICONV" >> $@
+	@echo "#endif" >> $@
 	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
 	@echo "#define GPSEE_$(shell echo $(STREAM) | $(TR) a-z A-Z)_STREAM" >> $@
 	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) a-z A-Z)_SYSTEM" >> $@

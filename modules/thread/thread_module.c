@@ -597,7 +597,7 @@ static JSBool Thread(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return JS_FALSE;
   }
 
-  sprintf((char *)hnd->threadID, "%x", (unsigned int)hnd);
+  sprintf((char *)hnd->threadID, GPSEE_PTR_FMT, hnd);
   hnd->state = thState_new; 
   
   if (argc != 1)

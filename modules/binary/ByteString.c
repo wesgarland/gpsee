@@ -395,7 +395,7 @@ JSBool ByteString_toString(JSContext *cx, uintN argc, jsval *vp)
   if (!hnd)
     return gpsee_throw(cx, CLASS_ID ".toString.invalid: ByteString::toString applied the wrong object type");
 
-  snprintf(buf, sizeof(buf), "[object " CLASS_ID " %i]", hnd->length);
+  snprintf(buf, sizeof(buf), "[object " CLASS_ID " " GPSEE_SIZET_FMT "]", hnd->length);
   s = JS_NewStringCopyZ(cx, buf);
   if (!s)
   {

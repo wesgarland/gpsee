@@ -80,7 +80,9 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <apr_surelynx.h>
 #  undef __FUNCTION__
 # elif defined(GPSEE_UNIX_STREAM)
-#  define _GNU_SOURCE
+#  if !defined(_GNU_SOURCE)
+#   define _GNU_SOURCE
+#  endif
 #  include <unistd.h>
 #  include <stdio.h>
 #  include <stdlib.h>
@@ -200,6 +202,8 @@ int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_priv
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
 void 			gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
 void *			gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+int                     gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
+                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage);
 JSBool 			gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
 JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
 					JSClass *clasp, JSNative constructor, uintN nargs,
@@ -335,5 +339,15 @@ typedef enum
 static jsbool_t  __attribute__((unused)) __jsbool = js_false;
 static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 #endif
+
+
+#define GPSEE_SIZET_FMT       "%zd"
+#define GPSEE_PTR_FMT         "%p"
+#define GPSEE_INT_FMT         "%d"
+#define GPSEE_UINT_FMT        "%u"
+#define GPSEE_INT32_FMT       "%ld"
+#define GPSEE_UINT32_FMT      "%lu"
+#define GPSEE_HEX_UINT32_FMT  "0x%lx"
+#define GPSEE_HEX_UINT_FMT    "0x%x"
 
 #endif /* GPSEE_H */
