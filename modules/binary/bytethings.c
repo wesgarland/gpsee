@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.1 2009/05/27 04:48:36 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.2 2009/06/12 17:01:21 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.1 2009/05/27 04:48:36 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.2 2009/06/12 17:01:21 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"

@@ -37,7 +37,7 @@
  *  @file	binary_module.h		Symbols shared between classes/objects in the binary module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: binary_module.h,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: binary_module.h,v 1.2 2009/06/12 17:01:21 wes Exp $
  */
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
