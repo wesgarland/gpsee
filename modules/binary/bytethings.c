@@ -397,10 +397,11 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
   }
 
 #if !defined(HAVE_ICONV)
+# warning Iconv support not detected: Binary module will throw rather than convert
   return gpsee_throw(cx, "%s.transcode.iconv.missing: Could not transcode UTF-16 String to %s charset; GPSEE was compiled without iconv "
 		     "support.", throwPrefix, charset ?: "(null)");
 #else
-   if (string_length * 2 & 1 << ((sizeof(size_t) * 8) - 1))   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
+   if (string_length >=  sizeof(size_t) * 8 / 2)   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
     return gpsee_throw(cx, "%s.transcode.length: String length exceeds maximum characters, cannot convert", throwPrefix);
   else
     return transcodeBuf_toBuf(cx, charset, DEFAULT_UTF_16_FLAVOUR, bufp, lenp, (const unsigned char *)string_chars, string_length * 2, throwPrefix);

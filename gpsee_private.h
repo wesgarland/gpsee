@@ -43,6 +43,3 @@
 #include "jsapi.h"
 void 			gpsee_initializeModuleSystem(JSContext *cx);
 void 			gpsee_shutdownModuleSystem(JSContext *cx);
-int                     gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
-                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage);
-
