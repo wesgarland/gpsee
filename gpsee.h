@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.4 2009/05/27 04:38:44 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.5 2009/06/12 17:01:20 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.5  2009/06/12 17:01:20  wes
+ *  Merged with upstream
+ *
  *  Revision 1.4  2009/05/27 04:38:44  wes
  *  Improved build configuration for out-of-tree GPSEE embeddings
  *

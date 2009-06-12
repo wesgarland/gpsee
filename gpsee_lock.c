@@ -41,7 +41,7 @@
  *				This is just SpiderMonkey's js/src/jslock.c, stripped
  *				down and bent into the API we want.
  *
- *  @version	$Id: gpsee_lock.c,v 1.2 2009/05/27 04:38:44 wes Exp $
+ *  @version	$Id: gpsee_lock.c,v 1.3 2009/06/12 17:01:20 wes Exp $
  *  @author	Wes Garland
  *  @date	Jan 2008
  *
@@ -51,7 +51,7 @@
 
 /*#ifdef JS_THREADSAFE*/
 
-static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,v 1.2 2009/05/27 04:38:44 wes Exp $";
+static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,v 1.3 2009/06/12 17:01:20 wes Exp $";
 
 /*
  * JS locking stubs.

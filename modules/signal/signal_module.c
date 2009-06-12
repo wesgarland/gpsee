@@ -36,7 +36,7 @@
  *  @file       signal_module.c		Module to expose POSIX signals as JavaScript events.
  *  @author     Wes Garland, wes@page.ca
  *  @date       Oct 2007
- *  @version    $Id: signal_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version    $Id: signal_module.c,v 1.2 2009/06/12 17:01:21 wes Exp $
  *
  *  @bug	Not compatible with gpsee_context_private.c: both want the context callback. Will
  *		need to write some multiplexing code.
@@ -65,7 +65,7 @@
  *		</pre>
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: signal_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: signal_module.c,v 1.2 2009/06/12 17:01:21 wes Exp $";
  
 #include "gpsee.h"
 #include <stdlib.h>
