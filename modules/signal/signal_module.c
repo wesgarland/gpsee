@@ -115,12 +115,10 @@ static JSBool signal_runHandlers(JSContext *cx)
   JSBool 		b, ret = JS_TRUE;
   jsval			v;
   int			sig;
-  jsval			argv[2];
+  jsval			argv[1];
 
   if (JS_IsExceptionPending(cx) == JS_TRUE)
     return JS_TRUE;	/* We don't run signal handlers when exceptions are pending. */
-
-  argv[1] = NULL;
 
   for (sig = 1; sig <= OS_MAX_SIGNAL && ret == JS_TRUE; sig++)
   {
