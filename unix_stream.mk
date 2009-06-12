@@ -54,6 +54,7 @@ MV		?= mv -f
 RM		?= rm -f
 MKDIR		?= mkdir -p
 GREP		?= grep
+EGREP		?= egrep
 CHMOD		?= chmod
 CHOWN		?= chown
 AWK		?= awk
