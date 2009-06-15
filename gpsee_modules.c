@@ -406,7 +406,8 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
 #ifdef GPSEE_DEBUG_BUILD
     incr = 1;
 #else
-    incr = max(max(modules_len / 2, 64), 4);
+    incr = max(max(jsi->modules_len / 2, 64), 4);
+    incr = 1; /* above causes segfaults */
 #endif
 
     jsi->modules = realloc(jsi->modules, sizeof(jsi->modules[0]) * (jsi->modules_len + incr));
