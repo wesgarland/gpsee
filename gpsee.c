@@ -647,13 +647,15 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
 
-#if defined(JS_THREADSAFE)
+#if !defined(MAKEDEPEND) && !defined(DOXYGEN)
+# if defined(JS_THREADSAFE)
   interpreter->primordialThread	= PR_GetCurrentThread();
-#else
-# error "We need threads"
-#endif
+# else
+#  error "We need threads"
+# endif
   interpreter->cx	 	= cx;
   interpreter->rt 	 	= rt;
+#endif
   
 #if 0
   gpsee_addBranchCallback(cx, gpsee_branchCB_GC, NULL, atoi(rc_default_value(rc, "gpsee_GC_branchCallback_zeroMask", "0x7fff")));
