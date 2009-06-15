@@ -73,20 +73,6 @@ extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
 
 #ifdef HAVE_ICONV
-# if !defined(ICONV_INBUF_CONSTNESS)
-/** Detecting which iconv prototype we have appears to be a pain.
- *  Linux's iconv seems to match SUSV3, by Solaris and Mac don't
- *  by default, even when using GNU iconv.
- *
- *  The SUSV3 prototype has no const on the input buffer.
- */
-#  if defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600)
-#   define ICONV_INBUF_CONSTNESS 0
-#  else
-#   define ICONV_INBUF_CONSTNESS 1
-#  endif
-# endif
-
 # if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)
 /* 
  * /usr/sfw gcc can find sunfreeware gnu libiconv header, 
@@ -97,13 +83,9 @@ extern JSClass *byteArray_clasp;
 # else
 #  include <iconv.h>
 
-static  __attribute__((unused)) gpsee_non_susv3_iconv(iconv_t cd, const char **restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
+static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
 {
-# if (ICONV_INBUF_CONSTNESS == 0)
-  gpsee_susv3_iconv(cd, (char **)restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
-#else
-  gpsee_susv3_iconv(cd, restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
-#endif
+  return iconv(cd, (char **)inbuf, inbytesleft, outbuf, outbytesleft);
 }
 # define iconv(a,b,c,d,e)	gpsee_non_susv3_iconv(a,b,c,d,e)
 
