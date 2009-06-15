@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.2 2009/06/12 17:01:21 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.3 2009/06/15 17:48:37 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.2 2009/06/12 17:01:21 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.3 2009/06/15 17:48:37 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -196,8 +196,8 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 			  const char *throwPrefix)
 {
   iconv_t	cd;
-  char *inbuf;
-  char	*outbuf, *outbufStart;
+  const char	*inbuf;
+  char		*outbuf, *outbufStart;
   size_t	inbytesleft, outbytesleft;
   size_t	allocBytes, result;
   jsrefcount	depth;
@@ -283,19 +283,8 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     return JS_FALSE;
   }
 
-#if 0
-  /* A different case is when inbuf is NULL or *inbuf is NULL, but outbuf is not NULL and *outbuf is
-   * not NULL. In this case, the iconv function attempts to set cd's conversion state to the initial
-   * state and store a corresponding shift sequence at *outbuf. 
-   */
-  inbuf = NULL;
-  outbuf = outbufStart;
-  outbytesleft = allocBytes;
-  printf ("XXX %i %x %x, %i/%i bytes left\n", iconv(cd, &inbuf, 0, &outbuf, &outbytesleft), outbuf[0], outbuf[1], outbytesleft, allocBytes);
-#endif
-
   inbytesleft  = inputBufferLength;
-  inbuf 	 = (char *)inputBuffer;
+  inbuf 	 = inputBuffer;
   outbuf	 = outbufStart;
 
   do

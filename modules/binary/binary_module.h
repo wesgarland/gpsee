@@ -37,7 +37,7 @@
  *  @file	binary_module.h		Symbols shared between classes/objects in the binary module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: binary_module.h,v 1.2 2009/06/12 17:01:21 wes Exp $
+ *  @version	$Id: binary_module.h,v 1.3 2009/06/15 17:48:37 wes Exp $
  */
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
@@ -73,15 +73,40 @@ extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
 
 #ifdef HAVE_ICONV
-# define _LIBICONV_H
-# if defined GPSEE_SUNOS_SYSTEM
+# if !defined(ICONV_INBUF_CONSTNESS)
+/** Detecting which iconv prototype we have appears to be a pain.
+ *  Linux's iconv seems to match SUSV3, by Solaris and Mac don't
+ *  by default, even when using GNU iconv.
+ *
+ *  The SUSV3 prototype has no const on the input buffer.
+ */
+#  if defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600)
+#   define ICONV_INBUF_CONSTNESS 0
+#  else
+#   define ICONV_INBUF_CONSTNESS 1
+#  endif
+# endif
+
+# if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)
 /* 
  * /usr/sfw gcc can find sunfreeware gnu libiconv header, 
  * then explode at runtime when solaris iconv lib gets used 
  */
+#  define _LIBICONV_H
 #  include "/usr/include/iconv.h"	
 # else
 #  include <iconv.h>
+
+static  __attribute__((unused)) gpsee_non_susv3_iconv(iconv_t cd, const char **restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
+{
+# if (ICONV_INBUF_CONSTNESS == 0)
+  gpsee_susv3_iconv(cd, (char **)restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
+#else
+  gpsee_susv3_iconv(cd, restrict inbuf, size_t *restrict inbytesleft, char **restrict outbuf, size_t *restrict outbytesleft)
+#endif
+}
+# define iconv(a,b,c,d,e)	gpsee_non_susv3_iconv(a,b,c,d,e)
+
 # endif
 # include "jsnum.h"
 #endif
