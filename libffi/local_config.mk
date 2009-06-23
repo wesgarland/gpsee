@@ -1,3 +1,11 @@
+## Please edit this file to suit your local environment and requirements.
+## This file controls most of aspects of auto-building libffi 3 or better,
+## to maintain configuration synchronization with GPSEE.
+##
+## Using a system-supplied libffi is possible/acceptable, but currently
+## untested/unsupported. To enable system-supplied libffi, omit the
+## LIBFFI_SRC_DIR variable.
+
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -32,27 +40,29 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-#
-# Generic Makefile for building GPSEE programs outside the GPSEE tree. 
-# Not mandatory, but allows third-party programs the option of getting 
-# build system information from GPSEE rather than their own autoconf.
-#
-# If gpsee-config is not on the path, it should be specified on the make
-# command line, e.g. make GPSEE_CONFIG=/opt/gpsee/bin/gpsee-config
-#
 
-GPSEE_CONFIG 	?= gpsee-config
-GPSEE_SRC_DIR	?= $(shell $(GPSEE_CONFIG) --gpsee-src)
-STREAM		?= $(shell $(GPSEE_CONFIG) --stream)
+lastword ?= $(if $1,$(word $(words $1),$1))
 
-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
-include $(GPSEE_SRC_DIR)/system_detect.mk
--include $(GPSEE_SRC_DIR)/local_config.mk
-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
-include $(GPSEE_SRC_DIR)/build.mk
-ifneq ($(BUILDING_LIBFFI),TRUE)
--include $(GPSEE_SRC_DIR)/libffi/vars.mk
+GPSEE_SRC_DIR 		?= ..
+#LIBFFI_SRC		?= $(HOME)/libffi-3.0.8
+LIBFFI_SRC		?= $(lastword $(sort $(wildcard $(HOME)/libffi-3*[0-9])))
+PKG_CONFIG		?= pkg-config
+LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)/libffi
+LIBFFI_MAKE_OPTIONS	?= -j3
+TR			?= tr
+
+ifeq ($(LIBFFI_SRC),)
+$(info *** Please untar libffi-3*.tar.gz in your home directory, or)
+$(info *** edit $(PWD)/local_config.mk)
+$(info *** to reflect an alternate location.)
+$(error Could not locate libffi source code)
 endif
-ifneq ($(MAKECMDGOALS),depend)
--include depend.mk
-endif
+
+## - RELEASE    Optimized build, no symbols
+## - DRELEASE   Optimized build, symbols
+## - PROFILE    Optimized build, symbols, profiling enabled
+## - DEBUG      Debug build (assertions), symbols
+BUILD			?= RELEASE
+
+NO_BUILD_RULES=TRUE
+include $(GPSEE_SRC_DIR)/outside.mk

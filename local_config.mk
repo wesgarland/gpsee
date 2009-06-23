@@ -37,11 +37,11 @@
 #
 
 ifeq ($(UNAME_SYSTEM), SunOS)
-GPSEE_PREFIX_DIR	= /opt/gpsee
+GPSEE_PREFIX_DIR	?= /opt/gpsee
 endif
 
 ifeq ($(UNAME_SYSTEM), Darwin)
-GPSEE_PREFIX_DIR	= /opt/local/gpsee
+GPSEE_PREFIX_DIR	?= /opt/local/gpsee
 endif
 
 GPSEE_PREFIX_DIR	?= /usr/local/gpsee
