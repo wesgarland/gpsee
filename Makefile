@@ -117,6 +117,7 @@ build all install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPOR
 install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
+clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
 clean: EXTRA_CLEAN_RULE=clean_modules
 clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
 real-clean: clean
