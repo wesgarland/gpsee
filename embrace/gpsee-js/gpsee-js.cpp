@@ -81,7 +81,7 @@ static void __attribute__((noreturn)) fatal(const char *message)
 }
 
 /** GPSEE uses panic() to panic, expects embedder to provide */
-void __attribute__((noreturn)) panic(const char *message)
+JS_FRIEND_API(void) __attribute__((noreturn)) panic(const char *message)
 {
   fatal(message);
 }
@@ -89,7 +89,7 @@ void __attribute__((noreturn)) panic(const char *message)
 #define JS_NewRuntime(n) gpseejs_NewRuntime(n)
 JSRuntime *gpseejs_NewRuntime(size_t n)
 {
-  extern char * const *environ;
+  extern char ** environ;
 
   gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, environ);
 
