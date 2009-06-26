@@ -43,24 +43,32 @@
 
 static __attribute__((unused)) const char rcsid[]="$Id:$";
 
+#include "gpsee.h"
 #include "jsapi.h"
 #include "jsxdrapi.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
 
-/* TODO JSXDR_FREE support */
+/* TODO JSXDR_FREE support? */
 
 /* XDRFile member variables */
 struct XDRFile {
   JSXDRState xdr; /* JSXDR base class */
   FILE *f;      /* the underlying file */
   int own_file; /* are we responsible for fclose()? */
+#ifdef XDR_USES_MMAP
   void *map;    /* pointer to a real memory map provided by the kernel VM manager */
+  void *mapend; /* pointer to the first bit beyond the memory map (mappos <= mapend) */
+  size_t maplen;/* length of mapped memory */
+  void *mappos; /* pointer to the current read/write position within 'map' */
+#endif
   void *raw;    /* 'raw' chunk of memory mapped to the underlying media */
   int rawlen;   /* requested 'raw' chunk size */
   int rawsize;  /* real size of 'raw' buffer */
@@ -134,7 +142,6 @@ JSXDRState * gpsee_XDRNewFile(JSContext *cx, JSXDRMode mode, const char *filenam
 
   /* Initialize our internal XDRFile members */
   xdr->f = f;
-  xdr->map = NULL;
   xdr->raw = NULL;
   xdr->rawlive = 0;
   xdr->rawlen = 0;
@@ -143,6 +150,37 @@ JSXDRState * gpsee_XDRNewFile(JSContext *cx, JSXDRMode mode, const char *filenam
 
   /* Teach the new XDR object our XDROps implementation */
   xdr->xdr.ops = &xdrfile_ops;
+
+  /* Map file into memory if we're in read mode */
+  #ifdef XDR_USES_MMAP
+  xdr->map = NULL;
+  xdr->maplen = 0;
+  xdr->mappos = NULL;
+  xdr->mapend = NULL;
+  /* Map read-only files into memory if possible */
+  if (mode != JSXDR_ENCODE)
+  {
+    /* Get the size of the file */
+    struct stat st;
+    if (fstat(fileno(f), &st))
+    {
+      /* Should never ever ever happen! */
+      dprintf("warning: fstat(\"%s\" fd=%d) failed: %m\n", filename, fileno(f));
+    }
+    else
+    {
+      /* Map the file into memory! */
+      xdr->maplen = st.st_size;
+      xdr->map = mmap(NULL, xdr->maplen, PROT_READ, MAP_PRIVATE, fileno(f), 0);
+      if (xdr->map == MAP_FAILED)
+      {
+        dprintf("warning: mmap() failed: %m\n");
+      }
+      xdr->mappos = xdr->map;
+      xdr->mapend = xdr->map + xdr->maplen;
+    }
+  }
+  #endif
 
   return (JSXDRState*) xdr;
 }
@@ -160,6 +198,19 @@ static void xdrfile_finalize (JSXDRState *xdr)
 {
   /* Do we have a raw chunk needing to be freed? */
   xdrfile_commit_raw(xdr);
+
+  /* Un-map the file from memory if necessary */
+  #ifdef XDR_USES_MMAP
+  if (self->map)
+  {
+    if (munmap(self->map, self->maplen))
+      fprintf(stderr, "munmap(%p, %u) failure: %m\n", self->map, self->maplen);
+    self->map = NULL;
+    self->maplen = 0;
+    self->mappos = NULL;
+    self->mapend = NULL;
+  }
+  #endif
 
   /* Close the underlying file */
   if (self->f)
@@ -181,7 +232,7 @@ static void xdrfile_finalize (JSXDRState *xdr)
 inline static void xdrfile_commit_raw (JSXDRState *xdr)
 {
   /* Do we have a raw chunk that needs to be committed? */
-  if (self->raw && xdr->mode == JSXDR_ENCODE && self->rawlive)
+  if (self->rawlive && self->raw && xdr->mode == JSXDR_ENCODE)
   {
     /* Write raw chunk to file */
     fwrite(self->raw, 1, self->rawlen, self->f);
@@ -194,6 +245,22 @@ inline static void xdrfile_commit_raw (JSXDRState *xdr)
 /* Return a chunk of memory which is mapped to the underlying media */
 static void * xdrfile_raw (JSXDRState *xdr, uint32 len)
 {
+  /* If mmap is enabled, this is a rather simple case */
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    void *rval = self->mappos;
+    /* Bounds check */
+    if (self->mappos + len > self->mapend)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return NULL;
+    }
+    self->mappos = (unsigned char*)self->mappos + len;
+    return rval;
+  }
+  #endif
+
   /* Commit 'raw' chunk if necessary */
   xdrfile_commit_raw(xdr);
 
@@ -243,20 +310,64 @@ static void * xdrfile_raw (JSXDRState *xdr, uint32 len)
 
 static uint32 xdrfile_tell (JSXDRState *xdr)
 {
+  /* TODO should we commit on tell op? */
   xdrfile_commit_raw(xdr);
-  return ftell(self->f);
+
+  #ifdef XDR_USES_MMAP
+  if (self->map)
+    return (uint32) (self->mappos - self->map);
+  #endif
+  return (uint32) ftell(self->f);
 }
 static JSBool xdrfile_seek (JSXDRState *xdr, int32 offset, JSXDRWhence whence)
 {
   xdrfile_commit_raw(xdr);
 
-  if (whence == JSXDR_SEEK_CUR) whence = SEEK_CUR;
-  else if (whence == JSXDR_SEEK_SET) whence = SEEK_SET;
-  else if (whence == JSXDR_SEEK_END) whence = SEEK_END;
-  else {
-    JS_ReportError(xdr->cx, "invalid \"whence\" value");
-    return JS_FALSE;
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    switch (whence)
+    {
+      /* TODO add seek-underflow checking. right now it will be reported as EOF */
+      case JSXDR_SEEK_SET:
+        self->mappos = self->map + offset;
+        break;
+      case JSXDR_SEEK_CUR:
+        self->mappos += offset;
+        break;
+      case JSXDR_SEEK_END:
+        self->mappos = self->map + self->maplen - offset;
+        break;
+      default:
+        JS_ReportError(xdr->cx, "invalid \"whence\" value");
+        return JS_FALSE;
+    }
+    /* Boundary check */
+    if (self->mappos > self->mapend || self->mappos < self->map)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return JS_FALSE;
+    }
+    return JS_TRUE;
   }
+  #endif
+
+  switch (whence)
+  {
+    case JSXDR_SEEK_SET:
+      whence = SEEK_SET;
+      break;
+    case JSXDR_SEEK_CUR:
+      whence = SEEK_CUR;
+      break;
+    case JSXDR_SEEK_END:
+      whence = SEEK_END;
+      break;
+    default:
+      JS_ReportError(xdr->cx, "invalid \"whence\" value");
+      return JS_FALSE;
+  }
+
   if (fseek(self->f, offset, whence))
   {
     JS_ReportError(xdr->cx, "seek operation failed with error %d: %s", errno, strerror(errno));
@@ -267,6 +378,22 @@ static JSBool xdrfile_seek (JSXDRState *xdr, int32 offset, JSXDRWhence whence)
 static JSBool xdrfile_setbytes (JSXDRState *xdr, char *buf, uint32 len)
 {
   int n;
+
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    /* Bounds check */
+    if (self->mappos + len > self->mapend)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return JS_FALSE;
+    }
+    memcpy(self->mappos, buf, len);
+    self->mappos += len;
+    return JS_TRUE;
+  }
+  #endif
+
   xdrfile_commit_raw(xdr);
 
   if (self->f == NULL)
@@ -282,6 +409,22 @@ static JSBool xdrfile_setbytes (JSXDRState *xdr, char *buf, uint32 len)
 static JSBool xdrfile_getbytes (JSXDRState *xdr, char *buf, uint32 len)
 {
   int n;
+
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    /* Bounds check */
+    if (self->mappos + len > self->mapend)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return JS_FALSE;
+    }
+    memcpy(buf, self->mappos, len);
+    self->mappos += len;
+    return JS_TRUE;
+  }
+  #endif
+
   xdrfile_commit_raw(xdr);
 
   if (self->f == NULL)
@@ -297,6 +440,22 @@ static JSBool xdrfile_getbytes (JSXDRState *xdr, char *buf, uint32 len)
 static JSBool xdrfile_set32 (JSXDRState *xdr, uint32 *lp)
 {
   int n;
+
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    /* Bounds check */
+    if (self->mappos + sizeof(uint32) > self->mapend)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return JS_FALSE;
+    }
+    *(uint32*)self->mappos = *lp;
+    self->mappos = (uint32*)self->mappos + 1;
+    return JS_TRUE;
+  }
+  #endif
+
   xdrfile_commit_raw(xdr);
 
   if (self->f == NULL)
@@ -312,6 +471,22 @@ static JSBool xdrfile_set32 (JSXDRState *xdr, uint32 *lp)
 static JSBool xdrfile_get32 (JSXDRState *xdr, uint32 *lp)
 {
   int n;
+
+  #ifdef XDR_USES_MMAP
+  if (self->mappos)
+  {
+    /* Bounds check */
+    if (self->mappos + sizeof(uint32) > self->mapend)
+    {
+      JS_ReportError(xdr->cx, "unexpected end of file");
+      return JS_FALSE;
+    }
+    *lp = *(uint32*)self->mappos;
+    self->mappos = (uint32*)self->mappos + 1;
+    return JS_TRUE;
+  }
+  #endif
+
   xdrfile_commit_raw(xdr);
 
   if (self->f == NULL)
