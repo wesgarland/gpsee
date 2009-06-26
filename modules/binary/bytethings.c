@@ -44,6 +44,7 @@
 static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.3 2009/06/15 17:48:37 wes Exp $";
 
 #include "gpsee.h"
+#include <jsnum.h>
 #include "binary_module.h"
 
 /** BE and LE flavours of UTF-16 do not emit the BOM. JS Strings are BOM-less and in machine order. */
@@ -195,12 +196,14 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 			  const unsigned char *inputBuffer, size_t inputBufferLength,
 			  const char *throwPrefix)
 {
+#if defined(HAVE_ICONV)
   iconv_t	cd;
   const char	*inbuf;
   char		*outbuf, *outbufStart;
   size_t	inbytesleft, outbytesleft;
   size_t	allocBytes, result;
   jsrefcount	depth;
+#endif
   size_t	approxChars;
 
   if ((sourceCharset == targetCharset) || (sourceCharset && targetCharset && (strcasecmp(sourceCharset, targetCharset) == 0)))
@@ -228,6 +231,10 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
   if (!targetCharset)
     targetCharset =  DEFAULT_UTF_16_FLAVOUR;
 
+#if !defined(HAVE_ICONV)
+  return gpsee_throw(cx, "%s.transcode.iconv.missing: Could not transcode charset %s to %s charset; GPSEE was compiled without iconv "
+		     "support.", throwPrefix, sourceCharset, targetCharset);
+#else
   depth = JS_SuspendRequest(cx);
   cd = iconv_open(targetCharset, sourceCharset);
   JS_ResumeRequest(cx, depth);
@@ -335,6 +342,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 
   *outputBuffer_p = (unsigned char*)outbufStart;
   return JS_TRUE;
+#endif /* HAVE_ICONV */
 }
 /**
  *  Decode a JavaScript String into a ByteString buffer, via charset. JavaScript String is assumed to be UTF-8.

@@ -56,6 +56,7 @@ static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.2 2009/
 #endif
 
 #include "gpsee.h"
+#include <jsnum.h>
 #include "binary_module.h"
 #include <string.h>
 
