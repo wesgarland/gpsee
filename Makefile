@@ -104,7 +104,7 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
-EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))
 EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h 
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
