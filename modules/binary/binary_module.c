@@ -73,4 +73,3 @@ JSBool binary_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
   return JS_TRUE;
 }
-
