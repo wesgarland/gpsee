@@ -47,3 +47,112 @@ exports.helloWorld = function()
 {
   print("hello, world");
 }
+/** ByteArray.forEach(callback)
+ *  @name           ByteArray.forEach
+ *  @param          value
+ *  @function
+ *  @public
+ *  
+ *  Calling this function is equivalent to calling "callback(a[n], n, a)" where
+ *  'a' is this instance of ByteArray, 'a[n]' is the nth member of this ByteArray,
+ *  and 'callback' is the argument to forEach().
+ */
+exports.ByteArray.prototype.forEach = function(f) {
+    for (var i=0, l=this.length; i<l; i++)
+      f(this[i], i, this);
+}
+/** ByteArray.every(callback)
+ *  @name           ByteArray.every
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Returns true if every element in this ByteArray satisfies the provided testing function.
+ */
+exports.ByteArray.prototype.every = function(f) {
+    for (var i=0, l=this.length; i<l; i++)
+      if (!f(this[i], i, this))
+        return false;
+    return true;
+}
+/** ByteArray.some(callback)
+ *  @name           ByteArray.some
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Returns true if at least one element in this ByteArray satisfies the provided testing function.
+ */
+exports.ByteArray.prototype.some = function(f) {
+    for (var i=0, l=this.length; i<l; i++)
+      if (f(this[i], i, this));
+        return true;
+    return false;
+}
+/** ByteArray.filter(callback)
+ *  @name           ByteArray.filter
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Returns a new array with the results of calling a provided function on every element in this
+ *  ByteArray.
+ *
+ *  TODO Option for an Array result
+ */
+exports.ByteArray.prototype.filter = function(f) {
+  var rval = new ByteArray();
+  for (var i=0, l=this.length; i<l; i++)
+    if (f(this[i], i, this))
+      rval.push(this[i]);
+  return rval;
+}
+/** ByteArray.map(callback)
+ *  @name           ByteArray.map
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Returns a new array with the results of calling a provided function on every element in this
+ *  ByteArray.
+ *
+ *  TODO Option for an Array result
+ */
+exports.ByteArray.prototype.map = function(f) {
+  var rval = new ByteArray();
+  rval.length = this.length;
+  for (var i=0, l=this.length; i<l; i++)
+    rval[i] = f(this[i], i, this);
+  return rval;
+}
+/** ByteArray.reduce(callback)
+ *  @name           ByteArray.reduce
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Apply a function simultaneously against two values of this ByteArray (from left-to-right) as
+ *  to reduce it to a single value.
+ */
+exports.ByteArray.prototype.reduce = function(f) {
+  var rval = this[0];
+  for (var i=1, l=this.length; i<l; i++)
+    rval = f(rval, this[i]);
+  return rval;
+}
+/** ByteArray.reduceRight(callback)
+ *  @name           ByteArray.reduceRight
+ *  @param          callback
+ *  @function
+ *  @public
+ *
+ *  Apply a function simultaneously against two values of this ByteArray (from right-to-left) as
+ *  to reduce it to a single value.
+ */
+exports.ByteArray.prototype.reduceRight = function(f) {
+  var rval = this[this.length-1];
+  for (var i=this.length-2; i>=0; i--)
+    rval = f(rval, this[i]);
+  return rval;
+}
+

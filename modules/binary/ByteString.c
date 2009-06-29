@@ -45,31 +45,14 @@
  *  - Missing or falsy charset in constructor means to inflate/deflate
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.2 2009/06/12 17:01:20 wes Exp $";
-
-#if 0
-#include "gpsee_config.h"
-#if defined(HAVE_MEMRCHR)
-# define _GNU_SOURCE
-# include <string.h> /* unistd.h can poison memrchr somehow on Debian squeeze/sid, maybe others */
-#endif
-#endif
-
+static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.1 2009/05/27 04:51:45 wes Exp $";
 #include "gpsee.h"
 #include <jsnum.h>
 #include "binary_module.h"
 #include <string.h>
 
-static JSObject *byteString_proto;
+JSObject *byteString_proto;
 #define CLASS_ID MODULE_ID ".ByteString"
-
-/** Internal data structure backing a ByteString. Cast-compatible with byteThing_handle_t. */
-typedef struct
-{
-  size_t		length;		/**< Number of characters in buffer */
-  unsigned char		*buffer;	/**< Backing store */
-} byteString_handle_t;
-
 
 /** Returns a pointer to a byteString_handle_t, or NULL on error
  *  @param      cx          Your JSContext
@@ -81,7 +64,8 @@ typedef struct
 inline byteString_handle_t * byteString_getHandle(JSContext *cx, JSObject *obj, const char const * methodName)
 {
   byteString_handle_t *bs;
-  if (!(bs = JS_GetInstancePrivate(cx, obj, byteString_clasp, NULL)))
+  bs = JS_GetInstancePrivate(cx, obj, byteString_clasp, NULL);
+  if (!bs)
   {
     gpsee_throw(cx, CLASS_ID ".%s.type: native member function applied to non-ByteString object", methodName);
     return NULL;
@@ -148,391 +132,95 @@ inline int byteString_retrieveAndCheckIndexArgument(JSContext *cx, byteString_ha
   return byteString_rangeCheck(cx, bs, *index, methodName);
 }
 
-/** Allocate and initialize a new byteString_handle_t. Returned handle is allocated
- *  with JS_malloc().  Caller is responsible for releasing memory; if it winds up
- *  as the private data in a ByteString instance, the finalizer will handle the
- *  clean up during garbage collection.
- *
- *  @param	cx		JavaScript context
- *  @returns	A initalized byteString_handle_t or NULL on OOM.
- */
-byteString_handle_t *byteString_newHandle(JSContext *cx)
-{
-  byteString_handle_t	*hnd;
-
-  hnd = JS_malloc(cx, sizeof(*hnd));
-  if (!hnd)
-    return NULL;
-
-  memset(hnd, 0, sizeof(*hnd));
-
-  return hnd;
-}
-
-/**
- *  Create a bare-bonesByteString instance out of an array of chars.
- *
- *  @param	cx		JavaScript context
- *  @param	buffer		The raw contents of the byte string; if buffer is NULL we initialize to all-zeroes
- *  @param	length		The length of the data in buf.
- *  @param	obj		New object of correct class to decorate, or NULL. If non-NULL, must match clasp.
- *  @param	stealBuffer	If non-zero, we steal the buffer rather than allocating and copying our own
- *
- *  @returns	NULL on OOM, otherwise a new ByteString.
- */
-JSObject *byteString_fromCArray(JSContext *cx, const unsigned char *buffer, size_t length, JSObject *obj, int stealBuffer)
-{
-  /* Allocate and initialize our private ByteString handle */
-  byteString_handle_t	*hnd = byteString_newHandle(cx);
-
-  if (!hnd)
-    return NULL;
-
-  hnd->length = length;
-
-  if (stealBuffer)
-  {
-    hnd->buffer = (unsigned char *)buffer;
-  }
-  else
-  {
-    if (length)
-    {
-      hnd->buffer = JS_malloc(cx, length);
-
-      if (!hnd->buffer)
-      {
-        JS_free(cx, hnd);
-	return NULL;
-      }
-    }
-
-    if (buffer)
-      memcpy(hnd->buffer, buffer, length);
-    else
-      memset(hnd->buffer, 0, length);
-  }
-
-  GPSEE_ASSERT(!obj || (JS_GET_CLASS(cx, obj) == byteString_clasp));
-
-  if (!obj)
-    obj = JS_NewObject(cx, byteString_clasp, byteString_proto, NULL);
-
-  if (obj)
-    JS_SetPrivate(cx, obj, hnd);
-
-  return obj;
-}
-
-#if !defined(HAVE_MEMRCHR)
-static void *memrchr(const void *s, int c, size_t n)
-{
-  const void *p;
-
-  for (p = s + n; p != s; p--)
-  {
-    if (*(char *)p == c)
-      return (void *)p;
-  }
-
-  return NULL;
-}
-#endif
-
-/** Implements ByteString instance methods indexOf() and lastIndexOf() */
-static JSBool byteString_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const * methodName)
-{
-  byteString_handle_t	*hnd;
-  jsval			*argv = JS_ARGV(cx, vp);
-  int			byte;
-  jsval			bytev;
-  size_t  		start;
-  size_t  		len;
-  size_t                size;
-  const unsigned char 	*found;
-
-  /* Acquire our byteString_handle_t */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), methodName)))
-    return JS_FALSE;
-
-  size = hnd->length;
-
-  /* Validate argument count */
-  if (argc < 1 || argc > 3)
-    return gpsee_throw(cx, "%s.arguments.count", methodName);
-
-  bytev = argv[0];
-
-  /* Convert JS args to C args */
-  if (!byteThing_arg2size(cx, argc, vp, &start, 1, 0, size-1, JS_TRUE, 0, methodName))
-    return JS_FALSE;
-  if (!byteThing_arg2size(cx, argc, vp, &len, 2, 1, size-len, JS_TRUE, hnd->length-start, methodName))
-    return JS_FALSE;
-
-  /* Process 'needle' argument */
-  /* TODO encapsulate this type coercion? */
-  if (JSVAL_IS_INT(bytev))
-    byte = JSVAL_TO_INT(bytev);
-  else if (JSVAL_IS_OBJECT(bytev))
-  {
-    JSObject		*o = JSVAL_TO_OBJECT(argv[0]);
-    void 		*c = o ? JS_GET_CLASS(cx, o) : NULL;
-    byteThing_handle_t *h;
-
-    if ((c != (void *)byteString_clasp) && (c != (void *)byteArray_clasp))
-      goto ToNumber;
-
-    h = JS_GetPrivate(cx, o);
-    if (h->length != 1)
-      return gpsee_throw(cx, "%s.arguments.0.length: ByteString or ByteArray must have length 1", methodName);
-
-    byte = h->buffer[0];
-  }
-  else /* try ToNumber */
-  {
-    jsdouble d;
-    ToNumber:
-
-    if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
-      return JS_FALSE;
-
-    byte = d;
-    if (byte != d)
-      return gpsee_throw(cx, "%s.arguments.0.range", methodName);
-  }
-
-  /* Bounds checking! */
-  /* TODO better */
-  if (byte & ~255)
-    return gpsee_throw(cx, "%s.arguments.0.range", methodName);
-
-  /* Search for needle */
-  if ((found = memchr_fn(hnd->buffer + start, byte, len)))
-  {
-    if (INT_FITS_IN_JSVAL(found - hnd->buffer))
-      JS_SET_RVAL(cx, vp, INT_TO_JSVAL(found - hnd->buffer));
-    else
-    {
-      jsval v;
-
-      if (JS_NewNumberValue(cx, found - hnd->buffer, &v) == JS_FALSE)
-	return JS_FALSE;
-
-      JS_SET_RVAL(cx, vp, v);
-    }
-  }
-  else
-    JS_SET_RVAL(cx, vp, INT_TO_JSVAL(-1));
-  
-
-  return JS_TRUE;
-}
-
 /** Implements ByteString::indexOf method. Method arguments are
  *  (byte, start, stop). Byte could be a number, or single element
  *  ByteArray or ByteString. -1 indicates not found.
  */
 JSBool ByteString_indexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteString_findChar(cx, argc, vp, memchr, CLASS_ID ".indexOf");
+  return byteThing_findChar(cx, argc, vp, memchr, "indexOf");
 }
 
 /** Implements ByteString::lastIndexOf method. Method arguments are
  *  (byte, start, stop). Byte could be a number, or single element
  *  ByteArray or ByteString. -1 indicates not found.
  */
-JSBool ByteString_lastIndexOf(JSContext *cx, uintN argc, jsval *vp)
+static JSBool ByteString_lastIndexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteString_findChar(cx, argc, vp, memrchr, CLASS_ID ".lastIndexOf");
+  return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf");
 }
 
 /** Implements ByteString::decodeToString method */
-JSBool ByteString_decodeToString(JSContext *cx, uintN argc, jsval *vp)
+static JSBool ByteString_decodeToString(JSContext *cx, uintN argc, jsval *vp)
 {
-  byteString_handle_t	*hnd;// = JS_GetInstancePrivate(cx, JS_THIS_OBJECT(cx, vp), byteString_clasp, NULL);
-  JSString		*s;
-  unsigned char		*buf;
-  size_t		length;
-  const char		*sourceCharset;
-  jsval			*argv = JS_ARGV(cx, vp);
-
-  /* Acquire our byteString_handle_t */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "decodeToString")))
-    return JS_FALSE;
-
-  switch(argc)
-  {
-    case 0:
-      sourceCharset = NULL;
-      break;
-    case 1:
-      sourceCharset = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-      break;
-    default:
-      return gpsee_throw(cx, CLASS_ID ".decodeToString.arguments.count");
-  }
-
-  if (transcodeBuf_toBuf(cx, NULL, sourceCharset, &buf, &length, hnd->buffer, hnd->length, CLASS_ID ".decodeToString") == JS_FALSE)
-    return JS_FALSE;
-
-  s = JS_NewUCStringCopyN(cx, (jschar *)buf, length / 2);
-  if (!s)
-  {
-    JS_ReportOutOfMemory(cx);
-    return JS_FALSE;
-  }
-
-  JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(s));
-  return JS_TRUE;
+  return byteThing_decodeToString(cx, argc, vp, byteString_clasp);
 }
 
-/** Implements ByteString::toString method */
-JSBool ByteString_toString(JSContext *cx, uintN argc, jsval *vp)
+/** Implements ByteString.toByteString() */
+static JSBool ByteString_toByteString(JSContext *cx, uintN argc, jsval *vp)
 {
-  char 			buf[128];
-  byteString_handle_t	*hnd = JS_GetInstancePrivate(cx, JS_THIS_OBJECT(cx, vp), byteString_clasp, NULL);
-  JSString		*s;
-
-  if (!hnd)
-    return gpsee_throw(cx, CLASS_ID ".toString.invalid: ByteString::toString applied the wrong object type");
-
-  snprintf(buf, sizeof(buf), "[object " CLASS_ID " " GPSEE_SIZET_FMT "]", hnd->length);
-  s = JS_NewStringCopyZ(cx, buf);
-  if (!s)
-  {
-    JS_ReportOutOfMemory(cx);
-    return JS_FALSE;
-  }
-
-  JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(s));
-  return JS_TRUE;
+  return byteThing_toByteThing(cx, argc, vp, byteString_clasp, byteString_proto, sizeof(byteString_handle_t));
+}
+/** Implements ByteString.toByteArray() */
+static JSBool ByteString_toByteArray(JSContext *cx, uintN argc, jsval *vp)
+{
+  return byteThing_toByteThing(cx, argc, vp, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t));
 }
 
-/** Implements ByteString::toByteString method. Method returns a transcoded copy 
- *  of the ByteString in a new ByteString, or the original ByteString if the
- *  encodings are equivalent.
- */
-JSBool ByteString_toByteString(JSContext *cx, uintN argc, jsval *vp)
-{
-  const char 		*sourceCharset, *targetCharset;
-  jsval			*argv = JS_ARGV(cx, vp);
-  JSBool		ret;
-  unsigned char		*newBuf;
-  size_t		newBufLength;
-  JSObject		*newByteString;
-  byteString_handle_t	*hnd = JS_GetInstancePrivate(cx, JS_THIS_OBJECT(cx, vp), byteString_clasp, NULL);
-
-  if (argc == 0)
-  {
-    JS_SET_RVAL(cx, vp, JS_THIS(cx, vp));
-    return JS_TRUE;
-  }
-
-  if (argc != 2)
-    return gpsee_throw(cx, CLASS_ID ".toByteString.arguments.count");
-
-  if (!hnd)
-    return gpsee_throw(cx, CLASS_ID ".toByteString.invalid: ByteString::toByteString applied the wrong object type");
-
-  if (argv[0] == argv[1])
-  {
-    JS_SET_RVAL(cx, vp, JS_THIS(cx, vp));
-    return JS_TRUE;
-  }
-
-  JS_EnterLocalRootScope(cx);
-  sourceCharset = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-  targetCharset = JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
-
-  if ((sourceCharset && targetCharset) && ((sourceCharset == targetCharset) || (strcasecmp(sourceCharset, targetCharset) == 0)))
-  {
-    JS_SET_RVAL(cx, vp, JS_THIS(cx, vp));
-    ret = JS_TRUE;	
-    goto out;
-  }
-
-  ret = transcodeBuf_toBuf(cx, targetCharset, sourceCharset, &newBuf, &newBufLength, hnd->buffer, hnd->length, CLASS_ID ".toByteString");
-  if (ret == JS_FALSE)
-    goto out;
-
-  newByteString = byteString_fromCArray(cx, newBuf, newBufLength, NULL, 1);
-  if (!newByteString)
-  {
-    (void)JS_ReportOutOfMemory(cx);
-    ret = JS_FALSE;
-  }
-  else
-  {
-    JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(newByteString));
-  }
-
-  out:
-  JS_LeaveLocalRootScope(cx);
-  return ret;
-}
-
+/* TODO this function is now identical to the ByteArray getter */
 /** Default ByteString property getter.  Used to implement to implement Array-like property lookup ([]) */
 static JSBool ByteString_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   byteString_handle_t	*hnd;
-  int64                 index;
+  size_t                index;
+  JSObject *            rval;
 
   /* Acquire our byteString_handle_t */
   if (!(hnd = byteString_getHandle(cx, obj, "getProperty")))
     return JS_FALSE;
 
   /* Coerce index argument and do bounds checking upon it */
-  if (!byteString_retrieveAndCheckIndexArgument(cx, hnd, id, &index, "getProperty"))
-    return JS_FALSE;
+  if (byteThing_val2size(cx, id, &index, "getProperty"))
+  {
+    *vp = JSVAL_VOID;
+    return JS_TRUE;/*TODO confirm behavior*/
+  }
+
+  /* Bounds check */
+  if (index >= hnd->length)
+  {
+    *vp = JSVAL_VOID;
+    return JS_TRUE; /*TODO confirm behavior*/
+  }
 
   /* Return a new one-length ByteString instance */
-  *vp = OBJECT_TO_JSVAL(byteString_fromCArray(cx, hnd->buffer + index, 1, NULL, 0));
+  if (!(rval = byteThing_fromCArray(cx, hnd->buffer + index, 1, NULL,
+                                    byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0)))
+    return JS_FALSE;
+
+  *vp = OBJECT_TO_JSVAL(rval);
   return JS_TRUE;
 }
 
-/** Implements both ByteString.byteAt() and ByteString.charAt() */
-JSBool byteString_byarAt(JSContext *cx, uintN argc, jsval *vp, unsigned char isChar)
-{
-  //jsval                 *argv = JS_ARGV(cx, vp);
-  byteString_handle_t	*hnd;
-  size_t                index;
-  const char const      *methodName = isChar ? CLASS_ID "charAt" : CLASS_ID "byteAt";
-
-  /* Acquire our byteString_handle_t */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), methodName)))
-    return JS_FALSE;
-
-  /* Coerce argument and do bounds checking */
-  if (!byteThing_arg2size(cx, argc, vp, &index, 0, 0, hnd->length-1, JS_FALSE, 0, methodName))
-    return JS_FALSE;
-
-  /* ByteString.charAt() returns a new ByteString */
-  if (isChar)
-  {
-    JSObject *retval;
-
-    /* Instantiate a new ByteString for the return value */
-    if (!(retval = byteString_fromCArray(cx, hnd->buffer + index, 1, NULL, 0)))
-      return JS_FALSE;
-
-    /* Return the new ByteString! */
-    JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(retval));
-  }
-  /* ByteString.byteAt() returns a Number */
-  else {
-    JS_SET_RVAL(cx, vp, INT_TO_JSVAL(hnd->buffer[index]));
-  }
-  return JS_TRUE;
-}
 /** Implements ByteString.charAt() */
 JSBool ByteString_charAt(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteString_byarAt(cx, argc, vp, 1);
+  return byteThing_byarAt(cx, argc, vp, byteString_clasp, byteString_clasp, "ByteString.charAt");
 }
-/** Implements ByteString.byetAt() */
+/** Implements ByteString.byteAt() */
 JSBool ByteString_byteAt(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteString_byarAt(cx, argc, vp, 0);
+  return byteThing_byarAt(cx, argc, vp, byteString_clasp, byteString_clasp, "ByteString.byteAt");
+}
+/** Implements ByteString.charCodeAt() */
+JSBool ByteString_charCodeAt(JSContext *cx, uintN argc, jsval *vp)
+{
+  return byteThing_byarAt(cx, argc, vp, byteString_clasp, NULL, "ByteString.charCodeAt");
+}
+/** Implements ByteString.get() */
+JSBool ByteString_get(JSContext *cx, uintN argc, jsval *vp)
+{
+  return byteThing_byarAt(cx, argc, vp, byteString_clasp, NULL, "ByteString.get");
 }
 
 /** 
@@ -549,18 +237,18 @@ JSBool ByteString_byteAt(JSContext *cx, uintN argc, jsval *vp)
  */
 static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  JSObject 	*instance;
-  unsigned char	*buffer;
-  size_t	length;
-  int		stealBuffer = 0;
+  JSObject 	*instance;        /* Constructor return value */
+  unsigned char	*buffer;          /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
+  size_t	length;           /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
+  int		stealBuffer = 0;  /* whether or not we want a further private constructor function to make its own copy */
 
   /* ByteString() called as function. */   
   if (JS_IsConstructing(cx) != JS_TRUE)
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
+  /* This case is easy */
   if (argc == 0)
   {
-    /* Construct an empty byte string */
     length = 0;
     buffer = NULL;
     goto instanciate;
@@ -571,6 +259,7 @@ static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
     JSObject	*o = JSVAL_TO_OBJECT(argv[0]);
     void 	*c = o ? JS_GET_CLASS(cx, o) : NULL;
 
+    /* Copy constructor! */
     if ((c == (void *)byteString_clasp) || (c == (void *)byteArray_clasp))
     {
       byteThing_handle_t *h = JS_GetPrivate(cx, o);
@@ -580,12 +269,17 @@ static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
       goto instanciate;
     }
 
+    /* Construct from an array of byte Number values */
     if (JS_IsArrayObject(cx, o) == JS_TRUE)
     {
-      if (copyJSArray_toBuf(cx, o, &buffer, &length, CLASS_ID ".constructor") != JS_TRUE)
+      /* Setting 'buffer' to NULL indicates that we want copyJSArray_toBuf() to allocate
+       * a byte vector for us and return it through 'buffer' */
+      buffer = NULL;
+      stealBuffer = 1;
+
+      if (copyJSArray_toBuf(cx, o, 0, &buffer, &length, NULL, CLASS_ID ".constructor") != JS_TRUE)
 	return JS_FALSE;
 
-      stealBuffer = 1;	/* copyJSArray_toBuf allocates a buffer already */
       goto instanciate;
     }
   }
@@ -621,7 +315,8 @@ static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   return gpsee_throw(cx, CLASS_ID ".constructor.arguments: invalid kind or number of arguments");
 
   instanciate:
-  instance = byteString_fromCArray(cx, buffer, length, obj, stealBuffer);
+  instance = byteThing_fromCArray(cx, buffer, length, obj,
+                                  byteString_clasp, byteString_proto, sizeof(byteString_handle_t), stealBuffer);
   if (!instance)
   {
     JS_ReportOutOfMemory(cx);
@@ -647,7 +342,6 @@ static void ByteString_Finalize(JSContext *cx, JSObject *obj)
 {
   byteString_handle_t	*hnd = JS_GetPrivate(cx, obj);
 
-  /* TODO should this throw an error? */
   if (!hnd)
     return;
 
@@ -671,7 +365,8 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
   /* TODO support more delimiter types than scalar int */
 
   /* Acquire a pointer to our internal bytestring data */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "split")))
+  hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "split");
+  if (!hnd)
     return JS_FALSE;
   buf = hnd->buffer;
 
@@ -700,7 +395,8 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
     return gpsee_throw(cx, CLASS_ID ".split.arguments.type.invalid: %lf invalid byte value", delimiter_temp);
 
   /* Instantiate an array to hold our results */
-  if (!(retval = JS_NewArrayObject(cx, 0, NULL)))
+  retval = JS_NewArrayObject(cx, 0, NULL);
+  if (!retval)
     return JS_FALSE;
 
   /* Protect our array from garbage collector */
@@ -718,7 +414,8 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
       JSBool success;
       jsval oval;
       /* Instantiate new ByteArray */
-      JSObject *o = byteString_fromCArray(cx, buf + chunkstart, chunklen, NULL, 0);
+      JSObject *o = byteThing_fromCArray(cx, buf + chunkstart, chunklen, NULL,
+                                         byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
       if (!o)
         return JS_FALSE;
       /* Push the new ByteArray into our result array */
@@ -752,7 +449,8 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
   JSObject              *retval;
   
   /* Acquire a pointer to our internal bytestring data */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "slice")))
+  hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "slice");
+  if (!hnd)
     return JS_FALSE;
 
   /* @function
@@ -801,7 +499,8 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
 
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteString_fromCArray(cx, hnd->buffer + start, end - start, NULL, 0);
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
+                                byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
   if (retval)
@@ -822,7 +521,8 @@ JSBool ByteString_substr(JSContext *cx, uintN argc, jsval *vp)
   JSObject              *retval;
   
   /* Acquire a pointer to our internal bytestring data */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substr")))
+  hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substr");
+  if (!hnd)
     return JS_FALSE;
 
   size = hnd->length;
@@ -834,15 +534,17 @@ JSBool ByteString_substr(JSContext *cx, uintN argc, jsval *vp)
    */
 
   /* Get Javascript arguments */
-  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, CLASS_ID ".substr"))
+  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, byteString_clasp, "substr"))
     return JS_FALSE;
 
-  if (!byteThing_arg2size(cx, argc, vp, &len, 1, 1, size-start, JS_TRUE, hnd->length-start, CLASS_ID ".substr"))
+  if (!byteThing_arg2size(cx, argc, vp, &len, 1, 1, size-start, JS_TRUE, hnd->length-start, byteString_clasp, "substr"))
     return JS_FALSE;
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  if (!(retval = byteString_fromCArray(cx, hnd->buffer + start, len, NULL, 0)))
-      return JS_FALSE;
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, len, NULL,
+                                byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
+  if (!retval)
+    return JS_FALSE;
 
   /* Return new ByteString */
   JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(retval));
@@ -856,7 +558,8 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
   JSObject              *retval;
   
   /* Acquire a pointer to our internal bytestring data */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substring")))
+  hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substring");
+  if (!hnd)
     return JS_FALSE;
   size = hnd->length;
 
@@ -866,10 +569,10 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
    * @param   end       optional
    */
   /* Get Javascript arguments */
-  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, CLASS_ID ".substring"))
+  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, byteString_clasp, "substring"))
     return JS_FALSE;
 
-  if (!byteThing_arg2size(cx, argc, vp, &end,   1, 0, size-1, JS_TRUE, hnd->length-1, CLASS_ID ".substring"))
+  if (!byteThing_arg2size(cx, argc, vp, &end,   1, 0, size-1, JS_TRUE, hnd->length-1, byteString_clasp, "substring"))
     return JS_FALSE;
 
   /* This behavior corresponds with String.substring() */
@@ -881,7 +584,8 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
   }
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteString_fromCArray(cx, hnd->buffer + start, end - start, NULL, 0);
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
+                                byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
   if (retval)
@@ -897,54 +601,16 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
 /** ByteString_toSource() implements the ByteString member method toSource() */
 JSBool ByteString_toSource(JSContext *cx, uintN argc, jsval *vp)
 {
-  const char front[] = "(new require(\"binary\").ByteString([";
-  const char back[]  =                                      "]))";
-  char *source_string, *c;
-  unsigned char *buf;
-  byteString_handle_t * hnd;
-  int i, l;
-  JSString *retval;
-
-  /* Acquire a pointer to our internal bytestring data */
-  if (!(hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "toSource")))
-    return JS_FALSE;
-  l = hnd->length;
-  buf = hnd->buffer;
-
-  /* Allocate a string for */
-  source_string = JS_malloc(cx, sizeof(front) + sizeof(back) + l*4);
-  strcpy(source_string, front);
-  c = source_string + sizeof(front) - 1;
-  i = 0;
-  do {
-    c += sprintf(c, "%d", buf[i]);
-  } while (++i<l && (*(c++)=','));
-  strcpy(c, back);
-
-  retval = JS_NewString(cx, source_string, strlen(source_string));
-  if (retval)
-  {
-    JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(retval));
-    return JS_TRUE;
-  }
-
-  return JS_FALSE;
+  return byteThing_toSource(cx, argc, vp, byteString_clasp);
 }
 
 /** Implements ByteString.length getter */
 static JSBool ByteString_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  return byteThing_getLength(cx, obj, id, vp, "ByteString");
+  return byteThing_getLength(cx, obj, byteString_clasp, id, vp);
 }
 
-/**
- *  Initialize the Window class prototype.
- *
- *  @param	cx	Valid JS Context
- *  @param	obj	The Global Object
- *
- *  @returns	Window.prototype
- */
+/** Initializes binary.ByteString */
 JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 {
 /** Description of this class: */
@@ -972,13 +638,15 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
   static JSFunctionSpec instance_methods[] = 
   {
     JS_FN("toByteString", 	ByteString_toByteString, 	0, 0),
-    JS_FN("toString",		ByteString_toString,		0, 0),
+    JS_FN("toByteArray",  	ByteString_toByteArray,  	0, 0),
+    JS_FN("toString",		byteThing_toString,		0, 0),
     JS_FN("decodeToString",	ByteString_decodeToString,	0, 0),
     JS_FN("indexOf",		ByteString_indexOf,		0, 0),
     JS_FN("lastIndexOf",	ByteString_lastIndexOf,		0, 0),
     JS_FN("charAt",		ByteString_charAt,		0, 0),
     JS_FN("byteAt",		ByteString_byteAt,		0, 0),
-    JS_FN("charCodeAt",		ByteString_byteAt,		0, 0),
+    JS_FN("charCodeAt",		ByteString_charCodeAt,          0, 0),
+    JS_FN("get",        	ByteString_get,   		0, 0),
     JS_FN("split",              ByteString_split,               0, 0),
     JS_FN("slice",              ByteString_slice,               0, 0),
     JS_FN("substr",             ByteString_substr,              0, 0),
@@ -996,7 +664,7 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
   JSObject *proto =
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
-		   parentProto,		/* parent_proto - Prototype object for the class */
+		   parentProto,		/* parent_proto - parent class (ByteString.__proto__) */
  		   &byteString_class,	/* clasp - Class struct to init. Defs class for use by other API funs */
 		   ByteString,	/* constructor function - Scope matches obj */
 		   0,			/* nargs - Number of arguments for constructor (can be MAXARGS) */

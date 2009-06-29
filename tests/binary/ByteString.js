@@ -1,17 +1,17 @@
 #!/usr/bin/gsr -zzdd
 
-var verbose = 0;
-for each(var arg in arguments) switch (arg)
-{
+var verbose = 0, quiet = false;
+for each(var arg in arguments) switch (arg) {
     case '-v':
         verbose++;
+    case '-q':
+        quiet = true;
 }
 
 const ByteString = require("binary").ByteString;
 const Binary     = require("binary").Binary;
 
-function values(ob)
-{
+function values(ob) {
     var values = [];
     for(var key in ob)
         if (ob.hasOwnProperty(key))
@@ -85,6 +85,7 @@ var testUtils = {
         return function(full)
         {
             testUtils.dbg(1, 'testing exception: '+full);
+            full = full.toString();
             if (full.indexOf(part) == (full.length - part.length)) return true;
             print('EXCEPTION MISMATCH');
             print('V1', full);
@@ -138,16 +139,17 @@ const SUBSTRING = BYTESTRING + '.substring';
 const EX_SUBSTRING_OVERFLOW = function(n){return SUBSTRING+'.arguments.'+n+'.overflow'};
 const EX_SUBSTRING_UNDERFLOW = function(n){return SUBSTRING+'.arguments.'+n+'.underflow'};
 const EX_SUBSTRING_INVALID_RANGE = 'gpsee.module.ca.page.binary.ByteString.substring.range.invalid';
-const EX_INDEXOF_INVALID_BYTE = BYTESTRING + '.indexOf.arguments.0.range';
-const EX_LASTINDEXOF_INVALID_BYTE = BYTESTRING + '.lastIndexOf.arguments.0.range';
+const EX_INDEXOF_INVALID_BYTE = BYTESTRING + '.indexOf.arguments.0.byte.invalid';
+const EX_LASTINDEXOF_INVALID_BYTE = BYTESTRING + '.lastIndexOf.arguments.0.byte.invalid';
 
 var tests = [
 /* Various decode/extract tests (preserved from old test code. can't have too many tests!) */
 function(){return new ByteString("hello world").decodeToString("utf-8") === 'hello world'},
 function(){return new ByteString("hello").toByteString().decodeToString("ascii") === 'hello'},
+function(){return new ByteString("hello").toByteArray().decodeToString("ascii") === 'hello'},
 function(){return new ByteString("hello")[0].decodeToString("ascii") == 'h'},
 function(){return new ByteString("hello").charAt(1).decodeToString("US-ASCII") === 'e'},
-function(){return new ByteString("hello").byteAt(4) === 111},
+function(t){return t.eq(new ByteString("hello").byteAt(4).decodeToString('US-ASCII'), 'o')},
 function(){return new ByteString("hello").length === 5},
 function(){return new ByteString("hello", "utf-8").toByteString("utf-8", "utf-16").length === 12},
 function(){return (new ByteString("hello") instanceof Binary) === true},
@@ -172,8 +174,8 @@ function(t){t.ex=t.sw(EX_LASTINDEXOF_INVALID_BYTE); new ByteString(":)").lastInd
 function(t){return t.eq(new ByteString("Where's Waldo?!").charAt(0).decodeToString('US-ASCII'), 'W') },
 function(t){return t.eq(new ByteString("Where's Waldo?!").charAt(8).decodeToString('US-ASCII'), 'W') },
 /* byteAt tests */
-function(t){return t.eq(new ByteString("Where's Waldo?!").byteAt(0), 87) },
-function(t){return t.eq(new ByteString("Where's Waldo?!").byteAt(8), 87) },
+function(t){return t.eq(new ByteString("Where's Waldo?!").byteAt(0).get(0), 87) },
+function(t){return t.eq(new ByteString("Where's Waldo?!").byteAt(8).get(0), 87) },
 /* charCodeAt tests */
 function(t){return t.eq(new ByteString("Where's Waldo?!").charCodeAt(0), 87) },
 function(t){return t.eq(new ByteString("Where's Waldo?!").charCodeAt(8), 87) },
@@ -197,7 +199,10 @@ function(t) { t.ex = t.sw(EX_SUBSTRING_UNDERFLOW(0)); new ByteString('underflow'
 function(t) { return t.eq(new ByteString('Institutionalized education is a test of obedience!').substring(17,31).decodeToString('US-ASCII'), ' education is ') },
 /* toSource tests */
 /* TODO add unit test support for string comparison intended for comparing source code. In this case, the quotes around 'binary' may be double or single! Stupid Javascript! */
-function(t) { return t.eq(new ByteString('Bush rigged the elections!').toSource(), '(new require("binary").ByteString([66,117,115,104,32,114,105,103,103,101,100,32,116,104,101,32,101,108,101,99,116,105,111,110,115,33]))') },
+function(t) { return t.eq(new ByteString('Bush rigged the elections!').toSource(), '(new (require("binary").ByteString)([66,117,115,104,32,114,105,103,103,101,100,32,116,104,101,32,101,108,101,99,116,105,111,110,115,33]))') },
+//function(t) { return t.eq(eval(new ByteString(gobbledygook).toSource()).decodeToString('US-ASCII'), gobbledygook) },
+// should this even be a test?
+// function(t) { return t.eq(new ByteString("HELLO"), new ByteString("HELLO")) },
 /* undefined member method invocation */
 function(t) { t.ex = t.ew(' is not a function'); new ByteString('hi').notAFunction('args'); },
 ];
@@ -218,11 +223,13 @@ for each(var test in tests)
 }
 
 /* Report test results */
-print('passed '+passed+' tests');
-print('failed '+failed+' tests');
+if (!quiet) {
+  print('passed '+passed+' tests');
+  print('failed '+failed+' tests');
 
-if (!failed)
-    print('ALL TESTS PASSED');
-else
-    print('FAIL');
+  if (!failed)
+      print('ALL TESTS PASSED');
+  else
+      print('FAIL');
+}
 
