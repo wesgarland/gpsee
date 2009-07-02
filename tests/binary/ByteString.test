@@ -1,10 +1,3 @@
-VALUE MISMATCH
-V1 [object gpsee.module.ca.page.binary.gpsee.module.ca.page.binary.ByteString 55]
-V2 [object gpsee.module.ca.page.binary.ByteString 55]
-the test that failed this way:
-function (t) {
-    return t.eq(new ByteString(gobbledygook) + "", "[object gpsee.module.ca.page.binary.ByteString " + gobbledygook.length + "]");
-}
 EXCEPTION MISMATCH
 V1 gpsee.module.ca.page.binary.ByteString.substr.arguments.0: negative number is invalid
 V2 gpsee.module.ca.page.binary.ByteString.substr.arguments.0.underflow
@@ -12,14 +5,6 @@ the test that failed this way:
 function (t) {
     t.ex = t.sw(EX_SUBSTR_UNDERFLOW(0));
     (new ByteString("1234")).substr(-1, 3);
-}
-EXCEPTION MISMATCH
-V1 gpsee.module.ca.page.binary.ByteString.substr.arguments.1.underflow: expected value not less than 1, got 0
-V2 gpsee.module.ca.page.binary.ByteString.substr.arguments.0.underflow
-the test that failed this way:
-function (t) {
-    t.ex = t.sw(EX_SUBSTR_UNDERFLOW(0));
-    (new ByteString("invalid")).substr(0, 0);
 }
 EXCEPTION MISMATCH
 V1 gpsee.module.ca.page.binary.ByteString.substring.arguments.0: negative number is invalid

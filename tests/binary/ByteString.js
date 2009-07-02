@@ -191,7 +191,7 @@ function(t) { return t.eq(new ByteString('1234').substr(1,1).decodeToString('US-
 function(t) { return t.eq(new ByteString('1234').substr(2,2).decodeToString('US-ASCII'), '34') },
 function(t) { t.ex = t.sw(EX_SUBSTR_OVERFLOW(1)); new ByteString('1234').substr(2,3) },
 function(t) { t.ex = t.sw(EX_SUBSTR_UNDERFLOW(0)); new ByteString('1234').substr(-1,3) },
-function(t) { t.ex = t.sw(EX_SUBSTR_UNDERFLOW(0)); new ByteString('invalid').substr(0,0) },
+function(t) { t.ex = t.sw(EX_SUBSTR_UNDERFLOW(1)); new ByteString('invalid').substr(0,0) },
 /* substring tests */
 function(t) { return t.eq(new ByteString('1234').substring(0,1).decodeToString('US-ASCII'), '1') },
 function(t) { t.ex = t.sw(EX_SUBSTRING_OVERFLOW(0)); new ByteString('overflow').substring(17,19) },
