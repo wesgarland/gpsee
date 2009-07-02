@@ -40,8 +40,8 @@
  *  @version	$Id: binary_module.h,v 1.3 2009/06/15 17:48:37 wes Exp $
  */
 
-#ifndef GPSEE_BINARY_MODULE_H_LKAJSDF89WYUG3908H32G8Y8
-#define GPSEE_BINARY_MODULE_H_LKAJSDF89WYUG3908H32G8Y8
+#ifndef GPSEE_BINARY_MODULE_H
+#define GPSEE_BINARY_MODULE_H
 #include "bytethings.h"
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
@@ -81,5 +81,5 @@ static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const ch
 # include "jsnum.h"
 #endif
 
-#endif/*GPSEE_BINARY_MODULE_H_LKAJSDF89WYUG3908H32G8Y8*/
+#endif/*GPSEE_BINARY_MODULE_H*/
 

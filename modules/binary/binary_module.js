@@ -43,10 +43,6 @@
  *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
  */
 
-exports.helloWorld = function()
-{
-  print("hello, world");
-}
 /** ByteArray.forEach(callback)
  *  @name           ByteArray.forEach
  *  @param          value

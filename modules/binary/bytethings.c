@@ -43,10 +43,7 @@
 
 static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.3 2009/06/15 17:48:37 wes Exp $";
 
-#include <string.h>
-#include <jsapi.h>
 #include "gpsee.h"
-#include <jsnum.h>
 #include "binary_module.h"
 
 /** BE and LE flavours of UTF-16 do not emit the BOM. JS Strings are BOM-less and in machine order. */
@@ -74,10 +71,29 @@ static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.3 2009/
  */
 inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName)
 {
-  JSClass *clasp = JS_GET_CLASS(cx, obj);
-  const char *cn= claspp && *claspp ? (*claspp)->name : "Binary"; // requested class name, or "Binary"
-  const char *cn2 = clasp->name; // actual class name
+  JSClass *clasp;
+  const char *cn;
+  const char *cn2;
   byteThing_handle_t * hnd;
+
+  /* Determine a "requested class name" to be used in naming the exception to be thrown */
+  cn = claspp && *claspp ? (*claspp)->name : MODULE_ID ".Binary";
+
+  /* Check that obj is not NULL */
+  if (!obj)
+  {
+    gpsee_throw(cx, "%s.%s.internalerror: byteThing_getHandle() called with NULL JSObject pointer!", cn, methodName);
+    return NULL;
+  }
+
+  /* Retrieve 'obj's class */
+  clasp = JS_GET_CLASS(cx, obj);
+  if (!clasp)
+  {
+    gpsee_throw(cx, "%s.%s.internalerror: object %p has no class!", cn, methodName, obj);
+    return NULL;
+  }
+  cn2 = clasp->name;
 
   /* If claspp is not NULL and does not point to a NULL value, then obj's class must match the class pointed to by claspp.
    * If claspp is NULL or it points to a NULL value, then obj's class must match either byteString_clasp or byteArray_clasp. */
@@ -90,6 +106,7 @@ inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JS
     }
   }
 
+  /* Fetch our private data (byteThing_handle_t*, our return value) */
   hnd = JS_GetPrivate(cx, obj);
   if (!hnd)
   {
@@ -541,9 +558,7 @@ JSBool byteThing_getLength(JSContext *cx, JSObject *obj, JSClass *clasp, jsval i
   return JS_NewNumberValue(cx, hnd->length, vp);
 }
 
-/** Coerce a jsval to a ssize_t. TODO I would like to see more advanced argument processing available as part of GPSEE's core module support.
- *
- *  TODO remove methodName?
+/** Coerce a jsval to a ssize_t.
  *
  *  @returns  NULL on success; pointer to error message on error
  */
@@ -569,7 +584,7 @@ const char * byteThing_val2ssize(JSContext *cx, jsval val, ssize_t *retval, cons
   return NULL;
 }
 
-/** Coerce a jsval to a size_t. TODO I would like to see more advanced argument processing available as part of GPSEE's core module support.
+/** Coerce a jsval to a size_t.
  *
  *  TODO remove methodName?
  *
@@ -733,7 +748,8 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
         if (JS_GetArrayLength(cx, obj, &arrLen) == JS_FALSE)
           return JS_FALSE;
 
-        do {
+        do
+        {
           size_t len;
 
           /* Grow buffer if necessary */
@@ -797,12 +813,12 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
 
       /* jsdouble from jsval */
       if (JS_ValueToNumber(cx, *vals, &d) == JS_FALSE)
-        return gpsee_throw(cx, MODULE_ID".%s.%s.byte.invalid: cannot convert argument to numeric value",
+        return gpsee_throw(cx, MODULE_ID ".%s.%s.byte.invalid: cannot convert argument to numeric value",
                            clasp->name, methodName);
 
       /* validate byte value */
       if (d != (unsigned char)d)
-        return gpsee_throw(cx, MODULE_ID".%s.%s.byte.invalid: %lf is not a valid byte value",
+        return gpsee_throw(cx, MODULE_ID ".%s.%s.byte.invalid: %lf is not a valid byte value",
                            clasp->name, methodName, d);
 
       /* Grow buffer if necessary */
@@ -833,7 +849,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
   return JS_TRUE;
 }
 
-/** Coerce a function argument to a size_t. TODO I would like to see more advanced argument processing available as part of
+/** Coerce a function argument to a size_t.
  *  GPSEE's core module support.
  *
  *  @param      cx            Your JSContext
@@ -887,7 +903,7 @@ JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, 
   return JS_TRUE;
 }
 
-/** Coerce a function argument to an ssize_t. TODO I would like to see more advanced argument processing available as
+/** Coerce a function argument to an ssize_t.
  *  part of GPSEE's core module support.
  *
  *  @param      cx            Your JSContext
@@ -967,7 +983,7 @@ JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_
     hnd = (byteThing_handle_t*) JS_malloc(cx, btallocsize);
   else
   {
-    gpsee_throw(cx, MODULE_ID".internalerror: byteThing_fromCArray() asked to instantiate a new %s", clasp?clasp->name:"(NULL CLASP)");
+    gpsee_throw(cx, MODULE_ID ".internalerror: byteThing_fromCArray() asked to instantiate a new %s", clasp?clasp->name:"(NULL CLASP)");
     return NULL;
   }
 
@@ -1253,7 +1269,8 @@ JSBool byteThing_toSource(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp)
     c += 8;
   }
   i = 0;
-  if (l) do {
+  if (l) do
+  {
     c += sprintf(c, "%d", buf[i]);
   } while (++i<l && (*(c++)=','));
   strcpy(c, back);
@@ -1404,5 +1421,54 @@ JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t le
   JS_RemoveRoot(cx, &retval);
   /* Return the array object containing results */
   return retval;
+}
+
+/** Implements default property getter for ByteString and Byte Array. Used to implement to implement Array-like
+ *  property lookup ([]) */
+JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, JSClass *clasp)
+{
+  byteThing_handle_t *  hnd;
+  size_t                index;
+
+  /* The ByteArray getter may also be applied to ByteArray.prototype. Returning JS_TRUE without modifying the value at
+   * 'vp' will allow Javascript consumers to modify the properties of ByteArray.prototype. */
+  if (obj == byteArray_proto || obj == byteString_proto)
+    return JS_TRUE;
+
+  /* The ByteThing getter may also be applied to a property name that is not an integer. We are unconcerned with these
+   * on the native/JSAPI side. To give Javascript consumers free reign to assign arbitrary non-numeric properties to
+   * an instance of ByteArray, we just return JS_TRUE as in the case of application to ByteArray.prototype. Thus, if
+   * we cannot get a valid 'size_t' type from the property key, we pass through by returining JS_TRUE. */
+
+  /* Coerce index argument and do bounds checking upon it */
+  if (byteThing_val2size(cx, id, &index, "getProperty"))
+    return JS_TRUE;
+
+  /* Acquire our byteArray_handle_t */
+  hnd = byteThing_getHandle(cx, obj, &clasp, "getProperty");
+  if (!hnd)
+    return JS_FALSE;
+
+  /* If the property key is out of bounds, just return undefined */
+  if (index >= hnd->length)
+  {
+    *vp = JSVAL_VOID;
+    return JS_TRUE;
+  }
+
+  /* Return a new one-length ByteArray instance */
+  if (clasp == byteString_clasp)
+  {
+    /* ByteString[n] returns a new ByteString containing one byte */
+    JSObject *rval = byteThing_fromCArray(cx, hnd->buffer + index, 1, NULL,
+                                          byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
+    if (!rval)
+      return JS_FALSE;
+    *vp = OBJECT_TO_JSVAL(rval);
+  }
+  else
+    /* ByteArray[n] returns a Number */
+    *vp = INT_TO_JSVAL(hnd->buffer[index]);
+  return JS_TRUE;
 }
 

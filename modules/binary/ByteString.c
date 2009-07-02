@@ -47,9 +47,7 @@
 
 static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.1 2009/05/27 04:51:45 wes Exp $";
 #include "gpsee.h"
-#include <jsnum.h>
 #include "binary_module.h"
-#include <string.h>
 
 JSObject *byteString_proto;
 #define CLASS_ID MODULE_ID ".ByteString"
@@ -171,35 +169,7 @@ static JSBool ByteString_toByteArray(JSContext *cx, uintN argc, jsval *vp)
 /** Default ByteString property getter.  Used to implement to implement Array-like property lookup ([]) */
 static JSBool ByteString_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  byteString_handle_t	*hnd;
-  size_t                index;
-  JSObject *            rval;
-
-  /* Acquire our byteString_handle_t */
-  if (!(hnd = byteString_getHandle(cx, obj, "getProperty")))
-    return JS_FALSE;
-
-  /* Coerce index argument and do bounds checking upon it */
-  if (byteThing_val2size(cx, id, &index, "getProperty"))
-  {
-    *vp = JSVAL_VOID;
-    return JS_TRUE;/*TODO confirm behavior*/
-  }
-
-  /* Bounds check */
-  if (index >= hnd->length)
-  {
-    *vp = JSVAL_VOID;
-    return JS_TRUE; /*TODO confirm behavior*/
-  }
-
-  /* Return a new one-length ByteString instance */
-  if (!(rval = byteThing_fromCArray(cx, hnd->buffer + index, 1, NULL,
-                                    byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0)))
-    return JS_FALSE;
-
-  *vp = OBJECT_TO_JSVAL(rval);
-  return JS_TRUE;
+  return byteThing_getProperty(cx, obj, id, vp, byteString_clasp);
 }
 
 /** Implements ByteString.charAt() */

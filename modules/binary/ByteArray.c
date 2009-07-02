@@ -48,7 +48,6 @@ static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.1 2009/0
 static void	ByteArray_Finalize(JSContext *cx, JSObject *obj);
 static JSBool	ByteArray_getProperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 static JSBool	ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-//static void 	ByteArray_gcTrace(JSTracer *trc, JSObject *obj);
 static JSBool byteArray_requestSize(JSContext *cx, byteArray_handle_t *hnd, size_t newSize);
 static JSBool byteArray_append(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
 static JSBool byteArray_prepend(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
@@ -80,41 +79,8 @@ inline byteArray_handle_t * byteArray_getHandle(JSContext *cx, JSObject *obj, co
 /** Default ByteArray property getter.  Used to implement to implement Array-like property lookup ([]) */
 static JSBool ByteArray_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  byteArray_handle_t *  hnd;
-  size_t                index;
-
-  /* The ByteArray getter may also be applied to ByteArray.prototype. Returning JS_TRUE without modifying the value at
-   * 'vp' will allow Javascript consumers to modify the properties of ByteArray.prototype. */
-  if (obj == byteArray_proto)
-    return JS_TRUE;
-
-  /* The ByteArray getter may also be applied to a property name that is not an integer. We are unconcerned with these
-   * on the native/JSAPI side. To give Javascript consumers free reign to assign arbitrary non-numeric properties to
-   * an instance of ByteArray, we just return JS_TRUE as in the case of application to ByteArray.prototype. Thus, if
-   * we cannot get a valid 'size_t' type from the property key, we pass through by returining JS_TRUE. */
-
-  /* Coerce index argument and do bounds checking upon it */
-  if (byteThing_val2size(cx, id, &index, "getProperty"))
-    return JS_TRUE;
-
-  /* Acquire our byteArray_handle_t */
-  hnd = byteArray_getHandle(cx, obj, "getProperty");
-  if (!hnd)
-    return JS_FALSE;
-
-  /* If the property key is out of bounds, just return undefined */
-  if (index >= hnd->length)
-  {
-    *vp = JSVAL_VOID;
-    return JS_TRUE;
-  }
-
-  /* Return a new one-length ByteArray instance */
-  *vp = INT_TO_JSVAL(hnd->buffer[index]);
-  return JS_TRUE;
+  return byteThing_getProperty(cx, obj, id, vp, byteArray_clasp);
 }
-
-
 /** Implements ByteString.length getter */
 static JSBool ByteArray_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -134,8 +100,8 @@ static JSBool ByteArray_setLength(JSContext *cx, JSObject *obj, jsval id, jsval 
     return JS_FALSE;
 
   /* Coerce assignment r-value to size_t */
-  if ((errmsg=byteThing_val2size(cx, *vp, &size, "length.set"))) // TODO methodName isn't even used
-    return gpsee_throw(cx, CLASS_ID".length.set: %s", errmsg);
+  if ((errmsg=byteThing_val2size(cx, *vp, &size, "length.set")))
+    return gpsee_throw(cx, CLASS_ID ".length.set: %s", errmsg);
 
   /* Resize our byte vector */
   oldSize = hnd->length;
@@ -765,7 +731,7 @@ JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
     NULL,				/**< construct */
     NULL,				/**< xdrObject */
     NULL,				/**< hasInstance */
-    NULL, /*JS_CLASS_TRACE(ByteArray_gcTrace),*/	/**< GC Trace calls ByteArray_GCTrace */
+    NULL,               /**< GC Trace */
     NULL				/**< reserveSlots */
   };
 
