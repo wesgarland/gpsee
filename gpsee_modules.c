@@ -833,7 +833,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       /* Acquire write lock for file */
       gpsee_flock(cache_fd, GPSEE_LOCK_EX);
       /* Let's ask Spidermonkey's XDR API for a serialization context */
-      if ((xdr = gpsee_XDRNewFile(cx, JSXDR_ENCODE, NULL, cache_file)))
+      if ((xdr = gpsee_XDRNewFile(cx, JSXDR_ENCODE, cache_filename, cache_file)))
       {
         /* See above in the deserialization routine for a description of "cstrRutf8." */
         uint32 cstrRutf8 = JS_CStringsAreUTF8();
