@@ -191,7 +191,7 @@ static JSBool ByteArray(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
     JSObject	*o = JSVAL_TO_OBJECT(argv[0]);
     void 	*c = o ? JS_GET_CLASS(cx, o) : NULL;
 
-    if ((c == (void *)byteArray_clasp) || (c == (void *)byteArray_clasp))
+    if ((c == (void *)byteArray_clasp) || (c == (void *)byteString_clasp))
     {
       byteThing_handle_t *h = JS_GetPrivate(cx, o);
 
