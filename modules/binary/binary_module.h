@@ -78,7 +78,6 @@ static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const ch
 # define iconv(a,b,c,d,e)	gpsee_non_susv3_iconv(a,b,c,d,e)
 
 # endif
-# include "jsnum.h"
 #endif
 
 #endif/*GPSEE_BINARY_MODULE_H*/

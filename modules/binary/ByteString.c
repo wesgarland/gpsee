@@ -122,7 +122,7 @@ inline int byteString_retrieveAndCheckIndexArgument(JSContext *cx, byteString_ha
     if (!JS_ValueToNumber(cx, val, &d))
       return gpsee_throw(cx, CLASS_ID ".%s.arguments.invalidType: Number required", methodName);
     /* Avoid NaN et al, and ensure the floating-point value survives a conversion cast to int intact */
-    if ((!JSDOUBLE_IS_FINITE(d)) || (d != (int64)d))
+    if (d != (int64)d)
       return gpsee_throw(cx, CLASS_ID ".%s.arguments.integer.invalid: %lf is an invalid index", methodName, d);
     *index = (int64)d;
   }

@@ -568,7 +568,7 @@ const char * byteThing_val2ssize(JSContext *cx, jsval val, ssize_t *retval, cons
   jsdouble temp;
 
   /* TODO more detailed error reporting! */
-  if (!JS_ValueToNumber(cx, val, &temp) || !JSDOUBLE_IS_FINITE(temp))
+  if (!JS_ValueToNumber(cx, val, &temp))
   {
     return "invalid type";
   }
@@ -649,7 +649,7 @@ const char * byteThing_val2byte(JSContext *cx, jsval val, unsigned char *retval)
   }
 
   /* TODO better error reporting? */
-  if (!JS_ValueToNumber(cx, val, &temp) || !JSDOUBLE_IS_FINITE(temp) || temp!=(unsigned char)temp)
+  if (!JS_ValueToNumber(cx, val, &temp) || temp!=(unsigned char)temp)
   {
     snprintf(errmsg, sizeof(errmsg), "%lf is not a valid byte value (only integers in the range 0<=n<=255 are valid)", temp);
     return errmsg;
