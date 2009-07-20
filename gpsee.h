@@ -59,6 +59,9 @@
 #ifndef GPSEE_H
 #define GPSEE_H
 
+#include <prthread.h>
+#include <prlock.h>
+
 #if (defined(GPSEE_DEBUG_BUILD) || defined(DEBUG)) && !defined(JS_DEBUG)
 # define JS_DEBUG 1	/** Missing in early 1.8.1-pre */
 #endif
@@ -165,6 +168,17 @@ typedef enum
 typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
 typedef struct moduleHandle moduleHandle_t; /**< Handle describing a loaded module */
 
+/** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
+typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
+/** Data struct for entries in the asynchronous callback multiplexor */
+typedef struct GPSEEAsyncCallback
+{
+  GPSEEAsyncCallbackFunction  callback;   /**< Callback function */
+  void                        *userdata;  /**< Opaque data pointer passed to the callback */
+  JSContext                   *cx;        /**< Pointer to JSContext for the callback */
+  struct GPSEEAsyncCallback   *next;      /**< Linked-list link! */
+} GPSEEAsyncCallback;
+
 /** Handle describing a gpsee interpreter important details and state */
 typedef struct
 {
@@ -179,11 +193,6 @@ typedef struct
   errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
   void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
 
-  size_t		branchCount;		/**< Number of times the branch callback has been called */
-  size_t		*branchCB_Masks;	/**< Array of callback count masks used to decide when to call callback functions */
-  GPSEEBranchCallback	*branchCB_Funcs;	/**< Array of callback functions corresponding to masks */
-  void			**branchCB_Privs;	/**< Array of private variables for use by callback functions */
-
   moduleHandle_t *	*modules;		/**< List of loaded modules and their shutdown requirements etc */
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
   size_t		modules_len;		/**< Number of slots allocated in modules */
@@ -193,9 +202,16 @@ typedef struct
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
 #endif
-  unsigned int          useCompilerCache:1;     /* Do we use the compiler cache? */
+  /** Pointer to linked list of OPCB entries */
+  GPSEEAsyncCallback    *asyncCallbacks;
+  PRLock                *asyncCallbacks_lock;
+  PRThread              *asyncCallbackTriggerThread;
+  unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
 } gpsee_interpreter_t;
 
+GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
+void gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi);
+void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
