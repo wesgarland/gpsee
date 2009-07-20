@@ -418,104 +418,223 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
   return JS_TRUE;
 }
 
-JSBool gpsee_branchCB_GC(JSContext *cx, JSScript *script, void *unused)
+/******************************************************************************************** Asynchronous Callbacks */
+
+JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp);
+/** Thread for triggering closures registered with gpsee_addAsyncCallback() */
+static void gpsee_asyncCallbackTriggerThreadFunc(void *jsi_vp)
 {
-  JS_MaybeGC(cx);
+  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) jsi_vp;
+  GPSEEAsyncCallback *cb;
 
-  return JS_TRUE;
-}
+  /* Run this loop as long as there are async callbacks registered */
+  do {
+    JSContext *cx;
 
-/** Routine which runs GPSEEBranchCallback functions by hooking 
- *  Spidermonkey's branch callback.
- */
-JSBool gpsee_branchCallback(JSContext *cx, JSScript *script)
-{
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t 		bc;
-  size_t		*mask_p;
+    /* Acquire mutex protecting jsi->asyncCallbacks */
+    PR_Lock(jsi->asyncCallbacks_lock);
 
-  GPSEE_ASSERT(jsi != NULL);
-
-  bc = ++(jsi->branchCount);	/* let it race */
-  if ((bc & GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY) != 0)
-    return JS_TRUE;
-
-  for (mask_p = jsi->branchCB_Masks; *mask_p; mask_p++)
-  {
-    if ((jsi->branchCount & *mask_p) == 0)
+    /* Grab the head of the list */
+    cb = jsi->asyncCallbacks;
+    if (cb)
     {
-      int cbIdx = mask_p - jsi->branchCB_Masks;
+      /* Grab the JSContext from the head */
+      cx = cb->cx;
 
-      if (jsi->branchCB_Funcs[cbIdx](cx, script, jsi->branchCB_Privs[cbIdx]) == JS_FALSE)
-	return JS_FALSE;
+      /* Trigger operation callbacks on the first context */
+      JS_TriggerOperationCallback(cx);
+
+      /* Iterate over each operation callback */
+      while ((cb = cb->next))
+      {
+        /* Trigger operation callback on each new context found */
+        if (cx != cb->cx)
+        {
+          cx = cb->cx;
+          JS_TriggerOperationCallback(cx);
+        }
+      }
     }
+
+    /* Relinquish mutex */
+    PR_Unlock(jsi->asyncCallbacks_lock);
+
+    /* Sleep for a bit */
+    sleep(1); // TODO this should be configurable!!
+  }
+  while (jsi->asyncCallbacks);
+}
+/** Our "Operation Callback" multiplexes this Spidermonkey facility. It is called automatically by Spidermonkey, and is
+ *  triggered on a regular interval by gpsee_asyncCallbackTriggerThreadFunc() */
+static JSBool gpsee_operationCallback(JSContext *cx)
+{
+  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  GPSEEAsyncCallback *cb;
+
+  /* The callbacks registered with GPSEE may want to invoke JSAPI functionality, which might toss us back out
+   * to another invocation of gpsee_operationCallback(). The JSAPI docs for "operation callbacks" [1] suggest
+   * removing the operation callback before calling JSAPI functionality from within an operation callback,
+   * then resetting it when we're done making JSAPI calls. Since it's rather inexpensive, we'll just do it here
+   * and then consumers of gpsee_addAsyncCallback() needn't worry about it (we don't want them touching that
+   * callback slot anyway! 
+   *
+   * [1] https://developer.mozilla.org/en/JS_SetOperationCallback
+   *
+   * Another side note: we do it before if(cb) because if gpsee_asyncCallbacks is empty, we want to uninstall our
+   * operation callback altogether. */
+  JS_SetOperationCallback(cx, NULL);
+
+  cb = jsi->asyncCallbacks;
+  if (cb)
+  {
+    GPSEEAsyncCallback *next;
+    do
+    {
+      /* Save the 'next' link in case the callback deletes itself */
+      next = cb->next;
+      /* Invoke callback */
+      if (!((*(cb->callback))(cb->cx, cb->userdata)))
+        /* Propagate exceptions */
+        return JS_FALSE;
+    }
+    while ((cb = next));
+
+    /* Reinstall our operation callback */
+    JS_SetOperationCallback(cx, gpsee_operationCallback);
+
+    return JS_TRUE;
   }
 
   return JS_TRUE;
 }
-
-/** Add a branch callback to the runtime referenced by jsi.
+/** Registers a closure of the form callback(cx, userdata) to be called by Spidermonkey's Operation Callback API.
+ *  You must *NEVER* call this function from *within* a callback function which has been registered with this facility!
+ *  The punishment might just be deadlock! Don't call this function from a different thread/JSContext than the one that
+ *  that you're associating the callback with.
  *
- *  The branch callback is called every time the JS interpreter
- *  branches backward during execution (i.e. during loops), 
- *  every time a function returns, and at the end of script.
- *  
- *  This facility is normally used to check if GC needs to run,
- *  if scripts have run away, etc.
+ *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot!
  *
- *  The gpsee environment basically multiplexes this facility
- *  so that it can be used by custom classes (etc) more easily,
- *  without having to know about any other callbacks which may
- *  have been previously installed.
- *
- *  @warning 	Use JS_SetBranchCallback() ONLY to set the branch
- *		callback in contexts which are not created by gpsee.
- *		When those contexts are created, they should call
- *		JS_SetBranchCallback(cx, gpsee_branchCallback);
- *
- *  @param	cb		A JSBranchCallback function
- *  @param	zeroMask        When ((# of branch callbacks) & oneModMask) == 0,  
- *				gpsee will run the callback function cb. 
- *				If zeroMask is 0, a default value will be chosen.
- *  @param	private		A private pointer passed to the branch callback
- *				function on each invocation. It is the caller's
- *				job to make sure this pointer stays valid for
- *				the lifetime of the callback handler.
- *
- *  @returns	0 on success
- *
- *  @warning	The gpsee_branchCallback is written a little racily. This 
- *		means that some events could get missed in busy, multi-threaded
- *		applications.
- *
- *  @see JS_SetBranchCallback()
+ *  @returns      A pointer that can be used to delete the callback registration at a later time, or NULL on error.
  */
-int gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *private, size_t zeroMask)
+GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t		cbIdx;
+  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  GPSEEAsyncCallback *newcb, **pp;
 
-  GPSEE_ASSERT(jsi != NULL);
+  /* Allocate the new callback entry struct */
+  newcb = JS_malloc(cx, sizeof(GPSEEAsyncCallback));
+  if (!newcb)
+  {
+    JS_ReportOutOfMemory(cx);
+    return NULL;
+  }
 
-  cbIdx = jsi->branchCount++;
+  /* Initialize the new callback entry struct (except 'next' member, which gets set while we have a lock on the list) */
+  newcb->callback = callback;
+  newcb->userdata = userdata;
+  newcb->cx = cx;
 
-  /** Funcs and Masks are NULL-terminated vectors */
-  jsi->branchCB_Funcs = realloc(jsi->branchCB_Funcs, (cbIdx + 2) * sizeof(jsi->branchCB_Funcs));
-  jsi->branchCB_Privs = realloc(jsi->branchCB_Privs, (cbIdx + 2) * sizeof(jsi->branchCB_Privs));
-  jsi->branchCB_Masks = realloc(jsi->branchCB_Masks, (cbIdx + 2) * sizeof(jsi->branchCB_Masks));
+  /* Acquire mutex protecting jsi->asyncCallbacks */
+  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Insert the new callback into the list */
+  /* Locate a sorted insertion point into the linked list; sort by 'cx' member */
+  for (pp = &jsi->asyncCallbacks; *pp && (*pp)->cx > cx; pp = &(*pp)->next);
+  /* Insert! */
+  newcb->next = *pp;
+  *pp = newcb;
+  /* Relinquish mutex */
+  PR_Unlock(jsi->asyncCallbacks_lock);
+  /* If this is the first time this context has had a callback registered, we must register a context callback to clean
+   * up all callbacks associated with this context. Note that we don't want to do this for the primordial context, but
+   * it's a moot point because gpsee_maybeGC() is registered soon after context instantiation and should never be
+   * removed until just before context finalization, anyway. */
+  if (!newcb->next || newcb->next->cx != cx)
+    gpsee_getContextPrivate(cx, &jsi->asyncCallbacks, 0, gpsee_removeAsyncCallbackContext);
 
-  jsi->branchCB_Funcs[cbIdx] = cb;
-  jsi->branchCB_Privs[cbIdx] = private;
-  jsi->branchCB_Masks[cbIdx] = zeroMask | GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY;
+  /* Return a pointer to the new callback entry struct */
+  return newcb;
+}
+/** Deletes a single gpsee_addAsyncCallback() registration. You may call this function from within the callback closure
+ *  you are deleting, but not from within a different one. You must not call this function if you are not in the
+ *  JSContext associated with the callback you are removing.
+ *
+ *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
+void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *d)
+{
+  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  GPSEEAsyncCallback *cb;
 
-  jsi->branchCB_Masks[cbIdx + 1] = 0;
+  /* Acquire mutex protecting jsi->asyncCallbacks */
+  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Locate the entry we want */
+  for (cb = jsi->asyncCallbacks; cb && cb->next != d; cb = cb->next);
+  /* Remove the entry from the linked list */
+  cb->next = cb->next->next;
+  /* Relinquish mutex */
+  PR_Unlock(jsi->asyncCallbacks_lock);
+  /* Free the memory */
+  JS_free(cx, d);
+}
+/** Deletes any number of gpsee_addAsyncCallback() registrations for a given JSContext. This is NOT SAFE to call from
+ *  within such a callback. You must not call this function if you are not in the JSContext associated with the
+ *  callback you are removing. This function is intended for being called during the finalization of a JSContext (ie.
+ *  during the context callback, gpsee_contextCallback().)
+ *
+ *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
+JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
+{
+  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  GPSEEAsyncCallback **cb, **cc, *freeme = NULL;
 
-#if 0
-  JS_SetBranchCallback(cx, gpsee_branchCallback);
-#else
-#warning FIX ME BRANCH CB MULTIPLEXOR	
-#endif
-  return 0;
+  if (contextOp != JSCONTEXT_DESTROY)
+    return JS_TRUE;
+
+  /* Acquire mutex protecting jsi->asyncCallbacks */
+  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Locate the first entry we want to remove */
+  for (cb = &jsi->asyncCallbacks; *cb && (*cb)->cx != cx; cb = &(*cb)->next);
+  if (*cb)
+  {
+    freeme = *cb;
+    /* Locate the final entry we want remove */
+    for (cc = cb; *cc && (*cc)->cx == cx; cc = &(*cc)->next);
+    /* Remove all the entries we grabbed */
+    *cb = *cc;
+  }
+  /* Relinquish mutex */
+  PR_Unlock(jsi->asyncCallbacks_lock);
+
+  /* Free the memory */
+  while (freeme)
+  {
+    GPSEEAsyncCallback *next = freeme->next;
+    JS_free(cx, freeme);
+    /* Break at end of removed segment */
+    if (&freeme->next == cc)
+      break;
+    freeme = next;
+  }
+  return JS_TRUE;
+}
+/** Deletes all gpsee_addAsyncCallback() registrations */
+void gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi)
+{
+  GPSEEAsyncCallback *cb, *d;
+  JSContext *cx = jsi->cx;
+  /* Delete everything! */
+  cb = jsi->asyncCallbacks;
+  while (cb)
+  {
+    d = cb->next;
+    JS_free(cx, cb);
+    cb = d;
+  }
+  jsi->asyncCallbacks = NULL;
+}
+static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
+{
+  JS_MaybeGC(cx);
+  return JS_TRUE;
 }
 
 /**
@@ -525,6 +644,26 @@ int gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *private
  */
 int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
 {
+  GPSEEAsyncCallback * cb;
+
+  /* Clean up "operation callback" stuff */
+  /* Cut off the head of the linked list to ensure that the "operation callback" trigger thread doesn't begin a new
+   * run over its contents */
+  /* Acquire mutex protecting jsi->asyncCallbacks */
+  PR_Lock(interpreter->asyncCallbacks_lock);
+  cb = interpreter->asyncCallbacks;
+  interpreter->asyncCallbacks = NULL;
+  /* Wait for the trigger thread to see this */
+  PR_JoinThread(interpreter->asyncCallbackTriggerThread);
+  interpreter->asyncCallbackTriggerThread = NULL;
+  /* Now we can free the contents of the list */
+  interpreter->asyncCallbacks = cb;
+  gpsee_removeAsyncCallbacks(interpreter);
+  /* Relinquish mutex */
+  PR_Unlock(interpreter->asyncCallbacks_lock);
+  /* Destroy mutex */
+  PR_DestroyLock(interpreter->asyncCallbacks_lock);
+
   gpsee_shutdownModuleSystem(interpreter->cx);
 
   JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
@@ -657,15 +796,23 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   interpreter->rt 	 	= rt;
 #endif
   
-#if 0
-  gpsee_addBranchCallback(cx, gpsee_branchCB_GC, NULL, atoi(rc_default_value(rc, "gpsee_GC_branchCallback_zeroMask", "0x7fff")));
-#else
-#warning FIXME GC IS BUSTED
-#endif
-
   gpsee_initializeModuleSystem(cx);
 
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
+
+  /* Initialize async callback subsystem */
+  interpreter->asyncCallbacks = NULL;
+  /* Create mutex to protect access to 'asyncCallbacks' */
+  interpreter->asyncCallbacks_lock = PR_NewLock();
+  /* Start the "operation callback" trigger thread */
+  JS_SetOperationCallback(cx, gpsee_operationCallback);
+  interpreter->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
+        interpreter, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_UNJOINABLE_THREAD, 0);
+  if (!interpreter->asyncCallbackTriggerThread)
+    panic(__FILE__ ": TERRIBL ERROR: PR_CreateThread() failed!");
+  /* Add a callback to spin the garbage collector occasionally */
+  gpsee_addAsyncCallback(cx, gpsee_maybeGC, NULL);
+  /* Add a context callback to remove any async callbacks associated with the context */
 
   return interpreter;
 }
