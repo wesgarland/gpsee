@@ -75,7 +75,6 @@ inline byteArray_handle_t * byteArray_getHandle(JSContext *cx, JSObject *obj, co
   return hnd;
 }
 
-/* TODO this function is now identical to the ByteString getter */
 /** Default ByteArray property getter.  Used to implement to implement Array-like property lookup ([]) */
 static JSBool ByteArray_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -186,30 +185,42 @@ static JSBool ByteArray(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
     goto instanciate;
   }
 
-  if ((argc == 1) && JSVAL_IS_OBJECT(argv[0]))
+  if (argc == 1)
   {
-    JSObject	*o = JSVAL_TO_OBJECT(argv[0]);
-    void 	*c = o ? JS_GET_CLASS(cx, o) : NULL;
+    jsdouble d;
 
-    if ((c == (void *)byteArray_clasp) || (c == (void *)byteString_clasp))
+    if (JSVAL_IS_OBJECT(argv[0]))
     {
-      byteThing_handle_t *h = JS_GetPrivate(cx, o);
+      JSObject	*o = JSVAL_TO_OBJECT(argv[0]);
+      void 	*c = o ? JS_GET_CLASS(cx, o) : NULL;
 
-      buffer = (unsigned char *)h->buffer;
-      length = h->length;
-      goto instanciate;
+      if ((c == (void *)byteArray_clasp) || (c == (void *)byteString_clasp))
+      {
+        byteThing_handle_t *h = JS_GetPrivate(cx, o);
+
+        buffer = (unsigned char *)h->buffer;
+        length = h->length;
+        goto instanciate;
+      }
+
+      if (JS_IsArrayObject(cx, o) == JS_TRUE)
+      {
+        /* Setting 'buffer' to NULL indicates that we want copyJSArray_toBuf() to allocate
+         * a byte vector for us and return it through 'buffer' */
+        buffer = NULL;
+        stealBuffer = 1;
+
+        if (copyJSArray_toBuf(cx, o, 0, &buffer, &length, NULL, CLASS_ID ".constructor") != JS_TRUE)
+          return JS_FALSE;
+
+        goto instanciate;
+      }
     }
 
-    if (JS_IsArrayObject(cx, o) == JS_TRUE)
+    else if (JS_ValueToNumber(cx, argv[0], &d) && d == (size_t)d)
     {
-      /* Setting 'buffer' to NULL indicates that we want copyJSArray_toBuf() to allocate
-       * a byte vector for us and return it through 'buffer' */
+      length = (size_t)d;
       buffer = NULL;
-      stealBuffer = 1;
-
-      if (copyJSArray_toBuf(cx, o, 0, &buffer, &length, NULL, CLASS_ID ".constructor") != JS_TRUE)
-	return JS_FALSE;
-
       goto instanciate;
     }
   }
@@ -296,7 +307,6 @@ static JSBool byteArray_requestSize(JSContext *cx, byteArray_handle_t *hnd, size
     size_t roundUp = 16;
     while (roundUp < newSize)
       roundUp <<= 1;
-    /* TODO It seems like we don't really need to know 'capacity.' realloc()'s got our back */
 
     hnd->buffer = JS_realloc(cx, hnd->buffer, roundUp);
     if (!hnd->buffer)
@@ -478,7 +488,9 @@ static JSBool ByteArray_push(JSContext *cx, uintN argc, jsval *vp)
   for (i=0; i<argc; i++)
   {
     jsdouble d;
-    if (!JS_ValueToNumber(cx, argv[i], &d) || d != (unsigned char)d)
+    if (!JS_ValueToNumber(cx, argv[i], &d))
+      return gpsee_throw(cx, CLASS_ID ".push.argument.%d.invalid: invalid byte value!", i);
+    if (d != (unsigned char)d)
       return gpsee_throw(cx, CLASS_ID ".push.argument.%d.invalid: %lf is not a valid byte value!", i, d);
     hnd->buffer[hnd->length++] = (unsigned char)d;
   }
