@@ -221,6 +221,7 @@ int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_priv
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
 void 			gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
 void *			gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+JSContextCallback       gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
 int                     gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
                         JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage);
 JSBool 			gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
