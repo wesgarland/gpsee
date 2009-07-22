@@ -233,5 +233,5 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
 
 JSContextCallback gpsee_setContextCallback(JSContext *cx, JSContextCallback cb)
 {
-  return gpsee_getContextPrivate(cx, NULL, 0, cb);
+  return (JSContextCallback) gpsee_getContextPrivate(cx, NULL, 0, cb);
 }
