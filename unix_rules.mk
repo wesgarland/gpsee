@@ -6,7 +6,7 @@ ifneq ($(MAKECMDGOALS),dist-clean)
 ifneq ($(MAKECMDGOALS),all-clean)
 ifneq ($(MAKECMDGOALS),build_debug)
 depend depend.mk: 	XFILES=$(sort $(filter %.c %.cc %.cpp %.cxx,$(DEPEND_FILES)))
-depend depend.mk: 	Makefile $(DEPEND_FILES)
+depend depend.mk: 	$(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) Makefile $(DEPEND_FILES)
 ifeq (X$(JSAPI_INCLUDE_DIR),X)
 			$(error Your JSAPI include directory is not specified. This is \
 			normally set in spidermonkey/vars.mk, which is in turn\
@@ -28,20 +28,23 @@ clean:
 	-$(if $(strip $(PROGS)), $(RM) $(PROGS))
 	-$(if $(strip $(EXPORT_PROGS)), $(RM) $(EXPORT_PROGS))
 	-$(if $(strip $(AUTOGEN_HEADERS)), $(RM) $(AUTOGEN_HEADERS))
+	-$(if $(strip $(AUTOGEN_SOURCE)), $(RM) $(AUTOGEN_SOURCE))
 	-$(if $(strip $(EXTRA_CLEAN_RULE)), $(MAKE) $(EXTRA_CLEAN_RULE))
 	$(RM) depend.mk
 
 build_debug:
 	@echo "Depend Files: $(DEPEND_FILES)"
+	@echo "GPSEE Source: $(GPSEE_SRC_DIR)"
 	@echo "GPSEE Prefix: $(GPSEE_PREFIX_DIR)"
 	@echo "JSAPI Build:  $(SPIDERMONKEY_BUILD)"
 	@echo "CC:           $(CC)"
 	@echo "CFLAGS:       $(CFLAGS)"
 	@echo "CPPFLAGS:     $(CPPFLAGS)"
-	@echo "LDFLAGS:      $(LDFLAGS)"
-	@echo "LOADLIBES:    $(LOADLIBES)"
 	@echo "CXX:          $(CXX)"
 	@echo "CXXFLAGS:     $(CXXFLAGS)"      
+	@echo "LD:           $(LD)"
+	@echo "LDFLAGS:      $(LDFLAGS)"
+	@echo "LOADLIBES:    $(LOADLIBES)"
 
 # Install shared libraries
 install-nodeps install install-solibs: XLIBS =$(strip $(filter %.$(SOLIB_EXT),$(EXPORT_LIBS)))

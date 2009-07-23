@@ -46,3 +46,6 @@ endif
 
 GPSEE_PREFIX_DIR	?= /usr/local/gpsee
 GSR_SHEBANG_LINK	?= /usr/bin/gsr
+
+PATH:=/bin\:/usr/bin\:/usr/sfw/bin\:/usr/ccs/bin\:$(PATH)
+export PATH
