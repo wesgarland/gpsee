@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.7 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.8 2009/07/23 21:19:01 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.8  2009/07/23 21:19:01  wes
+ *  Added ByteString_Cast
+ *
  *  Revision 1.7  2009/07/23 19:00:40  wes
  *  Merged with upstream
  *
@@ -370,6 +373,14 @@ static jsbool_t  __attribute__((unused)) __jsbool = js_false;
 static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 #endif
 
+/** Generic structure for casting pointer-like-things which we store in 
+ *  private slots for various modules, used to facilitate casts.
+ */
+typedef struct
+{
+  size_t                length;                 /**< Number of characters in buf */
+  unsigned char         *buffer;                /**< Backing store */
+} byteThing_handle_t;
 
 #define GPSEE_SIZET_FMT       "%zd"
 #define GPSEE_PTR_FMT         "%p"
