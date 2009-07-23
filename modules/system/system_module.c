@@ -152,7 +152,7 @@ static JSBool system_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 	break;
 
       case ERANGE:
-	snprintf(buf, sizeof(buf), "Error number #%i (description more than %ld bytes)", errnum, sizeof(buf) -1);
+	snprintf(buf, sizeof(buf), "Error number #%i (description more than " GPSEE_SIZET_FMT " bytes)", errnum, sizeof(buf) -1);
 	break;
     }
   }
