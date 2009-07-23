@@ -44,10 +44,11 @@
 lastword ?= $(if $1,$(word $(words $1),$1))
 
 GPSEE_SRC_DIR 		?= ..
+GPSEE_CONFIG		?= $(GPSEE_SRC_DIR)/gpsee-config
 #LIBFFI_SRC		?= $(HOME)/libffi-3.0.8
 LIBFFI_SRC		?= $(lastword $(sort $(wildcard $(HOME)/libffi-3*[0-9])))
 PKG_CONFIG		?= pkg-config
-LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)/libffi
+LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)
 LIBFFI_MAKE_OPTIONS	?= -j3
 TR			?= tr
 
