@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.9 2009/07/23 18:34:37 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.10 2009/07/23 19:00:40 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.10  2009/07/23 19:00:40  wes
+ *  Merged with upstream
+ *
  *  Revision 1.9  2009/07/23 18:34:37  wes
  *  Added *gpsee_getInstancePrivateNTN, always set JS version
  *
@@ -93,7 +96,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.9 2009/07/23 18:34:37 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.10 2009/07/23 19:00:40 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"

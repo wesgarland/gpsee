@@ -37,7 +37,7 @@
  *  @file	binary_module.h		Symbols shared between classes/objects in the binary module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: binary_module.h,v 1.3 2009/06/15 17:48:37 wes Exp $
+ *  @version	$Id: binary_module.h,v 1.4 2009/07/23 19:00:40 wes Exp $
  */
 
 #ifndef GPSEE_BINARY_MODULE_H

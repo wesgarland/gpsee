@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.6 2009/07/23 18:35:13 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.7 2009/07/23 19:00:40 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.7  2009/07/23 19:00:40  wes
+ *  Merged with upstream
+ *
  *  Revision 1.6  2009/07/23 18:35:13  wes
  *  Added *gpsee_getInstancePrivateNTN
  *
