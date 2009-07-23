@@ -32,18 +32,19 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-ifeq ($(UNAME_RELEASE), 5.10)
-GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
-endif
 
-ifeq ($(UNAME_RELEASE), 5.11)
-GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
-endif
+## @file	Makefile	Helpers for running tests. `make` diffs test
+##				results against "committed" test results.
+##				`make commit` commits test results.
+## @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
+## @date	June 2009
+## @version	$Id:$
 
-ifeq ($(UNAME_RELEASE), 5.12)
-GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
-endif
+all ::
+	-./ByteString.js -q > ByteString.test.temp && touch ByteString ByteString.test && diff ByteString.test ByteString.test.temp
+	-./ByteArray.js -q > ByteArray.test.temp && touch ByteArray.test && diff ByteArray.test ByteArray.test.temp
 
-NCURSES_LIB_NAME = curses
-ICONV_LIB_NAME = 
-LDFLAGS_SOLIB_DIRS = $(foreach SOLIB_DIR, $(SOLIB_DIRS), -L$(SOLIB_DIR) -R$(SOLIB_DIR))
+commit ::
+	-mv ByteString.test.temp ByteString.test
+	-mv ByteArray.test.temp ByteArray.test
+

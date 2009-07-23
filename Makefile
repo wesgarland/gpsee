@@ -110,7 +110,7 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
-EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))
 EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h 
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
@@ -123,6 +123,7 @@ build all install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPOR
 install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
+clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
 clean: EXTRA_CLEAN_RULE=clean_modules
 clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
 real-clean: clean
