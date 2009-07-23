@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.1 2009/06/23 20:35:29 wes Exp $ 
+## @version	$Id: Makefile,v 1.2 2009/07/23 18:42:48 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build libffi in a way that
@@ -94,7 +94,10 @@ ifneq (X$(LIBFFI_CPPFLAGS),X)
 LIBFFI_MAKE += "CPPFLAGS=$(LIBFFI_CPPFLAGS)"
 endif
 
-LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) A-Z a-z))
+LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
+
+test:
+	echo "$(LIBFFI_BUILD)"
 
 .PHONY: top help all build install clean dist-clean distclean build_debug
 
@@ -149,6 +152,8 @@ install: build
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) install
 	@echo "* Building vars.mk"
 	@echo "LIBFFI_CONFIG_DEPS=libffi/vars.mk libffi/local_config.mk" > vars.mk
+	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --libs)" >> vars.mk
+	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 
 ifneq ($(QUIET),True)
 	@echo ""
@@ -161,12 +166,12 @@ clean:
 	[ ! -f vars.mk ] || $(RM) vars.mk || /bin/true
 	$(RM) -r .libs || /bin/true
 	rmdir $(shell find $(LIBFFI_BUILD) -type d) 2>/dev/null || /bin/true
-	@echo "Done clean - ignore errors" 
+	@echo " * Done clean - ignore errors" 
 
 distclean dist-clean: clean
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) distclean || /bin/true
 	$(RM) -r $(LIBFFI_BUILD)
-	@echo "Done dist-clean - ignore errors" 
+	@echo " * Done dist-clean - ignore errors" 
 
 ifeq (X$(LIBFFI_LIB_DIR),X)
 build_debug:	LIBFFI_LIB_DIR = "UNDEFINED LOCATION"
@@ -193,11 +198,7 @@ build_debug:
 	@echo "Configure will be invoked as:"
 	@echo "$(LIBFFI_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
+	@echo "CC=$(CC)"
+	@echo "PATH=$(PATH)"
 
-install_libffi::
 
-wes:
-	echo "$(LIBFFI_CFLAGS)"
-	echo "$(LIBFFI_LDFLAGS)"
-
-CFLAGS += -g
