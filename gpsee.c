@@ -634,6 +634,10 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
     JSVersion version = atof(jsVersion) * 100; /* see: jspubtd.h -wg */
     JS_SetVersion(cx, version);
   }
+  else
+  {
+    JS_SetVersion(cx, JSVERSION_LATEST);
+  }
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
   JS_SetErrorReporter(cx, gpsee_errorReporter);
@@ -704,4 +708,33 @@ JSObject *gpsee_InitClass (JSContext *cx, JSObject *obj, JSObject *parent_proto,
 
   clasp->name = fullName;
   return ret;
+}
+
+/** A variadic version of JS_GetInstancePrivate(), which can check multiple class 
+ *  pointers in one call. If the class is any of the pointers' types, the private
+ *  handle will be returned. The macro gpsee_getInstancePrivate() is exactly the
+ *  same, except the trailing NULL is automatically inserted. That is the preferred
+ *  interface to this functionality.
+ *
+ *  @see gpsee_getInstancePrivate()
+ *
+ *  @param	cx	JavaScript context
+ *  @param	obj	The object to check
+ *  @param	...	Zero or more additional class pointers to check, followed by a NULL
+ */
+void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
+{
+  va_list 	ap;
+  JSClass	*clasp;
+  void		*prvslot;
+
+  va_start(ap, obj);
+  while((clasp = va_arg(ap, JSClass *)))
+  {
+    prvslot = JS_GetInstancePrivate(cx, obj, clasp, NULL);
+    if (prvslot)
+      return prvslot;
+  }
+  va_end(ap);
+  return NULL;
 }
