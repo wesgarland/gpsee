@@ -43,7 +43,7 @@ LDFLAGS_ARLIB_DIRS	?= $(foreach DIR, $(ARLIB_DIRS), -L$(DIR))
 PIC_CFLAG 		?= -fPIC
 
 LDFLAGS		+= -L$(GPSEE_SRC_DIR) $(LDFLAGS_SOLIB_DIRS)
-CPPFLAGS	+= -I$(GPSEE_SRC_DIR)
+CPPFLAGS	+= -DGPSEE -I$(GPSEE_SRC_DIR)
 CPPFLAGS	+= $(INCLUDES) $(JSAPI_CFLAGS)
 SOLIB_DIRS	+= $(JSAPI_LIB_DIR)
 
@@ -73,4 +73,7 @@ CFLAGS                  += $(EXTRA_CFLAGS)
 
 -include $(GPSEE_SRC_DIR)/$(STREAM)_rules.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_rules.mk
+ifneq ($(BUILDING_LIBFFI),TRUE)
+-include $(GPSEE_SRC_DIR)/libffi/vars.mk
+endif
 

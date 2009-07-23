@@ -50,9 +50,6 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 include $(GPSEE_SRC_DIR)/build.mk
-ifneq ($(BUILDING_LIBFFI),TRUE)
--include $(GPSEE_SRC_DIR)/libffi/vars.mk
-endif
 ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
