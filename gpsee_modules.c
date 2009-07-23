@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.4 2009/06/12 17:01:20 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.5 2009/07/23 18:41:53 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -72,7 +72,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.4 2009/06/12 17:01:20 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.5 2009/07/23 18:41:53 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -1531,6 +1531,29 @@ JSObject *gpsee_findModuleObject_byID(JSContext *cx, const char *moduleID)
 
     if (module->id && strcmp(module->id, moduleID) == 0)
       return module->object;
+  }
+
+  return NULL;
+}
+
+/** Find a loaded module's DSO handle via the module's ID. 
+ *  Provided to allow unrelated modules to steal symbols from each
+ *  other's C code. Lifetime of the return value is not guaranteed.
+ */
+void *gpsee_findModuleDSOHnd_byID(JSContext *cx, const char *moduleID)
+{
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  size_t		i;
+
+  for (i=0; i < jsi->modules_len; i++)
+  {  
+    moduleHandle_t *module;
+
+    if ((module = jsi->modules[i]) == NULL)
+      continue;
+
+    if (module->id && strcmp(module->id, moduleID) == 0)
+      return module->DSOHnd;
   }
 
   return NULL;
