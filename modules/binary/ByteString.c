@@ -38,14 +38,14 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteString.c,v 1.3 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: ByteString.c,v 1.4 2009/07/23 21:19:01 wes Exp $
  *
  *  Based on https://wiki.mozilla.org/ServerJS/Binary/B
  *  Extensions:
  *  - Missing or falsy charset in constructor means to inflate/deflate
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.3 2009/07/23 19:00:40 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.4 2009/07/23 21:19:01 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -205,16 +205,12 @@ JSBool ByteString_get(JSContext *cx, uintN argc, jsval *vp)
  *
  *  @returns 	JS_TRUE on success
  */
-static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool ByteString_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSObject 	*instance;        /* Constructor return value */
   unsigned char	*buffer;          /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   size_t	length;           /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   int		stealBuffer = 0;  /* whether or not we want a further private constructor function to make its own copy */
-
-  /* ByteString() called as function. */   
-  if (JS_IsConstructing(cx) != JS_TRUE)
-    return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
   /* This case is easy */
   if (argc == 0)
@@ -288,14 +284,90 @@ static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   instance = byteThing_fromCArray(cx, buffer, length, obj,
                                   byteString_clasp, byteString_proto, sizeof(byteString_handle_t), stealBuffer);
   if (!instance)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   *rval = OBJECT_TO_JSVAL(instance);
   return JS_TRUE;
 }  
+
+/**
+ *  When ByteString() is used as a function, we want to cast the argument into a ByteString.
+ *  The argument must have a private slot which is castable to a ByteThing.
+ *
+ *  The second argument is an alternate length.  If the alternate length is -1, we assume
+ *  the source is an ASCIZ string.
+ */
+static JSBool ByteString_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+#warning ByteString_Cast lacks safety net
+  byteThing_handle_t	*hnd;
+  ssize_t		length;
+
+  if ((argc != 1) && (argc != 2))
+    return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+  {
+    if (JS_ValueToObject(cx, argv[0], &obj) == JS_FALSE)
+      return JS_FALSE;
+  }
+  else
+    obj = JSVAL_TO_OBJECT(argv[0]);
+
+  hnd = JS_GetPrivate(cx, obj);
+  if (!hnd)
+  {
+    JSClass 	*clasp = JS_GET_CLASS(cx, obj);
+    const char	*className;
+
+    if (!clasp)
+      className = "Object";
+    else
+      className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
+
+    return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to ByteString", className);
+  }
+
+  if (argc == 1)
+    length = hnd->length;
+  else
+  {
+    if (JSVAL_IS_INT(argv[1]))
+      length = JSVAL_TO_INT(argv[1]);
+    else
+    {
+      jsdouble d;
+
+      if (JS_ValueToNumber(cx, argv[1], &d) == JS_FALSE)
+	return JS_FALSE;
+
+      length = d;
+      if (d != length)
+	return gpsee_throw(cx, CLASS_ID ".cast.length.overflow");
+    }
+
+    if (length == -1)
+      length = strlen((const char *)hnd->buffer);
+  }
+
+  obj = byteThing_fromCArray(cx, hnd->buffer, length, NULL,
+			     byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
+  if (!obj)
+    return JS_FALSE;
+
+  *rval = OBJECT_TO_JSVAL(obj);
+
+  return JS_TRUE;
+}
+
+static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  /* ByteString() called as function. */   
+  if (JS_IsConstructing(cx) != JS_TRUE)
+    return ByteString_Cast(cx, obj, argc, argv, rval);
+  else
+    return ByteString_Constructor(cx, obj, argc, argv, rval);
+}
 
 /** 
  *  ByteString Finalizer.

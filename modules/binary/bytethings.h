@@ -38,18 +38,12 @@
  *                              and ByteArray native JSAPI classes.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       June 2009
- *  @version    $Id$
+ *  @version    $Id: bytethings.h,v 1.1 2009/07/23 21:19:01 wes Exp $
  */
 
-#ifndef _BYTETHINGS_H_09GU093WUG039UG0U
-#define _BYTETHINGS_H_09GU093WUG039UG0U
+#ifndef _BYTETHINGS_H
+#define _BYTETHINGS_H
 
-/** Structure which can be cast to either a ByteArray or a ByteString handle */
-typedef struct
-{
-  size_t                length;                 /**< Number of characters in buf */
-  unsigned char         *buffer;                /**< Backing store */
-} byteThing_handle_t;
 typedef struct
 {
   size_t                length;         /**< Number of characters in buffer */
