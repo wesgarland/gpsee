@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.3 2009/06/15 17:48:37 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.1 2009/07/23 21:15:50 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -77,16 +77,16 @@ typedef struct struct_s
 /** Private handle used to describe an instance of a memory object */
 typedef struct
 {
-  unsigned char 	*buffer;	/**< Pointer to memory */
   size_t		length;		/**< Size of buffer or 0 if unknown */
+  unsigned char 	*buffer;	/**< Pointer to memory */
   jsval			ownMemory;	/**< JSVAL_TRUE | JSVAL_FALSE, indicates if buffer should be freed on finalize */
 } memory_handle_t;
 
 /** Private handle used to describe an instance of a struct object */
 typedef struct
 {
-  unsigned char 	*buffer;
   size_t		length;
+  unsigned char 	*buffer;
   jsval			ownMemory;	/**< JSVAL_TRUE | JSVAL_FALSE, indicates if buffer should be freed on finalize */
   structShape		*descriptor;
 } struct_handle_t;
@@ -123,6 +123,9 @@ JSBool struct_getPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
 JSBool struct_setPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_getArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
+
+GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, length) == offsetOf(memory_handle_t, length));
+GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, buffer) == offsetOf(memory_handle_t, buffer));
 
 GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, length) == offsetOf(memory_handle_t, length));
 GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, buffer) == offsetOf(memory_handle_t, buffer));
