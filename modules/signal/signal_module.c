@@ -110,7 +110,7 @@ static signal_hnd_t signalEvents[OS_MAX_SIGNAL + 1];
  *  @param	cx	JS context to use to find and execute JS event code
  *  @returns	JS_FALSE 
  */
-static JSBool signal_runHandlers(JSContext *cx)
+static JSBool signal_runHandlers(JSContext *cx, void *ignored)
 {
   JSBool 		b, ret = JS_TRUE;
   jsval			v;
@@ -143,7 +143,7 @@ static JSBool signal_contextCallback(JSContext *cx, uintN contextOp)
   int sig;
 
   if (contextOp == JSCONTEXT_DESTROY)
-    signal_runHandlers(cx);
+    signal_runHandlers(cx, NULL);
 
   for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
   {
@@ -196,7 +196,7 @@ static const char *signal_changeSignalHandler(JSContext *cx, JSContext *sighndCx
     if (signalEvents[sig].cx != cx)
       JS_YieldRequest(cx);	/* Other thread might be stuck waiting for us so it can GC */
     else
-      signal_runHandlers(cx);	/* Clear pending signal by handling it */
+      signal_runHandlers(cx, NULL);	/* Clear pending signal by handling it */
 
     if (signalEvents[sig].pending == JSVAL_TRUE)
       return pendingException;
@@ -403,7 +403,6 @@ static JSBool signal_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 const char *signal_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   int 			prop;
-  JSContextCallback 	cb;
 
   static JSFunctionSpec signal_methods[] = 
   {
@@ -451,11 +450,12 @@ const char *signal_InitModule(JSContext *cx, JSObject *moduleObject)
     sigaction(sig, NULL, &signalEvents[sig].oact);
   }
 
-  JS_SetOperationCallback(cx, signal_runHandlers);
+  /* Register a callback function which is asynchronous with respect to the running Javascript program, to periodically
+   * interrupt the running Javascript program and run the signal handlers the Javascript program has registered. */
+  gpsee_addAsyncCallback(cx, signal_runHandlers, NULL);
 
-  cb = JS_SetContextCallback(JS_GetRuntime(cx), signal_contextCallback);
-  /** assert here means context callback collision */
-  GPSEE_ASSERT(NULL == cb);
+  /* Register a callback function to fire all pending callbacks when the JSContext is ready to finalize. */
+  gpsee_setContextCallback(cx, signal_contextCallback);
 
   return MODULE_ID;
 }
@@ -464,7 +464,7 @@ JSBool signal_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
   int sig;
 
-  signal_runHandlers(cx);
+  signal_runHandlers(cx, NULL);
 
   for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
   {

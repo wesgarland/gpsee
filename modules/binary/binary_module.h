@@ -40,37 +40,25 @@
  *  @version	$Id: binary_module.h,v 1.3 2009/06/15 17:48:37 wes Exp $
  */
 
+#ifndef GPSEE_BINARY_MODULE_H
+#define GPSEE_BINARY_MODULE_H
+#include "bytethings.h"
+
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
 
 JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *Binary_InitClass(JSContext *cx, JSObject *obj);
 
-/** Structure which can be cast to either a ByteArray or a ByteString handle */
-typedef struct
-{
-  size_t		length;			/**< Number of characters in buf */
-  const unsigned char 	*buffer;		/**< Backing store */
-} byteThing_handle_t;
-
-JSBool 		copyJSArray_toBuf	(JSContext *cx, JSObject *arr, unsigned char **bufp, size_t *lenp, 
-					 const char *throwPrefix);
-JSBool 		transcodeString_toBuf	(JSContext *cx, JSString *string, const char *codec, unsigned char **bufp, size_t *lenp,
-					 const char *throwPrefix);
-JSBool 		transcodeBuf_toBuf	(JSContext *cx, const char *targetCharset, const char *sourceCharset, 
-					 unsigned char **outputBuffer_p, size_t *outputBufferLength_p, 
-					 const unsigned char *inputBuffer, size_t inputBufferLength,
-					 const char *throwPrefix);
-JSObject	*byteString_fromCArray	(JSContext *cx, const unsigned char *buffer, size_t length, JSObject *obj, int stealBuffer);
-JSObject 	*byteArray_fromCArray	(JSContext *cx, const unsigned char *buffer, size_t length, JSObject *obj, int stealBuffer);
-JSBool          byteThing_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp, const char const * className);
-/* TODO I would like to see more advanced argument processing available as part of GPSEE's core module support. */
-const char * byteThing_val2size(JSContext *cx, jsval val, size_t *rval, const char const * methodName);
-JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *rval, uintN argn, size_t min, size_t max,
-                          JSBool mayDefault, size_t defaultSize, const char const *methodName);
+#ifndef HAVE_MEMRCHR
+#define memrchr gpsee_memrchr
+void *memrchr(const void *s, int c, size_t n);
+#endif
 
 extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
+extern JSObject *byteString_proto;
+extern JSObject *byteArray_proto;
 
 #ifdef HAVE_ICONV
 # if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)
@@ -90,5 +78,7 @@ static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const ch
 # define iconv(a,b,c,d,e)	gpsee_non_susv3_iconv(a,b,c,d,e)
 
 # endif
-# include "jsnum.h"
 #endif
+
+#endif/*GPSEE_BINARY_MODULE_H*/
+

@@ -136,6 +136,10 @@ JSBool gpsee_contextCallback(JSContext *cx, uintN contextOp)
  *  a segment of memory that is unique across (cx,id). The first time a particular
  *  segment of memory is returned, it is initialized to all-zeroes.
  *
+ *  If a JSContextCallback is passed to this function, it is called immediately with JSCONTEXT_NEW, and its return value
+ *  is currently completely ignored. Your code may expect that returning JS_FALSE from a context callback will cancel
+ *  the instantiation of the context. Be warned!
+
  *  @param	cx 		A JavaScript context. Must be in a request.
  *  @param	id		A unique non-zero number identifying the storage owner.
  *				Convention says	that id for module-context is a static variable set to MODULE_ID, 
@@ -174,16 +178,20 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
   size_t			i;
   void				*retval;
   gpsee_context_private_t 	*hnd;
+  JSContextCallback             oldCallback;
 
   hnd = JS_GetContextPrivate(cx);
   if (!hnd)
   {
     if (!(hnd = JS_malloc(cx, sizeof(*hnd))))
-      goto out;
+    {
+      JS_ReportOutOfMemory(cx);
+      return NULL;
+    }
 
     memset(hnd, 0, sizeof(*hnd));
     JS_SetContextPrivate(cx, hnd);
-    JS_SetContextCallback(JS_GetRuntime(cx), gpsee_contextCallback);
+    oldCallback = JS_SetContextCallback(JS_GetRuntime(cx), gpsee_contextCallback);
   }
 
   for (i=0; i < hnd->listSize; i++)
@@ -207,7 +215,7 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
     hnd->list[i].cx	= (JSContext *)JS_GetRuntime(cx);	/* simulating JS_SetContextCallback */
   hnd->list[i].id	= id;
   hnd->list[i].cb	= cb;
-  hnd->list[i].storage 	= JS_malloc(cx, size);
+  hnd->list[i].storage 	= size?JS_malloc(cx, size):NULL;
 
   if (hnd->list[i].storage)
     memset(hnd->list[i].storage, 0, size);
@@ -225,5 +233,5 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
 
 JSContextCallback gpsee_setContextCallback(JSContext *cx, JSContextCallback cb)
 {
-  return gpsee_getContextPrivate(cx, NULL, 0, cb);
+  return (JSContextCallback) gpsee_getContextPrivate(cx, NULL, 0, cb);
 }
