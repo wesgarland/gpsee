@@ -51,7 +51,7 @@
 include ./local_config.mk
 
 ifneq ($(TR)X,X)
-SPIDERMONKEY_BUILD	?= $(abspath builds/$(shell echo $(BUILD) | $(TR) A-Z a-z))
+SPIDERMONKEY_BUILD	?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
 else
 SPIDERMONKEY_BUILD	?= $(abspath builds/$(BUILD))
 endif
@@ -90,6 +90,7 @@ endif
 # Debug-Release or Profile build? Add debug symbols
 ifneq (X,X$(filter $(BUILD),PROFILE DRELEASE ))
 SM_CFLAGS += -g
+SM_CXXFLAGS += -g
 endif
 
 # Build the GNU make command line for Spidermonkey, based
@@ -149,9 +150,9 @@ ifneq ($(QUIET),True)
 	@echo ""
 endif
 
-JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
+install: JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
 ifeq ($(shell uname -s),Darwin)
-JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
+install: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
 endif
@@ -165,7 +166,6 @@ install: build
 	@echo "# Generated on `date` by $(USER)" > vars.mk
 	@echo "JSAPI_INCLUDE_DIR=$(shell $(JS_CONFIG) --includedir)" >> vars.mk
 	@echo "JSAPI_LIB_DIR=$(shell $(JS_CONFIG) --libdir)" >> vars.mk
-#	@echo "JSAPI_LIBS=$(shell $(JS_CONFIG) --libs)" >> vars.mk
 	@echo "JSAPI_LIBS=$(JSAPI_LDFLAGS)" >> vars.mk
 	@echo "JSAPI_CFLAGS=$(shell $(JS_CONFIG) --cflags)" >> vars.mk
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
@@ -200,6 +200,7 @@ build_debug:
 	@echo "Configure will be invoked as:"
 	@echo "$(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
+	@echo "JS_CONFIG = $(JS_CONFIG)"
 
 $(SPIDERMONKEY_SRC)/configure.in:
 	@echo > /dev/stderr
