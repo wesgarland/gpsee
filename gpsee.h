@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.5 2009/06/12 17:01:20 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.6 2009/07/23 18:35:13 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.6  2009/07/23 18:35:13  wes
+ *  Added *gpsee_getInstancePrivateNTN
+ *
  *  Revision 1.5  2009/06/12 17:01:20  wes
  *  Merged with upstream
  *
@@ -230,6 +233,9 @@ const char *		gpsee_basename(const char *filename);
 const char *		gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 
+/* GPSEE JSAPI idiom extensions */
+void			*gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
+#define 		gpsee_getInstancePrivate(cx, obj, clasp, ...) gpsee_getInstancePrivateNTN(cx, obj, clasp, __VA_ARGS__, NULL)
 static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
@@ -287,6 +293,7 @@ void __attribute__((noreturn)) panic(const char *message);
  */
 static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
 { 
+  GPSEE_STATIC_ASSERT(sizeof(jsval) == 4);
   /* jslock.c code: return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE; */
   return (atomic_cas_32((uint32_t  *)vp, oldv, newv) == (uint32_t)oldv) ? JS_TRUE : JS_FALSE;
 }
