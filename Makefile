@@ -46,7 +46,7 @@ export STREAM	= unix
 SUBMAKE_QUIET	= False
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice file 
+IGNORE_MODULES		+= pairodice mozshell mozfile file
 INTERNAL_MODULES 	+= vm system
 
 top: all
@@ -249,8 +249,8 @@ gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo "# define HAVE_ICONV" >> $@
 	@echo "#endif" >> $@
 	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
-	@echo "#define GPSEE_$(shell echo $(STREAM) | $(TR) a-z A-Z)_STREAM" >> $@
-	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) a-z A-Z)_SYSTEM" >> $@
+	@echo "#define GPSEE_$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')_STREAM" >> $@
+	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) '[a-z]' '[A-Z]')_SYSTEM" >> $@
 
 gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
 	@echo " * Generating $@"
