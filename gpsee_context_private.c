@@ -40,7 +40,7 @@
  *						similar functionality.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_context_private.c,v 1.2 2009/05/27 04:36:56 wes Exp $
+ *  @version	$Id: gpsee_context_private.c,v 1.3 2009/07/23 19:00:40 wes Exp $
  *
  *  @note	If anything (class, module, etc) in the embedding makes use of this mechanism for context-private
  *		storage, *everything* must be make use it for content-private storage.
@@ -49,7 +49,7 @@
  *		for JS_SetContextCallback -- they probably don't work as expected.
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.2 2009/05/27 04:36:56 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.3 2009/07/23 19:00:40 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"

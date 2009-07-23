@@ -35,7 +35,7 @@
 
 #include <gpsee.h>
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.1 2009/05/27 04:16:27 wes Exp $";
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.2 2009/07/23 19:00:40 wes Exp $";
 static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
 
 #undef JS_GetContextPrivate
