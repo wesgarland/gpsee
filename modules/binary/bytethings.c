@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.4 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.5 2009/07/24 18:56:37 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.4 2009/07/23 19:00:40 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.5 2009/07/24 18:56:37 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -1469,6 +1469,85 @@ JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, 
   else
     /* ByteArray[n] returns a Number */
     *vp = INT_TO_JSVAL(hnd->buffer[index]);
+  return JS_TRUE;
+}
+
+/**
+ *  When byteThing-like constructors are used as functions, we want to cast the
+ *  argument into the data type represented by the constructor.
+ *
+ *  Casting in GPSEE is different than casting in C.  In GPSEE, the backing store
+ *  will be copied, not shared, unless you we can verify that both the source and
+ *  the target of the cast are immutable.  (There is currently no way to do this).
+ *
+ *  The first argument must have a private slot which is castable to a 
+ *  byteThing_handle_t pointer.
+ *
+ *  The second argument is an alternate length.  If the alternate length is -1, we 
+ *  assume the source is an ASCIZ string.  The length argument is needed because we 
+ *  don't always know how much memory is in hnd->buffer, for example, in the case
+ *  where the memory is returned by an FFI function.
+ */
+JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
+		      JSClass *clasp, JSObject *proto, size_t hndSize, const char *throwPrefix)
+{
+#warning byteThing_Cast lacks safety net
+  byteThing_handle_t	*hnd;
+  ssize_t		length;
+
+  if ((argc != 1) && (argc != 2))
+    return gpsee_throw(cx, "%s.cast.arguments.count", throwPrefix);
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+  {
+    if (JS_ValueToObject(cx, argv[0], &obj) == JS_FALSE)
+      return JS_FALSE;
+  }
+  else
+    obj = JSVAL_TO_OBJECT(argv[0]);
+
+  hnd = JS_GetPrivate(cx, obj);
+  if (!hnd)
+  {
+    JSClass 	*clasp = JS_GET_CLASS(cx, obj);
+    const char	*className;
+
+    if (!clasp)
+      className = "Object";
+    else
+      className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
+
+    return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, className, clasp->name);
+  }
+
+  if (argc == 1)
+    length = hnd->length;
+  else
+  {
+    if (JSVAL_IS_INT(argv[1]))
+      length = JSVAL_TO_INT(argv[1]);
+    else
+    {
+      jsdouble d;
+
+      if (JS_ValueToNumber(cx, argv[1], &d) == JS_FALSE)
+	return JS_FALSE;
+
+      length = d;
+      if (d != length)
+	return gpsee_throw(cx, "%s.cast.length.overflow");
+    }
+
+    if (length == -1)
+      length = strlen((const char *)hnd->buffer);
+  }
+
+  obj = byteThing_fromCArray(cx, hnd->buffer, length, NULL, clasp, proto, hndSize, 0);
+  if (!obj)
+    return JS_FALSE;
+
+  *rval = OBJECT_TO_JSVAL(obj);
+
   return JS_TRUE;
 }
 
