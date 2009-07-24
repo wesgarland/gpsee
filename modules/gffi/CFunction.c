@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.2 2009/07/24 21:17:32 wes Exp $
  */
 
 #include <ffi.h>
@@ -57,7 +57,8 @@ typedef struct
   const char	*functionName;		/**< Name of the function */
   void		*fn;			/**< Function pointer to call */
   ffi_cif 	*cif;			/**< FFI call details */
-  ffi_type	*rtype;			/**< Return type used by FFI / native ABI*/
+  ffi_type	*rtype_abi;		/**< Return type used by FFI / native ABI */
+  jsval		rtype_jsv;		/**< Return type requested by user */
   size_t	nargs;			/**< Number of arguments */
   ffi_type	**argTypes;		/**< Argument types used by FFI / native ABI */
   valueTo_fn	*argConverters;		/**< Argument converter */
@@ -76,13 +77,33 @@ size_t ffi_type_size(ffi_type *type)
  *  need to be freed.  If that assumption is wrong the JS programmer can touch up the
  *  object.
  */
-static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype, jsval *rval, JSObject *thisObj)
+static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, JSObject *thisObj)
 {
-  if (rtype == &ffi_type_pointer) 
+  cfunction_handle_t *hnd = JS_GetInstancePrivate(cx, thisObj, cFunction_clasp, NULL);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (hnd->rtype_jsv == jsve_void)
+    return JS_TRUE;
+
+  if (hnd->rtype_jsv == jsve_uchar || hnd->rtype_jsv == jsve_schar)
+  {
+    char 	c = *(char *)abi_rvalp;
+    JSString 	*str;
+
+    str = JS_NewStringCopyN(cx, &c, 1);
+    if (!str)
+      return JS_FALSE;
+    *rval = STRING_TO_JSVAL(str);
+    return JS_TRUE;
+  }
+
+  if (rtype_abi == &ffi_type_pointer) 
   {
     void 		*ptr = *(void **)abi_rvalp;
     jsval 		argv[] = { JSVAL_TO_INT(0), JSVAL_FALSE };
-    memory_handle_t	*hnd;
+    memory_handle_t	*memHnd;
     JSObject		*robj;
 
     if (!ptr)
@@ -95,16 +116,39 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype, j
     if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, rval) == JS_FALSE)
       return JS_FALSE;
 
-    hnd = JS_GetPrivate(cx, robj);
-    GPSEE_ASSERT(hnd);
-    if (!hnd)
+    memHnd = JS_GetPrivate(cx, robj);
+    GPSEE_ASSERT(memHnd);
+    if (!memHnd)
       return gpsee_throw(cx, CLASS_ID ".call: impossible error processing returned Memory object");
 
-    hnd->buffer = ptr;
+    memHnd->buffer = ptr;
     return JS_TRUE;
   }
 
-  return gpsee_throw(cx, "unknown type");
+#define ffi_type(ftype, ctype) 					\
+  if (rtype_abi == &ffi_type_ ##ftype)				\
+  {								\
+    ctype	native = *(ctype *)abi_rvalp;			\
+    jsdouble 	d;						\
+    								\
+    if (INT_FITS_IN_JSVAL(native) && (jsint)native == native)	\
+    {								\
+      *rval = INT_TO_JSVAL((jsint)native);			\
+      return JS_TRUE;						\
+    }								\
+    								\
+    d = native;							\
+    if (native != d)						\
+      return gpsee_throw(cx, CLASS_ID ".call.return.overflow");	\
+    								\
+    return JS_NewNumberValue(cx, d, rval);			\
+  }
+#define FFI_TYPES_NUMBERS_ONLY
+#include "ffi_types.decl"
+#undef ffi_type
+#undef FFI_TYPES_NUMBERS_ONLY
+
+  return gpsee_throw(cx, CLASS_ID ".call.returnType.unhandled: unhandled return type");
 }
 
 static JSBool valueTo_jsint(JSContext *cx, jsval v, jsint *ip, int argn)
@@ -355,9 +399,9 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   if (hnd->nargs != argc)
     return gpsee_throw(cx, CLASS_ID ".call.arguments.count: Expected %i arguments, received %i", hnd->nargs, argc);
 
-  if (hnd->rtype != &ffi_type_void)
+  if (hnd->rtype_abi != &ffi_type_void)
   {
-    rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype));
+    rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype_abi));
     if (!rvaluep)
       goto oom;
   }
@@ -381,7 +425,7 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   depth = JS_SuspendRequest(cx);
   ffi_call(hnd->cif, hnd->fn, rvaluep, avalues);
   JS_ResumeRequest(cx, depth);
-  ret = ffiType_toValue(cx, rvaluep, hnd->rtype, &JS_RVAL(cx, vp), obj);
+  ret = ffiType_toValue(cx, rvaluep, hnd->rtype_abi, &JS_RVAL(cx, vp), obj);
   goto out;
 
   oom:
@@ -515,7 +559,7 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
   }
 
   /* Sort out return type */
-#define ffi_type(type, junk) if (argv[1] == jsve_ ## type) { hnd->rtype = &ffi_type_ ## type; } else
+#define ffi_type(type, junk) if (argv[1] == jsve_ ## type) { hnd->rtype_abi = &ffi_type_ ## type; } else
 #include "ffi_types.decl"
 #undef ffi_type
   return gpsee_throw(cx, CLASS_ID ".constructor.argument.1: Invalid value specified for return value; should be FFI type indicator");
@@ -535,7 +579,7 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return gpsee_throw(cx, CLASS_ID ".constructor.argument.%i: Invalid value specified: should be FFI type indicator", 3 + i);
   }
 
-  status = ffi_prep_cif(hnd->cif, FFI_DEFAULT_ABI, hnd->nargs, hnd->rtype, hnd->argTypes);
+  status = ffi_prep_cif(hnd->cif, FFI_DEFAULT_ABI, hnd->nargs, hnd->rtype_abi, hnd->argTypes);
 
   switch(status)
   {
