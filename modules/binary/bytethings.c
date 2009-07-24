@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.5 2009/07/24 18:56:37 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.6 2009/07/24 21:14:08 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.5 2009/07/24 18:56:37 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.6 2009/07/24 21:14:08 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -416,6 +416,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     JS_ReportOutOfMemory(cx);
     return JS_FALSE;
   }
+  outbytesleft = allocBytes;
 
   inbytesleft  = inputBufferLength;
   inbuf 	 = (const char*) inputBuffer;
@@ -423,8 +424,6 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 
   do
   {
-    outbytesleft = allocBytes - (outbuf - outbufStart);
-
     depth = JS_SuspendRequest(cx);
     result = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
     JS_ResumeRequest(cx, depth);
@@ -435,8 +434,13 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
       {
 	case E2BIG:
 	{
-	  char *newBuf = JS_realloc(cx, outbufStart, inbytesleft + inbytesleft / 4 + 32);  /* WAG -- +32 implies output charset cannot exceed 32 bytes per character */
-	  
+	  char *newBuf;
+          size_t newAllocBytes;
+
+          /* Estimate a new buffer size */
+          newAllocBytes = allocBytes + inbytesleft + inbytesleft / 4 + 32; /* WAG -- +32 implies output charset cannot exceed 32 bytes per character */
+          /* Allocate the new buffer */
+          newBuf = JS_realloc(cx, outbufStart, newAllocBytes);
 	  if (!newBuf)
 	  {
 	    JS_free(cx, outbufStart);
@@ -445,8 +449,13 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 	    return JS_FALSE;
 	  }
 
-	  outbuf += (newBuf - outbufStart);
+          /* Transfer iconv write cursor from position relative to old buffer to same position relative to new buffer */
+          outbuf = newBuf + (outbuf - outbufStart);
+          /* Update the pointer to our buffer */
 	  outbufStart = newBuf;
+          /* Update the number of bytes remaining */
+          outbytesleft += newAllocBytes - allocBytes;
+          allocBytes = newAllocBytes;
 	  break;
 	}
 

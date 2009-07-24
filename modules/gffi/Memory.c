@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: Memory.c,v 1.2 2009/07/24 21:17:32 wes Exp $
  */
 
 #include <gpsee.h>
@@ -57,6 +57,63 @@ JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
   return Memory_Constructor(cx, obj, argc, argv, rval);
+}
+
+static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  jsdouble		d;
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (INT_FITS_IN_JSVAL(hnd->length))
+  {
+    *vp = INT_TO_JSVAL(hnd->length);
+    return JS_TRUE;
+  }
+
+  d = hnd->length;
+  if (hnd->length != d)
+    return gpsee_throw(cx, CLASS_ID, ".size.getter.overflow");
+
+  return JS_NewNumberValue(cx, d, vp);
+}
+
+static JSBool memory_size_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  size_t		newLength;
+  void			*newBuffer;
+  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (hnd->ownMemory == JSVAL_FALSE)
+    return gpsee_throw(cx, CLASS_ID ".size.setter.notOwnMemory: cannot realloc memory we did not allocate");
+
+  if (JSVAL_IS_INT(*vp))
+    newLength = JSVAL_TO_INT(*vp);
+  else
+  {
+    jsdouble d;
+
+    if (JS_ValueToNumber(cx, *vp, &d) != JS_TRUE)
+      return JS_FALSE;
+
+    newLength = d;
+    if (d != newLength)
+      return gpsee_throw(cx, CLASS_ID, ".size.setter.overflow");
+  }
+
+  newBuffer = JS_realloc(cx, hnd->buffer, newLength);
+  if (!newBuffer && newLength)
+    return JS_FALSE;
+
+  hnd->buffer = newBuffer;
+  hnd->length = newLength;
+
+  return JS_TRUE;
 }
 
 /** 
@@ -195,6 +252,12 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
     JSCLASS_NO_OPTIONAL_MEMBERS
   };
 
+  static JSPropertySpec memory_props[] =
+  {
+    { "size",	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, memory_size_setter },
+    { NULL, 0, 0, NULL, NULL }
+  };
+
   JSObject *proto;
 
   memory_clasp = &memory_class;
@@ -206,7 +269,7 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
  		   memory_clasp, 	/* clasp - Class struct to init. Defs class for use by other API funs */
 		   Memory,		/* constructor function - Scope matches obj */
 		   1,			/* nargs - Number of arguments for constructor (can be MAXARGS) */
-		   NULL,		/* ps - props struct for parent_proto */
+		   memory_props,	/* ps - props struct for parent_proto */
 		   NULL, 		/* fs - functions struct for parent_proto (normal "this" methods) */
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
