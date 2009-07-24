@@ -33,24 +33,24 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
- *  @file	io_ByteArray.c 	A class for implementing Byte Arrays
+ *  @file	ByteArray.c 	A class for implementing Byte Arrays
  *  @author	Wes Garland
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteArray.c,v 1.2 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: ByteArray.c,v 1.3 2009/07/24 18:56:37 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.2 2009/07/23 19:00:40 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.3 2009/07/24 18:56:37 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
 static void	ByteArray_Finalize(JSContext *cx, JSObject *obj);
 static JSBool	ByteArray_getProperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 static JSBool	ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-static JSBool byteArray_requestSize(JSContext *cx, byteArray_handle_t *hnd, size_t newSize);
-static JSBool byteArray_append(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
-static JSBool byteArray_prepend(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
+static JSBool 	byteArray_requestSize(JSContext *cx, byteArray_handle_t *hnd, size_t newSize);
+static JSBool 	byteArray_append(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
+static JSBool 	byteArray_prepend(JSContext *cx, uintN argc, jsval *vp, const char * methodName);
 
 JSObject *byteArray_proto;
 #define CLASS_ID  MODULE_ID ".ByteArray"
@@ -166,7 +166,7 @@ static JSBool ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval id, jsva
  *
  *  @returns 	JS_TRUE on success
  */
-static JSBool ByteArray(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool ByteArray_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSObject 	*instance;
   unsigned char	*buffer;
@@ -292,6 +292,20 @@ static void ByteArray_Finalize(JSContext *cx, JSObject *obj)
   JS_free(cx, hnd);
 
   return;
+}
+
+static JSBool ByteArray_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  return byteThing_Cast(cx, obj, argc, argv, rval, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), CLASS_ID);
+}
+
+static JSBool ByteArray(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  /* ByteArray() called as function. */   
+  if (JS_IsConstructing(cx) != JS_TRUE)
+    return ByteArray_Cast(cx, obj, argc, argv, rval);
+  else
+    return ByteArray_Constructor(cx, obj, argc, argv, rval);
 }
 
 /** Resize a ByteArray
@@ -802,4 +816,3 @@ JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
 GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, length) == offsetOf(byteArray_handle_t, length));
 GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, buffer) == offsetOf(byteArray_handle_t, buffer));
-

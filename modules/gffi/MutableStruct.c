@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.2 2009/07/24 18:56:37 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
@@ -150,13 +150,9 @@ static JSBool MutableStruct_setProperty(JSContext *cx, JSObject *obj, jsval prop
  *
  *  @returns 	JS_TRUE on success
  */
-JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   struct_handle_t	*hnd;
-
-  /* MutableStruct() called as function. */   
-  if (JS_IsConstructing(cx) != JS_TRUE)
-    return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
   if (argc != 1)
     return gpsee_throw(cx, CLASS_ID ".arguments.count");
@@ -203,6 +199,55 @@ JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
   return JS_TRUE;
 }
 
+/** Struct casts require the castee and struct name as arguments */
+JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+#warning MutableStruct_Cast lacks safety net
+  byteThing_handle_t	*srchnd;
+  struct_handle_t	*newhnd;
+
+  if (argc != 2)
+    return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
+
+    if (!JSVAL_IS_OBJECT(argv[0]))
+  {
+    if (JS_ValueToObject(cx, argv[0], &obj) == JS_FALSE)
+      return JS_FALSE;
+  }
+  else
+    obj = JSVAL_TO_OBJECT(argv[0]);
+
+  srchnd = JS_GetPrivate(cx, obj);
+  if (!srchnd)
+  {
+    JSClass 	*clasp = JS_GET_CLASS(cx, obj);
+    const char	*className;
+
+    if (!clasp)
+      className = "Object";
+    else
+      className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
+
+    return gpsee_throw(cx, CLASS_ID, ".cast.type: %s objects are not castable to %s", className, clasp->name);
+  }
+
+  obj = JS_NewObject(cx, mutableStruct_clasp, NULL, NULL);
+  if (!obj)
+    return JS_FALSE;
+
+  if (MutableStruct_Constructor(cx, obj, 1, argv, rval) == JS_FALSE)
+    return JS_FALSE;
+
+  newhnd = JS_GetPrivate(cx, obj);
+  if (srchnd->length)
+    memcpy(newhnd->buffer, srchnd->buffer, min(newhnd->length, srchnd->length));
+  else
+    memcpy(newhnd->buffer, srchnd->buffer, newhnd->length); /* JS programmer can cause a read-buffer overrun here; no way around it */
+
+  return JS_TRUE;
+}
+
+
 /** 
  *  MutableStruct Finalizer.
  *
@@ -225,6 +270,15 @@ static void MutableStruct_Finalize(JSContext *cx, JSObject *obj)
   JS_free(cx, hnd);
 
   return;
+}
+
+JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  /* MutableStruct() called as function. */   
+  if (JS_IsConstructing(cx) != JS_TRUE)
+    return MutableStruct_Cast(cx, obj, argc, argv, rval);
+  else
+    return MutableStruct_Constructor(cx, obj, argc, argv, rval);
 }
 
 JSClass *mutableStruct_clasp = NULL;

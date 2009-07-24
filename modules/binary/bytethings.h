@@ -38,7 +38,7 @@
  *                              and ByteArray native JSAPI classes.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       June 2009
- *  @version    $Id: bytethings.h,v 1.1 2009/07/23 21:19:01 wes Exp $
+ *  @version    $Id: bytethings.h,v 1.2 2009/07/24 18:56:37 wes Exp $
  */
 
 #ifndef _BYTETHINGS_H
@@ -90,6 +90,7 @@ inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JS
 JSBool byteThing_toSource(JSContext *cx, uintN argc, jsval *vp, JSClass *class);
 JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const * methodName);
 JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, JSClass *clasp);
-
+JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
+		      JSClass *clasp, JSObject *proto, size_t hndSize, const const char *throwPrefix);
 #endif/*_BYTETHINGS_H*/
 
