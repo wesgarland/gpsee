@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.8 2009/07/23 21:19:01 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.9 2009/07/27 21:05:37 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.9  2009/07/27 21:05:37  wes
+ *  Corrected gpsee_getInstancePrivate macro
+ *
  *  Revision 1.8  2009/07/23 21:19:01  wes
  *  Added ByteString_Cast
  *
@@ -225,7 +228,7 @@ void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
-JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...);
+JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));;
 int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
 void 			gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
@@ -258,7 +261,7 @@ int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 
 /* GPSEE JSAPI idiom extensions */
 void			*gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
-#define 		gpsee_getInstancePrivate(cx, obj, clasp, ...) gpsee_getInstancePrivateNTN(cx, obj, clasp, __VA_ARGS__, NULL)
+#define 		gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
 static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
