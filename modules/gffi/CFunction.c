@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.2 2009/07/24 21:17:32 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.3 2009/07/27 21:06:33 wes Exp $
  */
 
 #include <ffi.h>
@@ -112,7 +112,7 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
       return JS_TRUE;
     }
 
-    robj = JS_NewObject(cx, memory_clasp, NULL, thisObj);
+    robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
     if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, rval) == JS_FALSE)
       return JS_FALSE;
 
@@ -122,6 +122,7 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
       return gpsee_throw(cx, CLASS_ID ".call: impossible error processing returned Memory object");
 
     memHnd->buffer = ptr;
+    memHnd->ownMemory = JSVAL_FALSE;
     return JS_TRUE;
   }
 
@@ -167,7 +168,7 @@ static JSBool valueTo_jsint(JSContext *cx, jsval v, jsint *ip, int argn)
   *ip = d;
 
   if ((jsint)d != *ip)
-    return gpsee_throw(cx, CLASS_ID, ".arguments.%i.range: value %g cannot be converted to an integer type", argn, d);
+    return gpsee_throw(cx, CLASS_ID ".arguments.%i.range: value %g cannot be converted to an integer type", argn, d);
 
   return JS_TRUE;
 }
@@ -214,7 +215,7 @@ static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storag
 
   ((char *)*storagep)[0] = i;
   if (i != ((char *)*storagep)[0])
-    return gpsee_throw(cx, CLASS_ID, ".arguments.%i.valueTo_char.range: %i does not fit in a char", argn, i);
+    return gpsee_throw(cx, CLASS_ID ".arguments.%i.valueTo_char.range: %i does not fit in a char", argn, i);
 
   return JS_TRUE;
 }
@@ -327,13 +328,13 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
   }
 
   if (JSVAL_IS_VOID(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a void argument to a pointer");
+    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a void argument to a pointer", argn);
 
   if (v == JSVAL_TRUE || v == JSVAL_FALSE)
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a bool argument to a pointer");
+    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a bool argument to a pointer", argn);
 
   if (JSVAL_IS_NUMBER(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a numeric argument to a pointer");
+    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a numeric argument to a pointer", argn);
 
   if (JSVAL_IS_NULL(v))
   {
@@ -345,6 +346,7 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
   str = JS_ValueToString(cx , v);
   if (!str)
     return JS_FALSE;
+  v = STRING_TO_JSVAL(str);
 
   stringPointer:
   *storagep = JS_strdup(cx, JS_GetStringBytes(str));
