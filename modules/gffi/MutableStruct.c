@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.2 2009/07/24 18:56:37 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.3 2009/07/27 21:09:48 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
@@ -228,14 +228,16 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     else
       className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
 
-    return gpsee_throw(cx, CLASS_ID, ".cast.type: %s objects are not castable to %s", className, clasp->name);
+    return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to %s", className, clasp->name);
   }
 
   obj = JS_NewObject(cx, mutableStruct_clasp, NULL, NULL);
   if (!obj)
     return JS_FALSE;
 
-  if (MutableStruct_Constructor(cx, obj, 1, argv, rval) == JS_FALSE)
+  *rval = OBJECT_TO_JSVAL(obj);
+
+  if (MutableStruct_Constructor(cx, obj, 1, argv + 1, rval) == JS_FALSE)
     return JS_FALSE;
 
   newhnd = JS_GetPrivate(cx, obj);
