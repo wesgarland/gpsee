@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.1 2009/07/23 21:15:50 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.2 2009/07/27 21:11:35 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -59,10 +59,10 @@ typedef struct member_s
 {
   const char	*name;
   sel_type_e	type;
-  size_t	typeSize; /* not redundant -- used to detect arrays */
+  size_t	typeSize; /**< size of field element; not redundant -- used to detect arrays */
   int		isSigned;
   size_t	offset;
-  size_t	size;
+  size_t	size;	  /**< size of whole field: typeSize times number of elements */
 } memberShape;
 
 /** Description of a struct */
@@ -70,7 +70,7 @@ typedef struct struct_s
 {
   const char		*name;
   size_t		size;
-  memberShape		*members;
+    memberShape		*members;
   size_t		memberCount;
 } structShape;
 
@@ -98,6 +98,7 @@ extern JSClass *mutableStruct_clasp;
 extern JSClass *immutableStruct_clasp;
 extern JSClass *cFunction_clasp;
 extern JSClass *memory_clasp;
+extern JSObject *memory_proto;
 
 /** Magic numbers used in argument passing */
 typedef enum
