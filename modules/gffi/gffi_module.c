@@ -40,10 +40,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: gffi_module.c,v 1.2 2009/07/27 21:10:47 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi_module.c,v 1.2 2009/07/27 21:10:47 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi_module.h"
@@ -68,6 +68,32 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 #define jsv(val) if (JS_DefineProperty(cx, moduleObject, #val, jsve_ ## val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) return NULL;
 #include "jsv_constants.decl"
 #undef jsv
+
+  if (((int)-1) < 0)
+  {
+    if (JS_DefineProperty(cx, moduleObject, "int", jsve_sint, 
+			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
+      return NULL;
+  }
+  else
+  {
+    if (JS_DefineProperty(cx, moduleObject, "int", jsve_uint, 
+			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
+      return NULL;
+  }
+
+  if (((char)-1) < 0)
+  {
+    if (JS_DefineProperty(cx, moduleObject, "char", jsve_schar, 
+			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
+      return NULL;
+  }
+  else
+  {
+    if (JS_DefineProperty(cx, moduleObject, "char", jsve_uchar,
+			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
+      return NULL;
+  }
 
   if (defines_InitObjects(cx, moduleObject) != JS_TRUE)
     return NULL;
