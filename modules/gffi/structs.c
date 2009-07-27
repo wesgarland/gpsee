@@ -50,7 +50,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: structs.c,v 1.2 2009/07/27 21:13:44 wes Exp $
  */
 
 #include <gpsee.h>
@@ -261,19 +261,96 @@ JSBool struct_setPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
 
   str = JS_GetStringBytes(JS_ValueToString(cx, *vp));
   if ((sscanf(str, "@0x%p", (void **)(hnd->buffer + hnd->descriptor->members[memberIdx].offset))) != 1)
-    return gpsee_throw(cx, "%s.setPorinter.%s.invalid", hnd->descriptor->members[memberIdx].name, throwLabel);
+    return gpsee_throw(cx, "%s.setPointer.%s.invalid", hnd->descriptor->members[memberIdx].name, throwLabel);
 
   return JS_TRUE;
 }
 
-JSBool struct_getArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
+JSBool struct_getArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *vp, const char *throwLabel)
 {
-  return gpsee_throw(cx, "%s.getArray: not implemented");
+  JSObject 		*robj;
+  struct_handle_t	*structHnd = gpsee_getInstancePrivate(cx, thisObj, mutableStruct_clasp, immutableStruct_clasp);
+  memory_handle_t	*memHnd;
+  jsval 		argv[] = { JSVAL_TO_INT(0), JSVAL_FALSE };
+
+  robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
+  if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, vp) == JS_FALSE)
+    return JS_FALSE;
+
+  memHnd = JS_GetPrivate(cx, robj);
+  GPSEE_ASSERT(memHnd);
+  if (!memHnd)
+    return gpsee_throw(cx, "%s.getArray.impossible: impossible error processing returned Memory object", throwLabel);
+
+  memHnd->buffer = (char *)structHnd->buffer + structHnd->descriptor->members[memberIdx].offset;
+  memHnd->length = structHnd->descriptor->members[memberIdx].size;
+  memHnd->ownMemory = JSVAL_FALSE;
+
+  return JS_TRUE;
 }
 
-JSBool struct_setArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
+JSBool struct_setArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *vp, const char *throwLabel)
 {
-  return gpsee_throw(cx, "%s.getArray: not implemented");
+  JSString 		*str;
+  struct_handle_t	*structHnd = gpsee_getInstancePrivate(cx, thisObj, mutableStruct_clasp, immutableStruct_clasp);
+  void			*fieldAddr;
+  size_t		fieldSize;
+
+  fieldAddr = (char *)structHnd->buffer + structHnd->descriptor->members[memberIdx].offset;
+  fieldSize = structHnd->descriptor->members[memberIdx].size;
+
+  if (JSVAL_IS_STRING(*vp))
+  {
+    str = JSVAL_TO_STRING(*vp);
+    goto stringPointer;
+  }
+
+  if (JSVAL_IS_OBJECT(*vp))
+  {
+    memory_handle_t	*memHnd;
+
+    JSObject *obj = JSVAL_TO_OBJECT(*vp);
+
+#warning should handle all bytething types
+    memHnd = gpsee_getInstancePrivate(cx, obj, memory_clasp, NULL);
+    if (memHnd)
+    {
+      memcpy(fieldAddr, memHnd->buffer, min(fieldSize, memHnd->length));
+      return JS_TRUE;
+    }
+  }
+
+  if (JSVAL_IS_VOID(*vp))
+    return gpsee_throw(cx, "%s.invalid: cannot convert a void argument to an array", throwLabel);
+
+  if (*vp == JSVAL_TRUE || *vp == JSVAL_FALSE)
+    return gpsee_throw(cx, "%s.invalid: cannot convert a bool argument to an array", throwLabel);
+
+  if (JSVAL_IS_NUMBER(*vp))
+    return gpsee_throw(cx, "%s.invalid: cannot convert a numeric argument to an array", throwLabel);
+
+  if (JSVAL_IS_NULL(*vp))
+    return gpsee_throw(cx, "%s.invalid: cannot convert null to an array", throwLabel);
+
+  str = JS_ValueToString(cx , *vp);
+  if (!str)
+    return JS_FALSE;
+  *vp = STRING_TO_JSVAL(str);
+
+  stringPointer:
+  if (structHnd->descriptor->members[memberIdx].typeSize == 2)
+  {
+    /* A string is being passed to an array of int16 - assume we're looking
+     * to copy the String data directly rather than converting to 8-bit
+     */
+    memcpy(fieldAddr, JS_GetStringChars(str), min(structHnd->length, JS_GetStringLength(str) * 2));
+  }
+  else
+  {
+    gpsee_cpystrn(fieldAddr, JS_GetStringBytes(str), fieldSize);
+  }
+
+  return JS_TRUE; 
 }
 
 /** Locate and return the named struct descriptor.
