@@ -26,6 +26,11 @@ beginStruct(struct stat)
 #endif
 endStruct(struct stat)
 
+beginStruct(struct dirent)
+    member(ino_t,	d_ino,		integer)
+    member(char,	d_name,		array)
+endStruct(struct dirent)
+
 #if 0
 beginStruct(timespec_t)
   member(time_t,	tv_sec,		integer)
