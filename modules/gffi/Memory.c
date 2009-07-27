@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.2 2009/07/24 21:17:32 wes Exp $
+ *  @version	$Id: Memory.c,v 1.3 2009/07/27 21:08:45 wes Exp $
  */
 
 #include <gpsee.h>
@@ -50,15 +50,111 @@
 
 #define CLASS_ID MODULE_ID ".Memory"
 
-JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+/**
+ *  Implements Memory.prototype.asString -- a method to take a Memory object,
+ *  treat it as a char * and be decode toString() following the regular JSAPI
+ *  C Strings rules.
+ *
+ *  asString can take one argument: a length. If length is -1, use strlen;
+ *  otherwise use at most length bytes. If length is not defined, we use either
+ *
+ *  - buffer->length when !hnd->ownMemory, or
+ *  - strlen
+ */
+static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 {
-  /* Memory() called as function. */   
-  if (JS_IsConstructing(cx) != JS_TRUE)
-    return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
+  memory_handle_t	*hnd;
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  JSString		*str;
+  size_t		length;
 
-  return Memory_Constructor(cx, obj, argc, argv, rval);
+  if (!obj)
+    return JS_FALSE;
+
+  hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  if (!hnd)
+    return JS_FALSE;
+
+  if (!hnd->buffer)
+  {
+    *vp = JSVAL_NULL;
+    return JS_TRUE;
+  }
+
+  switch(argc)
+  {
+    case 0:
+      if (hnd->length || hnd->ownMemory)
+	length = hnd->length;
+      else
+	length = strlen(hnd->buffer);
+      break;
+    case 1:
+    {
+      ssize_t	l;
+      jsval	*argv = JS_ARGV(cx, vp);
+
+      if (JSVAL_IS_INT(argv[0]))
+	l = JSVAL_TO_INT(argv[0]);
+      else
+      {
+	jsdouble d;
+	
+	if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
+	  return JS_FALSE;
+
+	if (d != l)
+	  return gpsee_throw(cx, CLASS_ID ".asString.argument.1.overflow");
+      }
+
+      if (l == -1)
+	length = strlen(hnd->buffer);
+      else
+      {
+	length = l;
+	if (length != l)
+	  return gpsee_throw(cx, CLASS_ID ".asString.argument.1.overflow");
+      }		
+      break;
+    }
+    default:
+      return gpsee_throw(cx, CLASS_ID ".asString.arguments.count");
+  }
+
+  str = JS_NewStringCopyN(cx, hnd->buffer, length);
+  if (!str)
+    return JS_FALSE;
+
+  *vp = STRING_TO_JSVAL(str);
+  return JS_TRUE;
 }
 
+/** When ownMemory is true, we free the memory when the object is finalized */
+static JSBool memory_ownMemory_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  hnd->ownMemory = *vp;
+  return JS_TRUE;
+}
+
+static JSBool memory_ownMemory_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  *vp = hnd->ownMemory;
+  return JS_TRUE;
+}
+
+/** Size of memory region in use, not necessary how much is allocated.
+ *  Size of zero often means "we don't know", not "it's empty"
+ */
 static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
@@ -75,7 +171,7 @@ static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *
 
   d = hnd->length;
   if (hnd->length != d)
-    return gpsee_throw(cx, CLASS_ID, ".size.getter.overflow");
+    return gpsee_throw(cx, CLASS_ID ".size.getter.overflow");
 
   return JS_NewNumberValue(cx, d, vp);
 }
@@ -103,7 +199,7 @@ static JSBool memory_size_setter(JSContext *cx, JSObject *obj, jsval id, jsval *
 
     newLength = d;
     if (d != newLength)
-      return gpsee_throw(cx, CLASS_ID, ".size.setter.overflow");
+      return gpsee_throw(cx, CLASS_ID ".size.setter.overflow");
   }
 
   newBuffer = JS_realloc(cx, hnd->buffer, newLength);
@@ -194,12 +290,21 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
       hnd->ownMemory = argv[1];
     else
     {
-      if (JS_ValueToBoolean(cx, argv[1], &hnd->ownMemory) == JS_FALSE)
+      if (JS_ValueToBoolean(cx, argv[1], &hnd->ownMemory) == JSVAL_FALSE)
 	return JS_FALSE;
     }
   }
 
   return JS_TRUE;
+}
+
+JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  /* Memory() called as function. */   
+  if (JS_IsConstructing(cx) != JS_TRUE)
+    return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
+
+  return Memory_Constructor(cx, obj, argc, argv, rval);
 }
 
 /** 
@@ -224,6 +329,7 @@ static void Memory_Finalize(JSContext *cx, JSObject *obj)
 }
 
 JSClass *memory_clasp = NULL;
+JSObject *memory_proto = NULL;
 
 /**
  *  Initialize the Memory class prototype.
@@ -248,21 +354,26 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
     JS_ResolveStub,   			/**< resolveProperty stub */
     JS_ConvertStub,   			/**< convertProperty stub */
     Memory_Finalize,			/**< it has a custom finalizer */
-
+    
     JSCLASS_NO_OPTIONAL_MEMBERS
   };
 
   static JSPropertySpec memory_props[] =
   {
-    { "size",	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, memory_size_setter },
+    { "size",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, memory_size_setter },
+    { "ownMemory", 	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_ownMemory_getter, memory_ownMemory_setter },
     { NULL, 0, 0, NULL, NULL }
   };
 
-  JSObject *proto;
+  static JSFunctionSpec memory_methods[] = 
+  {
+    JS_FN("asString",	memory_asString, 	0, JSPROP_ENUMERATE),
+    JS_FS_END
+  };
 
   memory_clasp = &memory_class;
 
-  proto =
+  memory_proto =
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
 		   parentProto,		/* parent_proto - Prototype object for the class */
@@ -270,15 +381,11 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 		   Memory,		/* constructor function - Scope matches obj */
 		   1,			/* nargs - Number of arguments for constructor (can be MAXARGS) */
 		   memory_props,	/* ps - props struct for parent_proto */
-		   NULL, 		/* fs - functions struct for parent_proto (normal "this" methods) */
+		   memory_methods,	/* fs - functions struct for parent_proto (normal "this" methods) */
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
-  GPSEE_ASSERT(proto);
+  GPSEE_ASSERT(memory_proto);
 
-  return proto;
+  return memory_proto;
 }
-
-
-
-
