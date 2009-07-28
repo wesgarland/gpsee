@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.10 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.11 2009/07/28 15:21:52 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.11  2009/07/28 15:21:52  wes
+ *  byteThing memoryOwner patch
+ *
  *  Revision 1.10  2009/07/23 19:00:40  wes
  *  Merged with upstream
  *
@@ -96,7 +99,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.10 2009/07/23 19:00:40 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.11 2009/07/28 15:21:52 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -819,7 +822,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   interpreter->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
         interpreter, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_UNJOINABLE_THREAD, 0);
   if (!interpreter->asyncCallbackTriggerThread)
-    panic(__FILE__ ": TERRIBL ERROR: PR_CreateThread() failed!");
+    panic(__FILE__ ": PR_CreateThread() failed!");
   /* Add a callback to spin the garbage collector occasionally */
   gpsee_addAsyncCallback(cx, gpsee_maybeGC, NULL);
   /* Add a context callback to remove any async callbacks associated with the context */
@@ -891,3 +894,22 @@ void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
   va_end(ap);
   return NULL;
 }
+
+/** 
+ *  All byteThings must have this JSTraceOp. It is used for two things:
+ *  1. It identifies byteThings to other byteThings
+ *  2. It ensures that hnd->memoryOwner is not finalized while other byteThings 
+ *     directly using the same backing memory store are reacheable.
+ *
+ *  @param trc	Tracer handle supplied by JSAPI.
+ *  @param obj	The object behind traced.
+ */
+void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
+{
+  byteThing_handle_t	*hnd = JS_GetPrivate(trc->context, obj);
+
+  if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
+    JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
+}
+
+

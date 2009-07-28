@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.9 2009/07/27 21:05:37 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.10 2009/07/28 15:21:52 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.10  2009/07/28 15:21:52  wes
+ *  byteThing memoryOwner patch
+ *
  *  Revision 1.9  2009/07/27 21:05:37  wes
  *  Corrected gpsee_getInstancePrivate macro
  *
@@ -262,6 +265,13 @@ int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 /* GPSEE JSAPI idiom extensions */
 void			*gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
 #define 		gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
+void 			gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
+
+static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
+{
+  return (clasp->mark == (JSMarkOp)gpsee_byteThingTracer);
+}
+
 static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
@@ -376,22 +386,52 @@ static jsbool_t  __attribute__((unused)) __jsbool = js_false;
 static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 #endif
 
-/** Generic structure for casting pointer-like-things which we store in 
- *  private slots for various modules, used to facilitate casts.
+/** Generic structure for representing pointer-like-things which we store in 
+ *  private slots for various modules, used to facilitate casts.  All byteThing
+ *  private handles must start like this one.
+ *
+ *  Keys to understanding byte things -- all byte things must
+ *  - have hnd->buffer which is where meaningful data is stored
+ *  - have hnd->length which is where amount of meaningful data is stored (0 == don't know)
+ *  - have hnd->memoryOwner which is a JSObject * which is the only object whose finalizer may free hnd->buffer
+ *  - have a JSTraceOp in the class definition which uses the gpsee_byteThingTracer()
+ *  - that trace op keeps hnd->memoryOwner GC-entrained when it is not "us"
+ *  - any ByteThing may freely use another byteThing's hnd->buffer so long as it marks the other as the memoryOwner
  */
 typedef struct
 {
   size_t                length;                 /**< Number of characters in buf */
   unsigned char         *buffer;                /**< Backing store */
+  JSObject		*memoryOwner;		/**< What JS Object owns the memory? NULL means "nobody" */
 } byteThing_handle_t;
 
+/** Macro to insure a proper byteThing is being set up. Requirements;
+ *  - called before JS_InitClass, but after JSClass is defined
+ *  - Type X has x_handle_t private data type
+ *  - Type X has x_class JSClass
+ */
+#define GPSEE_DECLARE_BYTETHING_CLASS(cls)	 								\
+GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, length) == offsetOf(byteThing_handle_t, length)); 		\
+GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, buffer) == offsetOf(byteThing_handle_t, buffer)); 		\
+GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, memoryOwner) == offsetOf(byteThing_handle_t, memoryOwner)); 	\
+GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
+cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
+cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
+  		      
 #define GPSEE_SIZET_FMT       "%zd"
 #define GPSEE_PTR_FMT         "%p"
 #define GPSEE_INT_FMT         "%d"
 #define GPSEE_UINT_FMT        "%u"
 #define GPSEE_INT32_FMT       "%ld"
+#define GPSEE_INT64_FMT       "%lld"
 #define GPSEE_UINT32_FMT      "%lu"
+#define GPSEE_UINT64_FMT      "%llu"
 #define GPSEE_HEX_UINT32_FMT  "0x%lx"
 #define GPSEE_HEX_UINT_FMT    "0x%x"
 
 #endif /* GPSEE_H */
+
+
+
+
+

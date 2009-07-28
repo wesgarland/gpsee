@@ -38,7 +38,7 @@
  *                              and ByteArray native JSAPI classes.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       June 2009
- *  @version    $Id: bytethings.h,v 1.2 2009/07/24 18:56:37 wes Exp $
+ *  @version    $Id: bytethings.h,v 1.3 2009/07/28 15:21:52 wes Exp $
  */
 
 #ifndef _BYTETHINGS_H
@@ -48,12 +48,14 @@ typedef struct
 {
   size_t                length;         /**< Number of characters in buffer */
   unsigned char         *buffer;        /**< Backing store */
+  JSObject		*memoryOwner;	/**< Owner of the backing store */
 } byteString_handle_t;
 
 typedef struct
 {
   size_t                length;         /**< Number of characters in buffer */
   unsigned char         *buffer;        /**< Backing store */
+  JSObject		*memoryOwner;	/**< Owner of the backing store */
   unsigned char         *realBuffer;    /**< Larger block of memory encompassing 'buffer' */
   size_t                capacity;       /**< Amount of memory allocated for buffer */
 } byteArray_handle_t;

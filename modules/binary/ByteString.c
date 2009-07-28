@@ -38,14 +38,14 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteString.c,v 1.5 2009/07/24 18:56:37 wes Exp $
+ *  @version	$Id: ByteString.c,v 1.6 2009/07/28 15:21:52 wes Exp $
  *
  *  Based on https://wiki.mozilla.org/ServerJS/Binary/B
  *  Extensions:
  *  - Missing or falsy charset in constructor means to inflate/deflate
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.5 2009/07/24 18:56:37 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.6 2009/07/28 15:21:52 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -84,12 +84,12 @@ inline int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 
 {
   if (index < 0)
   {
-    gpsee_throw(cx, CLASS_ID ".%s.range.underflow: %d<0", methodName, index);
+    gpsee_throw(cx, CLASS_ID ".%s.range.underflow: " GPSEE_INT64_FMT "<0", methodName, index);
     return JS_FALSE;
   }
   if (index >= bs->length)
   {
-    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: %d>=%d", methodName, index, bs->length);
+    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=%d", methodName, index, bs->length);
     return JS_FALSE;
   }
   return JS_TRUE;
@@ -322,7 +322,7 @@ static void ByteString_Finalize(JSContext *cx, JSObject *obj)
   if (!hnd)
     return;
 
-  if (hnd->buffer)
+  if (hnd->buffer && (hnd->memoryOwner == obj))
     JS_free(cx, hnd->buffer);
 
   JS_free(cx, hnd);
@@ -465,7 +465,9 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
       /* Range checks */
       if (start >= end)
         return
-        gpsee_throw(cx, CLASS_ID ".slice.arguments.range: 'start' argument (%d) must be lesser than 'end' argument (%d)", start, end);
+        gpsee_throw(cx, CLASS_ID ".slice.arguments.range: 'start' argument ("
+		    GPSEE_INT64_FMT ") must be lesser than 'end' argument ("
+		    GPSEE_INT64_FMT ")", start, end);
       /* Validate range of operation */
       /* TODO fix inaccurate end-1 error reporting */
       if (!byteString_rangeCheck(cx, hnd, start, "slice") ||
@@ -594,12 +596,7 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
   static JSClass byteString_class = 
   {
     GPSEE_CLASS_NAME(ByteString),		/**< its name is ByteString */
-    JSCLASS_HAS_PRIVATE /* JSCLASS_SHARE_ALL_PROPERTIES breaks methods?! */,			
-    /**< 
-      - Instances have private storage
-      - mark API is used for js >= 1.8 GC tracing 
-      - All properties are JSPROP_SHARED
-      */
+    JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,  			/**< addProperty stub */
     JS_PropertyStub,  			/**< deleteProperty stub */
     ByteString_getProperty,		/**< custom getProperty */
@@ -638,7 +635,11 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
     { NULL, 0, 0, NULL, NULL }
   };
 
-  JSObject *proto =
+  JSObject *proto;
+
+  GPSEE_DECLARE_BYTETHING_CLASS(byteString);
+
+  proto = 
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
 		   parentProto,		/* parent_proto - parent class (ByteString.__proto__) */
