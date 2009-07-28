@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.10 2009/07/28 15:21:52 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.11 2009/07/28 15:52:27 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.11  2009/07/28 15:52:27  wes
+ *  Updated isByteThing functions
+ *
  *  Revision 1.10  2009/07/28 15:21:52  wes
  *  byteThing memoryOwner patch
  *
@@ -269,9 +272,12 @@ void 			gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
 
 static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
 {
-  return (clasp->mark == (JSMarkOp)gpsee_byteThingTracer);
+  return clasp ? (clasp->mark == (JSMarkOp)gpsee_byteThingTracer) : 0;
 }
-
+static inline int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
+{
+  return gpsee_isByteThingClass(cx, JS_GET_CLASS(cx, obj));
+}
 static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
