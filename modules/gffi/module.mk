@@ -78,7 +78,7 @@ network_defs.%:	HEADERS  = sys/types.h sys/socket.h time.h poll.h arpa/inet.h sy
 network_defs.%:	HEADERS +=  resolv.h netdb.h
 posix_defs.%:	HEADERS  = unistd.h stdio.h limits.h termios.h dirent.h errno.h fcntl.h sys/select.h signal.h sys/stat.h
 
-posix_defs.%:	HEADERS += sys/wait.h sys/socket.h aio.h libgen.h strings.h string.h nl_types.h ndbm.h sys/types.h
+posix_defs.%:	HEADERS += sys/wait.h sys/socket.h aio.h libgen.h strings.h string.h nl_types.h sys/types.h
 posix_defs.%:	HEADERS += sys/types.h stdlib.h grp.h netdb.h utmpx.h fmtmsg.h fnmatch.h sys/statvfs.h sys/ipc.h ftw.h
 posix_defs.%:	HEADERS += ucontext.h grp.h stropts.h sys/resource.h sys/socket.h glob.h search.h arpa/inet.h math.h
 posix_defs.%:	HEADERS += ctype.h mqueue.h sys/mman.h sys/msg.h spawn.h poll.h pthread.h sys/uio.h regex.h sched.h
