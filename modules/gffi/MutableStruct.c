@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.3 2009/07/27 21:09:48 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.4 2009/07/28 16:43:48 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
@@ -159,17 +159,12 @@ JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval
 
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
-  else
-  {
-    /* cleanup now solely the job of the finalizer */
-    memset(hnd, 0, sizeof(*hnd));
-    JS_SetPrivate(cx, obj, hnd);
-    hnd->ownMemory = JSVAL_TRUE;
-  }
+
+  /* cleanup now solely the job of the finalizer */
+  memset(hnd, 0, sizeof(*hnd));
+  JS_SetPrivate(cx, obj, hnd);
+  hnd->memoryOwner = obj;
 
   if (!JSVAL_IS_STRING(argv[0]))
   {
@@ -188,10 +183,7 @@ JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval
   {
     hnd->buffer = JS_malloc(cx, hnd->length);
     if (!hnd->descriptor)
-    {
-      JS_ReportOutOfMemory(cx);
       return JS_FALSE;
-    }
 
     memset(hnd->buffer, 0, hnd->length);
   }
@@ -202,14 +194,14 @@ JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval
 /** Struct casts require the castee and struct name as arguments */
 JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-#warning MutableStruct_Cast lacks safety net
-  byteThing_handle_t	*srchnd;
-  struct_handle_t	*newhnd;
+  byteThing_handle_t	*srcHnd;
+  struct_handle_t	*newHnd;
+  JSClass 		*clasp;
 
   if (argc != 2)
     return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
 
-    if (!JSVAL_IS_OBJECT(argv[0]))
+  if (!JSVAL_IS_OBJECT(argv[0]))
   {
     if (JS_ValueToObject(cx, argv[0], &obj) == JS_FALSE)
       return JS_FALSE;
@@ -217,10 +209,10 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   else
     obj = JSVAL_TO_OBJECT(argv[0]);
 
-  srchnd = JS_GetPrivate(cx, obj);
-  if (!srchnd)
+  clasp = JS_GET_CLASS(cx, obj);
+  srcHnd = JS_GetPrivate(cx, obj);
+  if (!srcHnd || !gpsee_isByteThingClass(cx, clasp))
   {
-    JSClass 	*clasp = JS_GET_CLASS(cx, obj);
     const char	*className;
 
     if (!clasp)
@@ -231,7 +223,7 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to %s", className, clasp->name);
   }
 
-  obj = JS_NewObject(cx, mutableStruct_clasp, NULL, NULL);
+  obj = JS_NewObject(cx, mutableStruct_clasp, mutableStruct_proto, srcHnd->memoryOwner);
   if (!obj)
     return JS_FALSE;
 
@@ -240,11 +232,11 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   if (MutableStruct_Constructor(cx, obj, 1, argv + 1, rval) == JS_FALSE)
     return JS_FALSE;
 
-  newhnd = JS_GetPrivate(cx, obj);
-  if (srchnd->length)
-    memcpy(newhnd->buffer, srchnd->buffer, min(newhnd->length, srchnd->length));
-  else
-    memcpy(newhnd->buffer, srchnd->buffer, newhnd->length); /* JS programmer can cause a read-buffer overrun here; no way around it */
+  newHnd = JS_GetPrivate(cx, obj);
+  if (newHnd->buffer)	/* constructor allocates needlessly */
+    JS_free(cx, newHnd->buffer);
+
+  *(byteThing_handle_t *)newHnd = *(byteThing_handle_t *)srcHnd;
 
   return JS_TRUE;
 }
@@ -266,7 +258,7 @@ static void MutableStruct_Finalize(JSContext *cx, JSObject *obj)
   if (!hnd)
     return;
 
-  if (hnd->buffer && (hnd->ownMemory == JSVAL_TRUE))
+  if (hnd->buffer && (hnd->memoryOwner == obj))
     JS_free(cx, hnd->buffer);
 
   JS_free(cx, hnd);
@@ -284,6 +276,7 @@ JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 }
 
 JSClass *mutableStruct_clasp = NULL;
+JSObject *mutableStruct_proto = NULL;
 JSClass *immutableStruct_clasp = NULL;
 #warning need immutable struct class
 /**
@@ -313,12 +306,13 @@ JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parent
     JSCLASS_NO_OPTIONAL_MEMBERS
   };
 
-  JSObject *proto;
+#define mutableStruct_handle_t struct_handle_t
+  GPSEE_DECLARE_BYTETHING_CLASS(mutableStruct);
 
   mutableStruct_clasp = &mutableStruct_class;
   immutableStruct_clasp = mutableStruct_clasp; //xxxwg
 
-  proto =
+  mutableStruct_proto =
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
 		   parentProto,		/* parent_proto - Prototype object for the class */
@@ -330,8 +324,9 @@ JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parent
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
-  GPSEE_ASSERT(proto);
+  GPSEE_ASSERT(mutableStruct_proto);
 
-  return proto;
+  return mutableStruct_proto;
 }
+
 

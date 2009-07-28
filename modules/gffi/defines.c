@@ -46,7 +46,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: defines.c,v 1.2 2009/07/28 16:43:48 wes Exp $
  */
 
 #include <gpsee.h>

@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.3 2009/07/27 21:08:45 wes Exp $
+ *  @version	$Id: Memory.c,v 1.4 2009/07/28 16:43:48 wes Exp $
  */
 
 #include <gpsee.h>
@@ -57,9 +57,8 @@
  *
  *  asString can take one argument: a length. If length is -1, use strlen;
  *  otherwise use at most length bytes. If length is not defined, we use either
- *
- *  - buffer->length when !hnd->ownMemory, or
- *  - strlen
+ *     - buffer->length when !hnd->memoryOwner != this, or
+ *     - strlen
  */
 static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -84,7 +83,7 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
   switch(argc)
   {
     case 0:
-      if (hnd->length || hnd->ownMemory)
+      if (hnd->length || (hnd->memoryOwner == obj))
 	length = hnd->length;
       else
 	length = strlen(hnd->buffer);
@@ -130,6 +129,26 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 }
 
 /** When ownMemory is true, we free the memory when the object is finalized */
+static JSBool memory_ownMemory_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  jsval			*argv = JS_ARGV(cx, vp);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (*vp != JSVAL_TRUE && *vp != JSVAL_FALSE)
+    if (JS_ValueToBoolean(cx, *vp, argv + 0) == JSVAL_FALSE)
+      return JS_FALSE;
+
+  if (*vp == JSVAL_TRUE)
+    hnd->memoryOwner = obj;
+  else
+    hnd->memoryOwner = NULL;
+
+  return JS_TRUE;
+}
+
 static JSBool memory_ownMemory_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
@@ -137,18 +156,11 @@ static JSBool memory_ownMemory_getter(JSContext *cx, JSObject *obj, jsval id, js
   if (!hnd)
     return JS_FALSE;
 
-  hnd->ownMemory = *vp;
-  return JS_TRUE;
-}
+  if (hnd->memoryOwner == obj)
+    *vp = JSVAL_TRUE;
+  else
+    *vp = JSVAL_FALSE;
 
-static JSBool memory_ownMemory_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
-{
-  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
-
-  if (!hnd)
-    return JS_FALSE;
-
-  *vp = hnd->ownMemory;
   return JS_TRUE;
 }
 
@@ -176,37 +188,59 @@ static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *
   return JS_NewNumberValue(cx, d, vp);
 }
 
-static JSBool memory_size_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+/**
+ *  Calling realloc has the same hazards as calling it in C: if the buffer
+ *  moves, all the objects which were casted to it are now invalid, and
+ *  property accesses on them are liable to crash the embedding.
+ *
+ *  This function returns true when the underlying memory was moved, and
+ *  false when it was not. It will not throw an exception if the memory
+ *  was moved or invalidated, except possibly for OOM.
+ */
+static JSBool memory_realloc(JSContext *cx, uintN argc, jsval *vp)
 {
   size_t		newLength;
   void			*newBuffer;
-  memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  memory_handle_t	*hnd;
+  jsval			*argv = JS_ARGV(cx, vp);
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
 
+  if (!obj)
+    return JS_FALSE;
+ 
+  hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
   if (!hnd)
     return JS_FALSE;
 
-  if (hnd->ownMemory == JSVAL_FALSE)
-    return gpsee_throw(cx, CLASS_ID ".size.setter.notOwnMemory: cannot realloc memory we did not allocate");
+  if (hnd->memoryOwner != obj)
+    return gpsee_throw(cx, CLASS_ID ".realloc.notOwnMemory: cannot realloc memory we do not own");
 
-  if (JSVAL_IS_INT(*vp))
-    newLength = JSVAL_TO_INT(*vp);
+  if (JSVAL_IS_INT(argv[0]))
+    newLength = JSVAL_TO_INT(argv[0]);
   else
   {
     jsdouble d;
 
-    if (JS_ValueToNumber(cx, *vp, &d) != JS_TRUE)
+    if (JS_ValueToNumber(cx, argv[0], &d) != JS_TRUE)
       return JS_FALSE;
 
     newLength = d;
     if (d != newLength)
-      return gpsee_throw(cx, CLASS_ID ".size.setter.overflow");
+      return gpsee_throw(cx, CLASS_ID ".realloc.overflow");
   }
 
   newBuffer = JS_realloc(cx, hnd->buffer, newLength);
   if (!newBuffer && newLength)
     return JS_FALSE;
 
-  hnd->buffer = newBuffer;
+  if (hnd->buffer == newBuffer)
+    *vp = JSVAL_FALSE;
+  else
+  {
+    hnd->buffer = newBuffer;
+    *vp = JSVAL_TRUE;
+  }
+
   hnd->length = newLength;
 
   return JS_TRUE;
@@ -244,17 +278,11 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
-  else
-  {
-    /* cleanup now solely the job of the finalizer */
-    memset(hnd, 0, sizeof(*hnd));
-    JS_SetPrivate(cx, obj, hnd);
-    hnd->ownMemory = JSVAL_TRUE;
-  }
+
+  /* cleanup now solely the job of the finalizer */
+  memset(hnd, 0, sizeof(*hnd));
+  JS_SetPrivate(cx, obj, hnd);
 
   if (JSVAL_IS_INT(argv[0]))
   {
@@ -276,23 +304,22 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   {
     hnd->buffer = JS_malloc(cx, hnd->length);
     if (!hnd->buffer)
-    {
-      JS_ReportOutOfMemory(cx);
       return JS_FALSE;
-    }
 
+    hnd->memoryOwner = obj;
     memset(hnd->buffer, 0, hnd->length);
   }
 
-  if (argc == 2)
+  if (argc == 2) /* Allow JS programmer to override sanity */
   {
-    if ((argv[1] == JSVAL_TRUE) || argv[1] == JSVAL_FALSE)
-      hnd->ownMemory = argv[1];
-    else
-    {
-      if (JS_ValueToBoolean(cx, argv[1], &hnd->ownMemory) == JSVAL_FALSE)
+    if (argv[1] != JSVAL_TRUE && argv[1] != JSVAL_FALSE)
+      if (JS_ValueToBoolean(cx, argv[1], argv + 1) == JSVAL_FALSE)
 	return JS_FALSE;
-    }
+
+    if (argv[1] == JSVAL_TRUE)
+      hnd->memoryOwner = obj;
+    else
+      hnd->memoryOwner = NULL;
   }
 
   return JS_TRUE;
@@ -320,7 +347,7 @@ static void Memory_Finalize(JSContext *cx, JSObject *obj)
   if (!hnd)
     return;
 
-  if (hnd->buffer && (hnd->ownMemory == JSVAL_TRUE))
+  if (hnd->buffer && (hnd->memoryOwner == obj))
     JS_free(cx, hnd->buffer);
 
   JS_free(cx, hnd);
@@ -360,7 +387,7 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 
   static JSPropertySpec memory_props[] =
   {
-    { "size",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, memory_size_setter },
+    { "size",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, JS_PropertyStub },
     { "ownMemory", 	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_ownMemory_getter, memory_ownMemory_setter },
     { NULL, 0, 0, NULL, NULL }
   };
@@ -368,8 +395,11 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
   static JSFunctionSpec memory_methods[] = 
   {
     JS_FN("asString",	memory_asString, 	0, JSPROP_ENUMERATE),
+    JS_FN("realloc",	memory_realloc, 	0, JSPROP_ENUMERATE),
     JS_FS_END
   };
+
+  GPSEE_DECLARE_BYTETHING_CLASS(memory);
 
   memory_clasp = &memory_class;
 
