@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.6 2009/07/24 21:14:08 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.7 2009/07/28 15:21:52 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.6 2009/07/24 21:14:08 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.7 2009/07/28 15:21:52 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -209,10 +209,7 @@ JSBool copyJSArray_toBuf(JSContext *cx, JSObject *arr, size_t start, unsigned ch
     /* Allocate our buffer */
     buf = JS_malloc(cx, bufLen);
     if (!buf)
-    {
-      JS_ReportOutOfMemory(cx);
       goto failOut;
-    }
   }
   /* Caller provided buffer? */
   else
@@ -984,7 +981,7 @@ JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_
                                JSObject *proto, size_t btallocsize, int stealBuffer)
 {
   /* Allocate and initialize our private ByteThing handle */
-  byteThing_handle_t * hnd;
+  byteThing_handle_t 	*hnd;
   
   if (clasp == byteString_clasp)
     hnd = (byteThing_handle_t*) JS_malloc(cx, btallocsize);
@@ -1031,7 +1028,10 @@ JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_
     obj = JS_NewObject(cx, clasp, proto, NULL);
 
   if (obj)
+  {
     JS_SetPrivate(cx, obj, hnd);
+    hnd->memoryOwner = obj;
+  }
 
   return obj;
 }
@@ -1544,7 +1544,7 @@ JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 
       length = d;
       if (d != length)
-	return gpsee_throw(cx, "%s.cast.length.overflow");
+	return gpsee_throw(cx, "%s.cast.length.overflow", throwPrefix);
     }
 
     if (length == -1)

@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteArray.c,v 1.3 2009/07/24 18:56:37 wes Exp $
+ *  @version	$Id: ByteArray.c,v 1.4 2009/07/28 15:21:52 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.3 2009/07/24 18:56:37 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.4 2009/07/28 15:21:52 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -286,7 +286,7 @@ static void ByteArray_Finalize(JSContext *cx, JSObject *obj)
   if (!hnd)
     return;
 
-  if (hnd->buffer)
+  if (hnd->buffer && (obj == hnd->memoryOwner))
     JS_free(cx, hnd->buffer);
 
   JS_free(cx, hnd);
@@ -794,7 +794,11 @@ JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
     { NULL, 0, 0, NULL, NULL }
   };
 
-  JSObject *proto = 
+  JSObject *proto;
+
+  GPSEE_DECLARE_BYTETHING_CLASS(byteArray);
+
+  proto = 
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
 		   parentProto,         /* parent_proto - parent class (ByteArray.__proto__) */
