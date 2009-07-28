@@ -50,7 +50,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: structs.c,v 1.2 2009/07/27 21:13:44 wes Exp $
+ *  @version	$Id: structs.c,v 1.3 2009/07/28 17:22:27 wes Exp $
  */
 
 #include <gpsee.h>
@@ -266,6 +266,7 @@ JSBool struct_setPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
   return JS_TRUE;
 }
 
+/** Generic C array getter, returns Memory objects to JS */
 JSBool struct_getArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *vp, const char *throwLabel)
 {
   JSObject 		*robj;
@@ -284,11 +285,22 @@ JSBool struct_getArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
 
   memHnd->buffer = (char *)structHnd->buffer + structHnd->descriptor->members[memberIdx].offset;
   memHnd->length = structHnd->descriptor->members[memberIdx].size;
-  memHnd->ownMemory = JSVAL_FALSE;
+  memHnd->memoryOwner = thisObj;
 
   return JS_TRUE;
 }
 
+/**
+ *  Generic C array setter.
+ *
+ *  Set the contents of a struct field which happens to be an array (declared with [n]).
+ *  If the passed object is a byteThing, we copy its contents (as much as will fit) into
+ *  the struct field.
+ *
+ *  Otherwise, the passed jsval is taken as a String; if the array happens to be an array of 
+ *  16-bit things, we do a 16-bit string copy. Otherwise we demote to 8 bit following the
+ *  JS_CStringsAreUTF8() rules and to a byte-wise copy.
+ */
 JSBool struct_setArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *vp, const char *throwLabel)
 {
   JSString 		*str;
@@ -308,15 +320,16 @@ JSBool struct_setArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
   if (JSVAL_IS_OBJECT(*vp))
   {
     memory_handle_t	*memHnd;
+    JSObject 		*obj = JSVAL_TO_OBJECT(*vp);
 
-    JSObject *obj = JSVAL_TO_OBJECT(*vp);
-
-#warning should handle all bytething types
-    memHnd = gpsee_getInstancePrivate(cx, obj, memory_clasp, NULL);
-    if (memHnd)
+    if (gpsee_isByteThing(cx, obj))
     {
-      memcpy(fieldAddr, memHnd->buffer, min(fieldSize, memHnd->length));
-      return JS_TRUE;
+      memHnd = JS_GetPrivate(cx, obj);
+      if (memHnd)
+      {
+	memcpy(fieldAddr, memHnd->buffer, min(fieldSize, memHnd->length));
+	return JS_TRUE;
+      }
     }
   }
 
