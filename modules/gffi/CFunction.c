@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.3 2009/07/27 21:06:33 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.4 2009/07/28 16:43:48 wes Exp $
  */
 
 #include <ffi.h>
@@ -122,7 +122,8 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
       return gpsee_throw(cx, CLASS_ID ".call: impossible error processing returned Memory object");
 
     memHnd->buffer = ptr;
-    memHnd->ownMemory = JSVAL_FALSE;
+    memHnd->memoryOwner = NULL;	/* By default we mark that we don't own the memory, as we don't know how it's managed */
+
     return JS_TRUE;
   }
 
@@ -186,10 +187,8 @@ static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storag
 
   *storagep = JS_malloc(cx, sizeof(char));
   if (!*storagep)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
+
   *avaluep = storagep;
 
   if (!JSVAL_IS_INT(v))
@@ -248,10 +247,8 @@ static JSBool valueTo_ ##ftype(JSContext *cx, jsval v, 				\
     								                \
   *storagep = JS_malloc(cx, sizeof(tgt));					\
   if (!*storagep)								\
-  {										\
-    JS_ReportOutOfMemory(cx);							\
     return JS_FALSE;								\
-  }										\
+    								                \
   *avaluep = *storagep;								\
   *(ctype *)*storagep = tgt;							\
     								                \
@@ -293,10 +290,7 @@ static JSBool valueTo_double(JSContext *cx, jsval v, void **avaluep, void **stor
   *storagep = JS_malloc(cx, sizeof(jsdouble));
 
   if (!*storagep)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   *avaluep = *storagep;
 
@@ -365,10 +359,7 @@ static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **
   *storagep = JS_malloc(cx, sizeof(long double));
 
   if (!*storagep)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
     return JS_FALSE;
@@ -485,16 +476,11 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
-  else
-  {
-    /* cleanup now solely the job of the finalizer */
-    memset(hnd, 0, sizeof(*hnd));
-    JS_SetPrivate(cx, obj, hnd);
-  }
+
+  /* cleanup now solely the job of the finalizer */
+  memset(hnd, 0, sizeof(*hnd));
+  JS_SetPrivate(cx, obj, hnd);
 
   switch(argv[0])
   {
@@ -555,10 +541,7 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
   }
 
   if (!hnd->functionName || !hnd->cif || (hnd->nargs && (!hnd->argTypes || !hnd->argConverters)) || !hnd->functionName)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   /* Sort out return type */
 #define ffi_type(type, junk) if (argv[1] == jsve_ ## type) { hnd->rtype_abi = &ffi_type_ ## type; } else

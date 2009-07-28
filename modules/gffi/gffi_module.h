@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.2 2009/07/27 21:11:35 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.3 2009/07/28 16:43:48 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -57,21 +57,21 @@ typedef enum { selt_integer, selt_array, selt_string, selt_pointer } sel_type_e;
 /** Description of a struct member (field). */
 typedef struct member_s
 {
-  const char	*name;
-  sel_type_e	type;
-  size_t	typeSize; /**< size of field element; not redundant -- used to detect arrays */
-  int		isSigned;
-  size_t	offset;
-  size_t	size;	  /**< size of whole field: typeSize times number of elements */
+  const char	*name;		/**< Name of the field */
+  sel_type_e	type;		/**< What type of field this is */ 
+  int		isSigned;	/**< Whether or not the field is signed */
+  size_t	typeSize; 	/**< size of field element; not redundant -- used to detect arrays */
+  size_t	offset;		/**< How far away from the start of the struct it is */
+  size_t	size;	  	/**< size of whole field: typeSize times number of elements */
 } memberShape;
 
 /** Description of a struct */
 typedef struct struct_s
 {
-  const char		*name;
-  size_t		size;
-    memberShape		*members;
-  size_t		memberCount;
+  const char		*name;		/**< Name of the struct, including 'struct' if it's not a typedef */
+  size_t		size;		/**< Size of the struct */
+  memberShape		*members;	/**< Description of each struct member */	
+  size_t		memberCount;	/**< Number of members in the struct */
 } structShape;
 
 /** Private handle used to describe an instance of a memory object */
@@ -79,16 +79,16 @@ typedef struct
 {
   size_t		length;		/**< Size of buffer or 0 if unknown */
   unsigned char 	*buffer;	/**< Pointer to memory */
-  jsval			ownMemory;	/**< JSVAL_TRUE | JSVAL_FALSE, indicates if buffer should be freed on finalize */
+  JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
 } memory_handle_t;
 
-/** Private handle used to describe an instance of a struct object */
+/** Private handle used to describe an instance of a MutableStruct or ImmutableStruct object */
 typedef struct
 {
-  size_t		length;
-  unsigned char 	*buffer;
-  jsval			ownMemory;	/**< JSVAL_TRUE | JSVAL_FALSE, indicates if buffer should be freed on finalize */
-  structShape		*descriptor;
+  size_t		length;		/**< Number of bytes allocated for the struct or 0 if we didn't allocate */
+  unsigned char 	*buffer;	/**< Pointer to the start of the struct */
+  JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
+  structShape		*descriptor;	/**< Description of the struct this handle describes */
 } struct_handle_t;
 
 structShape *struct_findShape(const char *name);
@@ -99,15 +99,16 @@ extern JSClass *immutableStruct_clasp;
 extern JSClass *cFunction_clasp;
 extern JSClass *memory_clasp;
 extern JSObject *memory_proto;
+extern JSObject *mutableStruct_proto;
 
 /** Magic numbers used in argument passing */
 typedef enum
 {
-#define jsv(val)	inte_ ## val,
+#define jsv(val)       inte_ ## val,
 #include "jsv_constants.decl"
 #undef jsv
 } gffi_intv_e;
-
+  
 /** Magic jsvals used in argument passing */
 typedef enum gffi_jsv
 {
@@ -130,4 +131,3 @@ GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, buffer) == offsetOf(memory_hand
 
 GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, length) == offsetOf(memory_handle_t, length));
 GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, buffer) == offsetOf(memory_handle_t, buffer));
-GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, ownMemory) == offsetOf(memory_handle_t, ownMemory));
