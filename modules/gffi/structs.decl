@@ -16,7 +16,7 @@ beginStruct(struct stat)
   member(time_t,	st_ctime,	integer)
   member(blksize_t,	st_blksize,	integer)
   member(blkcnt_t,	st_blocks,	integer)
-  member(char,		st_fstype,	string)
+//  member(char,		st_fstype,	string)
 #if 0
 #if defined(st_atime) && defined(st_mtime) && defined(st_ctime) && !defined(NO_STAT_TIMESPEC_T)
   member(time_t,	st_atim,	struct)
