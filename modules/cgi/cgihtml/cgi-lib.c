@@ -185,7 +185,7 @@ int parse_CGI_encoded(llist *entries, char *buffer)
 
 /* stolen from k&r and seriously modified to do what I want */
 
-int getline(char s[], int lim)
+int get_line(char s[], int lim)
 {
   int c=EOF, i=0, num;
 
@@ -235,9 +235,9 @@ int parse_form_encoded(llist* entries)
   list_create(entries);
   window = entries->head;
   /* ignore first boundary; this isn't so robust; improve it later */
-  getline(buffer,BUFSIZ);
+  get_line(buffer,BUFSIZ);
   /* now start parsing */
-  while ((bytesread=getline(buffer,BUFSIZ)) != 0) {
+  while ((bytesread=get_line(buffer,BUFSIZ)) != 0) {
     start = 1;
     /* this assumes that buffer contains no binary characters.
        if the buffer contains the first valid header, then this
@@ -294,7 +294,7 @@ int parse_form_encoded(llist* entries)
     else
       isfile = 0;
     /* ignore rest of headers and first blank line */
-    while (getline(buffer, BUFSIZ) > 1) {
+    while (get_line(buffer, BUFSIZ) > 1) {
       /* DOS style blank line? */
       if ((buffer[0] == '\r') && (buffer[1] == '\n'))
 	break;
@@ -302,7 +302,7 @@ int parse_form_encoded(llist* entries)
     done = 0;
     j = 0;
     while (!done) {
-      bytesread = getline(buffer,BUFSIZ);
+      bytesread = get_line(buffer,BUFSIZ);
       buffer[bytesread] = '\0';
       if (bytesread && strstr(buffer,boundary) == NULL) {
 	if (start) {
