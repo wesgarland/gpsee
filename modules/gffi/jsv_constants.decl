@@ -1,0 +1,13 @@
+jsv(rtldDefault)
+#if defined(RTLD_NEXT)
+jsv(rtldNext)
+#endif
+#if defined(RTLD_SELF)
+jsv(rtldSelf)
+#endif
+#if defined(RTLD_PROBE)
+jsv(rtldProbe)
+#endif
+#define ffi_type(a,b) jsv(a)
+#include "ffi_types.decl"
+#undef ffi_type

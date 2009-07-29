@@ -1,0 +1,75 @@
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/fcntl.h>
+
+beginStruct(struct stat)
+  member(dev_t,		st_dev,		integer)
+  member(ino_t,		st_ino,		integer)
+  member(mode_t,	st_mode,	integer)
+  member(nlink_t,	st_nlink,	integer)
+  member(uid_t,		st_uid,		integer)
+  member(gid_t,		st_gid,		integer)
+  member(dev_t,		st_rdev,	integer)
+  member(off_t,		st_size,	integer)
+  member(time_t,	st_atime,	integer)
+  member(time_t,	st_mtime,	integer)
+  member(time_t,	st_ctime,	integer)
+  member(blksize_t,	st_blksize,	integer)
+  member(blkcnt_t,	st_blocks,	integer)
+  member(char,		st_fstype,	string)
+#if 0
+#if defined(st_atime) && defined(st_mtime) && defined(st_ctime) && !defined(NO_STAT_TIMESPEC_T)
+  member(time_t,	st_atim,	struct)
+  member(time_t,	st_mtim,	struct)
+  member(time_t,	st_ctim,	struct)
+#endif
+#endif
+endStruct(struct stat)
+
+beginStruct(struct dirent)
+    member(ino_t,	d_ino,		integer)
+    member(char,	d_name,		array)
+endStruct(struct dirent)
+
+#if 0
+beginStruct(timespec_t)
+  member(time_t,	tv_sec,		integer)
+  member(time_t,	tv_nsec,	integer)
+endStruct(timespec_t)
+
+beginStruct(itimerspec_t)
+  member(timespec_t,	it_interval,	integer)
+  member(timespec_t,	it_value,	integer)
+endStruct(itimerspec_t)
+#endif
+
+#include <time.h>
+beginStruct(struct tm)
+  member(int,	  	tm_sec,		integer)     	/* seconds after the minute [0, 60]  */
+  member(int,	  	tm_min,		integer)     	/* minutes after the hour [0, 59] */
+  member(int,	  	tm_hour,	integer)    	/* hour since midnight [0, 23] */
+  member(int,	  	tm_mday,	integer)    	/* day of the month [1, 31] */
+  member(int,	  	tm_mon,		integer)     	/* months since January [0, 11] */
+  member(int,	  	tm_year,	integer)    	/* years since 1900 */
+  member(int,	  	tm_wday,	integer)    	/* days since Sunday [0, 6] */
+  member(int,	  	tm_yday,	integer)    	/* days since January 1 [0, 365] */
+  member(int,	  	tm_isdst,	integer)	/* flag for daylight savings time */
+endStruct(struct tm)
+
+#include <netdb.h>
+beginStruct(struct hostent)
+  member(char *,	h_name,		string)		/* canonical name of host */
+  member(char **,	h_aliases,	array)	     	/* alias list */
+  member(int,		h_addrtype,	integer)       	/* host address type */
+  member(int,		h_length,	integer)        /* length of address */
+  member(char **,	h_addr_list,	array)		/* list of addresses */
+endStruct(struct hostent)
+
+/*
+resolver
+sockets struct in_addr, struct socket, sockaddr, sockaddr_dl
+iovec
+termio
+termios
+dirent
+*/
