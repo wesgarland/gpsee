@@ -1,0 +1,23 @@
+Version: $Id: README,v 1.1 2009/05/27 04:16:59 wes Exp $
+
+This directory contains a collection of build rules and source code patches
+for 3rd-party applications that use SpiderMonkey. These applications, which 
+were not created as part of the GPSEE project, have been modified to compile
+with GPSEE-core underpinnings.
+
+This means that these applications can now load GPSEE modules, effectively
+making them support ServerJS as well as GPSEE. 
+
+The patches have been created as cleanly as possible, using the third-party
+build system as effectively as possible, and generally acting by intercepting
+JSAPI calls and replacing them with equivalent GPSEE calls.
+
+These patches are likely to be very version sensitive. If have trouble
+building, either download the version or contact the the GPSEE team.
+
+You can verify from script that you are in fact in a GPSEE namespace. To do
+this, evaluate the variable 'gpseeNamespace'.
+
+Directory	Description			Version Tested
+--------------	------------------------------	----------------------------
+gpsee-js	SpiderMonkey JavaScript Shell	March 22 2009 hg tip

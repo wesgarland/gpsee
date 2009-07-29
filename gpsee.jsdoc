@@ -1,0 +1,43 @@
+/** Top-level namespace. Normally "gpsee" */
+var gpseeNamespace = {};
+
+/** Send output to stdout.   Call-compatible with js shell's print function.
+ *
+ *  Each argument is coerced with .toString() if necessary and joined to
+ *  a buffer which is written to stdout in one large write. A newline is
+ *  appended whether the caller supplied one or not.
+ *
+ */
+function print(args...){};
+
+/**
+ *  Array containing arguments with which the script was invoked.
+ *  Exactly analagous to argv.
+ */
+var arguments=[];
+
+/**
+ *  Array containing environment variables present at script invocation.
+ *  Interface very likely to change.
+ */
+var environ=[];
+
+/**
+ *  Module loading function. Can load internal, DSO, or JavaScript modules
+ *  based on module handle.  Stable interface which can be used to implement
+ *  other module loading mechanisms, e.g. ServerJS securable modules proposal.
+ *
+ *  @param	moduleName	Name of the module (e.g. 'Thread') to load.
+ *  @param	filename	Optional, can be used to override search parameter
+ *				derived from moduleName.
+ */
+function loadModule(moduleName, filename){};
+
+/**
+ *  Module loading function. Provided for compliance with the Interoperable
+ *  JavaScript Module Specification (IJMS). Implemented with loadModule().
+ * 
+ *  @link http://code.google.com/p/interoperablejs/
+ *  @IJMS
+ */
+function require(moduleName){};
