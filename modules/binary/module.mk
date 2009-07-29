@@ -35,10 +35,12 @@
 EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o Binary.o
 
 ifneq (X$(ICONV_LIB_NAME),X)
-LDFLAGS			+= -l$(ICONV_LIB_NAME)
+EXTRA_LDFLAGS		+= -l$(ICONV_LIB_NAME)
+endif
+
 build_debug_module:
+ifneq (X($ICONV_LIB_NAME),X)
 	@echo " - iconv library is named $(ICONV_LIB_NAME)"
 else
-build_debug_module:
 	@echo " - iconv library is not specified; assuming it is present in libc"
 endif

@@ -33,18 +33,23 @@ clean:
 	$(RM) depend.mk
 
 build_debug:
-	@echo "Depend Files: $(DEPEND_FILES)"
-	@echo "GPSEE Source: $(GPSEE_SRC_DIR)"
-	@echo "GPSEE Prefix: $(GPSEE_PREFIX_DIR)"
-	@echo "JSAPI Build:  $(SPIDERMONKEY_BUILD)"
-	@echo "CC:           $(CC)"
-	@echo "CFLAGS:       $(CFLAGS)"
-	@echo "CPPFLAGS:     $(CPPFLAGS)"
-	@echo "CXX:          $(CXX)"
-	@echo "CXXFLAGS:     $(CXXFLAGS)"      
-	@echo "LD:           $(LD)"
-	@echo "LDFLAGS:      $(LDFLAGS)"
-	@echo "LOADLIBES:    $(LOADLIBES)"
+	@echo
+	@echo " * GPSEE debug info: "
+	@echo
+#	@echo "Depend Files:    $(DEPEND_FILES)"
+	@echo "GPSEE Source:    $(GPSEE_SRC_DIR)"
+	@echo "GPSEE Prefix:    $(GPSEE_PREFIX_DIR)"
+	@echo "JSAPI Build:     $(SPIDERMONKEY_BUILD)"
+	@echo "CC:              $(CC)"
+	@echo "CFLAGS:          $(CFLAGS)"
+	@echo "CPPFLAGS:        $(CPPFLAGS)"
+	@echo "CXX:             $(CXX)"
+	@echo "CXXFLAGS:        $(CXXFLAGS)"      
+	@echo "LD:              $(LD)"
+	@echo "LDFLAGS:         $(LDFLAGS)"
+	@echo "LOADLIBES:       $(LOADLIBES)"
+	@echo "ICONV_LIB_NAME:  $(ICONV_LIB_NAME)"
+	@echo
 
 # Install shared libraries
 install-nodeps install install-solibs: XLIBS =$(strip $(filter %.$(SOLIB_EXT),$(EXPORT_LIBS)))

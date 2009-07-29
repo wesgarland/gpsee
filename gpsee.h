@@ -149,6 +149,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #define GPSEE_MAJOR_VERSION_NUMBER	        0
 #define GPSEE_MINOR_VERSION_NUMBER		2
 #define GPSEE_MICRO_VERSION_NUMBER		0
+#include "gpsee_formats.h"
 
 #if !defined(fieldSize)
 # define fieldSize(st, field)    sizeof(((st *)NULL)->field)
@@ -424,20 +425,4 @@ GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
 cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
   		      
-#define GPSEE_SIZET_FMT       "%zd"
-#define GPSEE_PTR_FMT         "%p"
-#define GPSEE_INT_FMT         "%d"
-#define GPSEE_UINT_FMT        "%u"
-#define GPSEE_INT32_FMT       "%ld"
-#define GPSEE_INT64_FMT       "%lld"
-#define GPSEE_UINT32_FMT      "%lu"
-#define GPSEE_UINT64_FMT      "%llu"
-#define GPSEE_HEX_UINT32_FMT  "0x%lx"
-#define GPSEE_HEX_UINT_FMT    "0x%x"
-
 #endif /* GPSEE_H */
-
-
-
-
-

@@ -176,7 +176,7 @@ JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval
 
   hnd->descriptor = struct_findShape(JS_GetStringBytes(JSVAL_TO_STRING(argv[0])));
   if (!hnd->descriptor)
-    return gpsee_throw(cx, CLASS_ID ".constructor.unknown: Struct %s is unknown to this build of GPSEE", JS_GetStringBytes(JSVAL_TO_STRING(argv[0])));
+    return gpsee_throw(cx, CLASS_ID ".constructor.unknown: Struct '%s' is unknown to this build of GPSEE", JS_GetStringBytes(JSVAL_TO_STRING(argv[0])));
 
   hnd->length = hnd->descriptor->size;
   if (hnd->length)

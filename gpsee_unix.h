@@ -76,3 +76,15 @@ rc_list 	rc_readfile(rcFILE *rcFile);							/**< Read what we opened */
 #if defined(__SURELYNX__)
 # error "SureLynx environment not compatible with UNIX<>SureLynx shim!"
 #endif
+
+#define GPSEE_SIZET_FMT       "%zd"
+#define GPSEE_PTR_FMT         "%p"
+#define GPSEE_INT_FMT         "%d"
+#define GPSEE_UINT_FMT        "%u"
+#define GPSEE_INT32_FMT       "%ld"
+#define GPSEE_INT64_FMT       "%lld"
+#define GPSEE_UINT32_FMT      "%lu"
+#define GPSEE_UINT64_FMT      "%llu"
+#define GPSEE_HEX_UINT32_FMT  "0x%lx"
+#define GPSEE_HEX_UINT_FMT    "0x%x"
+

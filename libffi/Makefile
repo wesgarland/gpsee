@@ -147,13 +147,13 @@ JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 endif
 
 install: build
-	@echo "* Installing LibFFI in $(LIBFFI_LIB_DIR), "
+	@echo "*  Installing LibFFI in $(LIBFFI_LIB_DIR), "
 	@echo "  headers in $(LIBFFI_INCLUDE_DIR)."
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) install
-	@echo "* Building vars.mk"
+	@echo " * Building vars.mk"
 	@echo "LIBFFI_CONFIG_DEPS=libffi/vars.mk libffi/local_config.mk" > vars.mk
-	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --libs)" >> vars.mk
-	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --cflags)" >> vars.mk
+	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
+	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 
 ifneq ($(QUIET),True)
 	@echo ""

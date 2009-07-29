@@ -40,4 +40,5 @@ REAL_CC			 = gcc
 CC			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
 
 $(GPSEE_LIBRARY): LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
+binary_module.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
 
