@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.11 2009/07/28 15:21:52 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.12 2009/07/30 17:10:35 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.12  2009/07/30 17:10:35  wes
+ *  Added ability to run bare (non-UTF-8) C strings
+ *
  *  Revision 1.11  2009/07/28 15:21:52  wes
  *  byteThing memoryOwner patch
  *
@@ -99,7 +102,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.11 2009/07/28 15:21:52 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.12 2009/07/30 17:10:35 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -759,7 +762,8 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   JSContext 		*cx;
   gpsee_interpreter_t	*interpreter;
 
-  JS_SetCStringsAreUTF8();
+  if (!getenv("GPSEE_NO_UTF8_C_STRINGS"))
+    JS_SetCStringsAreUTF8();
 
   interpreter = calloc(sizeof(*interpreter), 1);
 
@@ -889,7 +893,10 @@ void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
   {
     prvslot = JS_GetInstancePrivate(cx, obj, clasp, NULL);
     if (prvslot)
+    {
+      JS_ClearPendingException(cx);
       return prvslot;
+    }
   }
   va_end(ap);
   return NULL;
