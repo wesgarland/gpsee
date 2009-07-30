@@ -426,7 +426,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     int 	c;
     char	*flag_p = flags;
 
-    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hnf:F:aRxSUWdeJ"
+    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hnf:F:aCRxSUWdeJ"
 #ifdef JS_GC_ZEAL
 		       "z"
 #endif
