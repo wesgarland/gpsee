@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.13 2009/07/31 14:56:08 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.14 2009/07/31 16:08:20 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.14  2009/07/31 16:08:20  wes
+ *  C99
+ *
  *  Revision 1.13  2009/07/31 14:56:08  wes
  *  Removed printf formats, now in gpsee_formats.h
  *
@@ -87,7 +90,6 @@
 # define JS_DEBUG 1	/** Missing in early 1.8.1-pre */
 #endif
 
-
 #if defined(GPSEE_SURELYNX_STREAM)
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
@@ -105,6 +107,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 # if defined(GPSEE_SURELYNX_STREAM)
 #  include <gpsee_surelynx.h>
 #  include <apr_surelynx.h>
+#  include <flock.h>
 #  undef __FUNCTION__
 # elif defined(GPSEE_UNIX_STREAM)
 #  if !defined(_GNU_SOURCE)
@@ -255,7 +258,7 @@ JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto
 JSObject *		gpsee_getModuleObject(JSContext *cx, const char *moduleID);
 const char *		gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
 JSBool 			gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
-JSClass	*		gpsee_getGlobalClass();
+JSClass	*		gpsee_getGlobalClass(void);
 
 /* support routines */
 signed int		gpsee_verbosity(signed int changeBy);
@@ -366,7 +369,6 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 	
 #include <gpsee_flock.h>
 
-const char *gpsee_makeLogFormat_r(const char *fmt, char *fmtNew);
 #if defined(__cplusplus)
 }
 #endif
