@@ -36,7 +36,7 @@
  *  @file       signal_module.c		Module to expose POSIX signals as JavaScript events.
  *  @author     Wes Garland, wes@page.ca
  *  @date       Oct 2007
- *  @version    $Id: signal_module.c,v 1.3 2009/07/23 19:00:40 wes Exp $
+ *  @version    $Id: signal_module.c,v 1.4 2009/07/31 16:49:29 wes Exp $
  *
  *  @bug	Not compatible with gpsee_context_private.c: both want the context callback. Will
  *		need to write some multiplexing code.
@@ -65,7 +65,7 @@
  *		</pre>
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: signal_module.c,v 1.3 2009/07/23 19:00:40 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: signal_module.c,v 1.4 2009/07/31 16:49:29 wes Exp $";
  
 #include "gpsee.h"
 #include <stdlib.h>
@@ -335,15 +335,15 @@ static JSBool signal_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 	pid = 0;
 
       if (pid == NaN)
-	return gpsee_throw(cx, MODULE_ID, ".kill.pid.isNaN");
+	return gpsee_throw(cx, MODULE_ID ".kill.pid.isNaN");
 
       break;
     default:
-      return gpsee_throw(cx, MODULE_ID, ".kill.arguments.count");
+      return gpsee_throw(cx, MODULE_ID ".kill.arguments.count");
   }
 
   if (pid == 0)
-    return gpsee_throw(cx, MODULE_ID, ".kill.pid.invalid");
+    return gpsee_throw(cx, MODULE_ID ".kill.pid.invalid");
 
   if (JS_ValueToECMAInt32(cx, argv[0], &sig) != JS_TRUE)
     return JS_FALSE;
