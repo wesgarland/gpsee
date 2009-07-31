@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses_Window.c,v 1.2 2009/04/01 22:30:55 wes Exp $
+ *  @version	$Id: curses_Window.c,v 1.3 2009/07/31 16:07:33 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses_Window.c,v 1.2 2009/04/01 22:30:55 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: curses_Window.c,v 1.3 2009/07/31 16:07:33 wes Exp $";
 #include "gpsee.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -582,7 +582,7 @@ static JSBool window_getKey(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
     return gpsee_throw(cx, CLASS_ID ".getKey.timeout.NaN");
 
   depth = JS_SuspendRequest(cx);
-  waddstr(hnd->window, "");
+  waddstr(hnd->window, (char *)"");
 
   if (timeo)
     wtimeout(hnd->window, timeo);
@@ -620,7 +620,7 @@ static JSBool window_getKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 
   depth = JS_SuspendRequest(cx);
   echo();
-  waddstr(hnd->window, "");	/* Get the cursor in place */
+  waddstr(hnd->window, (char *)"");	/* Get the cursor in place */
   result = wgetnstr(hnd->window, linebuf, sizeof(linebuf));
   noecho();
   JS_ResumeRequest(cx, depth);  
