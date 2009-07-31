@@ -45,6 +45,26 @@ beginStruct(struct hostent)
   member(char **,	h_addr_list,	array)		/* list of addresses */
 endStruct(struct hostent)
 
+#include <pwd.h>
+beginStruct(struct passwd)
+  member(char *, pw_name,	string)      	/* user's login name */
+  member(char *, pw_passwd,	strings)    	/* no longer used */
+  member(uid_t,  pw_uid,    	integer)       	/* user's uid */
+  member(gid_t,  pw_gid,    	integer)       	/* user's gid */
+  member(char *, pw_age,	integer)       	/* not used */
+  member(char *, pw_comment,	string)   	/* not used */
+  member(char *, pw_gecos,	string)     	/* typically user's full name */
+  member(char *, pw_dir,	string)       	/* user's home dir */
+  member(char *, pw_shell,	string)		/* user's login shell */
+endStruct(struct passwd)
+
+#include <grp.h>
+beginStruct(struct group)
+  member(char *, gr_name,	string)		/* the name of the group */
+  member(char *, gr_passwd,	string)		/* the encrypted group password */
+  member(gid_t,  gr_gid,    	integer)	/* the numerical group ID */
+  member(char *, *gr_mem,	pointer)	/* vector of pointers to member names */
+endStruct(struct group)
 /*
 resolver
 sockets struct in_addr, struct socket, sockaddr, sockaddr_dl
