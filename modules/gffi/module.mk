@@ -203,3 +203,6 @@ structs.incl: structs.decl module.mk
 		-e 's/member_offset/member_size/' \
 	< structs.decl > $@
 
+parseMan:
+	man $$MANPAGE \
+	| grep '^       .*\*/ *$$' | sed -e 's;*/;XXX;' -e 's/^  */member(/' -e 's/;/,    )/' -e 's/  *\*/*,/' -e 's/  */,  /' -e 's/*,/ *, /' -e 's/XXX/*\//' -e 's;, */\*;,       /*;'  -e 's; */\*;	/*;' -e 's/^/  /' -e 's/, *, *)/,	)/'
