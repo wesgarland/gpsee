@@ -35,14 +35,14 @@
 /**
  *  @file	gpsee_flock.c		Portable advisory file-locking for GPSEE's internal use.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_flock.c,v 1.2 2009/05/27 04:51:44 wes Exp $
+ *  @version	$Id: gpsee_flock.c,v 1.3 2009/07/31 16:46:04 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_flock.c,v 1.2 2009/05/27 04:51:44 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_flock.c,v 1.3 2009/07/31 16:46:04 wes Exp $:";
 
-#if !defined(HAVE_FLOCK)
 #include <gpsee.h>
+#if !defined(HAVE_FLOCK) && !defined(NO_GPSEE_FLOCK)
 
 /** Implement advisory file lock with fcntl using flock semantics.
  *
