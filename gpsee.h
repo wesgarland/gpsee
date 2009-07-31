@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.11 2009/07/28 15:52:27 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.13 2009/07/31 14:56:08 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.13  2009/07/31 14:56:08  wes
+ *  Removed printf formats, now in gpsee_formats.h
+ *
  *  Revision 1.11  2009/07/28 15:52:27  wes
  *  Updated isByteThing functions
  *
@@ -149,7 +152,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #define GPSEE_MAJOR_VERSION_NUMBER	        0
 #define GPSEE_MINOR_VERSION_NUMBER		2
 #define GPSEE_MICRO_VERSION_NUMBER		0
-#include "gpsee_formats.h"
+#include <gpsee_formats.h>
 
 #if !defined(fieldSize)
 # define fieldSize(st, field)    sizeof(((st *)NULL)->field)
