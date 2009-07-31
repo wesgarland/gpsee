@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.12 2009/07/30 17:10:35 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.13 2009/07/31 16:45:15 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.13  2009/07/31 16:45:15  wes
+ *  C99
+ *
  *  Revision 1.12  2009/07/30 17:10:35  wes
  *  Added ability to run bare (non-UTF-8) C strings
  *
@@ -102,7 +105,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.12 2009/07/30 17:10:35 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.13 2009/07/31 16:45:15 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -689,7 +692,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   return 0;
 }
 
-JSClass *gpsee_getGlobalClass()
+JSClass *gpsee_getGlobalClass(void)
 {
   /** Global object's class definition */
   static JSClass global_class = 
