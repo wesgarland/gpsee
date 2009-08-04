@@ -33,8 +33,9 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
-ifeq ($(LIBFFI_CONFIG_DEPS),)
-$(error You have not configured LibFFI)
+include $(GPSEE_SRC_DIR)/ffi.mk
+ifeq (X$(LIBFFI_LDFLAGS),X)
+$(error Missing LibFFI LDFLAGS!)
 endif
 
 DEFS	 	 	= gpsee std network posix
@@ -48,12 +49,14 @@ LDFLAGS			+= $(LIBFFI_LDFLAGS)
 
 build:	$(DEF_FILES)
 
+build_debug_module:
+	@echo " - In gffi, CFLAGS = $(CFLAGS)"
+
 gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
 
 structs.o: structs.incl
 defines.o: defines.incl
 
-# Below, there be dragons
 compiler.dmp:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | sort -u > $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
