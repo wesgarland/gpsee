@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.7 2009/07/30 17:10:35 wes Exp $
+ * @version	$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.7 2009/07/30 17:10:35 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -547,7 +547,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   if (strchr(flags, 'U') || (rc_bool_value(rc, "gpsee_force_no_utf8_c_strings") == rc_true) || getenv("GPSEE_NO_UTF8_C_STRINGS"))
   {
     JS_DestroyRuntime(JS_NewRuntime(1024));
-    putenv("GPSEE_NO_UTF8_C_STRINGS=1");
+    putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
   }
 
   jsi = gpsee_createInterpreter(script_argv, script_environ);
