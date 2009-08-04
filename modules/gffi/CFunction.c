@@ -53,7 +53,6 @@ typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **sto
 
 typedef struct
 {
-  void		*dlHandle;		/**< Handle open DSO */
   const char	*functionName;		/**< Name of the function */
   void		*fn;			/**< Function pointer to call */
   ffi_cif 	*cif;			/**< FFI call details */
@@ -193,12 +192,13 @@ static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storag
 
   if (!JSVAL_IS_INT(v))
   {
-    const unsigned char *s;
+    const char *s;
     JSString		*str = JS_ValueToString(cx, v);
 
     if (!str && JS_IsExceptionPending(cx))
       return JS_FALSE;
 
+    /* TODO donny says: Is this safe? */
     s = JS_GetStringBytes(str);
     if (s)
     {
@@ -449,10 +449,9 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
  *  Implements the CFunction constructor.
  *
  *  Constructor is variadic,
- *  argv[0] = name of dlHandle (or exports.RTLD_GLOBAL)
- *  argv[1] = return type
- *  argv[2] = C function name
- *  argv[3...] = Argument types
+ *  argv[0] = return type
+ *  argv[1] = C function name
+ *  argv[2...] = Argument types
  *
  *  @param	cx	JavaScript context
  *  @param	obj	Pre-allocated CFunction object
@@ -467,72 +466,56 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
   cfunction_handle_t	*hnd;
   ffi_status		status;
   int			i;
+  library_handle_t      *libhnd = NULL;
+  JSObject              *libobj;
 
   if (JS_IsConstructing(cx) != JS_TRUE)
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
-  if (argc < 3)
-    return gpsee_throw(cx, CLASS_ID ".arguments.count: Must have at least a DSO, a function name and a return value");
+  if (argc < 2)
+    return gpsee_throw(cx, CLASS_ID ".arguments.count: Must have at least a function name and a return value");
 
+  /* Allocate our cfunction_handle_t */
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
     return JS_FALSE;
-
-  /* cleanup now solely the job of the finalizer */
+  /* All clean-up beyond this point is solely the responsibility of the finalizer, including deallocation */
+  /* Initialize our cfunction_handle_t */
   memset(hnd, 0, sizeof(*hnd));
+  /* Associate our cfunction_handle_t with our JSObject */
   JS_SetPrivate(cx, obj, hnd);
-
-  switch(argv[0])
+  /* Fetch and store the function name argument */
+  hnd->functionName = JS_strdup(cx, JS_GetStringBytes(JS_ValueToString(cx, argv[1])));
+  /* The JSAPI "parent" object will probably be a Library instance, which contains our DSO handle from dlopen() */
+  libobj = JS_GetParent(cx, obj);
+  /* Was our "parent" a Library instance? */
+  if (libobj && JS_InstanceOf(cx, libobj, library_clasp, NULL))
   {
-    case jsve_rtldDefault:
-      hnd->dlHandle = RTLD_DEFAULT;
-      break;
-
-#if defined(RTLD_SELF)
-    case jsve_rtldSelf:
-      hnd->dlHandle = RTLD_SELF;
-      break;
-#endif
-
-#if defined(RTLD_PROBE)
-    case jsve_rtldProbe:
-      hnd->dlHandle = RTLD_PROBE;
-      break;
-#endif
-
-    default:
-       hnd->dlHandle = dlopen(JS_GetStringBytes(JS_ValueToString(cx, argv[0])), RTLD_LAZY);
-      break;
+    jsval libval;
+    /* Fetch our library_handle_t from the Library instance JSObject */
+    libhnd = JS_GetPrivate(cx, libobj);
+    if (!libhnd)
+      goto rtldDefault;
+    /* Fetch the function pointer from the DSO */
+    hnd->fn = dlsym(libhnd->dlHandle, hnd->functionName);
+    /* Attach our source library so the GC can't free it until we're already gone */
+    libval = OBJECT_TO_JSVAL(libobj);
+    if (!JS_SetProperty(cx, obj, "library", &libval))
+      return gpsee_throw(cx, CLASS_ID ".constructor.internalerror: could not JS_SetProperty() my library!");
+    goto dlsymOver;
   }
 
-  hnd->functionName 	= JS_strdup(cx, JS_GetStringBytes(JS_ValueToString(cx, argv[2])));
-  hnd->fn		= dlsym(hnd->dlHandle, hnd->functionName);
+rtldDefault:
+    /* No Library instance. Try RTLD_DEFAULT. See dlopen(3) for details. */
+    hnd->fn = dlsym(RTLD_DEFAULT, hnd->functionName);
 
+dlsymOver:
+  /* Throw an exception on dlsym() failure */
   if (!hnd->fn)
-  {
-    const char *where = NULL;
-
-#if defined(RTLD_SELF)
-    if (argv[0] == jsve_rtldSelf)
-      where = "RTLD_SELF";
-    else
-#endif
-
-#if defined(RTLD_PROBE)
-    if (argv[0] == jsve_rtldProbe)
-      where = "RTLD_PROBE";
-    else
-#endif
-    if (argv[0] == jsve_rtldDefault)
-      where = "RTLD_DEFAULT";
-    else
-      where = JS_GetStringBytes(JS_ValueToString(cx, argv[0])); 
-
     return gpsee_throw(cx, CLASS_ID ".constructor.%s.notFound: no such function in %s",
-		       hnd->functionName, where);
-  }
+		       hnd->functionName, libhnd?libhnd->name:"RTLD_DEFAULT");
 
-  hnd->nargs		= argc - 3;
+  hnd->nargs		= argc - 2;
   hnd->cif 		= JS_malloc(cx, sizeof(*hnd->cif));
   if (hnd->nargs)
   {
@@ -540,11 +523,12 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     hnd->argConverters	= JS_malloc(cx, sizeof(hnd->argConverters[0]) * hnd->nargs);
   }
 
+  /* TODO cleanup */
   if (!hnd->functionName || !hnd->cif || (hnd->nargs && (!hnd->argTypes || !hnd->argConverters)) || !hnd->functionName)
     return JS_FALSE;
 
   /* Sort out return type */
-#define ffi_type(type, junk) if (argv[1] == jsve_ ## type) { hnd->rtype_abi = &ffi_type_ ## type; } else
+#define ffi_type(type, junk) if (argv[0] == jsve_ ## type) { hnd->rtype_abi = &ffi_type_ ## type; } else
 #include "ffi_types.decl"
 #undef ffi_type
   return gpsee_throw(cx, CLASS_ID ".constructor.argument.1: Invalid value specified for return value; should be FFI type indicator");
@@ -553,7 +537,7 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
   for (i=0; i < hnd->nargs;  i++)
   {
 #define ffi_type(type, junk) 			\
-    if (argv[3 + i] == jsve_ ## type) 		\
+    if (argv[2 + i] == jsve_ ## type) 		\
     {						\
       hnd->argTypes[i] = &ffi_type_ ## type; 	\
       hnd->argConverters[i] = valueTo_ ## type;	\
@@ -579,10 +563,7 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
   }
 
   if (JS_DefineFunction(cx, obj, "call", (JSNative)cFunction_call, 0, JSPROP_PERMANENT | JSPROP_READONLY | JSFUN_FAST_NATIVE) == NULL)
-  {
-    gpsee_throw(cx, CLASS_ID ".constructor.call.add: unable to create call method");
-    return JS_FALSE;
-  }
+    return gpsee_throw(cx, CLASS_ID ".constructor.call.add: unable to create call method");
 
   return JS_TRUE;
 }
@@ -613,9 +594,6 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
 
   if (hnd->argConverters)
     JS_free(cx, hnd->argConverters);
-
-  if (hnd->dlHandle)
-    dlclose((void *)hnd->dlHandle);
 
   if (hnd->functionName)
     JS_free(cx, (void *)hnd->functionName);

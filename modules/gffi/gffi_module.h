@@ -94,6 +94,14 @@ typedef struct
 structShape *struct_findShape(const char *name);
 int struct_findMemberIndex(structShape *shape, const char *name);
 
+typedef struct 
+{
+  void                  *dlHandle;
+  char                  *name;
+  int                   flags;
+} library_handle_t;
+
+extern JSClass *library_clasp;
 extern JSClass *mutableStruct_clasp;
 extern JSClass *immutableStruct_clasp;
 extern JSClass *cFunction_clasp;

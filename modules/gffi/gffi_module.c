@@ -65,6 +65,9 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
   if (proto == NULL)
     return NULL;
 
+  if (!Library_InitClass(cx, moduleObject, NULL))
+    return NULL;
+
 #define jsv(val) if (JS_DefineProperty(cx, moduleObject, #val, jsve_ ## val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) return NULL;
 #include "jsv_constants.decl"
 #undef jsv
