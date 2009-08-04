@@ -33,26 +33,15 @@
 # ***** END LICENSE BLOCK ***** 
 #
 #
-# Generic Makefile for building a module.
-# Can be augmented with module.mk in the module's directory.
+# Configuration parameters which affect your GPSEE build
+#
+# BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
+# STREAM	unix | surelynx | apr
 #
 
-include $(GPSEE_SRC_DIR)/local_config.mk
-include $(GPSEE_SRC_DIR)/system_detect.mk
--include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
-ifneq ($(MAKECMDGOALS),clean)
-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
-endif
-include $(GPSEE_SRC_DIR)/build.mk
-ifneq ($(MAKECMDGOALS),depend)
--include depend.mk
-endif
--include module.mk
+BUILD			?= DRELEASE
+STREAM			?= unix
+GPSEE_PREFIX_DIR	?= $(DEFAULT_GPSEE_PREFIX_DIR)
+GSR_SHEBANG_LINK	?= /usr/bin/gsr
 
-MODULE_OBJ ?= $(filter-out $(MODULE), $(MODULE:.a=.o) $(MODULE:.$(SOLIB_EXT)=.o)) 
 
-$(MODULE): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
-.PHONY: build_debug_module
-
-clean: OBJS+=$(MODULE_OBJ) $(EXTRA_MODULE_OBJS) $(MODULE)

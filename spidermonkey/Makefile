@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.5 2009/07/23 18:35:55 wes Exp $ 
+## @version	$Id: Makefile,v 1.6 2009/08/04 20:22:38 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -48,15 +48,28 @@
 ##
 ## @bug DRELEASE and PROFILE are not finished yet.
 
-include ./local_config.mk
+GPSEE_SRC_DIR ?= ..
+GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 
-ifneq ($(TR)X,X)
+include $(GPSEE_SRC_DIR)/local_config.mk
+include $(GPSEE_SRC_DIR)/system_detect.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+include local_config.mk
+
+ifneq ($(MAKECMDGOALS)X, X)
+ifneq ($(MAKECMDGOALS), help)
+JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
+LIB_DIR			?= $(JSAPI_PREFIX)/lib
+INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
+include sanity.mk
 SPIDERMONKEY_BUILD	?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
-else
-SPIDERMONKEY_BUILD	?= $(abspath builds/$(BUILD))
+endif
 endif
 
-top: build_debug help
+CONFIGURE_OPTIONS	+= --enable-threadsafe
+
+top: 
+	$(MAKE) help
 
 CONFIGURE_OPTIONS	+= --prefix=$(JSAPI_PREFIX)
 
@@ -113,6 +126,7 @@ endif
 .PHONY: top help all build install clean dist-clean distclean build_debug
 
 help:	
+	@echo
 	@echo	"Make Targets:"
 	@echo	" build         Build SpiderMonkey"
 	@echo	" install       Install SpiderMonkey and create vars.mk"
@@ -124,6 +138,7 @@ help:
 	@echo
 	@echo	"Note: You can override the BUILD variable on the make command line, e.g."
 	@echo	"      make BUILD=RELEASE install"
+	@echo
 
 all:	build
 
@@ -158,6 +173,13 @@ install: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFL
 endif
 
 install: build
+	@rm vars.mk >/dev/null || /bin/true
+	[ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR)
+	[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
+	[ -w $(INCLUDE_DIR) ] || echo "**** cannot write to $(INCLUDE_DIR): did you forget to read the build instructions?"
+	[ -w $(LIB_DIR) ] || echo "**** cannot write to $(LIB_DIR): did you forget to read the build instructions?"
+	[ -w $(INCLUDE_DIR) ] && [ -w $(LIB_DIR) ]
+
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) install
 	@[ -f $(JS_CONFIG) ] || echo "**** js-config was not installed. Build incomplete." 
 	@[ -f $(JS_CONFIG) ] || echo "**** js-config should have been installed as $(JS_CONFIG)." 
@@ -201,6 +223,7 @@ build_debug:
 	@echo "$(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
 	@echo "JS_CONFIG = $(JS_CONFIG)"
+	@echo
 
 $(SPIDERMONKEY_SRC)/configure.in:
 	@echo > /dev/stderr
@@ -209,7 +232,6 @@ $(SPIDERMONKEY_SRC)/configure.in:
 	@echo > /dev/stderr
 	@[ X = Y ]
 
-local_config.mk: THIS_DIR=$(GPSEE_SRC_DIR)/spidermonkey
 local_config.mk:
 	@echo
 	@echo
