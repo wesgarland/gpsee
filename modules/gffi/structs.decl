@@ -48,7 +48,7 @@ endStruct(struct hostent)
 #include <pwd.h>
 beginStruct(struct passwd)
   member(char *, pw_name,	string)      	/* user's login name */
-  member(char *, pw_passwd,	strings)    	/* no longer used */
+  member(char *, pw_passwd,	string)    	/* no longer used */
   member(uid_t,  pw_uid,    	integer)       	/* user's uid */
   member(gid_t,  pw_gid,    	integer)       	/* user's gid */
   member(char *, pw_age,	integer)       	/* not used */
@@ -63,7 +63,7 @@ beginStruct(struct group)
   member(char *, gr_name,	string)		/* the name of the group */
   member(char *, gr_passwd,	string)		/* the encrypted group password */
   member(gid_t,  gr_gid,    	integer)	/* the numerical group ID */
-  member(char *, *gr_mem,	pointer)	/* vector of pointers to member names */
+  member(char **, gr_mem,	pointer)	/* vector of pointers to member names */
 endStruct(struct group)
 /*
 resolver
