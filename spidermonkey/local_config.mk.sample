@@ -37,33 +37,29 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
-GPSEE_SRC_DIR ?= ..
-include $(GPSEE_SRC_DIR)/system_detect.mk
-include $(GPSEE_SRC_DIR)/local_config.mk
-
+# Where is the SpiderMonkey source code?
 SPIDERMONKEY_SRC	?= $(HOME)/hg/tracemonkey/js/src
-JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
-BUILD 			?= DEBUG
+
 ## - RELEASE    Optimized jsapi build, no GC Zeal, no symbols
 ## - DRELEASE   Optimized jsapi build, GC Zeal, symbols
 ## - PROFILE    Optimized jsapi build, no GC Zeal, symbols, profiling enabled
 ## - DEBUG      Debug jsapi build (assertions), GC Zeal, symbols
+##
+## Use BUILD ?= instead of BUILD = to allow GPSEE's local_config.mk to infer
+## the SpidermMnkey build type
+##
+BUILD 			= RELEASE
 
-LIB_DIR			?= $(JSAPI_PREFIX)/lib
-INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
+# Where is the Autoconf version 2.13 binary?
 AUTOCONF		?= autoconf-2.13
+
+# Where do you keep tr?
 TR			?= tr
 
-CONFIGURE_OPTIONS	+= --enable-threadsafe
+# Extra options to pass to SpiderMonkey's configure program
 CONFIGURE_OPTIONS	+= --with-system-nspr
+
+# Extra optoins to pass to make while building SpiderMonkey
 SM_MAKE_OPTIONS		?= -j3
 
-SM_CFLAGS		+= 
-
-UNAME_MACHINE		?= $(shell uname -m)
-UNAME_SYSTEM		?= $(shell uname -s)
-
-# UltraSparc Hardware? Enable v9 instructions (in jslock.c?)
-ifeq (X,X$(filter $(UNAME_MACHINE),sun4u sun4v sun4u1))
-CONFIGURE_OPTIONS	+= --enable-js-ultrasparc
-endif
+# You can override any variables in Makefile here with the = operator

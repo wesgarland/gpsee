@@ -34,36 +34,50 @@
 #
 
 ## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
+##				Requires GNU Make 3.81 or better.
+##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.13 2009/07/23 19:00:40 wes Exp $
+## @version	$Id: Makefile,v 1.15 2009/08/04 20:22:38 wes Exp $
 
-# BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
-# STREAM	unix | surelynx | apr
-
-export BUILD	= DEBUG
-export STREAM	= unix
-SUBMAKE_QUIET	= False
-
-ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file
-INTERNAL_MODULES 	+= vm system
-
-top: all
+top: 	help
 
 PWD = $(shell pwd)
 GPSEE_SRC_DIR ?= $(shell pwd)
-export GPSEE_SRC_DIR
 
-# Must define GPSEE_LIBRARY above system_detect.mk so platform
-# includes can do target-based build variable overrides
-GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
+$(GPSEE_SRC_DIR)/local_config.mk:
+	@echo
+	@echo	" * GPSEE local configuration information missing"
+	@echo
+	@echo	" ***************************************************************************"
+	@echo	" * Please copy:"
+	@echo   " *      $(realpath .)/local_config.mk.sample"
+	@echo	" * to "
+	@echo   " *      $(realpath .)/local_config.mk,"
+	@echo   " * then edit it to suit your environment and needs."
+	@echo	" ***************************************************************************"
+	@echo
+	@echo
+	@echo
+	@[ X = Y ]
 
-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
+include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
--include $(GPSEE_SRC_DIR)/local_config.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
+-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
+-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
+include $(GPSEE_SRC_DIR)/ffi.mk
 
-export GPSEE_SRC_DIR
+ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean))
+include $(GPSEE_SRC_DIR)/sanity.mk
+endif
+
+export GPSEE_SRC_DIR BUILD STREAM
+export SPIDERMONKEY_BUILD SPIDERMONKEY_SRC
+
+ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
+IGNORE_MODULES		+= pairodice mozshell mozfile file
+INTERNAL_MODULES 	+= vm system
 
 AR_MODULES		= $(filter $(INTERNAL_MODULES), $(ALL_MODULES))
 SO_MODULES		= $(filter-out $(INTERNAL_MODULES), $(ALL_MODULES))
@@ -77,26 +91,15 @@ SO_MODULE_DIRS_ALL	= $(SO_MODULE_DIRS_GLOBAL) $(SO_MODULE_DIRS_STREAM)
 AR_MODULE_FILES		= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
 SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(SOLIB_EXT))
 
-spidermonkey/vars.mk:
-	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=$(SUBMAKE_QUIET) install
-include spidermonkey/vars.mk
-ifdef SPIDERMONKEY_SRC
-export SPIDERMONKEY_SRC
-endif
-ifdef SPIDERMONKEY_BUILD
-export SPIDERMONKEY_BUILD
-endif
-
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
 PROGS		 	= gsr minimal
 
+ifeq ($(STREAM),surelynx)
+PROGS			:= $(filter-out minimal,$(PROGS))
+endif
+
 include build.mk
 -include depend.mk
-
-ifeq ($(LIBFFI_CONFIG_DEPS),)
-IGNORE_MODULES += gffi
-$(warning *** Warning: You have not configured LibFFI - gffi module has been disabled)
-endif
 
 GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c gpsee_xdrfile.c
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
@@ -117,8 +120,8 @@ EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 LOADLIBES		+= -l$(GPSEE_LIBNAME)
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 
-.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist
-build all install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
+build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
 install: sm-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
@@ -166,10 +169,11 @@ clean_modules:
 	$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), \
 	echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
 	ls && \
-	make -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
+	$(MAKE) -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
 	)
 
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
+build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES):: gpsee_config.h
 build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES)::
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@) MODULE=$(notdir $@)
 
@@ -235,6 +239,7 @@ docs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
 
+gpsee_config.h: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
 gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo " * Generating $@"
 	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
@@ -244,9 +249,9 @@ gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo "# define HAVE_ICONV" >> $@
 	@echo "#endif" >> $@
 	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
-	@echo "#define GPSEE_$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')_STREAM" >> $@
+	@echo "#define GPSEE_$(STREAM_UCASE)_STREAM" >> $@
 	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) '[a-z]' '[A-Z]')_SYSTEM" >> $@
-
+depend.mk: MDFLAGS+=-DGPSEE_$(STREAM)_STREAM
 gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
 	@echo " * Generating $@"
 	@$(SED) \
@@ -271,3 +276,14 @@ gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_
 	< gpsee-config.template > gpsee-config
 	chmod 755 gpsee-config
 
+help:
+	@echo
+	@echo   "Make Targets:"
+	@echo   " build         Build GPSEE"
+	@echo   " install       Install GPSEE under $(GPSEE_PREFIX_DIR)/"
+	@echo   " build_debug   Show build system debug info"
+	@echo   " clean         Clean up this dir"
+	@echo   " dist-clean    Clean up this dir and installed files"
+	@echo
+	@echo   "To customize your build, edit ./local_config.mk"
+	@echo

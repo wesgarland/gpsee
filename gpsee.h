@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.14 2009/07/31 16:08:20 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.15 2009/08/04 20:22:38 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.15  2009/08/04 20:22:38  wes
+ *  Work towards resolving build-system circular dependencies et al
+ *
  *  Revision 1.14  2009/07/31 16:08:20  wes
  *  C99
  *
@@ -86,10 +89,7 @@
 #include <prthread.h>
 #include <prlock.h>
 
-#if (defined(GPSEE_DEBUG_BUILD) || defined(DEBUG)) && !defined(JS_DEBUG)
-# define JS_DEBUG 1	/** Missing in early 1.8.1-pre */
-#endif
-
+#include "gpsee_config.h"
 #if defined(GPSEE_SURELYNX_STREAM)
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
@@ -98,11 +98,6 @@
 const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #endif
 
-#if !defined(PATH_MAX)
-# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
-#endif
-
-#include "gpsee_config.h"
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
 # if defined(GPSEE_SURELYNX_STREAM)
 #  include <gpsee_surelynx.h>
@@ -127,6 +122,10 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <sys/wait.h>
 #  include <stdarg.h>
 # endif
+#endif
+
+#if !defined(PATH_MAX)
+# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
 #endif
 
 #include <jsapi.h>

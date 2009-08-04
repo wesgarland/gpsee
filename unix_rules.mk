@@ -1,5 +1,6 @@
 ifneq ($(NO_BUILD_RULES),TRUE)
 # Standard targets
+ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),install-nodeps)
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),dist-clean)
@@ -7,11 +8,6 @@ ifneq ($(MAKECMDGOALS),all-clean)
 ifneq ($(MAKECMDGOALS),build_debug)
 depend depend.mk: 	XFILES=$(sort $(filter %.c %.cc %.cpp %.cxx,$(DEPEND_FILES)))
 depend depend.mk: 	$(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) Makefile $(DEPEND_FILES)
-ifeq (X$(JSAPI_INCLUDE_DIR),X)
-			$(error Your JSAPI include directory is not specified. This is \
-			normally set in spidermonkey/vars.mk, which is in turn\
-			created by the install rule in spidermonkey/Makefile.)
-endif
 			$(if $(XFILES), @echo " * Building dependencies for: $(XFILES)")
 			$(if $(XFILES), $(MAKEDEPEND) $(MDFLAGS) $(CPPFLAGS) -DMAKEDEPEND $(XFILES) > depend.mk)
 			@touch depend.mk
@@ -20,6 +16,7 @@ endif # goal = all-clean
 endif # goal = dist-clean
 endif # goal = clean
 endif # goal = install-nodeps
+endif # goal = help
 
 clean:
 	-$(if $(strip $(OBJS)), $(RM) $(OBJS))
@@ -33,10 +30,9 @@ clean:
 	$(RM) depend.mk
 
 build_debug:
-	@echo
 	@echo " * GPSEE debug info: "
 	@echo
-#	@echo "Depend Files:    $(DEPEND_FILES)"
+	@echo "Depend Files:    $(DEPEND_FILES)"
 	@echo "GPSEE Source:    $(GPSEE_SRC_DIR)"
 	@echo "GPSEE Prefix:    $(GPSEE_PREFIX_DIR)"
 	@echo "JSAPI Build:     $(SPIDERMONKEY_BUILD)"

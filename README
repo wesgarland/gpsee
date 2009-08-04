@@ -1,3 +1,30 @@
+GPSEE is moving to Google Code at http://code.google.com/p/gpsee
+
+The new Mercurial Repository is at http://gpsee.googlecome.com/hg/
+
+The wiki has not yet been moved, but its build system is out of date,
+as is the documentation below.
+
+To build GPSEE most easily:
+ - put tracemonkey and libffi source code under your home directory
+ - copy local_config.mk.sample to local_config.mk and edit to suit
+ - insure that any directories you reference (like /opt/gpsee) exist
+   and are owned by you
+ - repeat the same for libffi and spidermonkey subdirs
+ - In spidermonkey, make build, make install
+ - In libffi, make build, make install
+ - In gpsee root, make build, make install
+
+"make help" and "make build_debug" are intended to help you troubleshoot
+build system issues.
+
+Warning: If you're upgrading from a previous version of GPSEE, you might 
+need to make clean and/or re-create your local-config.mk files from the 
+new samples provided.
+
+Wes
+
+-----------------------------------------
 Thanks for downloading GPSEE!
 
 Please visit the wiki at http://kenai.com/projects/gpsee/pages/Home for the
