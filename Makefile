@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.16 2009/08/05 14:51:48 wes Exp $
+## @version	$Id: Makefile,v 1.17 2009/08/05 16:27:23 wes Exp $
 
 top: 	help
 
@@ -123,7 +123,7 @@ $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
 build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
-install: sm-install gsr-link
+install: sm-install ffi-install gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
@@ -131,9 +131,13 @@ clean: EXTRA_CLEAN_RULE=clean_modules
 clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
 real-clean: clean
 	cd spidermonkey && $(MAKE) clean
+	cd libffi && $(MAKE) clean
 
 sm-install:
-	cd spidermonkey && $(MAKE) BUILD=$(BUILD) QUIET=True install
+	cd spidermonkey && $(MAKE) QUIET=True install
+
+ffi-install:
+	cd libffi && $(MAKE) QUIET=True install
 
 gsr-link:
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
@@ -173,7 +177,6 @@ clean_modules:
 	)
 
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
-build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES):: gpsee_config.h
 build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES)::
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@) MODULE=$(notdir $@)
 

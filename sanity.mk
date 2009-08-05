@@ -44,4 +44,25 @@ endif
 ifeq (X$(JSAPI_INCLUDE_DIR),X)
 $(error JSAPI_INCLUDE_DIR is not specified; make install in $(abspath ./spidermonkey)/ to fix)
 endif
-endif #done conditional part
+
+ifndef LIB_EXT
+$(error LIB_EXT is not specified)
+endif
+
+ifndef SOLIB_EXT
+$(error SOLIB_EXT is not specified)
+endif
+
+ifndef AR_RU
+$(error AR_RU is not specified)
+endif
+
+ifndef SO_AR
+$(error SO_AR is not specified)
+endif
+
+ifndef RANLIB
+$(error RANLIB is not specified)
+endif
+
+endif #done building-target-conditional part
