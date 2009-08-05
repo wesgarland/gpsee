@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.2 2009/07/23 18:42:48 wes Exp $ 
+## @version	$Id: Makefile,v 1.4 2009/08/04 20:22:38 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build libffi in a way that
@@ -47,13 +47,26 @@
 ##       older releases are expected to work.
 ##
 
-BUILDING_LIBFFI=TRUE
-include ./local_config.mk
+GPSEE_SRC_DIR ?= ..
+GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 
-top: build_debug help
+include $(GPSEE_SRC_DIR)/local_config.mk
+include $(GPSEE_SRC_DIR)/system_detect.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
 
+NO_BUILD_RULES=True
+include $(GPSEE_SRC_DIR)/build.mk
+
+include local_config.mk
+
+ifneq ($(MAKECMDGOALS)X, X)
+ifneq ($(MAKECMDGOALS), help)
 LIBFFI_LIB_DIR		?= $(SOLIB_DIR)
 LIBFFI_INCLUDE_DIR	?= $(GPSEE_PREFIX_DIR)/include/libffi
+include sanity.mk
+LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
+endif
+endif
 
 CONFIGURE_OPTIONS	+= --prefix=$(LIBFFI_PREFIX)
 
@@ -94,14 +107,13 @@ ifneq (X$(LIBFFI_CPPFLAGS),X)
 LIBFFI_MAKE += "CPPFLAGS=$(LIBFFI_CPPFLAGS)"
 endif
 
-LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
-
-test:
-	echo "$(LIBFFI_BUILD)"
+top:
+	$(MAKE) help
 
 .PHONY: top help all build install clean dist-clean distclean build_debug
 
 help:	
+	@echo
 	@echo	"Make Targets:"
 	@echo	" build         Build libffi"
 	@echo	" install       Install libffi and create vars.mk"
@@ -113,6 +125,7 @@ help:
 	@echo
 	@echo	"Note: You can override the BUILD variable on the make command line, e.g."
 	@echo	"      make BUILD=RELEASE install"
+	@echo
 
 all:	build
 
@@ -128,15 +141,15 @@ $(LIBFFI_BUILD)/Makefile: $(LIBFFI_SRC)/configure #Makefile local_config.mk
 build: $(LIBFFI_BUILD)/Makefile
 ifneq (X,X$(LIBFFI_SRC))
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE)
-ifneq ($(QUIET),True)
-	@echo ""
-	@echo " * LibFFI is now built, but needs to be installed. Before installation,"
-	@echo "   please insure that the target directory, $(LIBFFI_PREFIX),"
-	@echo "   exists and that you have permission to write in it. Then run make install."
-	@echo ""
-endif
+	@if [ "$(QUIET)" != "True" ]; then \
+	  echo ""; \
+	  echo " * LibFFI is now built, but needs to be installed. Before installation," 	;\
+	  echo "   please insure that the target directory, $(LIBFFI_PREFIX),"			;\
+	  echo "   exists and that you have permission to write in it. Then run make install."	;\
+	  echo "" ;\
+	fi
 else
-	@echo " * Using system-supplied libffi"
+	@echo " * Using system-supplied libffi UNSUPPORTED"
 endif
 
 JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
@@ -146,14 +159,23 @@ JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
 endif
 
+install: QUIET=True
 install: build
-	@echo "* Installing LibFFI in $(LIBFFI_LIB_DIR), "
+	@echo
+	@rm vars.mk >/dev/null || /bin/true
+	@echo "*  Installing LibFFI in $(LIBFFI_LIB_DIR), "
 	@echo "  headers in $(LIBFFI_INCLUDE_DIR)."
+	[ -d $(LIBFFI_INCLUDE_DIR) ] || mkdir -p $(LIBFFI_INCLUDE_DIR)
+	[ -d $(LIBFFI_LIB_DIR) ] || mkdir -p $(LIBFFI_LIB_DIR)
+	[ -w $(LIBFFI_INCLUDE_DIR) ] || echo "**** cannot write to $(LIBFFI_INCLUDE_DIR): did you forget to read the build instructions?"
+	[ -w $(LIBFFI_LIB_DIR) ] || echo "**** cannot write to $(LIBFFI_LIB_DIR): did you forget to read the build instructions?"
+	[ -w $(LIBFFI_INCLUDE_DIR) ] && [ -w $(LIBFFI_LIB_DIR) ]
+	[ "$(LIBFFI_LIB_DIR)" != "" ]
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) install
-	@echo "* Building vars.mk"
-	@echo "LIBFFI_CONFIG_DEPS=libffi/vars.mk libffi/local_config.mk" > vars.mk
-	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --libs)" >> vars.mk
-	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig; $(PKG_CONFIG) libffi --cflags)" >> vars.mk
+	@echo " * Building vars.mk"
+	@echo "LIBFFI_CONFIG_DEPS=$(GPSEE_SRC_DIR)/libffi/vars.mk $(GPSEE_SRC_DIR)/libffi/local_config.mk" > vars.mk
+	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
+	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 
 ifneq ($(QUIET),True)
 	@echo ""
@@ -173,14 +195,6 @@ distclean dist-clean: clean
 	$(RM) -r $(LIBFFI_BUILD)
 	@echo " * Done dist-clean - ignore errors" 
 
-ifeq (X$(LIBFFI_LIB_DIR),X)
-build_debug:	LIBFFI_LIB_DIR = "UNDEFINED LOCATION"
-endif
-
-ifeq (X$(LIBFFI_INCLUDE_DIR),X)
-build_debug:	LIBFFI_INCLUDE_DIR = "UNDEFINED LOCATION"
-endif
-
 build_debug: DRELEASE="Debuggable-Release"
 build_debug: RELEASE="Release"
 build_debug: DEBUG="Debugging"
@@ -198,7 +212,18 @@ build_debug:
 	@echo "Configure will be invoked as:"
 	@echo "$(LIBFFI_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
-	@echo "CC=$(CC)"
-	@echo "PATH=$(PATH)"
 
-
+local_config.mk:
+	@echo
+	@echo
+	@echo	" ***************************************************************************"
+	@echo	" * Please copy:"
+	@echo   " *      $(realpath .)/local_config.mk.sample"
+	@echo	" * to "
+	@echo   " *      $(realpath .)/local_config.mk,"
+	@echo   " * then edit it to suit your environment and needs."
+	@echo	" ***************************************************************************"
+	@echo
+	@echo
+	@echo
+	@[ X = Y ]

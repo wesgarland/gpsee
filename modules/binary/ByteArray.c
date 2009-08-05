@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteArray.c,v 1.4 2009/07/28 15:21:52 wes Exp $
+ *  @version	$Id: ByteArray.c,v 1.5 2009/07/31 16:47:12 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.4 2009/07/28 15:21:52 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.5 2009/07/31 16:47:12 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -118,7 +118,7 @@ static JSBool ByteArray_setLength(JSContext *cx, JSObject *obj, jsval id, jsval 
 static JSBool ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   const char *errmsg;
-  unsigned char byte;
+  unsigned char theByte;
   size_t index;
   byteArray_handle_t * hnd;
 
@@ -146,11 +146,11 @@ static JSBool ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval id, jsva
     return gpsee_throw(cx, CLASS_ID ".setter.index.range: index "GPSEE_SIZET_FMT" >= length "GPSEE_SIZET_FMT, index, hnd->length);
 
   /* Convert assignment argument to byte value */
-  if ((errmsg=byteThing_val2byte(cx, *vp, &byte)))
+  if ((errmsg=byteThing_val2byte(cx, *vp, &theByte)))
     return gpsee_throw(cx, CLASS_ID ".setter.byte.invalid: %s", errmsg);
 
   /* Assign byte value and return! */
-  hnd->buffer[index] = byte;
+  hnd->buffer[index] = theByte;
   return JS_TRUE;
 }
 
@@ -576,7 +576,7 @@ static JSBool ByteArray_extendRight(JSContext *cx, uintN argc, jsval *vp)
 static JSBool ByteArray_shift(JSContext *cx, uintN argc, jsval *vp)
 {
   byteArray_handle_t * hnd;
-  unsigned char byte;
+  unsigned char theByte;
 
   /* Acquire our byteArray_handle_t */
   hnd = byteArray_getHandle(cx, JS_THIS_OBJECT(cx, vp), "toArray");
@@ -591,7 +591,7 @@ static JSBool ByteArray_shift(JSContext *cx, uintN argc, jsval *vp)
   }
 
   /* Save the return value */
-  byte = hnd->buffer[0];
+  theByte = hnd->buffer[0];
 
   /* Shift one member off the low end */
   memcpy(hnd->buffer, hnd->buffer+1, hnd->length-1);
@@ -602,7 +602,7 @@ static JSBool ByteArray_shift(JSContext *cx, uintN argc, jsval *vp)
   hnd->length--;
 
   /* Return byte */
-  JS_SET_RVAL(cx, vp, INT_TO_JSVAL(byte));
+  JS_SET_RVAL(cx, vp, INT_TO_JSVAL(theByte));
   return JS_TRUE;
 }
 /** Implements ByteArray.unshift() */

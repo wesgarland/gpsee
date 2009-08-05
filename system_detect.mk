@@ -32,10 +32,10 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-AWK			?= awk
 UNAME_MACHINE		?= $(shell uname -m)
 UNAME_SYSTEM		?= $(shell uname -s)
 UNAME_RELEASE		?= $(shell uname -r)
-UNAME_RELEASE_MAJOR	:= $(shell echo $(UNAME_RELEASE) | $(AWK) -F. '{print $$1}')
-UNAME_RELEASE_MINOR	:= $(shell echo $(UNAME_RELEASE) | $(AWK) -F. '{print $$2}')
--include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
+_UNAME_REL		:= $(subst ., ,$(UNAME_RELEASE))
+UNAME_RELEASE_MAJOR	?= $(word 1 $(_UNAME_REL))
+UNAME_RELEASE_MINOR	?= $(word 2,$(_UNAME_REL))
+

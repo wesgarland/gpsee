@@ -40,18 +40,54 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: gffi_module.c,v 1.2 2009/07/27 21:10:47 wes Exp $
+ *  @version	$Id: gffi_module.c,v 1.3 2009/07/30 17:16:49 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gffi_module.c,v 1.2 2009/07/27 21:10:47 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi_module.c,v 1.3 2009/07/30 17:16:49 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi_module.h"
 
+
+static JSBool gffi_errno_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  *vp = INT_TO_JSVAL(errno);
+  return JS_TRUE;
+}
+
+static JSBool gffi_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  if (JSVAL_IS_INT(*vp))
+    errno = JSVAL_TO_INT(vp);
+  else
+  {
+    jsdouble d;
+
+    if (JS_ValueToNumber(cx, *vp, &d) == JS_FALSE)
+      return JS_FALSE;
+
+    errno = d;
+    if (errno != d)
+      return gpsee_throw(cx, MODULE_ID ".errno.setter.overflow");
+  }
+  return JS_TRUE;
+}
+
 /** Initialize the module */
 const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
-   JSObject *proto;
+  JSObject *proto;
+
+  static JSPropertySpec gffi_props[] =
+  {
+    { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, gffi_errno_getter, gffi_errno_setter },
+    { NULL, 0, 0, NULL, NULL }
+  };
+
+  static JSFunctionSpec gffi_methods[] = 
+  {
+    JS_FS_END
+  };
 
   proto = MutableStruct_InitClass(cx, moduleObject, NULL);
   if (proto == NULL)
@@ -99,6 +135,12 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
   }
 
   if (defines_InitObjects(cx, moduleObject) != JS_TRUE)
+    return NULL;
+
+  if (JS_DefineFunctions(cx, moduleObject, gffi_methods) != JS_TRUE)
+    return NULL;
+
+  if (JS_DefineProperties(cx, moduleObject, gffi_props) != JS_TRUE)
     return NULL;
 
   return MODULE_ID;

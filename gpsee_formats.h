@@ -34,45 +34,20 @@
  */
 
 /**
- *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
+ *  @file 	gpsee_formats.h		Portable printf-style formats
  *  @author	Wes Garland
- *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.5 2009/07/31 14:56:08 wes Exp $
+ *  @date	Jul 2009
+ *  @version	$Id: gpsee_formats.h,v $
  */
 
-#define SLOG_EMERG	LOG_EMERG
-#define SLOG_ERR	LOG_ERR
-#define SLOG_WARNING	LOG_WARNING
-#define SLOG_NOTICE	LOG_NOTICE
-#define SLOG_INFO	LOG_INFO
-#define SLOG_DEBUG	LOG_DEBUG
+#define GPSEE_SIZET_FMT       "%zd"
+#define GPSEE_PTR_FMT         "%p"
+#define GPSEE_INT_FMT         "%d"
+#define GPSEE_UINT_FMT        "%u"
+#define GPSEE_INT32_FMT       "%ld"
+#define GPSEE_INT64_FMT       "%lld"
+#define GPSEE_UINT32_FMT      "%lu"
+#define GPSEE_UINT64_FMT      "%llu"
+#define GPSEE_HEX_UINT32_FMT  "0x%lx"
+#define GPSEE_HEX_UINT_FMT    "0x%x"
 
-#if !defined GPSEE_LOG_FACILITY
-# define GPSEE_LOG_FACILITY	LOG_USER
-#endif
-
-#define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-#define	gpsee_printf(a...)		printf(a)
-
-typedef void * rc_list;					/**< opaque dictionary */
-typedef void * rcFILE;					/**< opaque dictionary I/O handle */
-typedef enum { rc_false, rc_true, rc_undef } rc_bool;	/**< Possible values for a boolean test */
-
-const char 	*rc_value(rc_list rc, const char *key);						/**< Dictionary lookup */
-const char 	*rc_default_value(rc_list rc, const char *key, const char *defaultValue);	/**< Dictionary lookup w/ default */
-rc_bool		rc_bool_value(rc_list rc, const char *key);					/**< Dictionary bool lookup */
-rcFILE 		*rc_openfile(int argc, char * const argv[]);					/**< Open based on progname */
-int 		rc_close(rcFILE *rcFile);							/**< Close what we opened */
-rc_list 	rc_readfile(rcFILE *rcFile);							/**< Read what we opened */
-
-#if !defined(min)
-# define min(a,b) ({__typeof__(a) _a=(a); __typeof__(b) _b=(b); _a < _b ? _a : _b;})
-#endif
-
-#if !defined(max)
-# define max(a,b) ({__typeof__(a) _a=(a); __typeof__(b) _b=(b); _a > _b ? _a : _b;})
-#endif
-
-#if defined(__SURELYNX__)
-# error "SureLynx environment not compatible with UNIX<>SureLynx shim!"
-#endif

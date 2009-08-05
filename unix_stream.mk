@@ -35,13 +35,20 @@
 HOSTNAME		?= $(shell hostname)
 GPSEE_LIBNAME		= gpsee
 
+
 # Compilation tools
+ifeq "$(origin CC)" "default"
 CC		= gcc
+endif
+ifeq "$(origin CXX)" "default"
 CXX		= g++
+endif
+ifeq "$(origin LD)" "default"
 LD		= gcc -shared
+endif
 LEX		?= lex
 YACC		?= yacc
-CPP		?= gcc -E
+CPP		?= $(CC) -E
 AR		?= ar
 AR_RU		?= $(AR) -ru
 SO_AR		?= $(LD) $(LDFLAGS) -o
@@ -67,5 +74,7 @@ EXE_EXT		?=
 LIB_EXT		?=a
 SOLIB_EXT	?=so
 
-ICONV_LIB_NAME	= iconv
+ICONV_LIB_NAME	?= iconv
 GPSEE_C_DEFINES	+= HAVE_ICONV
+DEFAUT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee/
+GPSEE_LIBRARY		?= lib$(GPSEE_LIBNAME).$(SOLIB_EXIT)

@@ -41,29 +41,29 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
+# Where is the libffi source code?
 lastword ?= $(if $1,$(word $(words $1),$1))
-
-GPSEE_SRC_DIR 		?= ..
-GPSEE_CONFIG		?= $(GPSEE_SRC_DIR)/gpsee-config
 #LIBFFI_SRC		?= $(HOME)/libffi-3.0.8
 LIBFFI_SRC		?= $(lastword $(sort $(wildcard $(HOME)/libffi-3*[0-9])))
+
+# Where is your pkg-config binary?
 PKG_CONFIG		?= pkg-config
+
+# Where to install libffi
 LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)
+
+# Options to pass to make when building libffi
 LIBFFI_MAKE_OPTIONS	?= -j3
+
+# Location of tr binary
 TR			?= tr
 
-ifeq ($(LIBFFI_SRC),)
-$(info *** Please untar libffi-3*.tar.gz in your home directory, or)
-$(info *** edit $(PWD)/local_config.mk)
-$(info *** to reflect an alternate location.)
-$(error Could not locate libffi source code)
-endif
-
-## - RELEASE    Optimized build, no symbols
-## - DRELEASE   Optimized build, symbols
-## - PROFILE    Optimized build, symbols, profiling enabled
-## - DEBUG      Debug build (assertions), symbols
-BUILD			?= RELEASE
-
-NO_BUILD_RULES=TRUE
-include $(GPSEE_SRC_DIR)/outside.mk
+## - RELEASE    Optimized jsapi build, no GC Zeal, no symbols
+## - DRELEASE   Optimized jsapi build, GC Zeal, symbols
+## - PROFILE    Optimized jsapi build, no GC Zeal, symbols, profiling enabled
+## - DEBUG      Debug jsapi build (assertions), GC Zeal, symbols
+##
+## Use BUILD ?= instead of BUILD = to allow GPSEE's local_config.mk to infer
+## the libffi build type
+##
+BUILD 			= RELEASE

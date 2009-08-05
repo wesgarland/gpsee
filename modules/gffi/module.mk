@@ -33,8 +33,9 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
-ifeq ($(LIBFFI_CONFIG_DEPS),)
-$(error You have not configured LibFFI)
+include $(GPSEE_SRC_DIR)/ffi.mk
+ifeq (X$(LIBFFI_LDFLAGS),X)
+$(error Missing LibFFI LDFLAGS!)
 endif
 
 DEFS	 	 	= gpsee std network posix
@@ -48,12 +49,14 @@ LDFLAGS			+= $(LIBFFI_LDFLAGS)
 
 build:	$(DEF_FILES)
 
-gffi_module.so:   LDFLAGS += -lffi
+build_debug_module:
+	@echo " - In gffi, CFLAGS = $(CFLAGS)"
+
+gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
 
 structs.o: structs.incl
 defines.o: defines.incl
 
-# Below, there be dragons
 compiler.dmp:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | sort -u > $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
@@ -80,8 +83,8 @@ posix_defs.%:	HEADERS  = unistd.h stdio.h limits.h termios.h dirent.h errno.h fc
 
 posix_defs.%:	HEADERS += sys/wait.h sys/socket.h aio.h libgen.h strings.h string.h nl_types.h sys/types.h
 posix_defs.%:	HEADERS += sys/types.h stdlib.h grp.h netdb.h utmpx.h fmtmsg.h fnmatch.h sys/statvfs.h sys/ipc.h ftw.h
-posix_defs.%:	HEADERS += ucontext.h grp.h stropts.h sys/resource.h sys/socket.h glob.h search.h arpa/inet.h math.h
-posix_defs.%:	HEADERS += ctype.h mqueue.h sys/mman.h sys/msg.h spawn.h poll.h pthread.h sys/uio.h regex.h sched.h
+posix_defs.%:	HEADERS += ucontext.h grp.h sys/resource.h sys/socket.h glob.h search.h arpa/inet.h math.h
+posix_defs.%:	HEADERS += ctype.h sys/mman.h sys/msg.h spawn.h poll.h pthread.h sys/uio.h regex.h sched.h
 posix_defs.%:	HEADERS += semaphore.h sys/sem.h pwd.h sys/shm.h monetary.h wchar.h sys/time.h sys/times.h sys/utsname.h
 posix_defs.%:	HEADERS += wordexp.h 
 
@@ -136,17 +139,18 @@ STRING_EXPR="([^\\"]|\\\\|\\")*"
 	@echo " - Integer Expression"
 	@$(foreach HEADER, $(HEADERS), echo "#include <$(HEADER)>" >> $@;)
 	@echo "#include <stdio.h>" >> $@
+	@echo "#include \"../../gpsee_formats.h\"" >> $@
 	@echo "#undef main" >> $@
 	@echo "int main(int argc, char **argv) {" >> $@
 	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp \
 	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveInt(\2,");\
-		printf(((\2 < 0) ? "%lld,1,%i)\\n":"%llu,0,%i)\\n"),(long long)(\2),sizeof(\2));/' \
+		printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Floating-point Expression"
 	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
 	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveFloat(\2,%e100,%i)\\n",(\2),sizeof(\2));/' \
+		printf("haveFloat(\2,%e100," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Strings"
 	@$(EGREP) '$(START)$(STRING_EXPR)$$' $*_defs.dmp \
@@ -189,17 +193,19 @@ structs.incl: structs.decl module.mk
 	sed \
 		-e '/beginStruct/h' \
 		-e 's/\(beginStruct[(]\)\([^)]*\)\([)].*\)/#define member_offset(X) offsetOf(\2,X)/' \
-		-e '/member_offset/p' \
+		-e '/^#define member_offset/p' \
 		-e 's/member_offset/member_size/' \
 		-e 's/offsetOf/fieldSize/' \
 		-e '/member_size/p' \
 		-e '/member_size/x' \
 		-e 's/\(beginStruct[(]\)\([^)]*\)\([)].*\)/\1\2,\2\3/' \
 		-e ':loop' -e 's/\(beginStruct[^,]*,[^ ]*\) /\1_/' -e '/beginStruct/t loop' \
-		-e '/endStruct/i\
-#undef member_offset' \
-		-e '/endStruct/i\
-#undef member_size' \
+		-e '/endStruct/p' \
+		-e 's/\(endStruct[(]\)\([^)]*\)\([)].*\)/#undef member_offset/' \
+		-e '/^#undef member_offset/p' \
+		-e 's/member_offset/member_size/' \
 	< structs.decl > $@
 
-
+parseMan:
+	man $$MANPAGE \
+	| grep '^       .*\*/ *$$' | sed -e 's;*/;XXX;' -e 's/^  */member(/' -e 's/;/,    )/' -e 's/  *\*/*,/' -e 's/  */,  /' -e 's/*,/ *, /' -e 's/XXX/*\//' -e 's;, */\*;,       /*;'  -e 's; */\*;	/*;' -e 's/^/  /' -e 's/, *, *)/,	)/'

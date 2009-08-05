@@ -1,8 +1,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
-#include <dirent.h>
-
 beginStruct(struct stat)
   member(dev_t,		st_dev,		integer)
   member(ino_t,		st_ino,		integer)
@@ -17,32 +15,13 @@ beginStruct(struct stat)
   member(time_t,	st_ctime,	integer)
   member(blksize_t,	st_blksize,	integer)
   member(blkcnt_t,	st_blocks,	integer)
-//  member(char,		st_fstype,	string)
-#if 0
-#if defined(st_atime) && defined(st_mtime) && defined(st_ctime) && !defined(NO_STAT_TIMESPEC_T)
-  member(time_t,	st_atim,	struct)
-  member(time_t,	st_mtim,	struct)
-  member(time_t,	st_ctim,	struct)
-#endif
-#endif
 endStruct(struct stat)
 
+#include <dirent.h>
 beginStruct(struct dirent)
     member(ino_t,	d_ino,		integer)
     member(char,	d_name,		array)
 endStruct(struct dirent)
-
-#if 0
-beginStruct(timespec_t)
-  member(time_t,	tv_sec,		integer)
-  member(time_t,	tv_nsec,	integer)
-endStruct(timespec_t)
-
-beginStruct(itimerspec_t)
-  member(timespec_t,	it_interval,	integer)
-  member(timespec_t,	it_value,	integer)
-endStruct(itimerspec_t)
-#endif
 
 #include <time.h>
 beginStruct(struct tm)
@@ -66,6 +45,26 @@ beginStruct(struct hostent)
   member(char **,	h_addr_list,	array)		/* list of addresses */
 endStruct(struct hostent)
 
+#include <pwd.h>
+beginStruct(struct passwd)
+  member(char *, pw_name,	string)      	/* user's login name */
+  member(char *, pw_passwd,	string)    	/* no longer used */
+  member(uid_t,  pw_uid,    	integer)       	/* user's uid */
+  member(gid_t,  pw_gid,    	integer)       	/* user's gid */
+  member(char *, pw_age,	integer)       	/* not used */
+  member(char *, pw_comment,	string)   	/* not used */
+  member(char *, pw_gecos,	string)     	/* typically user's full name */
+  member(char *, pw_dir,	string)       	/* user's home dir */
+  member(char *, pw_shell,	string)		/* user's login shell */
+endStruct(struct passwd)
+
+#include <grp.h>
+beginStruct(struct group)
+  member(char *, gr_name,	string)		/* the name of the group */
+  member(char *, gr_passwd,	string)		/* the encrypted group password */
+  member(gid_t,  gr_gid,    	integer)	/* the numerical group ID */
+  member(char **, gr_mem,	pointer)	/* vector of pointers to member names */
+endStruct(struct group)
 /*
 resolver
 sockets struct in_addr, struct socket, sockaddr, sockaddr_dl

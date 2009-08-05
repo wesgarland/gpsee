@@ -36,11 +36,11 @@
 /**
  *  @file	gpsee_flock.h		Cross-platform flock header for GPSEE.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_flock.h,v 1.1 2009/03/30 23:55:43 wes Exp $
+ *  @version	$Id: gpsee_flock.h,v 1.2 2009/07/31 16:46:04 wes Exp $
  *  @date	Feb 2009
  */
  
-#ifndef HAVE_FLOCK
+#if !defined(HAVE_FLOCK) && !defined(NO_GPSEE_FLOCK)
 # define GPSEE_LOCK_SH         0x01            /* shared file lock */
 # define GPSEE_LOCK_EX         0x02            /* exclusive file lock */
 # define GPSEE_LOCK_NB         0x04            /* don't block when locking */

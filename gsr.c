@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.6 2009/06/12 17:01:20 wes Exp $
+ * @version	$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.6 2009/06/12 17:01:20 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -174,13 +174,14 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
                   "\n"
                   "Valid Flags:\n"
                   "    a - Allow (read-only) access to caller's environment\n"
-          "    C - Disables compiler caching via JSScript XDR serialization\n"
+		  "    C - Disables compiler caching via JSScript XDR serialization\n"
                   "    d - Increase verbosity\n"
                   "    e - Do not limit regexps to n^3 levels of backtracking\n"
                   "    J - Disable nanojit\n"
                   "    S - Disable Strict mode\n"
                   "    R - Load RC file for interpreter (" PRODUCT_SHORTNAME ") based on\n"
                   "        script filename.\n"
+		  "    U - Disable UTF-8 C string processing\n"
                   "    W - Do not report warnings\n"
                   "    x - Parse <!-- comments --> as E4X tokens\n"
 #ifdef JS_GC_ZEAL
@@ -216,8 +217,9 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
         jsi->useCompilerCache = 0;
         break;
 
-      case 'R':	/* Handled in loadRuntimeConfig() */
       case 'a':	/* Handled in prmain() */
+      case 'R':	/* Handled in loadRuntimeConfig() */
+      case 'U': /* Must be handled before 1st JS runtime */
 	break;
 	  
       case 'x':	/* Parse <!-- comments --> as E4X tokens */
@@ -424,7 +426,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     int 	c;
     char	*flag_p = flags;
 
-    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hnf:F:aRxSWdeJ"
+    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hnf:F:aCRxSUWdeJ"
 #ifdef JS_GC_ZEAL
 		       "z"
 #endif
@@ -454,17 +456,19 @@ PRIntn prmain(PRIntn argc, char **argv)
 
 	case 'F':
 	  skipSheBang = 1;
+
 	case 'f':
 	  scriptFilename = optarg;
 	  break;
 
 	case 'a':
-    case 'C':
+	case 'C':
 	case 'd':
 	case 'e':
 	case 'J':
 	case 'S':
 	case 'R':
+	case 'U':
 	case 'W':
 	case 'x':
 	case 'z':
@@ -540,6 +544,12 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   loadRuntimeConfig(scriptFilename, flags, argc, argv);
+  if (strchr(flags, 'U') || (rc_bool_value(rc, "gpsee_force_no_utf8_c_strings") == rc_true) || getenv("GPSEE_NO_UTF8_C_STRINGS"))
+  {
+    JS_DestroyRuntime(JS_NewRuntime(1024));
+    putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
+  }
+
   jsi = gpsee_createInterpreter(script_argv, script_environ);
   processFlags(jsi, flags);
   free(flags);

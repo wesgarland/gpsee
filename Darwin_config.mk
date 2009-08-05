@@ -32,6 +32,7 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
+DEFAULT_GPSEE_PREFIX_DIR = /opt/local/gpsee
 SOLIB_EXT	 	 = dylib
 LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
 REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
@@ -40,4 +41,5 @@ REAL_CC			 = gcc
 CC			 = echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
 
 $(GPSEE_LIBRARY): LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
+binary_module.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
 
