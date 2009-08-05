@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $
+ * @version	$Id: gsr.c,v 1.9 2009/08/05 14:49:51 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.8 2009/08/04 20:17:40 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.9 2009/08/05 14:49:51 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -559,6 +559,47 @@ PRIntn prmain(PRIntn argc, char **argv)
   {
     jsval v;
     JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "command_line", 1, &v);
+    if (JS_IsExceptionPending(jsi->cx))
+      goto out;
+  }
+
+  if ((strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
+  {
+    char preloadScriptFilename[FILENAME_MAX];
+    char mydir[FILENAME_MAX];
+    int i;
+
+    i = snprintf(preloadScriptFilename, sizeof(preloadScriptFilename), "%s/.%s_preload", gpsee_dirname(argv[0], mydir, sizeof(mydir)), 
+		 gpsee_basename(argv[0]));
+    if ((i == 0) || (i == (sizeof(preloadScriptFilename) -1)))
+      gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
+    else
+      errno = 0;
+
+    if (access(preloadScriptFilename, F_OK) == 0)
+    {
+      jsval 		v;
+      const char	*errmsg;
+      JSScript		*script;
+      JSObject		*scrobj;
+
+      if (gpsee_compileScript(jsi->cx, preloadScriptFilename, NULL, &script, jsi->globalObj, &scrobj, &errmsg))
+      {
+	gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s' - %s", preloadScriptFilename, errmsg);
+	goto out;
+      }
+
+      scrobj = JS_NewScriptObject(jsi->cx, script);
+      if (!scrobj)
+	goto out;
+
+      JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
+      JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
+      JS_RemoveRoot(jsi->cx, &scrobj);
+    }
+
+    if (JS_IsExceptionPending(jsi->cx))
+      goto out;
   }
 
   if (!scriptFilename)
@@ -580,6 +621,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
   }
 
+  out:
   gpsee_destroyInterpreter(jsi);
   JS_ShutDown();
 
