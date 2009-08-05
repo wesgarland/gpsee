@@ -37,7 +37,7 @@
 ##				Requires that GPSEE already be built and installed.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.1 2009/05/27 04:16:27 wes Exp $
+## @version	$Id: Makefile,v 1.2 2009/08/05 19:46:19 wes Exp $
 
 top: gpsee-js
 
@@ -50,7 +50,7 @@ SHELL_BUILD		= $(SPIDERMONKEY_BUILD)/shell
 EXTRA_CLEAN_RULE	= clean_shell_build
 GPSEE_JS_CXXFLAGS	= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSEE_CONFIG) --cppflags)
 GPSEE_JS_LDFLAGS	= $(shell $(GPSEE_CONFIG) --ldflags)
-PROGS			= gpsee-js
+EXPORT_PROGS		= gpsee-js
 
 $(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
 	$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
@@ -66,13 +66,3 @@ gpsee-js: $(SHELL_BUILD)/gpsee-js.mk
 
 clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
 	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk clean
-
-
-
-
-
-
-
-
-
-
