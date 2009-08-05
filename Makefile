@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.15 2009/08/04 20:22:38 wes Exp $
+## @version	$Id: Makefile,v 1.16 2009/08/05 14:51:48 wes Exp $
 
 top: 	help
 
@@ -226,6 +226,7 @@ bin-dist:: install
 
 $(GPSEE_LIBRARY): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
+gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr: gsr.o
 
 JSDOC_DIR=/opt/jsdoc-toolkit
