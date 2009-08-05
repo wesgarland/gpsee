@@ -485,14 +485,14 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
   return retval;
 }
 
-JSBool Thread_SweepBCB(JSContext *cx, JSScript *script, void *private)
+JSBool Thread_SweepBCB(JSContext *cx, void *private)
 {
   JSObject	*Thread_prototype = (JSObject *)private;
   
   return Thread_Sweep(cx, Thread_prototype);
 }
 
-JSBool Thread_YieldBCB(JSContext *cx, JSScript *script, void *unused)
+JSBool Thread_YieldBCB(JSContext *cx, void *unused)
 {
   return thread_yield(cx);
 }
@@ -649,7 +649,7 @@ static JSBool th_start(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
     return gpsee_throw(cx, MODULE_ID ".start.state: Cannot start thread - invalid state!");
 
   if ((e = thread_addToList(cx, obj, hnd)))
-    return gpsee_throw(cx, e);
+    return gpsee_throw(cx, "%s", e);
 
   /* Create a new context for the new thread to use. Context will never 
    * be used by any other thread, and thread itself will clean it up.
@@ -661,11 +661,6 @@ static JSBool th_start(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
     return gpsee_throw(cx, MODULE_ID ".start.context: Cannot create thread context!");
 
   JS_SetOptions(new_cx, JS_GetOptions(cx));
-#if 0
-  JS_SetBranchCallback(new_cx, gpsee_branchCallback);
-#else
-#warning FIX ME BCB
-#endif
 
   depth = JS_SuspendRequest(cx);
 
@@ -692,7 +687,7 @@ static JSBool th_start(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
       JS_ResumeRequest(cx, depth);
 
       if ((e = thread_removeFromList(cx, hnd)))
-	return gpsee_throw(cx, e);
+	return gpsee_throw(cx, "%s", e);
     }
     else
     {
@@ -1051,12 +1046,8 @@ const char *thread_InitModule(JSContext *cx, JSObject *moduleObject)
   }
 
   /* These should be tunables */
-#if 0
-  gpsee_addBranchCallback(cx, Thread_SweepBCB, proto, 0x7fff);  /* lower: fewer dead os threads lying around, higher: faster */
-  gpsee_addBranchCallback(cx, Thread_YieldBCB, NULL, 0x0fff);	/* lower: fewer GC spin locks, higher: threads interrupted less */
-#else
-#warning FIX ME BCB
-#endif
+  gpsee_addAsyncCallback(cx, Thread_SweepBCB, proto);
+  gpsee_addAsyncCallback(cx, Thread_YieldBCB, NULL);
   PR_SetConcurrency(4);
 
   JS_SetPrivate(cx, proto, protected);
