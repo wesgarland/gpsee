@@ -86,10 +86,10 @@
 #ifndef GPSEE_H
 #define GPSEE_H
 
+#include "gpsee_config.h" /* MUST BE INCLUDED FIRST */
 #include <prthread.h>
 #include <prlock.h>
 
-#include "gpsee_config.h"
 #if defined(GPSEE_SURELYNX_STREAM)
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
