@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.6 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.7 2009/08/05 14:49:17 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -72,7 +72,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.6 2009/07/23 19:00:40 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.7 2009/08/05 14:49:17 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -693,9 +693,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     }
   }
 
-  /* Acquire read lock for script file */
-  if (scriptFile)
-    gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
+  gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
 
   /* Should we use the compiler cache at all? */
   /* Check the compiler cache setting in our gpsee_interpreter_t struct */
@@ -704,7 +702,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
 
   /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
    * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */
-  fileHeaderOffset = scriptFile ? ftell(scriptFile) : 0;
+  fileHeaderOffset = ftell(scriptFile);
 
   /* Before we compile the script, let's check the compiler cache */
   if (useCompilerCache && make_jsc_filename(cx, scriptFilename, cache_filename, sizeof(cache_filename)) == 0)
@@ -720,7 +718,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     {
       /* We have already opened the script file, I can think of no reason why stat() would fail. */
       useCompilerCache = 0;
-      gpsee_log(SLOG_EMERG, "could not stat() script \"%s\" (%m)", scriptFilename);
+      gpsee_log(SLOG_ERR, "could not stat() script \"%s\" (%m)", scriptFilename);
       goto cache_read_end;
     }
 
@@ -730,10 +728,8 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       dprintf(__FILE__":%d: could not load from compiler cache \"%s\" (%m)\n", __LINE__, cache_filename);
       goto cache_read_end;
     }
-    /* Acquire read lock for file */
-    gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH);
 
-    /* stat compiler cache file */
+    gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH);
     if (fstat(fileno(cache_file), &cache_st))
     {
       dprintf("could not stat() compiler cache \"%s\"\n", cache_filename);
@@ -795,21 +791,13 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   }
 
   cache_read_end:
+  errno = 0;	/* Reset errno; diagnostics from cache misses etc. are not useful */
 
   /* Was the precompiled script thawed from the cache? If not, we must compile it */
   if (!*script)
   {
-    /* Do we already have this file open? */
-    if (scriptFile)
-    {
-      /* Acquire read lock for file */
-      gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
-      /* Compile script */
-      *script = JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
-    } else {
-      /* Compile script */
-      *script = JS_CompileFile(cx, scope, scriptFilename);
-    }
+    *script = JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
+
     if (!*script)
     {
       *errorMessage = "could not compile script";
@@ -821,13 +809,15 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     {
       JSXDRState *xdr;
       int cache_fd;
-      /* Remove the previous cache file, assuming we can */
+
       unlink(cache_filename);
-      /* Open the cache file, in a rather specific way */
+      errno = 0;
+      /* Open the cache file atomically; fails on collision with other process */
       if(((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0) ||
          ((cache_file = fdopen(cache_fd, "w")) == NULL))
       {
-        dprintf(__FILE__":%d: could not create compiler cache \"%s\" (%m)\n", __LINE__, cache_filename);
+	if (errno != EEXIST)
+	  gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (%m)", cache_filename);
         goto cache_read_end;
       }
       /* Acquire write lock for file */
@@ -871,8 +861,6 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     *errorMessage = "unable to create module's script object";
     return -1;
   }
-  /* This will protect it from the GC */
-  //JS_AddNamedRoot(cx, scriptObject, scriptFilename);
 
   return 0;
 }
