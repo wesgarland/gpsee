@@ -42,6 +42,7 @@
 
 #ifndef GPSEE_BINARY_MODULE_H
 #define GPSEE_BINARY_MODULE_H
+#include "gpsee.h"
 #include "bytethings.h"
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
@@ -52,8 +53,8 @@ JSObject *Binary_InitClass(JSContext *cx, JSObject *obj);
 
 #ifndef HAVE_MEMRCHR
 #define memrchr gpsee_memrchr
-void *memrchr(const void *s, int c, size_t n);
 #endif
+void *memrchr(const void *s, int c, size_t n);
 
 extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
