@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.17 2009/08/05 16:27:23 wes Exp $
+## @version	$Id: Makefile,v 1.18 2009/08/05 18:40:26 wes Exp $
 
 top: 	help
 
@@ -177,7 +177,7 @@ clean_modules:
 	)
 
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
-build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES)::
+build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES) modules/% $(STREAM)_modules/%:: gpsee_config.h
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@) MODULE=$(notdir $@)
 
 build_debug_modules:
@@ -243,7 +243,7 @@ docs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 	rm doxygen.log
 
-gpsee_config.h: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
+gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
 gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo " * Generating $@"
 	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
@@ -255,7 +255,7 @@ gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
 	@echo "#define GPSEE_$(STREAM_UCASE)_STREAM" >> $@
 	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) '[a-z]' '[A-Z]')_SYSTEM" >> $@
-depend.mk: MDFLAGS+=-DGPSEE_$(STREAM)_STREAM
+depend.mk: MDFLAGS+=-DGPSEE_$(STREAM_UCASE)_STREAM
 gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
 	@echo " * Generating $@"
 	@$(SED) \

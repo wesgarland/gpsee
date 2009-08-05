@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.15 2009/08/04 20:22:38 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.16 2009/08/05 18:40:26 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.16  2009/08/05 18:40:26  wes
+ *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/* easier
+ *
  *  Revision 1.15  2009/08/04 20:22:38  wes
  *  Work towards resolving build-system circular dependencies et al
  *
@@ -105,9 +108,6 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <flock.h>
 #  undef __FUNCTION__
 # elif defined(GPSEE_UNIX_STREAM)
-#  if !defined(_GNU_SOURCE)
-#   define _GNU_SOURCE
-#  endif
 #  include <unistd.h>
 #  include <stdio.h>
 #  include <stdlib.h>

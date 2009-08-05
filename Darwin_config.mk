@@ -33,6 +33,7 @@
 # ***** END LICENSE BLOCK ***** 
 #
 DEFAULT_GPSEE_PREFIX_DIR = /opt/local/gpsee
+EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
 SOLIB_EXT	 	 = dylib
 LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
 REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
