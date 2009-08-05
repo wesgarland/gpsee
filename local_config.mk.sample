@@ -35,17 +35,13 @@
 #
 # Configuration parameters which affect your GPSEE build
 #
+# BUILD		DEBUG | DRELEASE | PROFILE | RELEASE
+# STREAM	unix | surelynx | apr
+#
 
-ifeq ($(UNAME_SYSTEM), SunOS)
-GPSEE_PREFIX_DIR	?= /opt/gpsee
-endif
-
-ifeq ($(UNAME_SYSTEM), Darwin)
-GPSEE_PREFIX_DIR	?= /opt/local/gpsee
-endif
-
-GPSEE_PREFIX_DIR	?= /usr/local/gpsee
+BUILD			?= DRELEASE
+STREAM			?= unix
+GPSEE_PREFIX_DIR	?= $(DEFAULT_GPSEE_PREFIX_DIR)
 GSR_SHEBANG_LINK	?= /usr/bin/gsr
 
-PATH:=/bin\:/usr/bin\:/usr/sfw/bin\:/usr/ccs/bin\:$(PATH)
-export PATH
+

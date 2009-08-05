@@ -32,6 +32,9 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
+
+DEFAULT_GPSEE_PREFIX_DIR = /opt/gpsee
+
 ifeq ($(UNAME_RELEASE), 5.10)
 GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
 endif

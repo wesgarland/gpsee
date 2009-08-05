@@ -36,9 +36,18 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.11 2009/07/28 15:52:27 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.15 2009/08/04 20:22:38 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.15  2009/08/04 20:22:38  wes
+ *  Work towards resolving build-system circular dependencies et al
+ *
+ *  Revision 1.14  2009/07/31 16:08:20  wes
+ *  C99
+ *
+ *  Revision 1.13  2009/07/31 14:56:08  wes
+ *  Removed printf formats, now in gpsee_formats.h
+ *
  *  Revision 1.11  2009/07/28 15:52:27  wes
  *  Updated isByteThing functions
  *
@@ -80,11 +89,7 @@
 #include <prthread.h>
 #include <prlock.h>
 
-#if (defined(GPSEE_DEBUG_BUILD) || defined(DEBUG)) && !defined(JS_DEBUG)
-# define JS_DEBUG 1	/** Missing in early 1.8.1-pre */
-#endif
-
-
+#include "gpsee_config.h"
 #if defined(GPSEE_SURELYNX_STREAM)
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	ASL_MAX_LOG_MESSAGE_SIZE
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
@@ -93,15 +98,11 @@
 const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #endif
 
-#if !defined(PATH_MAX)
-# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
-#endif
-
-#include "gpsee_config.h"
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
 # if defined(GPSEE_SURELYNX_STREAM)
 #  include <gpsee_surelynx.h>
 #  include <apr_surelynx.h>
+#  include <flock.h>
 #  undef __FUNCTION__
 # elif defined(GPSEE_UNIX_STREAM)
 #  if !defined(_GNU_SOURCE)
@@ -121,6 +122,10 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #  include <sys/wait.h>
 #  include <stdarg.h>
 # endif
+#endif
+
+#if !defined(PATH_MAX)
+# define PATH_MAX	pathconf((char *)"/", _PC_MAX_CANON)
 #endif
 
 #include <jsapi.h>
@@ -149,6 +154,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #define GPSEE_MAJOR_VERSION_NUMBER	        0
 #define GPSEE_MINOR_VERSION_NUMBER		2
 #define GPSEE_MICRO_VERSION_NUMBER		0
+#include <gpsee_formats.h>
 
 #if !defined(fieldSize)
 # define fieldSize(st, field)    sizeof(((st *)NULL)->field)
@@ -251,7 +257,7 @@ JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto
 JSObject *		gpsee_getModuleObject(JSContext *cx, const char *moduleID);
 const char *		gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
 JSBool 			gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
-JSClass	*		gpsee_getGlobalClass();
+JSClass	*		gpsee_getGlobalClass(void);
 
 /* support routines */
 signed int		gpsee_verbosity(signed int changeBy);
@@ -362,7 +368,6 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 	
 #include <gpsee_flock.h>
 
-const char *gpsee_makeLogFormat_r(const char *fmt, char *fmtNew);
 #if defined(__cplusplus)
 }
 #endif
@@ -424,20 +429,4 @@ GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
 cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
   		      
-#define GPSEE_SIZET_FMT       "%zd"
-#define GPSEE_PTR_FMT         "%p"
-#define GPSEE_INT_FMT         "%d"
-#define GPSEE_UINT_FMT        "%u"
-#define GPSEE_INT32_FMT       "%ld"
-#define GPSEE_INT64_FMT       "%lld"
-#define GPSEE_UINT32_FMT      "%lu"
-#define GPSEE_UINT64_FMT      "%llu"
-#define GPSEE_HEX_UINT32_FMT  "0x%lx"
-#define GPSEE_HEX_UINT_FMT    "0x%x"
-
 #endif /* GPSEE_H */
-
-
-
-
-

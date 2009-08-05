@@ -283,7 +283,7 @@ JSBool struct_getArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
   if (!memHnd)
     return gpsee_throw(cx, "%s.getArray.impossible: impossible error processing returned Memory object", throwLabel);
 
-  memHnd->buffer = (char *)structHnd->buffer + structHnd->descriptor->members[memberIdx].offset;
+  memHnd->buffer = structHnd->buffer + structHnd->descriptor->members[memberIdx].offset;
   memHnd->length = structHnd->descriptor->members[memberIdx].size;
   memHnd->memoryOwner = thisObj;
 

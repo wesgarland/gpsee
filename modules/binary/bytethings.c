@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.7 2009/07/28 15:21:52 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.8 2009/07/31 16:47:12 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.7 2009/07/28 15:21:52 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.8 2009/07/31 16:47:12 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -1343,7 +1343,7 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
 {
   byteThing_handle_t    *hnd;
   jsval			*argv = JS_ARGV(cx, vp);
-  unsigned char         byte;
+  unsigned char         theByte;
   size_t  		start;
   size_t  		len;
   const unsigned char 	*found;
@@ -1361,7 +1361,7 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
     return gpsee_throw(cx, "%s.arguments.count", methodName);
 
   /* Process 'needle' argument */
-  if ((errmsg = byteThing_val2byte(cx, argv[0], &byte)))
+  if ((errmsg = byteThing_val2byte(cx, argv[0], &theByte)))
     return gpsee_throw(cx, "%s.%s.arguments.0.byte.invalid: %s", clasp->name, methodName, errmsg);
 
   /* Convert JS args to C args */
@@ -1371,7 +1371,7 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
     return JS_FALSE;
 
   /* Search for needle */
-  if ((found = memchr_fn(hnd->buffer + start, byte, len)))
+  if ((found = memchr_fn(hnd->buffer + start, theByte, len)))
   {
     if (INT_FITS_IN_JSVAL(found - hnd->buffer))
       JS_SET_RVAL(cx, vp, INT_TO_JSVAL(found - hnd->buffer));
@@ -1395,11 +1395,11 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
 #ifndef HAVE_MEMRCHR
 void *gpsee_memrchr(const void *s, int c, size_t n)
 {
-  const void *p;
+  const char *p;
 
-  for (p = s + n; p != s; p--)
+  for (p = (char *)s + n; p != s; p--)
   {
-    if (*(char *)p == c)
+    if (*p == c)
       return (void *)p;
   }
 
@@ -1500,7 +1500,6 @@ JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, 
 JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
 		      JSClass *clasp, JSObject *proto, size_t hndSize, const char *throwPrefix)
 {
-#warning byteThing_Cast lacks safety net
   byteThing_handle_t	*hnd;
   ssize_t		length;
 
@@ -1515,19 +1514,22 @@ JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
   else
     obj = JSVAL_TO_OBJECT(argv[0]);
 
-  hnd = JS_GetPrivate(cx, obj);
-  if (!hnd)
+  if (!gpsee_isByteThing(cx, obj))
   {
-    JSClass 	*clasp = JS_GET_CLASS(cx, obj);
+    JSClass 	*tclasp = JS_GET_CLASS(cx, obj);
     const char	*className;
 
-    if (!clasp)
+    if (!tclasp)
       className = "Object";
     else
-      className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
+      className = (tclasp->name && tclasp->name[0]) ? tclasp->name : "corrupted";
 
-    return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, className, clasp->name);
+    return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, className, tclasp->name);
   }
+  
+  hnd = JS_GetPrivate(cx, obj);
+  if (!hnd)
+    return gpsee_throw(cx, "%s.cast.invalidObject", throwPrefix);
 
   if (argc == 1)
     length = hnd->length;

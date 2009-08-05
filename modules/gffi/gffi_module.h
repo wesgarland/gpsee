@@ -41,7 +41,6 @@
  */
 
 #include <dlfcn.h>
-#include <link.h>
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.gffi"
 

@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.4 2009/07/28 16:43:48 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.5 2009/07/30 17:12:39 wes Exp $
  */
 
 #include <ffi.h>
@@ -61,7 +61,37 @@ typedef struct
   size_t	nargs;			/**< Number of arguments */
   ffi_type	**argTypes;		/**< Argument types used by FFI / native ABI */
   valueTo_fn	*argConverters;		/**< Argument converter */
-} cfunction_handle_t;
+  int		noSuspend:1;		/**< Whether or not to suspend the current request during CFunction::call */
+} cFunction_handle_t;
+
+static JSBool cFunction_jsapiCall_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
+  if (!hnd)
+    return JS_FALSE;
+
+  *vp = hnd->noSuspend ? JSVAL_TRUE : JSVAL_FALSE;
+
+  return JS_TRUE;
+}
+
+static JSBool cFunction_jsapiCall_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (JS_ConvertArguments(cx, 1, vp, "%b") == JS_FALSE)
+    return JS_FALSE;
+
+  if (*vp == JSVAL_TRUE)
+    hnd->noSuspend = 1;
+  else
+    hnd->noSuspend = 0;
+
+  return JS_TRUE;
+}
 
 size_t ffi_type_size(ffi_type *type)
 {
@@ -78,7 +108,7 @@ size_t ffi_type_size(ffi_type *type)
  */
 static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, JSObject *thisObj)
 {
-  cfunction_handle_t *hnd = JS_GetInstancePrivate(cx, thisObj, cFunction_clasp, NULL);
+  cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, thisObj, cFunction_clasp, NULL);
 
   if (!hnd)
     return JS_FALSE;
@@ -372,7 +402,7 @@ static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **
 
 JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 {
-  cfunction_handle_t 	*hnd;
+  cFunction_handle_t 	*hnd;
   void 			*rvaluep = NULL;
   void 			**avalues = NULL;
   void			**storage = NULL;
@@ -390,7 +420,8 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
     return gpsee_throw(cx, CLASS_ID ".call.invalid: unable to locate function call details");
 
   if (hnd->nargs != argc)
-    return gpsee_throw(cx, CLASS_ID ".call.arguments.count: Expected %i arguments, received %i", hnd->nargs, argc);
+    return gpsee_throw(cx, CLASS_ID ".call.arguments.count: Expected %i arguments for %s, received %i", 
+		       hnd->nargs, hnd->functionName, argc);
 
   if (hnd->rtype_abi != &ffi_type_void)
   {
@@ -415,9 +446,11 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
       goto throwout;
   }
 
-  depth = JS_SuspendRequest(cx);
+  if (!hnd->noSuspend)
+    depth = JS_SuspendRequest(cx);
   ffi_call(hnd->cif, hnd->fn, rvaluep, avalues);
-  JS_ResumeRequest(cx, depth);
+  if (!hnd->noSuspend)
+    JS_ResumeRequest(cx, depth);
   ret = ffiType_toValue(cx, rvaluep, hnd->rtype_abi, &JS_RVAL(cx, vp), obj);
   goto out;
 
@@ -463,7 +496,7 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
  */
 JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  cfunction_handle_t	*hnd;
+  cFunction_handle_t	*hnd;
   ffi_status		status;
   int			i;
   library_handle_t      *libhnd = NULL;
@@ -581,7 +614,7 @@ dlsymOver:
  */
 static void CFunction_Finalize(JSContext *cx, JSObject *obj)
 {
-  cfunction_handle_t	*hnd = JS_GetPrivate(cx, obj);
+  cFunction_handle_t	*hnd = JS_GetPrivate(cx, obj);
 
   if (!hnd)
     return;
@@ -639,6 +672,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
   static JSPropertySpec instance_props[] = 
   {
+    { "jsapiCall", 	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, cFunction_jsapiCall_getter, cFunction_jsapiCall_setter },
     { NULL, 0, 0, NULL, NULL }
   };
 

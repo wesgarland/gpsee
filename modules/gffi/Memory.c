@@ -42,13 +42,49 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.4 2009/07/28 16:43:48 wes Exp $
+ *  @version	$Id: Memory.c,v 1.5 2009/07/28 18:18:08 wes Exp $
  */
 
 #include <gpsee.h>
 #include "gffi_module.h"
 
 #define CLASS_ID MODULE_ID ".Memory"
+
+/**
+ *  Utility function to parse length arguments to memory objects.
+ *  -1 means "believe strlen"
+ */
+static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, size_t *lengthp, const char *throwPrefix)
+{
+  ssize_t	l;
+  size_t	length;
+
+  if (JSVAL_IS_INT(v))
+    l = JSVAL_TO_INT(v);
+  else
+  {
+    jsdouble d;
+	
+    if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
+      return JS_FALSE;
+
+    if (d != l)
+      return gpsee_throw(cx, "%s.overflow", throwPrefix);
+  }
+
+  if (l == -1)
+    length = strlen(buffer);
+  else
+  {
+    length = l;
+    if (length != l)
+      return gpsee_throw(cx, "%s.overflow", throwPrefix); 
+  }		
+
+  *lengthp = length;
+
+  return JS_TRUE;
+}
 
 /**
  *  Implements Memory.prototype.asString -- a method to take a Memory object,
@@ -66,6 +102,7 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
   JSObject		*obj = JS_THIS_OBJECT(cx, vp);
   JSString		*str;
   size_t		length;
+  jsval			*argv = JS_ARGV(cx, vp);
 
   if (!obj)
     return JS_FALSE;
@@ -89,33 +126,9 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 	length = strlen(hnd->buffer);
       break;
     case 1:
-    {
-      ssize_t	l;
-      jsval	*argv = JS_ARGV(cx, vp);
-
-      if (JSVAL_IS_INT(argv[0]))
-	l = JSVAL_TO_INT(argv[0]);
-      else
-      {
-	jsdouble d;
-	
-	if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
-	  return JS_FALSE;
-
-	if (d != l)
-	  return gpsee_throw(cx, CLASS_ID ".asString.argument.1.overflow");
-      }
-
-      if (l == -1)
-	length = strlen(hnd->buffer);
-      else
-      {
-	length = l;
-	if (length != l)
-	  return gpsee_throw(cx, CLASS_ID ".asString.argument.1.overflow");
-      }		
+      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asString.argument.1") == JS_FALSE)
+	return JS_FALSE;
       break;
-    }
     default:
       return gpsee_throw(cx, CLASS_ID ".asString.arguments.count");
   }
@@ -242,6 +255,63 @@ static JSBool memory_realloc(JSContext *cx, uintN argc, jsval *vp)
   }
 
   hnd->length = newLength;
+
+  return JS_TRUE;
+}
+
+/**
+ *  Implements the memory::duplicate method. 
+ *  This method copies, but does not interpret, the contents of the memory buffer.
+ *  If the memory buffer is a C struct, the struct will be copied but not "deep copied".
+ *  This is basically malloc + memcpy (i.e. memdup or strdup if memory is a C string).
+ *
+ *  An optional argument specifies the maximum length of the buffer to duplicate. 
+ *  -1 means "use strlen".
+ */
+static JSBool memory_duplicate(JSContext *cx, uintN argc, jsval *vp)
+{
+  JSObject 		*robj;
+  JSObject		*thisObj = JS_THIS_OBJECT(cx, vp);
+  struct_handle_t	*thisHnd = thisObj ? gpsee_getInstancePrivate(cx, thisObj, mutableStruct_clasp, immutableStruct_clasp) : NULL;
+  memory_handle_t	*newHnd;
+  jsval 		mcArgv[] = { JSVAL_TO_INT(0), JSVAL_TRUE };
+  size_t		length;
+
+  if (!thisHnd)
+    return JS_FALSE;
+
+  switch(argc)
+  {
+    case 0:
+      length = thisHnd->length;
+      break;
+    case 1:
+      if (memory_parseLengthArgument(cx, JS_ARGV(cx, vp)[0], thisHnd->buffer, &length, CLASS_ID ".duplicate.argument.0") == JS_FALSE)
+	return JS_FALSE;
+      break;
+    default:
+      return gpsee_throw(cx, CLASS_ID ".arguments.count");
+  }
+
+  robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
+  if (!robj)
+    return JS_FALSE;
+
+  if (Memory_Constructor(cx, robj, sizeof(mcArgv) / sizeof(mcArgv[0]), mcArgv, vp) == JS_FALSE)
+    return JS_FALSE;
+
+  newHnd = JS_GetPrivate(cx, robj);
+
+  if (!length)
+    return gpsee_throw(cx, CLASS_ID ".duplicate.length.unknown");
+
+  newHnd->buffer = JS_malloc(cx, length);
+  if (!newHnd->buffer)
+    return JS_FALSE;
+
+  newHnd->length = length;
+  memcpy(newHnd->buffer, thisHnd->buffer, min(length, newHnd->length ?: length));
+  newHnd->memoryOwner = thisObj;
 
   return JS_TRUE;
 }
@@ -396,6 +466,7 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
   {
     JS_FN("asString",	memory_asString, 	0, JSPROP_ENUMERATE),
     JS_FN("realloc",	memory_realloc, 	0, JSPROP_ENUMERATE),
+    JS_FN("duplicate",	memory_duplicate,	0, JSPROP_ENUMERATE),
     JS_FS_END
   };
 
