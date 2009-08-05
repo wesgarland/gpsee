@@ -43,8 +43,8 @@
  *  @version	$Id$
  */
 
-#include <ffi.h>
 #include <gpsee.h>
+#include <ffi.h>
 #include "gffi_module.h"
 
 #define CLASS_ID MODULE_ID ".Library"

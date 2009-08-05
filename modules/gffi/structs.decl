@@ -51,8 +51,12 @@ beginStruct(struct passwd)
   member(char *, pw_passwd,	string)    	/* no longer used */
   member(uid_t,  pw_uid,    	integer)       	/* user's uid */
   member(gid_t,  pw_gid,    	integer)       	/* user's gid */
+#ifdef ATT_AGE
   member(char *, pw_age,	integer)       	/* not used */
+#endif
+#ifdef ATT_COMMENT
   member(char *, pw_comment,	string)   	/* not used */
+#endif
   member(char *, pw_gecos,	string)     	/* typically user's full name */
   member(char *, pw_dir,	string)       	/* user's home dir */
   member(char *, pw_shell,	string)		/* user's login shell */
