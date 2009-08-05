@@ -43,8 +43,8 @@
  *  @version	$Id: CFunction.c,v 1.5 2009/07/30 17:12:39 wes Exp $
  */
 
-#include <ffi.h>
 #include <gpsee.h>
+#include <ffi.h>
 #include "gffi_module.h"
 
 #define CLASS_ID MODULE_ID ".CFunction"
