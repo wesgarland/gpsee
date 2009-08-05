@@ -38,10 +38,10 @@
  *				which isn't available from JavaScript.
  *  @author     Wes Garland
  *  @date       Oct 2007
- *  @version    $Id: system_module.c,v 1.6 2009/07/23 18:35:34 wes Exp $
+ *  @version    $Id: system_module.c,v 1.7 2009/08/05 14:46:26 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.6 2009/07/23 18:35:34 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.7 2009/08/05 14:46:26 wes Exp $";
  
 #include "gpsee.h"
 #include <prinit.h>
@@ -248,8 +248,6 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   if (!scriptFilename[0])
     return gpsee_throw(cx, MODULE_ID ".include.filename: Unable to determine script filename");
 
-  //log_somehow("system_include(\"%s\")\n", scriptFilename);
-
   errno = 0;
   if (access(scriptFilename, F_OK))
     return gpsee_throw(cx, MODULE_ID ".include.file: %s - %s", scriptFilename, strerror(errno));
@@ -262,10 +260,14 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   JS_RemoveRoot(cx, &scriptFilename_jsstr);
 
   if (failure)
-    return gpsee_throw(cx, MODULE_ID ".include.compile: Error compiling \"%s\": %s (OS reports %s)",
-           scriptFilename, errmsg, strerror(errno));
+  {
+    if (!JS_IsExceptionPending(cx))
+      return gpsee_throw(cx, MODULE_ID ".include.compile: Error compiling \"%s\": %s (%s)",
+			 scriptFilename, errmsg, strerror(errno));
+    else
+      return JS_FALSE;
+  }
 
-  /* TODO should we be doing this in gpsee_compileScript()? */
   JS_AddNamedRoot(cx, &scrobj, "include_scrobj");
   retval = JS_ExecuteScript(cx, thisObj, script, rval);
   JS_RemoveRoot(cx, &scrobj);
