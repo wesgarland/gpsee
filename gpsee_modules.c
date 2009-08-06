@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.7 2009/08/05 14:49:17 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.8 2009/08/06 14:18:37 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -72,7 +72,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.7 2009/08/05 14:49:17 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.8 2009/08/06 14:18:37 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -406,7 +406,10 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
 #ifdef GPSEE_DEBUG_BUILD
     incr = 1;
 #else
-    incr = max(max(jsi->modules_len / 2, 64), 4);
+    incr = max(jsi->modules_len / 2, 64);
+    if (incr < 4)
+      incr = 4;
+#warning Memory allocation perf bug
     incr = 1; /* above causes segfaults */
 #endif
 
