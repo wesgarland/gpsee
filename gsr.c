@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.10 2009/08/05 15:03:42 wes Exp $
+ * @version	$Id: gsr.c,v 1.11 2009/08/06 14:19:22 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.10 2009/08/05 15:03:42 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.11 2009/08/06 14:19:22 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -589,8 +589,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	goto out;
       }
 
-      scrobj = JS_NewScriptObject(jsi->cx, script);
-      if (!scrobj)
+      if (!script || !scrobj)
 	goto out;
 
       JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
