@@ -39,7 +39,7 @@
  *
  *  @author	Wes Garland
  *  @date	Apr 2006	
- *  @version	$Id: phpsess.c,v 1.1 2009/03/31 15:12:14 wes Exp $
+ *  @version	$Id: phpsess.c,v 1.2 2009/08/06 14:22:58 wes Exp $
  *
  *  @note	Determined primarily by reverse engineering. May have some
  *		unexpected consequences/bugs...  A full read of the PHP C source
@@ -50,6 +50,9 @@
 
 /*
  * $Log: phpsess.c,v $
+ * Revision 1.2  2009/08/06 14:22:58  wes
+ * Updated non-SureLynx phpsess.c to compile in APR environment
+ *
  * Revision 1.1  2009/03/31 15:12:14  wes
  * Updated module name case, patched to build UNIX stream with local cgihtml and PHPSession only in apr stream
  *
@@ -82,7 +85,7 @@
  * N = NULL
  */
 
-#include <apr.h>
+#include <gpsee.h>
 #define apr_surelynx_log jseng_log
 #include "phpsess.h"
 #include <sys/mman.h>
@@ -94,7 +97,7 @@ static
 #endif
 rc_list rc;
 
-const char rcsid[]="$Id: phpsess.c,v 1.1 2009/03/31 15:12:14 wes Exp $";
+const char rcsid[]="$Id: phpsess.c,v 1.2 2009/08/06 14:22:58 wes Exp $";
 
 /** Return the best ASCIZ string version of a phpSession variable that we can.
  *  @param	*pool		Pool for allocating return value (only if needed)
