@@ -34,8 +34,8 @@
 #
 EXTRA_MODULE_OBJS	= query_object.o
 
-ifeq ($(APR_PROJECT),True)
-EXTRA_MODULES_OBJS	+= PHPSession_class.o
+ifeq ($(APR_PROJECT),TRUE)
+EXTRA_MODULE_OBJS	+= PHPSession_class.o
 endif
 
 ifeq ($(STREAM),surelynx)
@@ -43,7 +43,7 @@ LDFLAGS 		+= -lphpsess -lcgihtml
 else
 EXTRA_MODULE_OBJS	+= cgihtml/cgihtml.a
 CPPFLAGS		+= -Icgihtml
-ifeq ($(APR_PROJECT),True)
+ifeq ($(APR_PROJECT),TRUE)
 EXTRA_MODULE_OBJS	+= phpsess.o
 endif
 endif
