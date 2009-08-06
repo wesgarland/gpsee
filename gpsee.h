@@ -36,11 +36,14 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.16 2009/08/05 18:40:26 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.17 2009/08/06 14:17:51 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.17  2009/08/06 14:17:51  wes
+ *  Corrected comment-in-comment false warning
+ *
  *  Revision 1.16  2009/08/05 18:40:26  wes
- *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/* easier
+ *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/\* easier
  *
  *  Revision 1.15  2009/08/04 20:22:38  wes
  *  Work towards resolving build-system circular dependencies et al
