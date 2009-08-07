@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.6 2009/08/04 20:22:38 wes Exp $ 
+## @version	$Id: Makefile,v 1.7 2009/08/07 19:54:33 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -54,6 +54,7 @@ GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include local_config.mk
 
 ifneq ($(MAKECMDGOALS)X, X)
@@ -83,12 +84,9 @@ endif
 
 ifneq (X$(BIN_DIR),X)
 CONFIGURE_OPTIONS	+= --bindir=$(BIN_DIR)
-JS_CONFIG_DIR		= $(BIN_DIR)
-else
-JS_CONFIG_DIR		= $(JSAPI_PREFIX)/bin
 endif
 
-JS_CONFIG ?= $(JS_CONFIG_DIR)/js-config 
+JS_CONFIG ?= $(SPIDERMONKEY_BUILD)/js-config 
 
 # Debug build?
 ifneq (X,X$(filter $(BUILD),DEBUG))
