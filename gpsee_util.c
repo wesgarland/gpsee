@@ -141,6 +141,18 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
   return buf;
 }
 
+/**
+ *  Resolve all symlinks and relative directory components (. and ..) to return a fully resolved path.
+ *
+ *  If bufsize < PATH_MAX, malloc() is used to allocate PATH_MAX bytes during the call to this function.
+ *
+ *  TODO remove use of malloc()
+ *
+ *  @param      path      Input path string to opreate upon
+ *  @param      buf       Output buffer for resolved path
+ *  @param      bufsize   Size of 'buf'
+ *  @returns              Length of returned path on success, or -1 on failure
+ */
 int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 {
 #if defined(GPSEE_SUNOS_SYSTEM)
@@ -152,24 +164,42 @@ int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 
   errno = 0;
 
-  if (bufsiz < PATH_MAX)
-    mBuf = malloc(PATH_MAX);
-  else
-    mBuf = buf;
-
-  if (!mBuf)
+  /* Require buf (this behavior is *nearly* consistent with what was here before I came'a bugfixin') */
+  if (!buf)
   {
-    if (!errno)
-      errno = EINVAL;
+    errno = EINVAL;
     return -1;
   }
 
-  rp = realpath(path, mBuf);
-  if (rp != buf)
+  /* realpath() requires PATH_MAX sized buffer, but we buffer the caller from that restriction */
+  if (bufsiz < PATH_MAX)
   {
-    char *s = gpsee_cpystrn(buf, rp, bufsiz);
+    mBuf = malloc(PATH_MAX);
+    if (!mBuf)
+    {
+      errno = ENOMEM;
+      return -1;
+    }
+  }
+  else
+    mBuf = buf;
+
+  rp = realpath(path, mBuf);
+  if (!rp)
+  {
+    if (mBuf != buf)
+      free(mBuf);
+    /* Pass realpath() errno upstream */
+    return -1;
+  }
+
+  /* Did we buffer the caller's buffer? */
+  if (mBuf != buf)
+  {
+    char *s = gpsee_cpystrn(buf, mBuf, bufsiz);
     if (s - buf == bufsiz) /* overrun */
     {
+      /* should be unreachable, because we would have already bailed on realpath() failure */
       errno = ENAMETOOLONG;
       ret = -1;
     }
