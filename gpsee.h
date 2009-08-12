@@ -40,7 +40,7 @@
  *
  *  $Log: gpsee.h,v $
  *  Revision 1.16  2009/08/05 18:40:26  wes
- *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/* easier
+ *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging GFFI easier
  *
  *  Revision 1.15  2009/08/04 20:22:38  wes
  *  Work towards resolving build-system circular dependencies et al
