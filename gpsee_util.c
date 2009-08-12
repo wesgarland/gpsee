@@ -58,7 +58,8 @@ char *gpsee_cpystrn(char *dst, const char *src, size_t dst_size)
 {
   if (dst_size)
   {
-    while (dst_size-- && (*dst++ = *src++));
+    while (dst_size-- && *src)
+      *dst++ = *src++;
     *dst = (char)0;
   }
 
