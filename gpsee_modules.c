@@ -962,6 +962,16 @@ static int isRelativePath(const char *path)
   return 0;
 }
 
+/** Load a module from the local filesystem. This function will search for and load DSO and/or Javascript modules.
+ *
+ *  A number of non-fatal error conditions can come up. The current reporting methodology is to log all failures with
+ *  SLOG_WARNING, and to throw an exception if no module matching the search criteria can be loaded.
+ *
+ *  @param      cx
+ *  @param      parentModule
+ *  @param      moduleName
+ *  @param      errorMessage_p
+ */
 static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModule, const char *moduleName, const char **errorMessage_p)
 { 
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
@@ -969,93 +979,196 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
   char			fnBuf[PATH_MAX];
   char			cnBuf[PATH_MAX];
   const	char 		*libexec_dir = gpsee_libexecDir();
-  const char		*modulePath[] = { NULL, libexec_dir };
-  moduleHandle_t	*module = NULL;
+  moduleHandle_t	*module;
   int			retval, i;
   const char		*cname;
+  char *                currentModulePath;
+  static char *         modulePath = NULL;
+  static int            modulePathNum = 0;
 
+  /* Initialize disk module search path */
+  if (!modulePath)
+  {
+    char *c;
+
+    /* Check for the GPSEE_PATH environ and make a modifiable copy */
+    c = getenv("GPSEE_PATH");
+    if (c)
+      modulePath = JS_strdup(cx, c);
+
+    /* TODO Check for a GPSEE_PATH RC setting */
+
+    /* No environment variable or RC setting for GPSEE_PATH? Compose default GPSEE_PATH */
+    if (!modulePath)
+    {
+      size_t altPathLen = strlen(libexec_dir) + 1, altPathLenFree;
+      const char *programPath;
+      char *strcpyCursor;
+
+      /* We know we're going to have at least one GPSEE_PATH element */
+      modulePathNum = 1;
+
+      /* Determine first element of GPSEE_PATH */
+      if (isRelativePath(moduleName))
+        programPath = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf)) : NULL;
+      else
+        programPath = jsi->programModule_dir;
+
+      /* Include programPath in modulePathNum and altPathLen */
+      if (programPath)
+      {
+        modulePathNum++;
+        altPathLen += strlen(programPath) + 1;
+      }
+      /* Allocate our GPSEE_PATH multi-string space */
+      altPathLenFree = altPathLen;
+      modulePath = JS_malloc(cx, altPathLen);
+      strcpyCursor = modulePath;
+
+      /* Copy programPath into modulePath (strcpyCursor+1 for NULL pad between GPSEE_PATH elements) */
+      if (programPath)
+      {
+        strcpyCursor = 1 + gpsee_cpystrn(strcpyCursor, programPath, altPathLenFree);
+        altPathLenFree = altPathLen - (size_t)(strcpyCursor - modulePath);
+      }
+
+      /* Copy libexec_dir into modulePath */
+      strcpyCursor = 1 + gpsee_cpystrn(strcpyCursor, libexec_dir, altPathLenFree);
+      altPathLenFree = altPathLen - (size_t)(strcpyCursor - modulePath);
+
+      GPSEE_ASSERT(altPathLenFree == 0);
+    }
+
+    /* Break the GPSEE_PATH setting into colon-delimited pieces */
+    else if (modulePath)
+    {
+      modulePathNum = 1;
+      c = modulePath;
+      while (*c)
+      {
+        if (*c == ':')
+        {
+          modulePathNum++;
+          *c = '\0';
+        }
+        c++;
+      }
+    }
+  }
+
+  /* TODO ask about this */
   if (moduleName[0] == '/')
   {
     *errorMessage_p = "rooted modules not supported";
     goto fail;
   }
 
-  if (isRelativePath(moduleName))
-    modulePath[0] = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf)) : NULL;
-  else
-    modulePath[0] = jsi->programModule_dir;
-
-  dprintf("First module path entry is %s\n", modulePath[0]);
-
-  for (i = 0; i < (sizeof(modulePath) / sizeof(modulePath[0])); i++)
+  /* Iterate over each component of the full GPSEE_PATH list AND THEN SOME */
+  for(i = 0, currentModulePath = modulePath; i < modulePathNum; i++, currentModulePath += strlen(currentModulePath) + 1)
   {
-    if (!modulePath[i] || !modulePath[i][0])
+    JSBool moduleLoaded = JS_FALSE;
+
+    if (!currentModulePath || !currentModulePath[0])
       continue;
 
-    cname = generateCanonicalName(modulePath[i], moduleName, cnBuf, sizeof(cnBuf));
+    dprintf("loadDiskModule() searching GPSEE_PATH element %d: \"%s\"\n", i, currentModulePath);
+
+    cname = generateCanonicalName(currentModulePath, moduleName, cnBuf, sizeof(cnBuf));
     if (!cname)
       continue;
 
+    /* TODO learn more about GPSEE jails and see if checkJail() needs to know the full GPSEE_PATH */
+    /* TODO it seems like 'cname' at this point never has a trailing slash, but if the second argument to checkJail() is
+     * non-null, it will fail unless there is a trailing slash. Have the jail codepaths been tested much lately? */
     if (!checkJail(cname, libexec_dir) && !checkJail(cname, jsi->moduleJail))
     {
       *errorMessage_p = "attempted jail-break";
-      goto fail;
+      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
+      continue;
     }
 
-    /* Try native and native+script */
+    /* Acquire module slot for loading our module, instantiating as necessary */
+    /* TODO do I need to free this module handle if I don't use it? */
+    module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
+    /* Is this a previously loaded instance of the module? */
+    if (module->flags & mhf_loaded)
+    {
+      *errorMessage_p = NULL;
+      return module;
+    }
+
+    /* Attempt to load a DSO module */
+    /* snprintf() up a filename */
     retval = snprintf(fnBuf, sizeof(fnBuf), "%s_module." DSO_EXTENSION, cname);
+    dprintf("loadDiskModule() trying filename \"%s\"\n", fnBuf);
+    /* catch snprintf() errors */
     if (retval <= 0 || retval >= sizeof(fnBuf))
     {
       *errorMessage_p = "path buffer overrun";
-      goto fail;
+      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
     }
-
-    if (access(fnBuf, F_OK) == 0)
+    /* snprintf() success; check access() */
+    else if (access(fnBuf, F_OK) == 0)
     {
-      module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
-      if (module->flags & mhf_loaded)
-	return module;
-	
       *errorMessage_p = loadDSOModule(cx, module, fnBuf);
       if (*errorMessage_p)
-	goto fail;
+        gpsee_log(SLOG_WARNING, "loadDSOModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
+      else
+        moduleLoaded = JS_TRUE;
+    }
 
-      /* Native loaded, try monkey-patch */
-      retval = snprintf(fnBuf, sizeof(fnBuf), "%s_module.js", cname);
-      if (retval <= 0 || retval >= sizeof(fnBuf))
-      {
-	*errorMessage_p = "path buffer overrun";
-	goto fail;
-      }
+    /* Attempt to load a Javascript module. It may share the same object space as its DSO component */
+    /* snprintf() up a filename */
+    retval = snprintf(fnBuf, sizeof(fnBuf), "%s_module.js", cname);
+    dprintf("loadDiskModule() trying filename \"%s\"\n", fnBuf);
+    /* catch snprintf() errors */
+    if (retval <= 0 || retval >= sizeof(fnBuf))
+    {
+      *errorMessage_p = "path buffer overrun";
+      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
+    }
+    /* snprintf() success; check access() */
+    if (access(fnBuf, F_OK) == 0)
+    {
+      if ((*errorMessage_p = loadJSModule(cx, module, fnBuf)))
+        gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
+      else
+        moduleLoaded = JS_TRUE;
+    }
 
-      if (access(fnBuf, F_OK) == 0)
-      {
-	if ((*errorMessage_p = loadJSModule(cx, module, fnBuf)))
-	  goto fail;
-      }
-
+    /* If we have loaded a DSO and/or formal Javascript language module, we are done. */
+    if (moduleLoaded)
+    {
+      *errorMessage_p = NULL;
       return module;
     }
 
     /* Try plain script module */
+    /* snprintf() up a filename */
     retval = snprintf(fnBuf, sizeof(fnBuf), "%s.js", cname);
+    dprintf("loadDiskModule() trying filename \"%s\"\n", fnBuf);
+    /* catch snprintf() errors */
     if (retval <= 0 || retval >= sizeof(fnBuf))
     {
       *errorMessage_p = "path buffer overrun";
-      goto fail;
+      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
     }
+    /* snprintf() success; check access() */
     if (access(fnBuf, F_OK) == 0)
     {
       module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
       *errorMessage_p = loadJSModule(cx, module, fnBuf);
       if (*errorMessage_p)
-	goto fail;
-
-      return module;
+        gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
+      else
+        moduleLoaded = JS_TRUE;
     }
   }
 
-  *errorMessage_p = moduleNotFoundErrorMessage;
+  /* If we exited the loop because we exhausted GPSEE_PATH, report module not found */
+  if (i == modulePathNum)
+    *errorMessage_p = moduleNotFoundErrorMessage;
+  gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
 
   fail:
   if (module)
