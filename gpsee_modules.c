@@ -818,7 +818,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       {
 	if (errno != EEXIST)
 	  gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (%m)", cache_filename);
-        goto cache_read_end;
+        goto cache_write_end;
       }
       /* Acquire write lock for file */
       gpsee_flock(cache_fd, GPSEE_LOCK_EX);
@@ -854,6 +854,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     }
   }
 
+  cache_write_end:
   /* We must associate a GC object with the JSScript to protect it from the GC */
   *scriptObject = JS_NewScriptObject(cx, *script);
   if (!*scriptObject)
