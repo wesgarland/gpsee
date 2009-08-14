@@ -1009,11 +1009,14 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       /* We know we're going to have at least one GPSEE_PATH element */
       modulePathNum = 1;
 
+      /* TODO jsi->programModule_dir is never set or used anywhere in GPSEE, so it's a little hard to know
+       * exactly what to do here. For now, I'll just make sure to put a reasonable "local" path on the search
+       * path to make sure modules can load other modules in their relative directory structure. */
       /* Determine first element of GPSEE_PATH */
-      if (isRelativePath(moduleName))
-        programPath = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf)) : NULL;
-      else
-        programPath = jsi->programModule_dir;
+//      if (isRelativePath(moduleName))
+      programPath = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf)) : ".";
+//      else
+//        programPath = jsi->programModule_dir;
 
       /* Include programPath in modulePathNum and altPathLen */
       if (programPath)
