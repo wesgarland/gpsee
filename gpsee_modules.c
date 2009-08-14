@@ -1170,9 +1170,9 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
   }
 
   /* If we exited the loop because we exhausted GPSEE_PATH, report module not found */
-  if (i == modulePathNum)
+  if (i == modulePathNum && !*errorMessage_p)
     *errorMessage_p = moduleNotFoundErrorMessage;
-  gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
+  //gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
 
   fail:
   if (module)
