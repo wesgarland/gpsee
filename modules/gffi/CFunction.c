@@ -545,7 +545,7 @@ rtldDefault:
 dlsymOver:
   /* Throw an exception on dlsym() failure */
   if (!hnd->fn)
-    return gpsee_throw(cx, CLASS_ID ".constructor.%s.notFound: no such function in %s",
+    return gpsee_throw(cx, CLASS_ID ".constructor.notFound: no function named \"%s\" in %s",
 		       hnd->functionName, libhnd?libhnd->name:"RTLD_DEFAULT");
 
   hnd->nargs		= argc - 2;
