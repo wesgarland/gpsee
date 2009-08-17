@@ -401,24 +401,27 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
   
   if (!moduleSlot)	/* No free slots, allocate some more */
   {
+    moduleHandle_t **modulesRealloc;
     size_t incr;
 
-#ifdef GPSEE_DEBUG_BUILD
-    incr = 1;
-#else
-    incr = max(max(jsi->modules_len / 2, 64), 4);
-    incr = 1; /* above causes segfaults */
-#endif
+    /* Grow the pointer array jsi->modules by a healthy increment */
+    incr = max(jsi->modules_len / 2, 64);
 
-    jsi->modules = realloc(jsi->modules, sizeof(jsi->modules[0]) * (jsi->modules_len + incr));
-    if (!jsi->modules)
+    /* Reallocate pointer array */
+    modulesRealloc = JS_realloc(cx, jsi->modules, sizeof(jsi->modules[0]) * (jsi->modules_len + incr));
+    if (!modulesRealloc)
       panic(GPSEE_GLOBAL_NAMESPACE_NAME ".modules.acquireHandle: Out of memory in " __FILE__);
 
-    moduleSlot = jsi->modules + jsi->modules_len;
+    /* Initialize new pointer array members to NULL */
+    memset(modulesRealloc + jsi->modules_len, 0, incr * sizeof(*modulesRealloc));
 
+    /* Implement the change in address caused by reallocation */
+    moduleSlot = modulesRealloc + jsi->modules_len;
+    jsi->modules = modulesRealloc;
     jsi->modules_len += incr;
   }
 
+  /* Allocate the new moduleHandle_t, inserting its pointer into jsi->modules */
   *moduleSlot = calloc(1, sizeof(**moduleSlot));
   module = *moduleSlot;
   module->slot = moduleSlot - jsi->modules;
@@ -428,7 +431,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
 
   if (cname)
   {
-    module->cname = strdup(cname);
+    module->cname = JS_strdup(cx, cname);
   }
   {
     module->scope = newModuleScope(cx, parentObject, module);
@@ -455,7 +458,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
  */
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
 {
-  dprintf("Marking module at 0x%p as unused\n", module);
+  dprintf("Marking module at %p (%s) as unused\n", module, module->cname?:"no name");
 
   if (module->flags & ~mhf_loaded && module->object && module->fini)
     module->fini(cx, module->object);
@@ -1064,7 +1067,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
   if (moduleName[0] == '/')
   {
     *errorMessage_p = "rooted modules not supported";
-    goto fail;
+    return NULL;
   }
 
   /* Iterate over each component of the full GPSEE_PATH list AND THEN SOME */
@@ -1081,18 +1084,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     if (!cname)
       continue;
 
-    /* TODO learn more about GPSEE jails and see if checkJail() needs to know the full GPSEE_PATH */
-    /* TODO it seems like 'cname' at this point never has a trailing slash, but if the second argument to checkJail() is
-     * non-null, it will fail unless there is a trailing slash. Have the jail codepaths been tested much lately? */
-    if (!checkJail(cname, libexec_dir) && !checkJail(cname, jsi->moduleJail))
-    {
-      *errorMessage_p = "attempted jail-break";
-      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
-      continue;
-    }
-
     /* Acquire module slot for loading our module, instantiating as necessary */
-    /* TODO do I need to free this module handle if I don't use it? */
     module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
     /* Is this a previously loaded instance of the module? */
     if (module->flags & mhf_loaded)
@@ -1109,7 +1101,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     if (retval <= 0 || retval >= sizeof(fnBuf))
     {
       *errorMessage_p = "path buffer overrun";
-      gpsee_log(SLOG_WARNING, "loadDiskModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
+      gpsee_log(SLOG_WARNING, "loadDiskModule() truncated filename \"%s_module." DSO_EXTENSION "\"", fnBuf);
     }
     /* snprintf() success; check access() */
     else if (access(fnBuf, F_OK) == 0)
@@ -1165,18 +1157,21 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       if (*errorMessage_p)
         gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
       else
-        moduleLoaded = JS_TRUE;
+      {
+        //moduleLoaded = JS_TRUE;
+        *errorMessage_p = NULL;
+        return module;
+      }
     }
+
+    /* We need to unuse the module handle we got for this canonical module name, which yielded no usable modules */
+    markModuleUnused(cx, module);
   }
 
   /* If we exited the loop because we exhausted GPSEE_PATH, report module not found */
   if (i == modulePathNum && !*errorMessage_p)
     *errorMessage_p = moduleNotFoundErrorMessage;
   //gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
-
-  fail:
-  if (module)
-    markModuleUnused(cx, module);
 
   return NULL;
 }
@@ -1210,7 +1205,11 @@ static moduleHandle_t *loadInternalModule(JSContext *cx, moduleHandle_t *parentM
   unsigned int 		i;
   moduleHandle_t	*module;
 
-  if (strchr(moduleName, '/'))
+  /* First, see if the module is actually in the list of internal modules */
+  for (i=0; i < (sizeof internalModules/sizeof internalModules[0]); i++)
+    if (strcmp(internalModules[i].name , moduleName) == 0)
+      break;
+  if (i == (sizeof internalModules/sizeof internalModules[0]))
   {
     *errorMessage_p = moduleNotFoundErrorMessage;
     return NULL;
