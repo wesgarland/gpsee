@@ -174,11 +174,11 @@ endif
 
 install: build
 	@rm vars.mk >/dev/null || /bin/true
-	[ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR)
-	[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
-	[ -w $(INCLUDE_DIR) ] || echo "**** cannot write to $(INCLUDE_DIR): did you forget to read the build instructions?"
-	[ -w $(LIB_DIR) ] || echo "**** cannot write to $(LIB_DIR): did you forget to read the build instructions?"
-	[ -w $(INCLUDE_DIR) ] && [ -w $(LIB_DIR) ]
+	@[ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR)
+	@[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
+	@[ -w $(INCLUDE_DIR) ] || echo "**** cannot write to $(INCLUDE_DIR): did you forget to read the build instructions?"
+	@[ -w $(LIB_DIR) ] || echo "**** cannot write to $(LIB_DIR): did you forget to read the build instructions?"
+	@[ -w $(INCLUDE_DIR) ] && [ -w $(LIB_DIR) ]
 
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) install
 	@[ -f $(JS_CONFIG) ] || echo "**** js-config was not installed. Build incomplete." 
