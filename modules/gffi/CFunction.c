@@ -527,7 +527,9 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     jsval libval;
     /* Fetch our library_handle_t from the Library instance JSObject */
     libhnd = JS_GetPrivate(cx, libobj);
-    if (!libhnd)
+    /* If this constructor is not a property of a Library instance, or if that Library instance is jsut an RTLD_DEFAULT
+     * Library, then we should branch to the rltdDefault code path */
+    if (!libhnd || libhnd->dlHandle == RTLD_DEFAULT)
       goto rtldDefault;
     /* Fetch the function pointer from the DSO */
     hnd->fn = dlsym(libhnd->dlHandle, hnd->functionName);
@@ -541,6 +543,22 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 rtldDefault:
     /* No Library instance. Try RTLD_DEFAULT. See dlopen(3) for details. */
     hnd->fn = dlsym(RTLD_DEFAULT, hnd->functionName);
+    /* To overcome difficult linkage scenarios (so far, this only includes macros and weak symbols) upon
+     * dlsym(RTLD_DEFAULT) failure, we try for a gffi alias. */
+    if (!hnd->fn)
+    {
+      /* TODO what is a good value here? */
+      char functionName[1024];
+      int n;
+      /* Mangle the function name (prepend "gffi_alias_") */
+      n = snprintf(functionName, sizeof functionName, "gffi_alias_%s", hnd->functionName);
+      GPSEE_ASSERT(n >= 0);
+      if (n >= sizeof functionName)
+        gpsee_log(SLOG_WARNING, "gffi alias for \"%s\" exceeds %d characters", hnd->functionName, sizeof functionName);
+      else
+        /* Try dlsym() again with the new mangled name! */
+        hnd->fn = dlsym(RTLD_DEFAULT, functionName);
+    }
 
 dlsymOver:
   /* Throw an exception on dlsym() failure */
@@ -635,6 +653,15 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
 
   return;
 }
+
+/* Some interfaces are difficult to dlsym(). Sometimes it's because they're macros, sometimes it's because they're weak
+ * symbols and the linker likes to be difficult about it. In any case, we can create trampolines to them here, with a
+ * little name mangling, and a little preplanning. */
+// asdf
+#define function(rtype, name, argdecl, argv) \
+  rtype gffi_alias_ ## name argdecl { return name argv; }
+#include "function_aliases.incl"
+#undef function
 
 JSClass *cFunction_clasp;
 
