@@ -984,9 +984,10 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
   char			cnBuf[PATH_MAX];
   const	char 		*libexec_dir = gpsee_libexecDir();
   moduleHandle_t	*module;
-  int			retval, i;
+  int			retval;
   const char		*cname;
-  char *                currentModulePath;
+  const char *          currentModulePath;
+  int                   currentModulePathNum;
   static char *         modulePath = NULL;
   static int            modulePathNum = 0;
 
@@ -1012,14 +1013,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       /* We know we're going to have at least one GPSEE_PATH element */
       modulePathNum = 1;
 
-      /* TODO jsi->programModule_dir is never set or used anywhere in GPSEE, so it's a little hard to know
-       * exactly what to do here. For now, I'll just make sure to put a reasonable "local" path on the search
-       * path to make sure modules can load other modules in their relative directory structure. */
-      /* Determine first element of GPSEE_PATH */
-//      if (isRelativePath(moduleName))
-      programPath = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf)) : ".";
-//      else
-//        programPath = jsi->programModule_dir;
+      programPath = jsi->programModule_dir ?: ".";
 
       /* Include programPath in modulePathNum and altPathLen */
       if (programPath)
@@ -1070,19 +1064,32 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     return NULL;
   }
 
-  /* Iterate over each component of the full GPSEE_PATH list AND THEN SOME */
-  for(i = 0, currentModulePath = modulePath; i < modulePathNum; i++, currentModulePath += strlen(currentModulePath) + 1)
+  /* Iterate over each component of the full GPSEE_PATH list, or relative path alternative */
+  if (isRelativePath(moduleName))
+  {
+    /* Relative path module search */
+    currentModulePath = parentModule ? gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf))
+            : jsi->programModule_dir ?: ".";
+    currentModulePathNum = 1;
+  }
+  else
+  {
+    /* GPSEE_PATH module search */
+    currentModulePath = modulePath;
+    currentModulePathNum = modulePathNum;
+  }
+  while (1)
   {
     JSBool moduleLoaded = JS_FALSE;
 
     if (!currentModulePath || !currentModulePath[0])
       continue;
 
-    dprintf("loadDiskModule() searching GPSEE_PATH element %d: \"%s\"\n", i, currentModulePath);
+    dprintf("loadDiskModule() searching module path element: \"%s\"\n", currentModulePath);
 
     cname = generateCanonicalName(currentModulePath, moduleName, cnBuf, sizeof(cnBuf));
     if (!cname)
-      continue;
+      goto nextPath;
 
     /* Acquire module slot for loading our module, instantiating as necessary */
     module = acquireModuleHandle(cx, cname, parentModule ? parentModule->scope : NULL);
@@ -1166,12 +1173,20 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
 
     /* We need to unuse the module handle we got for this canonical module name, which yielded no usable modules */
     markModuleUnused(cx, module);
-  }
 
-  /* If we exited the loop because we exhausted GPSEE_PATH, report module not found */
-  if (i == modulePathNum && !*errorMessage_p)
-    *errorMessage_p = moduleNotFoundErrorMessage;
-  //gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") failed: %s", fnBuf, *errorMessage_p);
+    /* No more paths? */
+    if (--currentModulePathNum == 0)
+    {
+      /* If another error occurred, let them have it. If not, report that we didn't find any module by that name. */
+      if (*errorMessage_p == NULL)
+        *errorMessage_p = moduleNotFoundErrorMessage;
+      return NULL;
+    }
+
+    nextPath:
+    /* Advance to next element in search path */
+    currentModulePath += strlen(currentModulePath) + 1;
+  }
 
   return NULL;
 }
