@@ -60,7 +60,7 @@ structs.o: structs.incl
 defines.o: defines.incl
 
 compiler.dmp:
-	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | sort -u > $@
+	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | LC_COLLATE=C sort -u > $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
 %.dmp: compiler.dmp #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
@@ -68,7 +68,7 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	$(CPP) $(CPPFLAGS) -dM \
 	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
 		| sed 's/[ 	][ 	]*/ /g' \
-		| sort -u \
+		| LC_COLLATE=C sort -u \
 		| $(EGREP) -vf compiler.dmp \
 		| $(EGREP) -v '^#define *NULL '\
 		> $@ || [ X = X ]
@@ -182,7 +182,7 @@ defines.incl: $(foreach DEF,$(DEFS),$(DEF)_defs)
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 	@echo  "#pragma GCC system_header" >> $@
-	@for DEF in $(DEFS); do echo "startDefines($${DEF})"; ./$${DEF}_defs | sort -k2 -t '('; echo "endDefines($${DEF})"; done >> $@
+	@for DEF in $(DEFS); do echo "startDefines($${DEF})"; ./$${DEF}_defs | LC_COLLATE=C sort -k2 -t '('; echo "endDefines($${DEF})"; done >> $@
 	@echo "haveDefs($(foreach DEF,$(DEFS),$(DEF),))" >> $@
 	@for DEF in $(DEFS); do echo "haveDef($${DEF})"; done >> $@
 
