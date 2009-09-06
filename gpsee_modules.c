@@ -1097,6 +1097,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     if (module->flags & mhf_loaded)
     {
       *errorMessage_p = NULL;
+      dprintf("loadDiskModule() success: \"%s\" module previously loaded\n", moduleName);
       return module;
     }
 
@@ -1116,8 +1117,10 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       *errorMessage_p = loadDSOModule(cx, module, fnBuf);
       if (*errorMessage_p)
         gpsee_log(SLOG_WARNING, "loadDSOModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
-      else
+      else {
+        dprintf("loadDiskModule() success: loaded DSO \"%s\"\n", fnBuf);
         moduleLoaded = JS_TRUE;
+      }
     }
 
     /* Attempt to load a Javascript module. It may share the same object space as its DSO component */
@@ -1135,8 +1138,10 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     {
       if ((*errorMessage_p = loadJSModule(cx, module, fnBuf)))
         gpsee_log(SLOG_WARNING, "loadJSModule(\"%s\") error: %s", fnBuf, *errorMessage_p);
-      else
+      else {
+        dprintf("loadDiskModule() success: loaded JS \"%s\"\n", fnBuf);
         moduleLoaded = JS_TRUE;
+      }
     }
 
     /* If we have loaded a DSO and/or formal Javascript language module, we are done. */
