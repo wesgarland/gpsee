@@ -657,7 +657,6 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
 /* Some interfaces are difficult to dlsym(). Sometimes it's because they're macros, sometimes it's because they're weak
  * symbols and the linker likes to be difficult about it. In any case, we can create trampolines to them here, with a
  * little name mangling, and a little preplanning. */
-// asdf
 #define function(rtype, name, argdecl, argv) \
   rtype gffi_alias_ ## name argdecl { return name argv; }
 #include "function_aliases.incl"
