@@ -613,9 +613,6 @@ dlsymOver:
       return gpsee_throw(cx, CLASS_ID ".constructor.prep_cif.status.%i: Invalid status", (int)status);
   }
 
-  if (JS_DefineFunction(cx, obj, "call", (JSNative)cFunction_call, 0, JSPROP_PERMANENT | JSPROP_READONLY | JSFUN_FAST_NATIVE) == NULL)
-    return gpsee_throw(cx, CLASS_ID ".constructor.call.add: unable to create call method");
-
   return JS_TRUE;
 }
 
@@ -693,6 +690,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
   static JSFunctionSpec instance_methods[] = 
   {
+    JS_FN("call", cFunction_call, 0, 0),
     JS_FS_END
   };
 
