@@ -45,3 +45,40 @@
 
 exports.size_t = exports.uint;
 
+/* We now box up return values with private instances of WillFinalize, a native class that has a finalizer, so that
+ * when the GC gets to it, the notional value can get cleaned up. This is useful for calling free() or fclose(), for
+ * instance. Because the garbage collector is a bad place to clean up, however, GPSEE will issue a warning to the log
+ * stream each time it gets used. */
+
+/* The BoxedPrimitive can have a WillFinalize instance. It also has a valueOf() method to keep acting like a
+ * primitive data type. */
+exports.BoxedPrimitive = function(value) {
+  this.value = value;
+}
+exports.BoxedPrimitive.prototype.valueOf = function() {
+  return this.value;
+}
+exports.BoxedPrimitive.prototype.finalizeWith = function() {
+  if (!this.hasOwnProperty('finalizer'))
+    this.finalizer = new exports.WillFinalize;
+  return this.finalizer.finalizeWith.apply(this.finalizer, arguments);
+}
+exports.BoxedPrimitive.prototype.toString = function() {
+  return '[gpsee.module.ca.page.gffi.BoxedPrimitive ' + typeof this + ' ' + this + ']';
+}
+
+exports.CFunction.prototype.call = function() {
+  var rval = exports.CFunction.prototype.unboxedCall.apply(this, arguments);
+  /* If we get an object back, it doesn't need boxing */
+  if ('object' === typeof rval) {
+    print("returning object", rval);
+    /* Add the finalizeWith() instance method to object return values. TODO is this the best way to do this? */
+    rval.finalizeWith = exports.BoxedPrimitive.prototype.finalizeWith;
+    return rval;
+  } else {
+    print("returning primitive", rval);
+    /* Box primitive values so that they can be garbage collected, and support a finalizeWith() instance method */
+    return new exports.BoxedPrimitive(rval);
+  }
+}
+

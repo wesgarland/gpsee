@@ -724,7 +724,6 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
   static JSFunctionSpec instance_methods[] = 
   {
-    JS_FN("call",         cFunction_call,      0, 0),
     JS_FN("unboxedCall",  cFunction_call,      0, 0),
     JS_FS_END
   };
