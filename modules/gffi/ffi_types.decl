@@ -1,6 +1,8 @@
 #if !defined(FFI_TYPES_INTEGERS_ONLY) && !defined(FFI_TYPES_NUMBERS_ONLY)
 ffi_type(pointer,	void *)
+#if !defined(FFI_TYPES_SIZED_ONLY)
 ffi_type(void,		void)
+#endif
 ffi_type(uchar,		unsigned char)
 ffi_type(schar,		signed char)
 #endif
