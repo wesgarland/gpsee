@@ -96,7 +96,9 @@ static JSBool cFunction_jsapiCall_setter(JSContext *cx, JSObject *obj, jsval id,
 size_t ffi_type_size(ffi_type *type)
 {
 #define ffi_type(ftype, ctype) if (type == &ffi_type_ ##ftype) return sizeof(ctype); else
+#define FFI_TYPES_SIZED_ONLY
 #include "ffi_types.decl"
+#undef  FFI_TYPES_SIZED_ONLY
 #undef ffi_type
     panic("corrupted FFI information");
 }
@@ -697,7 +699,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
   return proto;
 }
 
-static  __attribute__((unused)) void CFunction_debug_dump()
+static  __attribute__((unused)) void CFunction_debug_dump(void)
 {
 #define ffi_type(ftype, ctype) printf("FFI type %s is like C type %s and represented by jsve_%s, %i\n", #ftype, #ctype, #ftype, jsve_ ## ftype);
 #include "ffi_types.decl"
