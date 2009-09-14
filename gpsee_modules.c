@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.8 2009/08/06 14:18:37 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.9 2009/09/14 20:53:59 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -65,14 +65,19 @@
  *  - scope:	Marked when object is NULL; otherwise by virtue of object.parent
  * 
  ************
-
+ *
+ * As of ~Jun 2009, GPSEE modules are no longer JITable due to bug 497060 (see also 500580)
+ * Possible solution: wrap modules in closure:
+ *   /be: could use a module-generator-closure, something like 
+ *        (function(){try { ... module code here ...; yield; } finally { unload_dlls(); }})();
+ *
  - exports stays rooted until no fini function
  - scope stays rooted until no exports
  - scope "owns" module handle, but cannot depend on exports
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.8 2009/08/06 14:18:37 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.9 2009/09/14 20:53:59 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
