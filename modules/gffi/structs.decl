@@ -69,6 +69,12 @@ beginStruct(struct group)
   member(gid_t,  gr_gid,    	integer)	/* the numerical group ID */
   member(char **, gr_mem,	pointer)	/* vector of pointers to member names */
 endStruct(struct group)
+
+#include <sys/resource.h>
+beginStruct(struct rlimit)
+  member(rlim_t, rlim_cur,	integer)	/* current (soft) limit */
+  member(rlim_t, rlim_max,	integer)	/* hard limit */
+endStruct(struct rlimit)
 /*
 resolver
 sockets struct in_addr, struct socket, sockaddr, sockaddr_dl
