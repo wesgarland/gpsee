@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.12 2009/09/11 17:15:03 wes Exp $
+ * @version	$Id: gsr.c,v 1.13 2009/09/14 19:16:46 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.12 2009/09/11 17:15:03 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.13 2009/09/14 19:16:46 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -205,7 +205,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
   int			verbosity = max(whenSureLynx(sl_get_debugLevel(), 0), gpsee_verbosity(0));
   const char 		*f;
 
-  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
+  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT | JSOPTION_VAROBJFIX;
 
   /* Iterate over each flag */
   for (f=flags; *f; f++)
