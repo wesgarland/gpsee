@@ -40,9 +40,9 @@ endif
 
 DEFS	 	 	= gpsee std network posix
 AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl 
-AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c)
-EXTRA_MODULE_OBJS	+= structs.o defines.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o
-PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines
+AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
+EXTRA_MODULE_OBJS	+= util.o structs.o defines.o MutableStruct.o CFunction.o Memory.o Library.o
+PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS)
@@ -52,15 +52,19 @@ LDFLAGS			+= $(LIBFFI_LDFLAGS)
 build:	$(DEF_FILES)
 
 build_debug_module:
-	@echo " - In gffi, CFLAGS = $(CFLAGS)"
+	@echo " - In gffi
+	@echo "   - CFLAGS = $(CFLAGS)"
+	@echo "   - LDFLAGS = $(LDFLAGS)"
 
 gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
-
+gffi_module.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 
+compiler.dmp defines.incl: sort=LC_COLLATE=C sort
+
 compiler.dmp:
-	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | LC_COLLATE=C sort -u > $@
+	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u > $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
 %.dmp: compiler.dmp #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
@@ -68,7 +72,7 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	$(CPP) $(CPPFLAGS) -dM \
 	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
 		| sed 's/[ 	][ 	]*/ /g' \
-		| LC_COLLATE=C sort -u \
+		| $(sort) -u \
 		| $(EGREP) -vf compiler.dmp \
 		| $(EGREP) -v '^#define *NULL '\
 		> $@ || [ X = X ]
@@ -182,14 +186,16 @@ defines.incl: $(foreach DEF,$(DEFS),$(DEF)_defs)
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 	@echo  "#pragma GCC system_header" >> $@
-	@for DEF in $(DEFS); do echo "startDefines($${DEF})"; ./$${DEF}_defs | LC_COLLATE=C sort -k2 -t '('; echo "endDefines($${DEF})"; done >> $@
+	@for DEF in $(DEFS); do echo "startDefines($${DEF})"; ./$${DEF}_defs | $(sort) -k2 -t '('; echo "endDefines($${DEF})"; done >> $@
 	@echo "haveDefs($(foreach DEF,$(DEFS),$(DEF),))" >> $@
 	@for DEF in $(DEFS); do echo "haveDef($${DEF})"; done >> $@
+
+aux_types.incl: aux_types aux_types.decl 
+	./aux_types > $@
 
 structs.incl: structs.decl module.mk
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-
 # Warning: regexps lack precision, and sed really does need literal newlines in the insert command
 
 	sed \

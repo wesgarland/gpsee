@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.4 2009/08/04 20:22:38 wes Exp $ 
+## @version	$Id: Makefile,v 1.5 2009/09/14 20:26:49 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build libffi in a way that
@@ -53,6 +53,7 @@ GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 
 NO_BUILD_RULES=True
 include $(GPSEE_SRC_DIR)/build.mk
@@ -176,6 +177,7 @@ install: build
 	@echo "LIBFFI_CONFIG_DEPS=$(GPSEE_SRC_DIR)/libffi/vars.mk $(GPSEE_SRC_DIR)/libffi/local_config.mk" > vars.mk
 	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
 	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
+	@echo "LIBFFI_LIB_DIR=$(LIBFFI_LIB_DIR)" >> vars.mk
 
 ifneq ($(QUIET),True)
 	@echo ""
@@ -227,3 +229,7 @@ local_config.mk:
 	@echo
 	@echo
 	@[ X = Y ]
+
+test:
+	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)"
+

@@ -50,7 +50,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: structs.c,v 1.3 2009/07/28 17:22:27 wes Exp $
+ *  @version	$Id: structs.c,v 1.5 2009/09/14 21:12:51 wes Exp $
  */
 
 #include <gpsee.h>
@@ -195,36 +195,81 @@ JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
   return JS_TRUE;
 }
 
-/** Generic string getter. Uses memberIdx to figure out which member. String here implies ASCIIZ */
+/** Generic string getter. Uses memberIdx to figure out which member. String here implies ASCIZ.
+ *  Two string representations are possible with the structs.decl syntax -- either arrays of characters
+ *  or pointers to strings. We determine treatment here based on the element size.
+ */
 JSBool struct_getString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
 {
   JSString		*str;
   struct_handle_t	*hnd = gpsee_getInstancePrivate(cx, obj, mutableStruct_clasp, immutableStruct_clasp);
 
-  str = JS_NewStringCopyZ(cx, (char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset);
-  if (!str)
+  if ((hnd->descriptor->members[memberIdx].typeSize) == 1) /* Character array */
+    str = JS_NewStringCopyZ(cx, (char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset);
+  else	/* Pointer to char */
   {
-    JS_ReportOutOfMemory(cx);
-    return JS_FALSE;
+    char *s;
+
+    GPSEE_ASSERT((hnd->descriptor->members[memberIdx].typeSize) == sizeof(char *));
+
+    s = *(char **)((char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset);
+    if (!s)
+    {
+      *vp = JSVAL_NULL;
+      return JS_TRUE;
+    }
+	
+    str = JS_NewStringCopyZ(cx, s);
   }
+
+  if (!str)
+    return JS_FALSE;
 
   *vp = STRING_TO_JSVAL(str);
 
   return JS_TRUE;
 }
 
-/** Generic string setter. Uses memberIdx to figure out which member. */
+/** Generic string setter. Uses memberIdx to figure out which member. Character-array strings are overwritten
+ *  with bounds-checking. Char-Pointer strings re-use the memory in the JSString and are managed by the GC.
+ */
 JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
 {
   struct_handle_t	*hnd = gpsee_getInstancePrivate(cx, obj, mutableStruct_clasp, immutableStruct_clasp);
-  char			*str, *end;
+  char			*str;
+  JSString		*jsstr;
 
-  str = JS_GetStringBytes(JS_ValueToString(cx, *vp));
-  end = gpsee_cpystrn((char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset, str, hnd->descriptor->members[memberIdx].size);
+  if (JSVAL_IS_NULL(*vp))
+    str = NULL;
+  else
+  {
+    jsstr = JSVAL_IS_STRING(*vp) ? JSVAL_TO_STRING(*vp) : JS_ValueToString(cx, *vp);
+    str = JS_GetStringBytes(jsstr);
+  }
   
-  if ((end - (char *)(hnd->buffer + hnd->descriptor->members[memberIdx].offset)) == hnd->descriptor->members[memberIdx].size)
-    if (strlen(str) >= hnd->descriptor->members[memberIdx].size)
-      return gpsee_throw(cx, "%s.setString.%s.overflow", throwLabel, hnd->descriptor->members[memberIdx].name);
+  if ((hnd->descriptor->members[memberIdx].typeSize) == 1) /* Array of Chars */
+  { 
+    char *end;
+
+    if (!str)
+      return gpsee_throw(cx, "%s.setString.%s.null: Can't set character array to NULL", throwLabel, hnd->descriptor->members[memberIdx].name);
+
+    end = gpsee_cpystrn((char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset, str, hnd->descriptor->members[memberIdx].size);
+
+    if ((end - (char *)(hnd->buffer + hnd->descriptor->members[memberIdx].offset)) == hnd->descriptor->members[memberIdx].size)
+      if (strlen(str) >= hnd->descriptor->members[memberIdx].size)
+	return gpsee_throw(cx, "%s.setString.%s.overflow", throwLabel, hnd->descriptor->members[memberIdx].name);
+  }
+  else /* Pointer to Chars */
+  {
+    if (!JSVAL_IS_NULL(*vp) && !JSVAL_IS_STRING(*vp))
+    {
+      /* Root the string which was derived via .toString() */
+      *vp = STRING_TO_JSVAL(jsstr);
+    }
+
+    *(char **)((char *)hnd->buffer + hnd->descriptor->members[memberIdx].offset) = str;		/* Has same GC lifetime as *vp */
+  }
 
   return JS_TRUE;
 }
@@ -235,35 +280,17 @@ JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, 
  */
 JSBool struct_getPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
 {
-  JSString		*str;
   struct_handle_t	*hnd = gpsee_getInstancePrivate(cx, obj, mutableStruct_clasp, immutableStruct_clasp);
-  char			ptrbuf[3 + (sizeof(void *) * 2) + 1];
 
-  snprintf(ptrbuf, sizeof(ptrbuf), "@0x%p", *(void **)(hnd->buffer + hnd->descriptor->members[memberIdx].offset));
-
-  str = JS_NewStringCopyZ(cx, ptrbuf);
-  if (!str)
-  {
-    JS_ReportOutOfMemory(cx);
-    return JS_FALSE;
-  }
-
-  *vp = STRING_TO_JSVAL(str);
-
-  return JS_TRUE;
+  return pointer_toString(cx, *(void **)(hnd->buffer + hnd->descriptor->members[memberIdx].offset), vp);
 }
 
 /** Generic pointer setter. Uses memberIdx to figure out which member. */
 JSBool struct_setPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
 {
   struct_handle_t	*hnd = gpsee_getInstancePrivate(cx, obj, mutableStruct_clasp, immutableStruct_clasp);
-  char			*str;
 
-  str = JS_GetStringBytes(JS_ValueToString(cx, *vp));
-  if ((sscanf(str, "@0x%p", (void **)(hnd->buffer + hnd->descriptor->members[memberIdx].offset))) != 1)
-    return gpsee_throw(cx, "%s.setPointer.%s.invalid", hnd->descriptor->members[memberIdx].name, throwLabel);
-
-  return JS_TRUE;
+  return pointer_fromString(cx, *vp, (void **)(hnd->buffer + hnd->descriptor->members[memberIdx].offset), throwLabel);
 }
 
 /** Generic C array getter, returns Memory objects to JS */
@@ -375,7 +402,8 @@ JSBool struct_setArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
 structShape *struct_findShape(const char *name)
 {
 #define beginStruct(a,b)		static struct member_s b ## _members[] = {
-#define member(ctype, name, like)	  { #name, selt_ ## like, sizeof(ctype), ((ctype)-1) < 0, member_offset(name), member_size(name) },
+#define member(ctype, name, like)	  { #name,	selt_ ## like,	sizeof(ctype),	((ctype)-1) < 0,	member_offset(name),	member_size(name) },
+/*					    name  	type		typeSize	isSigned	    	offset			size */	
 #define endStruct(a)			};
 #include "structs.incl"
 #undef beginStruct

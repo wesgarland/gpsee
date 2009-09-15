@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.18 2009/08/05 18:40:26 wes Exp $
+## @version	$Id: Makefile,v 1.19 2009/09/14 20:17:43 wes Exp $
 
 top: 	help
 
@@ -217,15 +217,20 @@ src-dist:: gpsee-$(GPSEE_RELEASE)_src.tar.gz
 	gtar -zcvf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT).tar.gz gpsee-$(GPSEE_RELEASE)
 	rm -rf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT)
 
-bin-dist:: TARGET=$(UNAME_SYSTEM)-$(UNAME_RELEASE)-$(UNAME_MACHINE)
-bin-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
-bin-dist:: COUNT=$(shell ls $(STREAM)_gpsee_$(TARGET)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
-bin-dist:: install
-	gtar -zcvf $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz \
+invasive-bin-dist:: INVASIVE_EXTRAS += $(shell ldd $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_LIBS) 2>/dev/null \
+	| $(EGREP) = | $(SED) 's;.*=>[ 	]*;;' | $(EGREP) -v '^/lib|^/usr/lib|^/usr/local/lib|^/platform|^/opt/csw|^/usr/sfw|^/opt/sfw' | sort -u)
+invasive-bin-dist bin-dist:: TARGET=$(UNAME_SYSTEM)-$(UNAME_RELEASE)-$(UNAME_MACHINE)
+invasive-bin-dist bin-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
+invasive-bin-dist bin-dist:: COUNT=$(shell ls $(STREAM)_gpsee_$(TARGET)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
+invasive-bin-dist bin-dist:: install
+	LD_LIBRARY_PATH="$(SOLIB_DIR):$(JSAPI_LIB_DIR):/lib:/usr/lib" gtar -zcvf $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz \
 		$(foreach FILE, $(notdir $(EXPORT_PROGS)), "$(BIN_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBEXEC_OBJS)), "$(LIBEXEC_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
-		$(LIB_MOZJS)
+		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS)
+	@echo
+	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
+	@echo
 
 $(GPSEE_LIBRARY): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 

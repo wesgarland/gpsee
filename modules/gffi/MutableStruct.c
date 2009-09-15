@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.4 2009/07/28 16:43:48 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.6 2009/09/14 21:20:48 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
@@ -220,7 +220,7 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     else
       className = (clasp->name && clasp->name[0]) ? clasp->name : "corrupted";
 
-    return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to %s", className, clasp->name);
+    return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to MutableStruct", className);
   }
 
   obj = JS_NewObject(cx, mutableStruct_clasp, mutableStruct_proto, srcHnd->memoryOwner);

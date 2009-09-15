@@ -1,4 +1,3 @@
-
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -40,10 +39,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: gffi_module.c,v 1.3 2009/07/30 17:16:49 wes Exp $
+ *  @version	$Id: gffi_module.c,v 1.5 2009/09/14 21:10:57 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gffi_module.c,v 1.3 2009/07/30 17:16:49 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi_module.c,v 1.5 2009/09/14 21:10:57 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi_module.h"
@@ -78,6 +77,7 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   JSObject *proto;
 
+printf("initializing FFI\n");
   static JSPropertySpec gffi_props[] =
   {
     { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, gffi_errno_getter, gffi_errno_setter },
@@ -111,31 +111,7 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 #include "jsv_constants.decl"
 #undef jsv
 
-  if (((int)-1) < 0)
-  {
-    if (JS_DefineProperty(cx, moduleObject, "int", jsve_sint, 
-			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
-      return NULL;
-  }
-  else
-  {
-    if (JS_DefineProperty(cx, moduleObject, "int", jsve_uint, 
-			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
-      return NULL;
-  }
-
-  if (((char)-1) < 0)
-  {
-    if (JS_DefineProperty(cx, moduleObject, "char", jsve_schar, 
-			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
-      return NULL;
-  }
-  else
-  {
-    if (JS_DefineProperty(cx, moduleObject, "char", jsve_uchar,
-			  NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
-      return NULL;
-  }
+#include "aux_types.incl"
 
   if (defines_InitObjects(cx, moduleObject) != JS_TRUE)
     return NULL;

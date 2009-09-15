@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.3 2009/07/28 16:43:48 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.6 2009/09/14 21:19:09 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -45,11 +45,15 @@
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.gffi"
 
+JSObject *Library_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject);
+
+JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp);
+JSBool pointer_fromString(JSContext *cx, jsval v, void **pointer_p, const char *throwLabel);
 
 /** Struct element types */
 typedef enum { selt_integer, selt_array, selt_string, selt_pointer } sel_type_e;
@@ -59,8 +63,8 @@ typedef struct member_s
 {
   const char	*name;		/**< Name of the field */
   sel_type_e	type;		/**< What type of field this is */ 
-  int		isSigned;	/**< Whether or not the field is signed */
   size_t	typeSize; 	/**< size of field element; not redundant -- used to detect arrays */
+  int		isSigned;	/**< Whether or not the field is signed */
   size_t	offset;		/**< How far away from the start of the struct it is */
   size_t	size;	  	/**< size of whole field: typeSize times number of elements */
 } memberShape;
