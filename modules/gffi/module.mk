@@ -41,7 +41,7 @@ endif
 DEFS	 	 	= gpsee std network posix
 AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl 
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
-EXTRA_MODULE_OBJS	+= util.o structs.o defines.o MutableStruct.o CFunction.o Memory.o Library.o
+EXTRA_MODULE_OBJS	+= util.o structs.o defines.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
