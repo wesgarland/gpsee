@@ -1,0 +1,1 @@
+function(int, stat, (const char *path, struct stat *buf), (path, buf))
