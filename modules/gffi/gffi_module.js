@@ -69,6 +69,8 @@ exports.BoxedPrimitive.prototype.toString = function() {
 
 exports.CFunction.prototype.call = function() {
   var rval = exports.CFunction.prototype.unboxedCall.apply(this, arguments);
+  if (rval === null) return null;
+  if (rval === undefined) return undefined;
   /* If we get an object back, it doesn't need boxing */
   if ('object' === typeof rval) {
     /* Add the finalizeWith() instance method to object return values. TODO is this the best way to do this? */
