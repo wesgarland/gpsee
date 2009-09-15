@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.5 2009/07/28 18:18:08 wes Exp $
+ *  @version	$Id: Memory.c,v 1.6 2009/09/14 21:22:00 wes Exp $
  */
 
 #include <gpsee.h>
@@ -139,6 +139,26 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 
   *vp = STRING_TO_JSVAL(str);
   return JS_TRUE;
+}
+
+/**
+ *  Implements Memory.prototype.toString -- a method to take a Memory object,
+ *  and return the address of the backing store encoded in a JavaScript String,
+ *  so that JS programmers can compare pointers.
+ */
+static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
+{
+  memory_handle_t	*hnd;
+  JSObject		*thisObj = JS_THIS_OBJECT(cx, vp);
+
+  if (!thisObj)
+    return JS_FALSE;
+
+  hnd = JS_GetInstancePrivate(cx, thisObj, memory_clasp, NULL);
+  if (!hnd)
+    return JS_FALSE;
+
+  return pointer_toString(cx, hnd->buffer, vp);
 }
 
 /** When ownMemory is true, we free the memory when the object is finalized */
@@ -316,6 +336,55 @@ static JSBool memory_duplicate(JSContext *cx, uintN argc, jsval *vp)
   return JS_TRUE;
 }
 
+/**
+ *  Implements Memory cast function.
+ *  
+ *  Casting a number X to Memory causes us to generate a Memory object for data
+ *  at address X.
+ *
+ *  Note that this facility should only be used for "special" numbers, like -1 and 0,
+ *  for comparison purposes and not some kind of crazy de-reference scheme or to 
+ *  subvert the mutable/immutable casting rules.
+ */
+JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  memory_handle_t	*hnd;
+  
+  if (argc != 1)
+    return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
+
+  obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
+  if (!obj)
+    return JS_FALSE;
+
+  *rval = OBJECT_TO_JSVAL(obj);
+ 
+  hnd = JS_malloc(cx, sizeof(*hnd));
+  if (!hnd)
+    return JS_FALSE;
+
+  memset(hnd, 0, sizeof(*hnd));
+  JS_SetPrivate(cx, obj, hnd);
+
+  if (!JSVAL_IS_INT(argv[0]))
+  {
+    jsdouble 	d;
+
+    GPSEE_STATIC_ASSERT(sizeof(int) == sizeof(void *));
+
+    if (JS_ValueToNumber(cx, argv[0], &d) != JS_TRUE)
+      return JS_FALSE;
+
+    hnd->buffer = (void *)(int)d;
+    if ((void *)(int)d != hnd->buffer)
+      return gpsee_throw(cx, CLASS_ID ".cast.overflow");
+  }
+  else
+    hnd->buffer = (void *)JSVAL_TO_INT(argv[0]);
+
+  return JS_TRUE;
+}
+
 /** 
  *  Implements the Memory constructor.
  *
@@ -397,11 +466,10 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 
 JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  /* Memory() called as function. */   
   if (JS_IsConstructing(cx) != JS_TRUE)
-    return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
-
-  return Memory_Constructor(cx, obj, argc, argv, rval);
+    return Memory_Cast(cx, obj, argc, argv, rval);
+  else
+    return Memory_Constructor(cx, obj, argc, argv, rval);
 }
 
 /** 
@@ -464,6 +532,7 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 
   static JSFunctionSpec memory_methods[] = 
   {
+    JS_FN("toString",	memory_toString, 	0, JSPROP_ENUMERATE),
     JS_FN("asString",	memory_asString, 	0, JSPROP_ENUMERATE),
     JS_FN("realloc",	memory_realloc, 	0, JSPROP_ENUMERATE),
     JS_FN("duplicate",	memory_duplicate,	0, JSPROP_ENUMERATE),

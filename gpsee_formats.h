@@ -37,11 +37,15 @@
  *  @file 	gpsee_formats.h		Portable printf-style formats
  *  @author	Wes Garland
  *  @date	Jul 2009
- *  @version	$Id: gpsee_formats.h,v $
+ *  @version	$Id: gpsee_formats.h,v 1.1 2009/09/14 21:01:44 wes Exp $
  */
 
 #define GPSEE_SIZET_FMT       "%zd"
+#if defined(GPSEE_SUNOS_SYSTEM)
+#define GPSEE_PTR_FMT         "0x%p"
+#else
 #define GPSEE_PTR_FMT         "%p"
+#endif
 #define GPSEE_INT_FMT         "%d"
 #define GPSEE_UINT_FMT        "%u"
 #define GPSEE_INT32_FMT       "%ld"

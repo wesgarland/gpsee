@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		donny.viszneki@gmail.com
  *  @date	Jul 2009
- *  @version	$Id$
+ *  @version	$Id: Library.c,v 1.2 2009/09/14 21:22:50 wes Exp $
  */
 
 #include <gpsee.h>
@@ -96,20 +96,20 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
     case JSVAL_VOID:
     case jsve_rtldDefault:
       hnd->dlHandle = RTLD_DEFAULT;
-      hnd->name = "RTLD_DEFAULT";
+      hnd->name =  (char *)"RTLD_DEFAULT";
       break;
 
 #if defined(RTLD_SELF)
     case jsve_rtldSelf:
       hnd->dlHandle = RTLD_SELF;
-      hnd->name = "RTLD_SELF";
+      hnd->name = (char *)"RTLD_SELF";
       break;
 #endif
 
 #if defined(RTLD_PROBE)
     case jsve_rtldProbe:
       hnd->dlHandle = RTLD_PROBE;
-      hnd->name = "RTLD_PROBE";
+      hnd->name = (char *)"RTLD_PROBE";
       break;
 #endif
 
