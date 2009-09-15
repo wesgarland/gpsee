@@ -49,21 +49,6 @@
 
 #define CLASS_ID MODULE_ID ".CFunction"
 
-typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn);
-
-typedef struct
-{
-  const char	*functionName;		/**< Name of the function */
-  void		*fn;			/**< Function pointer to call */
-  ffi_cif 	*cif;			/**< FFI call details */
-  ffi_type	*rtype_abi;		/**< Return type used by FFI / native ABI */
-  jsval		rtype_jsv;		/**< Return type requested by user */
-  size_t	nargs;			/**< Number of arguments */
-  ffi_type	**argTypes;		/**< Argument types used by FFI / native ABI */
-  valueTo_fn	*argConverters;		/**< Argument converter */
-  int		noSuspend:1;		/**< Whether or not to suspend the current request during CFunction::call */
-} cFunction_handle_t;
-
 static JSBool cFunction_jsapiCall_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
@@ -108,13 +93,8 @@ size_t ffi_type_size(ffi_type *type)
  *  need to be freed.  If that assumption is wrong the JS programmer can touch up the
  *  object.
  */
-static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, JSObject *thisObj)
+static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, cFunction_handle_t *hnd)
 {
-  cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, thisObj, cFunction_clasp, NULL);
-
-  if (!hnd)
-    return JS_FALSE;
-
   if (hnd->rtype_jsv == jsve_void)
     return JS_TRUE;
 
@@ -143,7 +123,7 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
       return JS_TRUE;
     }
 
-    robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
+    robj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
     if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, rval) == JS_FALSE)
       return JS_FALSE;
 
@@ -230,7 +210,6 @@ static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storag
     if (!str && JS_IsExceptionPending(cx))
       return JS_FALSE;
 
-    /* TODO donny says: Is this safe? */
     s = JS_GetStringBytes(str);
     if (s)
     {
@@ -402,82 +381,137 @@ static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **
   return JS_TRUE; 
 }
 
-JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
+/* cFunction_closure_free() frees a cFunction_closure_t instance and any members that might have been allocated during
+ * a call to cFunction_prepare(). The first member of that struct, a pointer to a cFunction_handle_t, is not freed.
+ *
+ * @param     cx
+ * @param     clos      Pointer to that which is to be freed.
+ */
+void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos)
 {
-  cFunction_handle_t 	*hnd;
-  void 			*rvaluep = NULL;
-  void 			**avalues = NULL;
-  void			**storage = NULL;
-  size_t		i;
-  JSBool		ret = JS_TRUE;
-  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
-  jsval			*argv = JS_ARGV(cx, vp);
-  jsrefcount		depth;
+  if (clos->rvaluep)
+    JS_free(cx, clos->rvaluep);
+  if (clos->avalues)
+    JS_free(cx, clos->avalues);
+  if (clos->storage)
+  {
+    int i, l;
+    for (i=0, l=clos->hnd->nargs; i<l; i++)
+      if (clos->storage[i])
+        JS_free(cx, clos->storage[i]);
+    JS_free(cx, clos->storage);
+  }
+  JS_free(cx, clos);
+}
 
-  if (!obj)
-    goto oom;
+/* cFunction_prepare() prepares a cFunction_closure_t, an intermediate stage between evaluating a CFunction's argument
+ * vector and making the call.
+ *
+ * @param     cx
+ * @param     obj         CFunction instance to be prepared for invocation
+ * @param     argc        Length of argv
+ * @param     argv        Argument vector to be prepared for invocation
+ * @param     clospp      Outvar cFunction_closure_t
+ * @param     throwPrefix
+ *
+ * @returns   JS_TRUE on success
+ */
+JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp,
+                                const char *throwPrefix)
+{
+  cFunction_handle_t    *hnd;
+  cFunction_closure_t   *clos;
+  size_t                i;
 
+  /* Fetch our CFunction private data struct */
   hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
   if (!hnd)
-    return gpsee_throw(cx, CLASS_ID ".call.invalid: unable to locate function call details");
+    return gpsee_throw(cx, "%s.invalid: unable to locate function call details", throwPrefix);
 
+  /* Verify arg count */
   if (hnd->nargs != argc)
-    return gpsee_throw(cx, CLASS_ID ".call.arguments.count: Expected %i arguments for %s, received %i", 
-		       hnd->nargs, hnd->functionName, argc);
+    return gpsee_throw(cx, "%s.arguments.count: Expected %i arguments for %s, received %i", 
+                       throwPrefix, hnd->nargs, hnd->functionName, argc);
+
+  /* Allocate the struct representing a prepared FFI call */
+  clos = JS_malloc(cx, sizeof(cFunction_closure_t));
+  if (!clos)
+    return JS_FALSE;
+  memset(clos, 0, sizeof(*clos));
+
+  clos->avalues = JS_malloc(cx, sizeof(clos->avalues[0]) * hnd->nargs);
+  if (!clos->avalues)
+    goto fail;
+
+  clos->storage = JS_malloc(cx, sizeof(clos->storage[0]) * hnd->nargs);
+  if (!clos->storage)
+    goto fail;
 
   if (hnd->rtype_abi != &ffi_type_void)
   {
-    rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype_abi));
-    if (!rvaluep)
-      goto oom;
+    clos->rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype_abi));
+    if (!clos->rvaluep)
+      goto fail;
   }
 
-  avalues = JS_malloc(cx, sizeof(avalues[0]) * hnd->nargs);
-  if (!avalues)
-    goto oom;
+  memset(clos->storage, 0, sizeof(clos->storage[0]) * hnd->nargs);
 
-  storage = JS_malloc(cx, sizeof(storage[0]) * hnd->nargs);
-  if (!storage)
-    goto oom;
-
-  memset(storage, 0, sizeof(storage[0]) * hnd->nargs);
-
+  /* Convert jsval argv to C ABI values */
   for (i = 0 ; i < hnd->nargs; i++)
   {
-    if (hnd->argConverters[i](cx, argv[i], avalues + i, storage + i, i + 1) == JS_FALSE)
-      goto throwout;
+    /* TODO propagate throwPrefix down to argConverters? */
+    if (hnd->argConverters[i](cx, argv[i], clos->avalues + i, clos->storage + i, i + 1) == JS_FALSE)
+      goto fail;
   }
 
-  if (!hnd->noSuspend)
+  /* Return the prepared FFI call */
+  clos->hnd = hnd;
+  *clospp = clos;
+  return JS_TRUE;
+
+fail:
+  cFunction_closure_free(cx, clos);
+  return JS_FALSE;
+}
+
+static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
+{
+  JSBool                ret;
+  jsrefcount            depth;
+  cFunction_closure_t   *clos;
+  JSObject              *obj = JS_THIS_OBJECT(cx, vp);
+  jsval                 *argv = JS_ARGV(cx, vp);
+
+  /* Prepare the FFI call */
+  if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".call"))
+    return JS_FALSE;
+
+  /* Make the call */
+  if (!clos->hnd->noSuspend)
     depth = JS_SuspendRequest(cx);
-  ffi_call(hnd->cif, hnd->fn, rvaluep, avalues);
-  if (!hnd->noSuspend)
+  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
+  if (!clos->hnd->noSuspend)
     JS_ResumeRequest(cx, depth);
-  ret = ffiType_toValue(cx, rvaluep, hnd->rtype_abi, &JS_RVAL(cx, vp), obj);
-  goto out;
+  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, &JS_RVAL(cx, vp), clos->hnd);
 
-  oom:
-  JS_ReportOutOfMemory(cx);
-
-  throwout:
-  ret = JS_FALSE;
-
-  out:
-  if (rvaluep)
-    JS_free(cx, rvaluep);
-
-  if (avalues)
-    JS_free(cx, avalues);
-
-  if (storage)
-  {
-    for (i=0; i < hnd->nargs; i++)
-      if (*(storage + i))
-	JS_free(cx, *(storage + i));
-    JS_free(cx, storage);
-  }
+  /* Clean up */
+  cFunction_closure_free(cx, clos);
 
   return ret;
+}
+
+/* cFunction_closure_call() calls and frees a prepared CFunction call represented by a cFunction_closure_t instance
+ * created by a call to cFunction_prepare(), which in turn is intended to be called by 
+ *
+ * @param     cx
+ * @param     clos    CFunction closure to call
+ */
+void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos)
+{
+  /* Make the call */
+  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
+  /* Clean up */
+  cFunction_closure_free(cx, clos);
 }
 
 /** 
@@ -496,7 +530,7 @@ JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
  *
  *  @returns 	JS_TRUE on success
  */
-JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   cFunction_handle_t	*hnd;
   ffi_status		status;
@@ -529,7 +563,9 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     jsval libval;
     /* Fetch our library_handle_t from the Library instance JSObject */
     libhnd = JS_GetPrivate(cx, libobj);
-    if (!libhnd)
+    /* If this constructor is not a property of a Library instance, or if that Library instance is jsut an RTLD_DEFAULT
+     * Library, then we should branch to the rltdDefault code path */
+    if (!libhnd || libhnd->dlHandle == RTLD_DEFAULT)
       goto rtldDefault;
     /* Fetch the function pointer from the DSO */
     hnd->fn = dlsym(libhnd->dlHandle, hnd->functionName);
@@ -543,11 +579,27 @@ JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 rtldDefault:
     /* No Library instance. Try RTLD_DEFAULT. See dlopen(3) for details. */
     hnd->fn = dlsym(RTLD_DEFAULT, hnd->functionName);
+    /* To overcome difficult linkage scenarios (so far, this only includes macros and weak symbols) upon
+     * dlsym(RTLD_DEFAULT) failure, we try for a gffi alias. */
+    if (!hnd->fn)
+    {
+      /* TODO what is a good value here? */
+      char functionName[1024];
+      int n;
+      /* Mangle the function name (prepend "gffi_alias_") */
+      n = snprintf(functionName, sizeof functionName, "gffi_alias_%s", hnd->functionName);
+      GPSEE_ASSERT(n >= 0);
+      if (n >= sizeof functionName)
+        gpsee_log(SLOG_WARNING, "gffi alias for \"%s\" exceeds %d characters", hnd->functionName, sizeof functionName);
+      else
+        /* Try dlsym() again with the new mangled name! */
+        hnd->fn = dlsym(RTLD_DEFAULT, functionName);
+    }
 
 dlsymOver:
   /* Throw an exception on dlsym() failure */
   if (!hnd->fn)
-    return gpsee_throw(cx, CLASS_ID ".constructor.%s.notFound: no such function in %s",
+    return gpsee_throw(cx, CLASS_ID ".constructor.notFound: no function named \"%s\" in %s",
 		       hnd->functionName, libhnd?libhnd->name:"RTLD_DEFAULT");
 
   hnd->nargs		= argc - 2;
@@ -597,9 +649,6 @@ dlsymOver:
       return gpsee_throw(cx, CLASS_ID ".constructor.prep_cif.status.%i: Invalid status", (int)status);
   }
 
-  if (JS_DefineFunction(cx, obj, "call", (JSNative)cFunction_call, 0, JSPROP_PERMANENT | JSPROP_READONLY | JSFUN_FAST_NATIVE) == NULL)
-    return gpsee_throw(cx, CLASS_ID ".constructor.call.add: unable to create call method");
-
   return JS_TRUE;
 }
 
@@ -638,6 +687,14 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
   return;
 }
 
+/* Some interfaces are difficult to dlsym(). Sometimes it's because they're macros, sometimes it's because they're weak
+ * symbols and the linker likes to be difficult about it. In any case, we can create trampolines to them here, with a
+ * little name mangling, and a little preplanning. */
+#define function(rtype, name, argdecl, argv) \
+  rtype gffi_alias_ ## name argdecl { return name argv; }
+#include "function_aliases.incl"
+#undef function
+
 JSClass *cFunction_clasp;
 
 /**
@@ -669,6 +726,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
   static JSFunctionSpec instance_methods[] = 
   {
+    JS_FN("unboxedCall",  cFunction_call,      0, 0),
     JS_FS_END
   };
 

@@ -104,6 +104,9 @@ printf("initializing FFI\n");
   if (!Library_InitClass(cx, moduleObject, NULL))
     return NULL;
 
+  if (!WillFinalize_InitClass(cx, moduleObject, NULL))
+    return NULL;
+
 #define jsv(val) if (JS_DefineProperty(cx, moduleObject, #val, jsve_ ## val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) return NULL;
 #include "jsv_constants.decl"
 #undef jsv

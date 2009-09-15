@@ -41,6 +41,7 @@
  */
 
 #include <dlfcn.h>
+#include <ffi.h>
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.gffi"
 
@@ -127,6 +128,38 @@ typedef enum gffi_jsv
 #include "jsv_constants.decl"
 #undef jsv
 } gffi_jsv_e;
+
+/* Argument signature for return value converters */
+typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn);
+
+/* Private data struct for CFunction instances */
+typedef struct
+{
+  const char	*functionName;		/**< Name of the function */
+  void		*fn;			/**< Function pointer to call */
+  ffi_cif 	*cif;			/**< FFI call details */
+  ffi_type	*rtype_abi;		/**< Return type used by FFI / native ABI */
+  jsval		rtype_jsv;		/**< Return type requested by user */
+  size_t	nargs;			/**< Number of arguments */
+  ffi_type	**argTypes;		/**< Argument types used by FFI / native ABI */
+  valueTo_fn	*argConverters;		/**< Argument converter */
+  int		noSuspend:1;		/**< Whether or not to suspend the current request during CFunction::call */
+} cFunction_handle_t;
+
+/* A struct to represent all the intermediate preparation that goes into making a CFunction call */
+typedef struct 
+{
+  cFunction_handle_t    *hnd;
+  void                  *rvaluep;
+  void                  **avalues;
+  void                  **storage;
+} cFunction_closure_t;
+/* The function that produces a cFunction_closure_t */
+JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp, const char *throwPrefix);
+/* The function that frees a cFunction_closure_t */
+void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
+/* The function that invokes a cFunction_closure_t */
+void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
