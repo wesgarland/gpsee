@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.13 2009/09/14 19:16:46 wes Exp $
+ * @version	$Id: gsr.c,v 1.14 2009/09/17 20:55:15 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.13 2009/09/14 19:16:46 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.14 2009/09/17 20:55:15 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -610,13 +610,17 @@ PRIntn prmain(PRIntn argc, char **argv)
     FILE *scriptFile = openScriptFile(jsi, scriptFilename, skipSheBang || (fiArg != 0));
     if (!scriptFile)
     {
-      gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open script '%s'! (%m)", scriptFilename);
+      gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       exitCode = 1;
     }
     else
     {
       gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
       fclose(scriptFile);
+      if (jsi->exitType & et_successMask)
+	exitCode = jsi->exitCode;
+      else
+	exitCode = 1;
     }
   }
 
