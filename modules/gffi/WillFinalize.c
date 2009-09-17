@@ -112,7 +112,23 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
 
   return JS_TRUE;
 }
+/** This function implements an API for objects to be finalized on-demand. The finalizer is executed and removed when
+ *  this is called. */
+static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
+{
+  cFunction_closure_t *clos;
+  JSObject *cfuncObj = NULL;
+  JSObject *thisObj = JS_THIS_OBJECT(cx, vp);
+  jsval *argv = JS_ARGV(cx, vp);
 
+  /* Currently we only support one finalizer CFunction closure, so we will check for it here. */
+  clos = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
+  if (clos)
+    cFunction_closure_call(cx, clos);
+
+  /* Remove the finalizer now, maybe the user will add another one, who knows, but we shouldn't default to double-calling it */
+  JS_SetPrivate(cx, thisObj, NULL);
+}
 static void WillFinalize_Finalize(JSContext *cx, JSObject *obj)
 {
   /* If we have private data, it is a cFunction_closure_t waiting to be called */
@@ -154,6 +170,7 @@ JSObject *WillFinalize_InitClass(JSContext *cx, JSObject *obj, JSObject *parentP
   static JSFunctionSpec instance_methods[] = 
   {
     JS_FN("finalizeWith", WillFinalize_FinalizeWith,      0, 0),
+    JS_FN("runFinalizer", WillFinalize_RunFinalizer,      0, 0),
     JS_FS_END
   };
 
