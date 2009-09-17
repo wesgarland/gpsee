@@ -1,0 +1,85 @@
+#! /bin/sh
+
+usage()
+{
+echo "Usage: gpsee-config [OPTIONS]
+Options:
+        [--prefix]
+        [--exec-prefix]
+        [--includedir]
+        [--libdir]
+        [--version]
+        [--libs]
+        [--ldflags]
+        [--cflags]
+        [--cppflags]
+        [--cxxflags]
+        [--lib-filenames]
+	[--gpsee-src]
+	[--spidermonkey-build]
+	[--spidermonkey-src]
+	[--outside.mk]
+	[--stream]"
+}
+
+[ "$1" ] || usage
+
+while [ "$1" ]
+do
+  case "$1" in
+    "--prefix")
+	echo "@@GPSEE_PREFIX_DIR@@"
+	;;
+    "--exec-prefix")
+        echo "@@BIN_DIR@@"
+	;;
+    "--includedir")
+	echo "@@INCLUDE_DIR@@"
+	;;
+    "--libdir")
+	echo "@@SOLIB_DIR@@"
+	;;
+    "--version")
+        echo "@@GPSEE_RELEASE@@"
+	;;
+    "--libs")
+	echo "@@LOADLIBES@@"
+	;;
+    "--ldflags")
+	echo "@@LDFLAGS@@"
+	;;
+    "--cflags")
+	echo "@@CFLAGS@@"
+	;;
+    "--cppflags")
+	echo "@@CPPFLAGS@@"
+	;;
+    "--cxxflags")
+	echo "@@CXXFLAGS@@"
+	;;
+    "--lib-filenames")
+        echo "@@EXPORT_LIBS@@"
+	;;
+    "--gpsee-src")
+        echo "@@GPSEE_SRC@@"
+	;;
+    "--spidermonkey-src")
+        echo "@@SPIDERMONKEY_SRC@@"
+	;;
+    "--spidermonkey-build")
+        echo "@@SPIDERMONKEY_BUILD@@"
+	;;
+    "--outside.mk")
+        echo "@@OUTSIDE_MK@@"
+	;;
+    "--stream")
+        echo "@@STREAM@@"
+	;;
+    *)
+	echo "Error: invalid option $1" >/dev/stderr
+	exit 1
+	;;
+  esac
+  shift
+done
+

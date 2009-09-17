@@ -1,0 +1,298 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 1.1/GPL 2.0/LGPL 2.1
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 1.1 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Initial Developer of the Original Code is PageMail, Inc.
+#
+# Portions created by the Initial Developer are 
+# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+#
+# Contributor(s):
+# 
+# Alternatively, the contents of this file may be used under the terms of
+# either of the GNU General Public License Version 2 or later (the "GPL"),
+# or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+# in which case the provisions of the GPL or the LGPL are applicable instead
+# of those above. If you wish to allow use of your version of this file only
+# under the terms of either the GPL or the LGPL, and not to allow others to
+# use your version of this file under the terms of the MPL, indicate your
+# decision by deleting the provisions above and replace them with the notice
+# and other provisions required by the GPL or the LGPL. If you do not delete
+# the provisions above, a recipient may use your version of this file under
+# the terms of any one of the MPL, the GPL or the LGPL.
+#
+# ***** END LICENSE BLOCK ***** 
+#
+
+## @file	Makefile	GPSEE Makefile. Build instructions for GPSEE and its modules.
+##				Requires GNU Make 3.81 or better.
+##
+## @author	Wes Garland, PageMail, Inc., wes@page.ca
+## @date	August 2007
+## @version	$Id: Makefile,v 1.19 2009/09/14 20:17:43 wes Exp $
+
+top: 	help
+
+PWD = $(shell pwd)
+GPSEE_SRC_DIR ?= $(shell pwd)
+
+$(GPSEE_SRC_DIR)/local_config.mk:
+	@echo
+	@echo	" * GPSEE local configuration information missing"
+	@echo
+	@echo	" ***************************************************************************"
+	@echo	" * Please copy:"
+	@echo   " *      $(realpath .)/local_config.mk.sample"
+	@echo	" * to "
+	@echo   " *      $(realpath .)/local_config.mk,"
+	@echo   " * then edit it to suit your environment and needs."
+	@echo	" ***************************************************************************"
+	@echo
+	@echo
+	@echo
+	@[ X = Y ]
+
+include $(GPSEE_SRC_DIR)/local_config.mk
+include $(GPSEE_SRC_DIR)/system_detect.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
+-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
+-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
+include $(GPSEE_SRC_DIR)/ffi.mk
+
+ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean))
+include $(GPSEE_SRC_DIR)/sanity.mk
+endif
+
+export GPSEE_SRC_DIR BUILD STREAM
+export SPIDERMONKEY_BUILD SPIDERMONKEY_SRC
+
+ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
+IGNORE_MODULES		+= pairodice mozshell mozfile file
+INTERNAL_MODULES 	+= vm system
+
+AR_MODULES		= $(filter $(INTERNAL_MODULES), $(ALL_MODULES))
+SO_MODULES		= $(filter-out $(INTERNAL_MODULES), $(ALL_MODULES))
+
+AR_MODULE_DIRS_GLOBAL	= $(wildcard $(foreach MODULE, $(AR_MODULES), modules/$(MODULE)))
+SO_MODULE_DIRS_GLOBAL	= $(wildcard $(foreach MODULE, $(SO_MODULES), modules/$(MODULE)))
+AR_MODULE_DIRS_STREAM	= $(wildcard $(foreach MODULE, $(AR_MODULES), $(STREAM)_modules/$(MODULE)))
+SO_MODULE_DIRS_STREAM	= $(wildcard $(foreach MODULE, $(SO_MODULES), $(STREAM)_modules/$(MODULE)))
+AR_MODULE_DIRS_ALL	= $(AR_MODULE_DIRS_GLOBAL) $(AR_MODULE_DIRS_STREAM)
+SO_MODULE_DIRS_ALL	= $(SO_MODULE_DIRS_GLOBAL) $(SO_MODULE_DIRS_STREAM)
+AR_MODULE_FILES		= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
+SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(SOLIB_EXT))
+
+# PROGS must appear before build.mk until darwin-ld.sh is obsolete.
+PROGS		 	= gsr minimal
+
+ifeq ($(STREAM),surelynx)
+PROGS			:= $(filter-out minimal,$(PROGS))
+endif
+
+include build.mk
+-include depend.mk
+
+GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c gpsee_xdrfile.c
+GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
+GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
+
+ifneq ($(STREAM),surelynx)
+GPSEE_OBJS		+= gpsee_$(STREAM).o
+endif
+
+AUTOGEN_HEADERS		+= modules.h gpsee_config.h
+EXPORT_PROGS	 	= gsr gpsee-config
+EXPORT_SCRIPTS		= sample_programs/jsie.js
+EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))
+EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h
+EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
+
+LOADLIBES		+= -l$(GPSEE_LIBNAME)
+$(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
+
+.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
+build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+
+install: sm-install ffi-install gsr-link
+install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
+
+clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
+clean: EXTRA_CLEAN_RULE=clean_modules
+clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
+real-clean: clean
+	cd spidermonkey && $(MAKE) clean
+	cd libffi && $(MAKE) clean
+
+sm-install:
+	cd spidermonkey && $(MAKE) QUIET=True install
+
+ffi-install:
+	cd libffi && $(MAKE) QUIET=True install
+
+gsr-link:
+	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
+
+gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\" -DDSO_EXTENSION=\"$(SOLIB_EXT)\"
+
+DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
+DEPEND_FILES_X	+= $(SO_MODULE_FILES:.$(SOLIB_EXT)=.X) $(AR_MODULE_FILES:.$(LIB_EXT)=.X)
+DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cc) $(DEPEND_FILES_X:.X=.cpp) $(DEPEND_FILES_X:.X=.cpp)))
+
+modules.h: Makefile $(STREAM)_stream.mk
+	@date '+/* Generated by $(USER) on $(HOSTNAME) at %a %b %e %Y %H:%M:%S %Z */' > $@
+	@echo $(INTERNAL_MODULES) \
+		| $(TR) ' ' '\n'  \
+		| $(SED) -e 's/.*/InternalModule(&)/' \
+		>> $@
+
+show_modules:
+	@echo 
+	@echo "*** GPSEE-$(STREAM) Module Configuration ***"
+	@echo
+	@echo "Internal Modules:"
+	@echo "$(AR_MODULES)" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo 
+	@echo "DSO Modules:"
+	@echo "$(SO_MODULES)" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo
+	@echo "Documented Modules:"
+	@echo  $(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)) |\
+		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+
+clean_modules:
+	$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), \
+	echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
+	ls && \
+	$(MAKE) -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
+	)
+
+build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
+build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES) modules/% $(STREAM)_modules/%:: gpsee_config.h
+	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@) MODULE=$(notdir $@)
+
+build_debug_modules:
+	@echo
+	@echo " * Module debug info: "
+	@$(foreach DIR, $(dir $(AR_MODULE_FILES) $(SO_MODULE_FILES)), cd "$(DIR)" && $(MAKE) --quiet -f "$(GPSEE_SRC_DIR)/modules.mk" build_debug_module && cd "$(GPSEE_SRC_DIR)";)
+	@echo
+
+build_debug: build_debug_modules
+
+GPSEE_RELEASE=0.2-pre1
+gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
+gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
+	@$(RM) $(TMPFILE) || true
+	ls $(PROGS:=.c) $(GPSEE_SOURCES) Doxyfile Makefile *.mk [A-Z][A-Z][A-Z][A-Z]* \
+		gpsee.jsdoc gpsee_*.[ch] gpsee.h \
+		| sort -u >> $(TMPFILE)
+	find licenses -type f >> $(TMPFILE)
+	find modules -type f >> $(TMPFILE)
+	find sample_programs -type f >> $(TMPFILE)
+	find tests -type f >> $(TMPFILE)
+	find docgen -type f >> $(TMPFILE)
+	ls spidermonkey/Makefile spidermonkey/*.sample >> $(TMPFILE)
+	find unix_modules -type f >> $(TMPFILE) 
+	find apr_modules -type f >> $(TMPFILE) || [ ! -d apr_modules ]
+	[ ! -d gpsee-$(GPSEE_RELEASE) ] || rm -rf gpsee-$(GPSEE_RELEASE)
+	egrep -v 'core$$|depend.mk$$|~$$|surelynx|^.hg$$|(([^A-Za-z_]|^)CVS([^A-Za-z_]|$$))|,v$$|\.[ao]$$|\.$(SOLIB_EXT)$$|^[	 ]*$$' \
+		$(TMPFILE) | gtar -T - -zcf $@
+	@echo $(TMPFILE)
+
+src-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
+src-dist:: COUNT=$(shell ls gpsee-$(GPSEE_RELEASE)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
+src-dist:: gpsee-$(GPSEE_RELEASE)_src.tar.gz
+	[ ! -d gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT) ] || rmdir gpsee-$(GPSEE_RELEASE)
+	mkdir gpsee-$(GPSEE_RELEASE)
+	cd gpsee-$(GPSEE_RELEASE) && gtar -zxf ../gpsee-$(GPSEE_RELEASE)_src.tar.gz
+	gtar -zcvf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT).tar.gz gpsee-$(GPSEE_RELEASE)
+	rm -rf gpsee-$(GPSEE_RELEASE)-$(DATE_STAMP)-$(COUNT)
+
+invasive-bin-dist:: INVASIVE_EXTRAS += $(shell ldd $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_LIBS) 2>/dev/null \
+	| $(EGREP) = | $(SED) 's;.*=>[ 	]*;;' | $(EGREP) -v '^/lib|^/usr/lib|^/usr/local/lib|^/platform|^/opt/csw|^/usr/sfw|^/opt/sfw' | sort -u)
+invasive-bin-dist bin-dist:: TARGET=$(UNAME_SYSTEM)-$(UNAME_RELEASE)-$(UNAME_MACHINE)
+invasive-bin-dist bin-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
+invasive-bin-dist bin-dist:: COUNT=$(shell ls $(STREAM)_gpsee_$(TARGET)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
+invasive-bin-dist bin-dist:: install
+	LD_LIBRARY_PATH="$(SOLIB_DIR):$(JSAPI_LIB_DIR):/lib:/usr/lib" gtar -zcvf $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz \
+		$(foreach FILE, $(notdir $(EXPORT_PROGS)), "$(BIN_DIR)/$(FILE)")\
+		$(foreach FILE, $(notdir $(EXPORT_LIBEXEC_OBJS)), "$(LIBEXEC_DIR)/$(FILE)")\
+		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
+		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS)
+	@echo
+	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
+	@echo
+
+$(GPSEE_LIBRARY): $(GPSEE_OBJS) $(AR_MODULE_FILES)
+
+gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
+gsr: gsr.o
+
+JSDOC_DIR=/opt/jsdoc-toolkit
+JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
+JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
+JSDOC=cd "$(JSDOC_DIR)" && java -jar jsrun.jar app/run.js -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
+
+docs::
+	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
+	doxygen
+	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
+	rm doxygen.log
+
+gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
+gpsee_config.h: Makefile $(wildcard *.mk)
+	@echo " * Generating $@"
+	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
+	echo "$(foreach DEFINE, $(GPSEE_C_DEFINES),@#if !defined($(DEFINE))@# define $(DEFINE)@#endif@)" \
+		| $(TR) @ '\n' | $(SED) -e "s/=/ /" >> $@
+	@echo "#if defined(HAVE_IDENTITY_TRANSCODING_ICONV) && !defined(HAVE_ICONV)" >> $@
+	@echo "# define HAVE_ICONV" >> $@
+	@echo "#endif" >> $@
+	@echo "#define GPSEE_$(BUILD)_BUILD" >> $@
+	@echo "#define GPSEE_$(STREAM_UCASE)_STREAM" >> $@
+	@echo "#define GPSEE_$(shell echo $(UNAME_SYSTEM) | $(TR) '[a-z]' '[A-Z]')_SYSTEM" >> $@
+depend.mk: MDFLAGS+=-DGPSEE_$(STREAM_UCASE)_STREAM
+gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
+	@echo " * Generating $@"
+	@$(SED) \
+		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
+		-e 's;@@LDFLAGS@@;$(LDFLAGS) -l$(GPSEE_LIBNAME) $(JSAPI_LIBS);g'\
+		-e 's;@@CPPFLAGS@@;$(CPPFLAGS);g'\
+		-e 's;@@CXXFLAGS@@;$(CXXFLAGS);g'\
+		-e 's;@@LOADLIBES@@;$(LOADLIBES);g'\
+		-e 's;@@GPSEE_PREFIX_DIR@@;$(GPSEE_PREFIX_DIR);g'\
+		-e 's;@@LIBEXEC_DIR@@;$(LIBEXEC_DIR);g'\
+		-e 's;@@BIN_DIR@@;$(BIN_DIR);g'\
+		-e 's;@@SOLIB_DIR@@;$(SOLIB_DIR);g'\
+		-e 's;@@GPSEE_RELEASE@@;$(GPSEE_RELEASE);g'\
+		-e 's;@@STREAM@@;$(STREAM);g'\
+		-e 's;@@BUILD@@;$(BUILD);g'\
+		-e 's;@@INCLUDE_DIR@@;$(INCLUDE_DIR);g'\
+		-e 's;@@EXPORT_LIBS@@@;$(EXPORT_LIBS);g'\
+		-e 's;@@GPSEE_SRC@@;$(GPSEE_SRC_DIR);g'\
+		-e 's;@@SPIDERMONKEY_SRC@@;$(SPIDERMONKEY_SRC);g'\
+		-e 's;@@SPIDERMONKEY_BUILD@@;$(SPIDERMONKEY_BUILD);g'\
+		-e 's;@@OUTSIDE_MK@@;$(GPSEE_SRC_DIR)/outside.mk;g'\
+	< gpsee-config.template > gpsee-config
+	chmod 755 gpsee-config
+
+help:
+	@echo
+	@echo   "Make Targets:"
+	@echo   " build         Build GPSEE"
+	@echo   " install       Install GPSEE under $(GPSEE_PREFIX_DIR)/"
+	@echo   " build_debug   Show build system debug info"
+	@echo   " clean         Clean up this dir"
+	@echo   " dist-clean    Clean up this dir and installed files"
+	@echo
+	@echo   "To customize your build, edit ./local_config.mk"
+	@echo
