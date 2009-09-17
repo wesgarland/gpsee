@@ -40,10 +40,8 @@
  *  @author	Donny Viszneki
  *		donny.viszneki@gmail.com
  *  @date	Aug 2009
- *  @version	$Id$
+ *  @version	$Id: gffi_module.js,v 1.1 2009/09/17 21:04:36 wes Exp $
  */
-
-exports.size_t = exports.uint;
 
 /* We now box up return values with private instances of WillFinalize, a native class that has a finalizer, so that
  * when the GC gets to it, the notional value can get cleaned up. This is useful for calling free() or fclose(), for
