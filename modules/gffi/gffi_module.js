@@ -61,6 +61,11 @@ exports.BoxedPrimitive.prototype.finalizeWith = function() {
     this.finalizer = new exports.WillFinalize;
   return this.finalizer.finalizeWith.apply(this.finalizer, arguments);
 }
+/* This will run and remove a finalizer */
+exports.BoxedPrimitive.prototype.destroy = function() {
+  if (this.hasOwnProperty('finalizer'))
+    this.finalizer.runFinalizer();
+}
 exports.BoxedPrimitive.prototype.toString = function() {
   return '[gpsee.module.ca.page.gffi.BoxedPrimitive ' + typeof this + ' ' + this + ']';
 }
@@ -71,8 +76,9 @@ exports.CFunction.prototype.call = function() {
   if (rval === undefined) return undefined;
   /* If we get an object back, it doesn't need boxing */
   if ('object' === typeof rval) {
-    /* Add the finalizeWith() instance method to object return values. TODO is this the best way to do this? */
+    /* Add the finalizeWith() and destroy() instance methods to object return values. TODO is this the best way to do this? */
     rval.finalizeWith = exports.BoxedPrimitive.prototype.finalizeWith;
+    rval.destroy = exports.BoxedPrimitive.prototype.destroy;
     return rval;
   } else {
     /* Box primitive values so that they can be garbage collected, and support a finalizeWith() instance method */
