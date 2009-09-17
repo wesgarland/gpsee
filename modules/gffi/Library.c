@@ -117,8 +117,6 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
     default:
       /* Retrieve the name of the DSO */
       hnd->name = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-      /* Remember to free the name later */
-      hnd->flags |= LIBRARY_FREENAME;
       /* Open the DSO */
       hnd->dlHandle = dlopen(hnd->name, RTLD_LAZY);
       if (!hnd->dlHandle)

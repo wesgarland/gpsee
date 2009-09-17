@@ -607,6 +607,8 @@ JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
 
   if (contextOp != JSCONTEXT_DESTROY)
     return JS_TRUE;
+  if (!jsi->asyncCallbacks)
+    return JS_TRUE;
 
   /* Acquire mutex protecting jsi->asyncCallbacks */
   PR_Lock(jsi->asyncCallbacks_lock);
