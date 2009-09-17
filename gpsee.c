@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.13 2009/07/31 16:45:15 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.14 2009/09/17 20:55:51 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.14  2009/09/17 20:55:51  wes
+ *  Added GPSEE_NO_ASYNC_CALLBACKS switch
+ *
  *  Revision 1.13  2009/07/31 16:45:15  wes
  *  C99
  *
@@ -105,7 +108,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.13 2009/07/31 16:45:15 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.14 2009/09/17 20:55:51 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -433,6 +436,7 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
   return JS_TRUE;
 }
 
+#if !defined(GPSEE_NO_ASYNC_CALLBACKS)
 /******************************************************************************************** Asynchronous Callbacks */
 
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp);
@@ -653,7 +657,7 @@ static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
-
+#endif
 /**
  *  @note	If this is the LAST interpreter in the application,
  *		the API user should call JS_Shutdown() to avoid
@@ -661,6 +665,7 @@ static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
  */
 int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
 {
+#if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   GPSEEAsyncCallback * cb;
 
   /* Clean up "operation callback" stuff */
@@ -680,6 +685,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   PR_Unlock(interpreter->asyncCallbacks_lock);
   /* Destroy mutex */
   PR_DestroyLock(interpreter->asyncCallbacks_lock);
+#endif
 
   gpsee_shutdownModuleSystem(interpreter->cx);
 
@@ -822,6 +828,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
 
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
+#if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   /* Initialize async callback subsystem */
   interpreter->asyncCallbacks = NULL;
   /* Create mutex to protect access to 'asyncCallbacks' */
@@ -835,7 +842,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   /* Add a callback to spin the garbage collector occasionally */
   gpsee_addAsyncCallback(cx, gpsee_maybeGC, NULL);
   /* Add a context callback to remove any async callbacks associated with the context */
-
+#endif
   return interpreter;
 }
 

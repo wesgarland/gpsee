@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.17 2009/08/06 14:17:51 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.18 2009/09/17 20:57:11 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.18  2009/09/17 20:57:11  wes
+ *  Fixed %m support for gpsee_log in surelynx stream
+ *
  *  Revision 1.17  2009/08/06 14:17:51  wes
  *  Corrected comment-in-comment false warning
  *
@@ -264,7 +267,6 @@ JSClass	*		gpsee_getGlobalClass(void);
 
 /* support routines */
 signed int		gpsee_verbosity(signed int changeBy);
-void			gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
 void			gpsee_assert(const char *s, const char *file, JSIntn ln);
 int 			gpsee_printf(const char *format, /* args */ ...) __attribute__((format(printf,1,2)));
 JSBool 			gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
