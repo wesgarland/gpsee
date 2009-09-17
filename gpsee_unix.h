@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.5 2009/07/31 14:56:08 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.6 2009/09/17 20:57:11 wes Exp $
  */
 
 #define SLOG_EMERG	LOG_EMERG
@@ -51,8 +51,9 @@
 # define GPSEE_LOG_FACILITY	LOG_USER
 #endif
 
-#define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
 #define	gpsee_printf(a...)		printf(a)
+#define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
+void	gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
 
 typedef void * rc_list;					/**< opaque dictionary */
 typedef void * rcFILE;					/**< opaque dictionary I/O handle */
