@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.6 2009/09/14 21:22:00 wes Exp $
+ *  @version	$Id: Memory.c,v 1.7 2009/09/17 21:02:49 wes Exp $
  */
 
 #include <gpsee.h>
@@ -366,21 +366,21 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
   memset(hnd, 0, sizeof(*hnd));
   JS_SetPrivate(cx, obj, hnd);
 
+  GPSEE_STATIC_ASSERT(sizeof(size_t) == sizeof(void *));
+
   if (!JSVAL_IS_INT(argv[0]))
   {
     jsdouble 	d;
 
-    GPSEE_STATIC_ASSERT(sizeof(int) == sizeof(void *));
-
     if (JS_ValueToNumber(cx, argv[0], &d) != JS_TRUE)
       return JS_FALSE;
 
-    hnd->buffer = (void *)(int)d;
-    if ((void *)(int)d != hnd->buffer)
+    hnd->buffer = (void *)((size_t)d);
+    if ((void *)((size_t)d) != hnd->buffer)
       return gpsee_throw(cx, CLASS_ID ".cast.overflow");
   }
   else
-    hnd->buffer = (void *)JSVAL_TO_INT(argv[0]);
+    hnd->buffer = (void *)(size_t)JSVAL_TO_INT(argv[0]);
 
   return JS_TRUE;
 }
