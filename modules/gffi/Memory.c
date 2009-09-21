@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.7 2009/09/17 21:02:49 wes Exp $
+ *  @version	$Id: Memory.c,v 1.8 2009/09/21 21:33:41 wes Exp $
  */
 
 #include <gpsee.h>
@@ -68,7 +68,7 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
     if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
       return JS_FALSE;
 
-    if (d != l)
+    if (isnan(d) || (d != l))
       return gpsee_throw(cx, "%s.overflow", throwPrefix);
   }
 
@@ -258,7 +258,7 @@ static JSBool memory_realloc(JSContext *cx, uintN argc, jsval *vp)
       return JS_FALSE;
 
     newLength = d;
-    if (d != newLength)
+    if (isnan(d) || (d != newLength))
       return gpsee_throw(cx, CLASS_ID ".realloc.overflow");
   }
 
@@ -337,6 +337,44 @@ static JSBool memory_duplicate(JSContext *cx, uintN argc, jsval *vp)
 }
 
 /**
+ *  Implement a non-strict equality callback for instances of Memory. 
+ *  This effectively overloads the == and != operators when the left-hand 
+ *  side of the expression is a Memory() object.
+ *
+ *  @param	cx		JavaScript context
+ *  @param	thisObj		The object on the left-hand side of the expression
+ *  @param	v		The value of the right-hand side of the expression
+ *  @param	bp		[out]	Pointer to JS_TRUE when equal, JS_FALSE otherwise
+ *  @returns	JS_TRUE unless we've thrown an exception.
+*/
+JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
+{
+  memory_handle_t *thisHnd = JS_GetPrivate(cx, thisObj);
+  memory_handle_t *thatHnd;
+  JSObject	  *thatObj;
+
+  if (!JSVAL_IS_OBJECT(v))
+  {
+    *bp = JS_FALSE;
+    return JS_TRUE;
+  }
+
+  thatObj = JSVAL_TO_OBJECT(v);
+  if (JS_GET_CLASS(cx, thatObj) != memory_clasp)
+  {
+    *bp = JS_FALSE;
+    return JS_TRUE;
+  }
+
+  thatHnd = JS_GetPrivate(cx, thatObj);
+  if (thisHnd && thatHnd && (thisHnd->buffer == thatHnd->buffer))
+    *bp = JS_TRUE;
+  else
+    *bp = JS_FALSE;
+
+  return JS_TRUE;
+}
+/**
  *  Implements Memory cast function.
  *  
  *  Casting a number X to Memory causes us to generate a Memory object for data
@@ -375,8 +413,11 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     if (JS_ValueToNumber(cx, argv[0], &d) != JS_TRUE)
       return JS_FALSE;
 
+    if (isnan(d))
+      return pointer_fromString(cx, argv[0], &hnd->buffer, CLASS_ID ".cast");
+
     hnd->buffer = (void *)((size_t)d);
-    if ((void *)((size_t)d) != hnd->buffer)
+    if (isnan(d) || ((void *)((size_t)d) != hnd->buffer))
       return gpsee_throw(cx, CLASS_ID ".cast.overflow");
   }
   else
@@ -435,7 +476,7 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
       return JS_FALSE;
 
     hnd->length = d;
-    if (d != hnd->length)
+    if (isnan(d) || (d != hnd->length))
       return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
   }
   
@@ -507,20 +548,27 @@ JSObject *memory_proto = NULL;
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 {
   /** Description of this class: */
-  static JSClass memory_class =
+  static JSExtendedClass memory_eclass =
   {
-    GPSEE_CLASS_NAME(Memory),		/**< its name is Memory */
-    JSCLASS_HAS_PRIVATE,		/**< private slot in use */
-    JS_PropertyStub,  			/**< addProperty stub */
-    JS_PropertyStub,  			/**< deleteProperty stub */
-    JS_PropertyStub,			/**< custom getProperty */
-    JS_PropertyStub,			/**< setProperty stub */
-    JS_EnumerateStub, 			/**< enumerateProperty stub */
-    JS_ResolveStub,   			/**< resolveProperty stub */
-    JS_ConvertStub,   			/**< convertProperty stub */
-    Memory_Finalize,			/**< it has a custom finalizer */
+    {
+      GPSEE_CLASS_NAME(Memory),		/**< its name is Memory */
+      JSCLASS_HAS_PRIVATE | JSCLASS_IS_EXTENDED,	/**< private slot in use, this is really a JSExtendedClass */
+      JS_PropertyStub, 			/**< addProperty stub */
+      JS_PropertyStub, 			/**< deleteProperty stub */
+      JS_PropertyStub,			/**< custom getProperty */
+      JS_PropertyStub,			/**< setProperty stub */
+      JS_EnumerateStub,			/**< enumerateProperty stub */
+      JS_ResolveStub,  			/**< resolveProperty stub */
+      JS_ConvertStub,  			/**< convertProperty stub */
+      Memory_Finalize,			/**< it has a custom finalizer */
     
-    JSCLASS_NO_OPTIONAL_MEMBERS
+      JSCLASS_NO_OPTIONAL_MEMBERS
+    },					/**< JSClass		base */
+    Memory_Equal,			/**< JSEqualityOp 	equality */
+    NULL,				/**< JSObjectOp		outerObject */
+    NULL,				/**< JSObjectOp		innerObject */
+    NULL,				/**< JSIteratorOp	iteratorObject */
+    NULL,				/**< JSObjectOp		wrappedObject */
   };
 
   static JSPropertySpec memory_props[] =
@@ -539,9 +587,9 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
     JS_FS_END
   };
 
-  GPSEE_DECLARE_BYTETHING_CLASS(memory);
+  GPSEE_DECLARE_BYTETHING_EXTCLASS(memory);
 
-  memory_clasp = &memory_class;
+  memory_clasp = &memory_eclass.base;
 
   memory_proto =
       JS_InitClass(cx, 			/* JS context from which to derive runtime information */
