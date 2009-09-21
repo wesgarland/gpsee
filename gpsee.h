@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.18 2009/09/17 20:57:11 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.19 2009/09/21 21:33:41 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.19  2009/09/21 21:33:41  wes
+ *  Implemented Memory equality operator in gffi module
+ *
  *  Revision 1.18  2009/09/17 20:57:11  wes
  *  Fixed %m support for gpsee_log in surelynx stream
  *
@@ -433,5 +436,8 @@ GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, memoryOwner) == offsetOf(byteThin
 GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
 cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
-  		      
+
+
+#define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls) }
+
 #endif /* GPSEE_H */
