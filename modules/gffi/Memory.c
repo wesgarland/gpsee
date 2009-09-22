@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.8 2009/09/21 21:33:41 wes Exp $
+ *  @version	$Id: Memory.c,v 1.9 2009/09/22 04:38:38 wes Exp $
  */
 
 #include <gpsee.h>
@@ -68,7 +68,7 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
     if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
       return JS_FALSE;
 
-    if (isnan(d) || (d != l))
+    if (d != l)
       return gpsee_throw(cx, "%s.overflow", throwPrefix);
   }
 
@@ -258,7 +258,7 @@ static JSBool memory_realloc(JSContext *cx, uintN argc, jsval *vp)
       return JS_FALSE;
 
     newLength = d;
-    if (isnan(d) || (d != newLength))
+    if (d != newLength)
       return gpsee_throw(cx, CLASS_ID ".realloc.overflow");
   }
 
@@ -417,7 +417,7 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
       return pointer_fromString(cx, argv[0], &hnd->buffer, CLASS_ID ".cast");
 
     hnd->buffer = (void *)((size_t)d);
-    if (isnan(d) || ((void *)((size_t)d) != hnd->buffer))
+    if ((void *)((size_t)d) != hnd->buffer)
       return gpsee_throw(cx, CLASS_ID ".cast.overflow");
   }
   else
@@ -476,7 +476,7 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
       return JS_FALSE;
 
     hnd->length = d;
-    if (isnan(d) || (d != hnd->length))
+    if (d != hnd->length)
       return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
   }
   
