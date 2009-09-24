@@ -85,7 +85,7 @@ math_defs.%:	HEADERS  = float.h fenv.h limits.h complex.h math.h
 network_defs.%:	HEADERS  = sys/types.h sys/socket.h time.h poll.h arpa/inet.h sys/select.h netinet/in.h arpa/nameser.h
 
 network_defs.%:	HEADERS +=  resolv.h netdb.h
-posix_defs.%:	HEADERS  = unistd.h stdio.h limits.h termios.h dirent.h errno.h fcntl.h sys/select.h signal.h sys/stat.h
+posix_defs.%:	HEADERS  = locale.h unistd.h stdio.h limits.h termios.h dirent.h errno.h fcntl.h sys/select.h signal.h sys/stat.h
 
 posix_defs.%:	HEADERS += sys/wait.h sys/socket.h aio.h libgen.h strings.h string.h nl_types.h sys/types.h
 posix_defs.%:	HEADERS += sys/types.h stdlib.h grp.h netdb.h utmpx.h fmtmsg.h fnmatch.h sys/statvfs.h sys/ipc.h ftw.h
