@@ -52,7 +52,7 @@ LDFLAGS			+= $(LIBFFI_LDFLAGS)
 build:	$(DEF_FILES)
 
 build_debug_module:
-	@echo " - In gffi
+	@echo " - In gffi"
 	@echo "   - CFLAGS = $(CFLAGS)"
 	@echo "   - LDFLAGS = $(LDFLAGS)"
 

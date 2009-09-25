@@ -59,6 +59,7 @@ MAKEDEPEND	?= gcc -E -MM -MG
 CP		?= cp -f
 MV		?= mv -f
 RM		?= rm -f
+RM_R		?= rm -rf
 MKDIR		?= mkdir -p
 GREP		?= grep
 EGREP		?= egrep
