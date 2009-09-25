@@ -158,15 +158,6 @@ install:
 	@$(MAKE) $(MAKEFLAGS) _install
 	@$(MAKE) $(MAKEFLAGS) vars.mk
  
-#ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
-#JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
-#ifeq ($(shell uname -s),Darwin)
-#JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
-#	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
-#	$(filter -Wl%,$(JSAPI_LDFLAGS))
-#endif
-#endif
-
 _install: QUIET=True
 _install:
 	@echo " * Installing LibFFI"
