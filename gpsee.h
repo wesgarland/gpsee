@@ -138,6 +138,16 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #endif
 
 #include <jsapi.h>
+#if !defined(INT_TO_JSVAL) && defined(JSVAL_ZERO) /* Bug workaround for tracemonkey, introduced Aug 18 2009, patched here Sep 25 2009 - xxx wg  */
+#undef JSVAL_ZERO
+#undef JSVAL_ONE
+#define JSVAL_ZERO	(INT_TO_JSVAL_CONSTEXPR(0))
+#define JSVAL_ONE	(INT_TO_JSVAL_CONSTEXPR(1))
+#endif
+
+#if defined(INT_TO_JSVAL) /* Support for spidermonkey/tracemonkey older than Aug 18 2009 */
+# define INT_TO_JSVAL_CONSTEXPR(x) INT_TO_JSVAL(x)
+#endif
 
 #if !defined(_GPSEE_INTERNALS)
 /** Intercept calls to JS_InitClass to insure proper class naming */
