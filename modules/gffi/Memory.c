@@ -47,6 +47,7 @@
 
 #include <gpsee.h>
 #include "gffi_module.h"
+#include <math.h>
 
 #define CLASS_ID MODULE_ID ".Memory"
 
@@ -54,7 +55,7 @@
  *  Utility function to parse length arguments to memory objects.
  *  -1 means "believe strlen"
  */
-static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, size_t *lengthp, const char *throwPrefix)
+static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, unsigned char *buffer, size_t *lengthp, const char *throwPrefix)
 {
   ssize_t	l;
   size_t	length;
@@ -73,7 +74,7 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
   }
 
   if (l == -1)
-    length = strlen(buffer);
+    length = strlen((char *)buffer);
   else
   {
     length = l;
@@ -123,7 +124,7 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
       if (hnd->length || (hnd->memoryOwner == obj))
 	length = hnd->length;
       else
-	length = strlen(hnd->buffer);
+	length = strlen((char *)hnd->buffer);
       break;
     case 1:
       if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asString.argument.1") == JS_FALSE)
@@ -133,7 +134,7 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
       return gpsee_throw(cx, CLASS_ID ".asString.arguments.count");
   }
 
-  str = JS_NewStringCopyN(cx, hnd->buffer, length);
+  str = JS_NewStringCopyN(cx, (char *)hnd->buffer, length);
   if (!str)
     return JS_FALSE;
 
@@ -165,14 +166,19 @@ static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
 static JSBool memory_ownMemory_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   memory_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
-  jsval			*argv = JS_ARGV(cx, vp);
 
   if (!hnd)
     return JS_FALSE;
 
   if (*vp != JSVAL_TRUE && *vp != JSVAL_FALSE)
-    if (JS_ValueToBoolean(cx, *vp, argv + 0) == JSVAL_FALSE)
+  {
+    JSBool b;
+
+    if (JS_ValueToBoolean(cx, *vp, &b) == JSVAL_FALSE)
       return JS_FALSE;
+    else
+      *vp = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
+  }
 
   if (*vp == JSVAL_TRUE)
     hnd->memoryOwner = obj;
@@ -414,7 +420,7 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
       return JS_FALSE;
 
     if (isnan(d))
-      return pointer_fromString(cx, argv[0], &hnd->buffer, CLASS_ID ".cast");
+      return pointer_fromString(cx, argv[0], (void **)&hnd->buffer, CLASS_ID ".cast");
 
     hnd->buffer = (void *)((size_t)d);
     if ((void *)((size_t)d) != hnd->buffer)
@@ -493,8 +499,14 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   if (argc == 2) /* Allow JS programmer to override sanity */
   {
     if (argv[1] != JSVAL_TRUE && argv[1] != JSVAL_FALSE)
-      if (JS_ValueToBoolean(cx, argv[1], argv + 1) == JSVAL_FALSE)
-	return JS_FALSE;
+    {
+      JSBool b;
+
+      if (JS_ValueToBoolean(cx, argv[1], &b) == JSVAL_FALSE)
+        return JS_FALSE;
+      else
+        argv[1] = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
+    }
 
     if (argv[1] == JSVAL_TRUE)
       hnd->memoryOwner = obj;
