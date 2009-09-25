@@ -26,6 +26,7 @@ clean:
 	-$(if $(strip $(EXPORT_PROGS)), $(RM) $(EXPORT_PROGS))
 	-$(if $(strip $(AUTOGEN_HEADERS)), $(RM) $(AUTOGEN_HEADERS))
 	-$(if $(strip $(AUTOGEN_SOURCE)), $(RM) $(AUTOGEN_SOURCE))
+	-$(if $(strip $(DEBUG_DUMP_DIRS)), $(RM_R) $(DEBUG_DUMP_DIRS))
 	-$(if $(strip $(EXTRA_CLEAN_RULE)), $(MAKE) $(EXTRA_CLEAN_RULE))
 	$(RM) depend.mk
 
