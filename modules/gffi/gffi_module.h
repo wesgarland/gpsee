@@ -124,7 +124,7 @@ typedef enum
 /** Magic jsvals used in argument passing */
 typedef enum gffi_jsv
 {
-#define jsv(val)	jsve_ ## val = INT_TO_JSVAL(inte_ ## val),
+#define jsv(val)	jsve_ ## val = INT_TO_JSVAL_CONSTEXPR(inte_ ## val),
 #include "jsv_constants.decl"
 #undef jsv
 } gffi_jsv_e;

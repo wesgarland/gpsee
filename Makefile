@@ -191,7 +191,7 @@ build_debug: build_debug_modules
 GPSEE_RELEASE=0.2-pre1
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
-	@$(RM) $(TMPFILE) || true
+	@$(RM) $(TMPFILE) || [ X = X ]
 	ls $(PROGS:=.c) $(GPSEE_SOURCES) Doxyfile Makefile *.mk [A-Z][A-Z][A-Z][A-Z]* \
 		gpsee.jsdoc gpsee_*.[ch] gpsee.h \
 		| sort -u >> $(TMPFILE)

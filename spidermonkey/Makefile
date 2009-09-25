@@ -163,15 +163,27 @@ ifneq ($(QUIET),True)
 	@echo ""
 endif
 
-install: JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
+install:
+	@$(MAKE) $(MAKEFLAGS) QUIET=True build
+	@$(MAKE) $(MAKEFLAGS) _install
+	@$(MAKE) $(MAKEFLAGS) vars.mk
+ifneq ($(QUIET),True)
+	@echo " * SpiderMonkey Build & Installation Complete"
+endif
+
+ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
+JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
 ifeq ($(shell uname -s),Darwin)
-install: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
+# Work around a long-standing bug in js-config for Darwin
+JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
 endif
+endif
 
-install: build
-	@rm vars.mk >/dev/null || /bin/true
+_install:
+	@echo " * Installing Spidermonkey"	
+	@rm vars.mk >/dev/null || [ X = X ]
 	@[ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR)
 	@[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
 	@[ -w $(INCLUDE_DIR) ] || echo "**** cannot write to $(INCLUDE_DIR): did you forget to read the build instructions?"
@@ -183,6 +195,10 @@ install: build
 	@[ -f $(JS_CONFIG) ] || echo "**** js-config should have been installed as $(JS_CONFIG)." 
 	@[ -f $(JS_CONFIG) ] || echo "**** Abort."
 	@[ -f $(JS_CONFIG) ]
+	@echo ""
+
+vars.mk:
+	@echo " * Building vars.mk"
 	@echo "# Generated on `date` by $(USER)" > vars.mk
 	@echo "JSAPI_INCLUDE_DIR=$(shell $(JS_CONFIG) --includedir)" >> vars.mk
 	@echo "JSAPI_LIB_DIR=$(shell $(JS_CONFIG) --libdir)" >> vars.mk
@@ -191,10 +207,6 @@ install: build
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
 	@echo "SPIDERMONKEY_BUILD=$(SPIDERMONKEY_BUILD)" >> vars.mk
-ifneq ($(QUIET),True)
-	@echo ""
-	@echo " * SpiderMonkey Build & Installation Complete: you can build GPSEE now."
-endif
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean

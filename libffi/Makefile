@@ -153,17 +153,24 @@ else
 	@echo " * Using system-supplied libffi UNSUPPORTED"
 endif
 
-JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
-ifeq ($(shell uname -s),Darwin)
-JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
-	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
-	$(filter -Wl%,$(JSAPI_LDFLAGS))
-endif
+install:
+	@$(MAKE) $(MAKEFLAGS) QUIET=True build
+	@$(MAKE) $(MAKEFLAGS) _install
+	@$(MAKE) $(MAKEFLAGS) vars.mk
+ 
+#ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
+#JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
+#ifeq ($(shell uname -s),Darwin)
+#JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
+#	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
+#	$(filter -Wl%,$(JSAPI_LDFLAGS))
+#endif
+#endif
 
-install: QUIET=True
-install: build
-	@echo
-	@rm vars.mk >/dev/null || /bin/true
+_install: QUIET=True
+_install:
+	@echo " * Installing LibFFI"
+	@rm vars.mk >/dev/null || [ X = X ]
 	@echo "*  Installing LibFFI in $(LIBFFI_LIB_DIR), "
 	@echo "  headers in $(LIBFFI_INCLUDE_DIR)."
 	[ -d $(LIBFFI_INCLUDE_DIR) ] || mkdir -p $(LIBFFI_INCLUDE_DIR)
@@ -173,27 +180,28 @@ install: build
 	[ -w $(LIBFFI_INCLUDE_DIR) ] && [ -w $(LIBFFI_LIB_DIR) ]
 	[ "$(LIBFFI_LIB_DIR)" != "" ]
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) install
+	@echo ""
+ifneq ($(QUIET),True)
+	@echo " * LibFFI Build & Installation Complete"
+endif
+
+vars.mk:
 	@echo " * Building vars.mk"
-	@echo "LIBFFI_CONFIG_DEPS=$(GPSEE_SRC_DIR)/libffi/vars.mk $(GPSEE_SRC_DIR)/libffi/local_config.mk" > vars.mk
+	@echo "LIBFFI_CONFIG_DEPS=$(GPSEE_SRC_DIR)/libffi/vars.mk $(GPSEE_SRC_DIR)/libffi/local_config.mk" >> vars.mk
 	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
 	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 	@echo "LIBFFI_LIB_DIR=$(LIBFFI_LIB_DIR)" >> vars.mk
 
-ifneq ($(QUIET),True)
-	@echo ""
-	@echo " * LibFFI Build & Installation Complete: you can build GPSEE FFI modules now."
-endif
-
 clean:
-	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || /bin/true
-	$(RM) $(LIBFFI_BUILD)/Makefile || /bin/true
-	[ ! -f vars.mk ] || $(RM) vars.mk || /bin/true
-	$(RM) -r .libs || /bin/true
-	rmdir $(shell find $(LIBFFI_BUILD) -type d) 2>/dev/null || /bin/true
+	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || [ X = X ]
+	$(RM) $(LIBFFI_BUILD)/Makefile || [ X = X ]
+	[ ! -f vars.mk ] || $(RM) vars.mk || [ X = X ]
+	$(RM) -r .libs || [ X = X ]
+	rmdir $(shell find $(LIBFFI_BUILD) -type d) 2>/dev/null || [ X = X ]
 	@echo " * Done clean - ignore errors" 
 
 distclean dist-clean: clean
-	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) distclean || /bin/true
+	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) distclean || [ X = X ]
 	$(RM) -r $(LIBFFI_BUILD)
 	@echo " * Done dist-clean - ignore errors" 
 
