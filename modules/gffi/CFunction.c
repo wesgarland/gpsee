@@ -430,7 +430,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 
   /* Verify arg count */
   if (hnd->nargs != argc)
-    return gpsee_throw(cx, "%s.arguments.count: Expected %i arguments for %s, received %i", 
+    return gpsee_throw(cx, "%s.arguments.count: Expected " GPSEE_SIZET_FMT " arguments for %s, received %i", 
                        throwPrefix, hnd->nargs, hnd->functionName, argc);
 
   /* Allocate the struct representing a prepared FFI call */
@@ -590,7 +590,7 @@ rtldDefault:
       n = snprintf(functionName, sizeof functionName, "gffi_alias_%s", hnd->functionName);
       GPSEE_ASSERT(n >= 0);
       if (n >= sizeof functionName)
-        gpsee_log(SLOG_WARNING, "gffi alias for \"%s\" exceeds %d characters", hnd->functionName, sizeof functionName);
+        gpsee_log(SLOG_WARNING, "gffi alias for \"%s\" exceeds " GPSEE_SIZET_FMT " characters", hnd->functionName, sizeof functionName);
       else
         /* Try dlsym() again with the new mangled name! */
         hnd->fn = dlsym(RTLD_DEFAULT, functionName);
