@@ -1,8 +1,12 @@
 ifeq ($(LIBFFI_SRC),)
-$(info *** Please untar libffi-3*.tar.gz in your home directory, or)
+$(info *** Please untar libffi-3*.tar.gz in $(dir $(LIBFFI_SRC)), or)
 $(info *** edit $(abspath .)/local_config.mk)
 $(info *** to reflect an alternate location.)
 $(error Could not locate libffi source code)
+endif
+
+ifeq ($(shell $(PKG_CONFIG) --version 2>/dev/null),)
+$(error Could not locate $(PKG_CONFIG); edit $(abspath .)/local_config.mk or adjust your path accordingly)
 endif
 
 ifndef GPSEE_SRC_DIR
