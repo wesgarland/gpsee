@@ -33,8 +33,6 @@
 # ***** END LICENSE BLOCK ***** 
 #
 HOSTNAME		?= $(shell hostname)
-GPSEE_LIBNAME		= gpsee
-
 
 # Compilation tools
 ifeq "$(origin CC)" "default"
@@ -77,5 +75,5 @@ SOLIB_EXT	?=so
 
 ICONV_LIB_NAME	?= iconv
 GPSEE_C_DEFINES	+= HAVE_ICONV
-DEFAUT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee/
-GPSEE_LIBRARY		?= lib$(GPSEE_LIBNAME).$(SOLIB_EXIT)
+DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
+
