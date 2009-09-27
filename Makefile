@@ -107,7 +107,6 @@ include build.mk
 
 GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c gpsee_xdrfile.c
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
-GPSEE_LIBRARY		= lib$(GPSEE_LIBNAME).$(SOLIB_EXT)
 
 ifneq ($(STREAM),surelynx)
 GPSEE_OBJS		+= gpsee_$(STREAM).o
@@ -116,12 +115,12 @@ endif
 AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
-EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
+EXPORT_LIBS	 	= libgpsee.$(SOLIB_EXT)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
-LOADLIBES		+= -l$(GPSEE_LIBNAME)
+LOADLIBES		+= -lgpsee
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
@@ -249,7 +248,7 @@ invasive-bin-dist bin-dist:: install
 	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
 	@echo
 
-$(GPSEE_LIBRARY): $(GPSEE_OBJS) $(AR_MODULE_FILES)
+libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr: gsr.o
@@ -282,7 +281,7 @@ gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_
 	@echo " * Generating $@"
 	@$(SED) \
 		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
-		-e 's;@@LDFLAGS@@;$(LDFLAGS) -l$(GPSEE_LIBNAME) $(JSAPI_LIBS);g'\
+		-e 's;@@LDFLAGS@@;$(LDFLAGS) -lgpsee $(JSAPI_LIBS);g'\
 		-e 's;@@CPPFLAGS@@;$(CPPFLAGS);g'\
 		-e 's;@@CXXFLAGS@@;$(CXXFLAGS);g'\
 		-e 's;@@LOADLIBES@@;$(LOADLIBES);g'\
