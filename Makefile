@@ -66,6 +66,11 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
+
+ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
+IGNORE_MODULES		+= pairodice mozshell mozfile file
+INTERNAL_MODULES 	+= vm system
+
 include $(GPSEE_SRC_DIR)/ffi.mk
 
 ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean))
@@ -75,24 +80,23 @@ endif
 export GPSEE_SRC_DIR BUILD STREAM
 export SPIDERMONKEY_BUILD SPIDERMONKEY_SRC
 
-ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file
-INTERNAL_MODULES 	+= vm system
-
-AR_MODULES		= $(filter $(INTERNAL_MODULES), $(ALL_MODULES))
-SO_MODULES		= $(filter-out $(INTERNAL_MODULES), $(ALL_MODULES))
-
-AR_MODULE_DIRS_GLOBAL	= $(wildcard $(foreach MODULE, $(AR_MODULES), modules/$(MODULE)))
-SO_MODULE_DIRS_GLOBAL	= $(wildcard $(foreach MODULE, $(SO_MODULES), modules/$(MODULE)))
-AR_MODULE_DIRS_STREAM	= $(wildcard $(foreach MODULE, $(AR_MODULES), $(STREAM)_modules/$(MODULE)))
-SO_MODULE_DIRS_STREAM	= $(wildcard $(foreach MODULE, $(SO_MODULES), $(STREAM)_modules/$(MODULE)))
-AR_MODULE_DIRS_ALL	= $(AR_MODULE_DIRS_GLOBAL) $(AR_MODULE_DIRS_STREAM)
-SO_MODULE_DIRS_ALL	= $(SO_MODULE_DIRS_GLOBAL) $(SO_MODULE_DIRS_STREAM)
-AR_MODULE_FILES		= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
-SO_MODULE_FILES		= $(foreach MODULE_DIR, $(SO_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(SOLIB_EXT))
+ALL_MODULES			:= $(ALL_MODULES)
+AR_MODULES			:= $(filter $(INTERNAL_MODULES), $(ALL_MODULES))
+LOADABLE_MODULES		:= $(filter-out $(INTERNAL_MODULES), $(ALL_MODULES))
+AR_MODULE_DIRS_GLOBAL		:= $(wildcard $(foreach MODULE, $(AR_MODULES), modules/$(MODULE)))
+LOADABLE_MODULE_DIRS_GLOBAL	:= $(wildcard $(foreach MODULE, $(LOADABLE_MODULES), modules/$(MODULE)))
+AR_MODULE_DIRS_STREAM		:= $(wildcard $(foreach MODULE, $(AR_MODULES), $(STREAM)_modules/$(MODULE)))
+LOADABLE_MODULE_DIRS_STREAM	:= $(wildcard $(foreach MODULE, $(LOADABLE_MODULES), $(STREAM)_modules/$(MODULE)))
+AR_MODULE_DIRS_ALL		:= $(AR_MODULE_DIRS_GLOBAL) $(AR_MODULE_DIRS_STREAM)
+LOADABLE_MODULE_DIRS_ALL	:= $(LOADABLE_MODULE_DIRS_GLOBAL) $(LOADABLE_MODULE_DIRS_STREAM)
+AR_MODULE_FILES			:= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
+SO_MODULE_DSOS			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ -e "$(DIR)/$(notdir $(DIR))_module.c" ] || [ -e "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.$(SOLIB_EXT)";))
+SO_MODULE_FILES			:= $(SO_MODULE_DSOS) $(wildcard $(SO_MODULE_DSOS:.$(SOLIB_EXT)=.js))
+JS_MODULE_FILES			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ ! -e "$(DIR)/$(notdir $(DIR))_module.c" ] && [ ! -e "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.js";))
+ALL_MODULE_DIRS			:= $(sort $(AR_MODULE_DIRS_ALL) $(LOADABLE_MODULE_DIRS_ALL) $(dir $(JS_MODULE_FILES)))
 
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
-PROGS		 	= gsr minimal
+PROGS		 	?= gsr minimal
 
 ifeq ($(STREAM),surelynx)
 PROGS			:= $(filter-out minimal,$(PROGS))
@@ -113,12 +117,15 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= $(GPSEE_LIBRARY)
-EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
 LOADLIBES		+= -l$(GPSEE_LIBNAME)
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
+
+DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
+DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
 build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
@@ -144,46 +151,56 @@ gsr-link:
 
 gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\" -DDSO_EXTENSION=\"$(SOLIB_EXT)\"
 
-DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
-DEPEND_FILES_X	+= $(SO_MODULE_FILES:.$(SOLIB_EXT)=.X) $(AR_MODULE_FILES:.$(LIB_EXT)=.X)
-DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cc) $(DEPEND_FILES_X:.X=.cpp) $(DEPEND_FILES_X:.X=.cpp)))
-
 modules.h: Makefile $(STREAM)_stream.mk
 	@date '+/* Generated by $(USER) on $(HOSTNAME) at %a %b %e %Y %H:%M:%S %Z */' > $@
 	@echo $(INTERNAL_MODULES) \
 		| $(TR) ' ' '\n'  \
 		| $(SED) -e 's/.*/InternalModule(&)/' \
 		>> $@
-
 show_modules:
 	@echo 
 	@echo "*** GPSEE-$(STREAM) Module Configuration ***"
 	@echo
-	@echo "Internal Modules:"
-	@echo "$(AR_MODULES)" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo "Internal Modules (native):"
+	@echo "$(sort $(AR_MODULES))" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 	@echo 
-	@echo "DSO Modules:"
-	@echo "$(SO_MODULES)" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo "Loadable Modules:"
+	@echo "$(sort $(LOADABLE_MODULES))" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 	@echo
-	@echo "Documented Modules:"
-	@echo  $(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)) |\
+	@echo "DSO Modules:"
+	@echo "$(sort $(dir $(SO_MODULE_FILES)))" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo
+	@echo "Blended Modules:"
+	@echo "$(sort $(dir $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))))" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo
+	@echo "Pure JS Modules:"
+	@echo "$(sort $(dir $(JS_MODULE_FILES)))" | $(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
+	@echo
+	@echo "Module Documentation:"
+	@echo  $(sort $(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc))) |\
 		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 
 clean_modules:
-	$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_FILES), \
+	@$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_DSOS), \
 	echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
 	ls && \
-	$(MAKE) -f "$(GPSEE_SRC_DIR)/modules.mk" MODULE=$(notdir $(MODULE)) STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
+	$(MAKE) -f "$(GPSEE_SRC_DIR)/modules.mk" STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
 	)
+	@echo ""
+	@echo " * Done cleaning modules"
 
-build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_FILES)
-build_modules $(AR_MODULE_FILES) $(SO_MODULE_FILES) modules/% $(STREAM)_modules/%:: gpsee_config.h
-	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@) MODULE=$(notdir $@)
+build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_DSOS)
+modules/%/depend.mk: modules.mk
+	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk depend
+$(SO_MODULE_DSOS) $(AR_MODULE_FILES):
+	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@)
+modules/% $(STREAM)_modules/%:: gpsee_config.h
+	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@)
 
 build_debug_modules:
 	@echo
 	@echo " * Module debug info: "
-	@$(foreach DIR, $(dir $(AR_MODULE_FILES) $(SO_MODULE_FILES)), cd "$(DIR)" && $(MAKE) --quiet -f "$(GPSEE_SRC_DIR)/modules.mk" build_debug_module && cd "$(GPSEE_SRC_DIR)";)
+	@$(foreach DIR, $(ALL_MODULE_DIRS), cd "$(DIR)" && $(MAKE) --quiet -f "$(GPSEE_SRC_DIR)/modules.mk" build_debug_module && cd "$(GPSEE_SRC_DIR)";)
 	@echo
 
 build_debug: build_debug_modules
@@ -252,7 +269,7 @@ gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[
 gpsee_config.h: Makefile $(wildcard *.mk)
 	@echo " * Generating $@"
 	@echo "/* Generated `date` by $(USER) on $(HOSTNAME) */ " > $@
-	echo "$(foreach DEFINE, $(GPSEE_C_DEFINES),@#if !defined($(DEFINE))@# define $(DEFINE)@#endif@)" \
+	@echo "$(foreach DEFINE, $(GPSEE_C_DEFINES),@#if !defined($(DEFINE))@# define $(DEFINE)@#endif@)" \
 		| $(TR) @ '\n' | $(SED) -e "s/=/ /" >> $@
 	@echo "#if defined(HAVE_IDENTITY_TRANSCODING_ICONV) && !defined(HAVE_ICONV)" >> $@
 	@echo "# define HAVE_ICONV" >> $@
@@ -291,6 +308,7 @@ help:
 	@echo   " build         Build GPSEE"
 	@echo   " install       Install GPSEE under $(GPSEE_PREFIX_DIR)/"
 	@echo   " build_debug   Show build system debug info"
+	@echo	" show_modules  Show module configuration"
 	@echo   " clean         Clean up this dir"
 	@echo   " dist-clean    Clean up this dir and installed files"
 	@echo
