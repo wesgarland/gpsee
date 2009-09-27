@@ -34,9 +34,7 @@
 #
 
 include $(GPSEE_SRC_DIR)/ffi.mk
-ifeq (X$(LIBFFI_LDFLAGS),X)
-$(error Missing LibFFI LDFLAGS!)
-endif
+include sanity.mk
 
 DEFS	 	 	= gpsee std network posix
 AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl 
@@ -46,6 +44,7 @@ PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS)
+MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
 .PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
 
@@ -61,7 +60,7 @@ gffi_module.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 
-compiler.dmp defines.incl: sort=LC_COLLATE=C sort
+%.dmp defines.incl: sort=LC_COLLATE=C sort
 
 compiler.dmp:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u > $@

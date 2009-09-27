@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -32,39 +32,13 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-#
-# Generic Makefile for building a module.
-# Can be augmented with module.mk in the module's directory.
-#
 
-# MODULE holds the name of the module, eg. "binary", based on the
-# name of the current directory unless overrideen
-MODULE ?= $(notdir $(abspath .))
-MODULE := $(MODULE)
-
-# MODULE_OBJ is the object file containing the module. Additional
-# objects can be specified with EXTRA_MODULE_OBJS
-MODULE_OBJ ?= $(MODULE)_module.o
-
-include $(GPSEE_SRC_DIR)/local_config.mk
-include $(GPSEE_SRC_DIR)/system_detect.mk
--include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
-include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 ifneq ($(MAKECMDGOALS),clean)
-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
-endif
--include module.mk
-include $(GPSEE_SRC_DIR)/build.mk
 ifneq ($(MAKECMDGOALS),depend)
--include depend.mk
+ifneq ($(MAKECMDGOALS),depend.mk)
+ifeq (X$(LIBFFI_LDFLAGS),X)
+$(error Missing LibFFI LDFLAGS!)
 endif
-
-$(MODULE)_module.$(LIB_EXT) $(MODULE)_module.$(SOLIB_EXT): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
-
-.PHONY: build_debug_module
-
-clean: OBJS+=$(MODULE_OBJ) $(EXTRA_MODULE_OBJS) $(MODULE)
-
-DEPEND_FILES += $(GPSEE_SRC_DIR)/modules.mk module.mk 
-DEPEND_FILES += $(wildcard $(MODULE_OBJ:.o=.c) $(MODULE_OBJ:.o=.cpp))
-DEPEND_FILES += $(wildcard $(EXTRA_MODULE_OBJS:.o=.c) $(EXTRA_MODULE_OBJS:.o=.cpp))
+endif
+endif
+endif
