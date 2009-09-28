@@ -161,7 +161,7 @@ install:
 _install: QUIET=True
 _install:
 	@echo " * Installing LibFFI"
-	@rm vars.mk >/dev/null || [ X = X ]
+	@$(RM) vars.mk 2>/dev/null || [ X = X ]
 	@echo "*  Installing LibFFI in $(LIBFFI_LIB_DIR), "
 	@echo "  headers in $(LIBFFI_INCLUDE_DIR)."
 	[ -d $(LIBFFI_INCLUDE_DIR) ] || mkdir -p $(LIBFFI_INCLUDE_DIR)
@@ -182,6 +182,7 @@ vars.mk:
 	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
 	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 	@echo "LIBFFI_LIB_DIR=$(LIBFFI_LIB_DIR)" >> vars.mk
+        @[ "$(SUDO_USER)" = "" ] || chown $(SUDO_USER) vars.mk
 
 clean:
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || [ X = X ]
