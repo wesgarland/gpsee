@@ -183,7 +183,7 @@ endif
 
 _install:
 	@echo " * Installing Spidermonkey"	
-	@rm vars.mk >/dev/null || [ X = X ]
+	@$(RM) vars.mk 2>/dev/null || [ X = X ]
 	@[ -d $(INCLUDE_DIR) ] || mkdir -p $(INCLUDE_DIR)
 	@[ -d $(LIB_DIR) ] || mkdir -p $(LIB_DIR)
 	@[ -w $(INCLUDE_DIR) ] || echo "**** cannot write to $(INCLUDE_DIR): did you forget to read the build instructions?"
@@ -207,6 +207,7 @@ vars.mk:
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
 	@echo "SPIDERMONKEY_BUILD=$(SPIDERMONKEY_BUILD)" >> vars.mk
+	@[ "$(SUDO_USER)" = "" ] || chown $(SUDO_USER) vars.mk
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
