@@ -82,7 +82,7 @@ typedef struct struct_s
 typedef struct
 {
   size_t		length;		/**< Size of buffer or 0 if unknown */
-  unsigned char 	*buffer;	/**< Pointer to memory */
+  char          	*buffer;	/**< Pointer to memory */
   JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
 } memory_handle_t;
 
@@ -90,7 +90,7 @@ typedef struct
 typedef struct
 {
   size_t		length;		/**< Number of bytes allocated for the struct or 0 if we didn't allocate */
-  unsigned char 	*buffer;	/**< Pointer to the start of the struct */
+  char          	*buffer;	/**< Pointer to the start of the struct */
   JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
   structShape		*descriptor;	/**< Description of the struct this handle describes */
 } struct_handle_t;
