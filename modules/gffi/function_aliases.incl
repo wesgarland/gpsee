@@ -1,1 +1,2 @@
 function(int, stat, (const char *path, struct stat *buf), (path, buf))
+function(int, fstat, (int fd, struct stat *buf), (fd, buf))

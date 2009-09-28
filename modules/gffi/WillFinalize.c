@@ -117,9 +117,7 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
 static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
 {
   cFunction_closure_t *clos;
-  JSObject *cfuncObj = NULL;
   JSObject *thisObj = JS_THIS_OBJECT(cx, vp);
-  jsval *argv = JS_ARGV(cx, vp);
 
   /* Currently we only support one finalizer CFunction closure, so we will check for it here. */
   clos = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
@@ -128,6 +126,7 @@ static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
 
   /* Remove the finalizer now, maybe the user will add another one, who knows, but we shouldn't default to double-calling it */
   JS_SetPrivate(cx, thisObj, NULL);
+  return JS_TRUE;
 }
 static void WillFinalize_Finalize(JSContext *cx, JSObject *obj)
 {
