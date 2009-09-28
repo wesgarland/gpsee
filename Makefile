@@ -185,7 +185,7 @@ clean_modules:
 build_modules:: $(AR_MODULE_FILES) $(SO_MODULE_DSOS)
 modules/%/depend.mk: modules.mk
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk depend
-$(SO_MODULE_DSOS) $(AR_MODULE_FILES):
+$(SO_MODULE_DSOS) $(AR_MODULE_FILES)::
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@)
 modules/% $(STREAM)_modules/%:: gpsee_config.h
 	cd $(dir $@) && $(MAKE) -f $(GPSEE_SRC_DIR)/modules.mk $(notdir $@)
