@@ -129,7 +129,7 @@ DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
 build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 
-install: sm-install ffi-install gsr-link
+install: gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
@@ -138,12 +138,6 @@ clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES)
 real-clean: clean
 	cd spidermonkey && $(MAKE) clean
 	cd libffi && $(MAKE) clean
-
-sm-install:
-	cd spidermonkey && $(MAKE) QUIET=True install
-
-ffi-install:
-	cd libffi && $(MAKE) QUIET=True install
 
 gsr-link:
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
