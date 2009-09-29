@@ -77,7 +77,6 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   JSObject *proto;
 
-printf("initializing FFI\n");
   static JSPropertySpec gffi_props[] =
   {
     { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, gffi_errno_getter, gffi_errno_setter },
