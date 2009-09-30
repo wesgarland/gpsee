@@ -249,7 +249,7 @@ gsr: gsr.o
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
-JSDOC=cd "$(JSDOC_DIR)" && java -jar jsrun.jar app/run.js -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
+JSDOC=java -jar "$(JSDOC_DIR)/jsrun.jar" "$(JSDOC_DIR)/app/run.js" -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
 
 docs::
 	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
