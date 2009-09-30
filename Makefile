@@ -247,7 +247,6 @@ libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr: gsr.o
 
-JSDOC_DIR=/opt/jsdoc-toolkit
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
 JSDOC=cd "$(JSDOC_DIR)" && java -jar jsrun.jar app/run.js -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
