@@ -55,7 +55,7 @@
  *  Utility function to parse length arguments to memory objects.
  *  -1 means "believe strlen"
  */
-static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, unsigned char *buffer, size_t *lengthp, const char *throwPrefix)
+static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, size_t *lengthp, const char *throwPrefix)
 {
   ssize_t	l;
   size_t	length;
@@ -69,8 +69,10 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, unsigned char *
     if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
       return JS_FALSE;
 
+    l = d;
+
     if (d != l)
-      return gpsee_throw(cx, "%s.overflow", throwPrefix);
+      return gpsee_throw(cx, "%s.overflowx", throwPrefix);
   }
 
   if (l == -1)
@@ -80,7 +82,7 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, unsigned char *
     length = l;
     if (length != l)
       return gpsee_throw(cx, "%s.overflow", throwPrefix); 
-  }		
+  }
 
   *lengthp = length;
 
