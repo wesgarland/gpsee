@@ -72,7 +72,7 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
     l = d;
 
     if (d != l)
-      return gpsee_throw(cx, "%s.overflowx", throwPrefix);
+      return gpsee_throw(cx, "%s.overflow", throwPrefix);
   }
 
   if (l == -1)
