@@ -541,6 +541,13 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
   if (JS_IsConstructing(cx) != JS_TRUE)
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
+  /*jsdoc
+   * @name CFunction
+   * @namespace gpsee.module.ca.page.gffi - FFI module
+   * @function
+   *
+   * This is a great day to die.
+   */
   if (argc < 2)
     return gpsee_throw(cx, CLASS_ID ".arguments.count: Must have at least a function name and a return value");
 
