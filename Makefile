@@ -253,8 +253,8 @@ JSDOC=java -jar "$(JSDOC_DIR)/jsrun.jar" "$(JSDOC_DIR)/app/run.js" -x=jsdoc -a -
 
 docs::
 	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
+	@rm -f doxygen.log
 	doxygen
-	./jsdocgen.js # Generate jsdoc files
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
 gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
