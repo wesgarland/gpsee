@@ -1,4 +1,3 @@
-/*#include <sys/resource.h>*/
 aux_type(int)
 aux_type(char)
 aux_type(size_t)
@@ -9,3 +8,4 @@ aux_type(gid_t)
 aux_type(pid_t)
 aux_type(time_t)
 aux_type(rlim_t)
+aux_type(mode_t)
