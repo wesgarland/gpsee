@@ -1012,31 +1012,15 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     if (!modulePath)
     {
       size_t altPathLen = strlen(libexec_dir) + 1, altPathLenFree;
-      const char *programPath;
       char *strcpyCursor;
 
       /* We know we're going to have at least one GPSEE_PATH element */
       modulePathNum = 1;
 
-      programPath = jsi->programModule_dir ?: ".";
-
-      /* Include programPath in modulePathNum and altPathLen */
-      if (programPath)
-      {
-        modulePathNum++;
-        altPathLen += strlen(programPath) + 1;
-      }
       /* Allocate our GPSEE_PATH multi-string space */
       altPathLenFree = altPathLen;
       modulePath = JS_malloc(cx, altPathLen);
       strcpyCursor = modulePath;
-
-      /* Copy programPath into modulePath (strcpyCursor+1 for NULL pad between GPSEE_PATH elements) */
-      if (programPath)
-      {
-        strcpyCursor = 1 + gpsee_cpystrn(strcpyCursor, programPath, altPathLenFree);
-        altPathLenFree = altPathLen - (size_t)(strcpyCursor - modulePath);
-      }
 
       /* Copy libexec_dir into modulePath */
       strcpyCursor = 1 + gpsee_cpystrn(strcpyCursor, libexec_dir, altPathLenFree);
