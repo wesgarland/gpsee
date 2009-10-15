@@ -51,6 +51,11 @@ static const char __attribute__((unused)) rcsid[]="$Id: binary_module.c,v 1.1 20
 JSClass *byteString_clasp;
 JSClass *byteArray_clasp;
 
+JSBool testMe(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval) {
+  printf("class name: %s for %p\n", JS_GET_CLASS(cx, obj)->name, obj);
+  return JS_TRUE;
+}
+
 /** Initialize the module */
 const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
 {
@@ -65,6 +70,9 @@ const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
 
   if (ByteArray_InitClass(cx, moduleObject, proto) == NULL)
     return NULL;
+
+  if (JS_DefineFunction(cx, moduleObject, "testMe", testMe, 0, 0) == NULL)
+    abort();
 
   return MODULE_ID;
 }

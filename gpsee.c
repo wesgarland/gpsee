@@ -386,9 +386,10 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
 
 /** Create a JS Array from a C-style argument vector.
  *
- *  @param	cx	JS Context
- *  @param 	obj	JS Object to which to attach the array
- *  @param	argv	A NULL-terminated array of char *
+ *  @param	cx	  JS Context
+ *  @param 	obj	  JS Object to which to attach the array
+ *  @param      arrayName Property name wrt 'obj'
+ *  @param	argv	  A NULL-terminated array of char *
  *
  *  @returns	JS_TRUE on success
  */ 
