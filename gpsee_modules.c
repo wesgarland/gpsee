@@ -829,6 +829,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       }
       if ((cache_file = fdopen(cache_fd, "w")) == NULL)
       {
+        close(cache_fd);
         gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
         goto cache_write_end;
       }
