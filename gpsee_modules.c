@@ -821,11 +821,15 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       unlink(cache_filename);
       errno = 0;
       /* Open the cache file atomically; fails on collision with other process */
-      if(((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0) ||
-         ((cache_file = fdopen(cache_fd, "w")) == NULL))
+      if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0)
       {
 	if (errno != EEXIST)
-	  gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (%m)", cache_filename);
+	  gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
+        goto cache_write_end;
+      }
+      if ((cache_file = fdopen(cache_fd, "w")) == NULL)
+      {
+        gpsee_log(SLOG_ERR, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
         goto cache_write_end;
       }
       /* Acquire write lock for file */
