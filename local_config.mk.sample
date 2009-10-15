@@ -47,4 +47,4 @@ GSR_SHEBANG_LINK	?= /usr/bin/gsr
 # Less critical settings:
 
 JSDOC_DIR=/opt/jsdoc-toolkit
-
+JAZZDOC=[ ]

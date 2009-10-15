@@ -266,6 +266,9 @@ static void MutableStruct_Finalize(JSContext *cx, JSObject *obj)
   return;
 }
 
+/* @jazzdoc gffi.MutableStruct
+ * TODO document
+ */
 JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   /* MutableStruct() called as function. */   

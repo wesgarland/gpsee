@@ -519,6 +519,9 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   return JS_TRUE;
 }
 
+/* @jazzdoc gffi.Memory
+ * TODO document
+ */
 JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   if (JS_IsConstructing(cx) != JS_TRUE)

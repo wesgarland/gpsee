@@ -474,6 +474,16 @@ fail:
   return JS_FALSE;
 }
 
+/* @jazzdoc gffi.CFunction.prototype.call()
+ *
+ * @form CFunctionInstance.call(arguments[])
+ * The exact form of invocation depends on the instantiation of the CFunction. Please see gffi.CFunction for more
+ * information.
+ *
+ * @returns an instance of gffi.WillFinalize
+ *
+ * 
+ */
 static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 {
   JSBool                ret;
@@ -541,12 +551,49 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
   if (JS_IsConstructing(cx) != JS_TRUE)
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
-  /*jsdoc
-   * @name CFunction
-   * @namespace gpsee.module.ca.page.gffi - FFI module
-   * @function
+  /* @jazzdoc gffi.CFunction
    *
-   * This is a great day to die.
+   * CFunctions represent a C ABI function that has been linked to Javascript with the GFFI module. There are two ways
+   * of instantiating them, each way affecting symbol resolution semantics differently.
+   *
+   * @form new gffi.CFunction(rtype, symbol, argtypes[])
+   * Instantiating a new CFunction from the generic constructor gffi.CFunction provides an interface to a function
+   * looked up by the dynamic linker without looking in a specific library. As some APIs can be particularly difficult
+   * to resolve at runtime with a mercurial dynamic linker (particularly problematic is accessing syscalls under Linux)
+   * there is a compile-time mechanism for building trampolines to those APIs. To add or modify the list of trampolines
+   * available, recompile after making the necessary changes to:
+   *
+   * gpsee/modules/gffi/function_alises.incl
+   *
+   * The format for entries in this file is as follows:
+   *
+   * function(&lt;return_type&gt;,(&lt;argument_list_types_and_names&gt;),(&lt;argument_list_names_only&gt;))
+   *
+   * The redundancy of this form is to accommodate simple implementation in the C preprocessor. To serve as an example,
+   * here are stat(2) and fstat(2) declared as ordinary C prototypes, and again as GFFI function alises:
+   *
+   * stat(2)
+   *    C:    int stat(const char *path, struct stat *buf);
+   *    GFFI: function(int, stat, (const char *path, struct stat *buf), (path, buf))
+   *
+   * fstat(2)
+   *    C:    int fstat(int fd, struct stat *buf);
+   *    GFFI: function(int, fstat, (int fd, struct stat *buf), (fd, buf))
+   *
+   * @form new LibraryInstance.CFunction(rtype, symbol, argtypes[])
+   * Instantiating a new CFunction from the Library instance method CFunction provies an interface to a function
+   * looked up by the dynamic linker in the library associated with the Library instance that CFunction constructor
+   * is associated with.
+   *
+   * Constructor vs. instance method contention:
+   *
+   * There is semantic contention in the Javascript language for constructor functions and instance methods.
+   * The magic variable 'this' cannot refer both to the Library instance from which the constructor was referenced
+   * and simultaneously to the CFunction instance which is being constructed. GFFI cleverly uses Spidermonkey's
+   * notion of a "parent" to overcome this limitation. The "parent" of the CFunction constructor will either be the
+   * Library instance from which it came, or the gffi module itself. For this reason, multiple references to the
+   * CFunction constructor are not interchangeable, and you will not find a reference to the CFunction constructor
+   * in Library.prototype as you might expect to find since it is a Library instance method.
    */
   if (argc < 2)
     return gpsee_throw(cx, CLASS_ID ".arguments.count: Must have at least a function name and a return value");

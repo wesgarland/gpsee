@@ -539,7 +539,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     script_environ = (char * const *)_NSGetEnviron();
 #else
     extern char **environ;
-    script_environ = (char * const *) *environ;
+    script_environ = (char * const *)environ;
 #endif
   }
 

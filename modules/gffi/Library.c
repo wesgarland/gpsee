@@ -73,6 +73,25 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
   if (!JS_IsConstructing(cx))
     return gpsee_throw(cx, CLASS_ID ".constructor.notFunction: Must call constructor with 'new'!");
 
+  /* @jazzdoc gffi.Library
+   *
+   * Libraries represent a symbol resolution scope which comes in the form of either a dlopen(3)'d DSO or a notional
+   * symbol resolution scope such as RTLD_DEFAULT. (Note that RTLD_DEFAULT has special behavior in GFFI.)
+   *
+   * @form new gffi.Library()
+   * @form new gffi.Library(gffi.rtldDefault)
+   *
+   * This form of Library instantiation yields a library representing the special GFFI RTLD_DEFAULT symbol resolution
+   * scope. When a new CFunction is instantiated from this instance, a symbol is first looked up using dlsym(3) using
+   * the RTLD_DEFAULT resolution scope, meaning that any symbol linked by the cstdlib dynamic linker will be found.
+   * Please see gffi.CFunction for more information.
+   * 
+   * @form new gffi.Library(filename)
+   *
+   * This form of Library instantiation yields a library representing the symbols contained in the DSO referenced by
+   * the argument 'filename'. Please see gffi.CFunction for more information.
+   */
+
   /* Require a single argument from caller */
   if (argc != 1)
     return gpsee_throw(cx, CLASS_ID ".arguments.count: An argument is required!");
