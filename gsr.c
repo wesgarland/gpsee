@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.15 2009/10/18 03:50:25 wes Exp $
+ * @version	$Id: gsr.c,v 1.16 2009/10/19 16:35:00 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.15 2009/10/18 03:50:25 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.16 2009/10/19 16:35:00 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -327,6 +327,7 @@ PRIntn findFileToInterpret(PRIntn argc, char **argv)
       ((argv[1][1] == '-')
        || strchr(argv[1] + 1, 'c')
        || strchr(argv[1] + 1, 'f')
+       || strchr(argv[1] + 1, 'F')
        || strchr(argv[1] + 1, 'h')
        || strchr(argv[1] + 1, 'n')
 #if defined(__SURELYNX__)
@@ -335,7 +336,7 @@ PRIntn findFileToInterpret(PRIntn argc, char **argv)
 #endif	
        )
       )
-    return 0;	/* -h, -c, -f, -r will always be invalid flags & force command mode */
+    return 0;	/* -h, -c, -f, -F, -r will always be invalid flags & force command mode */
 
   if ((argc > 1) && argv[1][0] != '-')
     if (access(argv[1], F_OK) == 0)
@@ -456,7 +457,6 @@ PRIntn prmain(PRIntn argc, char **argv)
 
 	case 'F':
 	  skipSheBang = 1;
-
 	case 'f':
 	  scriptFilename = optarg;
 	  break;
