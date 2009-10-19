@@ -898,21 +898,22 @@ JSObject *gpsee_InitClass (JSContext *cx, JSObject *obj, JSObject *parent_proto,
 void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
 {
   va_list 	ap;
-  JSClass	*clasp;
-  void		*prvslot;
+  JSClass	*clasp, *clasp2;
+  void		*prvslot = NULL;
 
+  /* Retreive JSClass* of 'obj' argument */
+  clasp = JS_GET_CLASS(cx, obj);
+
+  /* Iterate through var-args list, stopping when we find a match, or  */
   va_start(ap, obj);
-  while((clasp = va_arg(ap, JSClass *)))
-  {
-    prvslot = JS_GetInstancePrivate(cx, obj, clasp, NULL);
-    if (prvslot)
-    {
-      JS_ClearPendingException(cx);
-      return prvslot;
+  while((clasp2 = va_arg(ap, JSClass *)))
+    if (clasp2 == clasp) {
+      prvslot = JS_GetPrivate(cx, obj);
+      break;
     }
-  }
   va_end(ap);
-  return NULL;
+
+  return prvslot;
 }
 
 /** 
