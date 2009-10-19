@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.19 2009/09/14 20:17:43 wes Exp $
+## @version	$Id: Makefile,v 1.20 2009/10/19 16:24:37 wes Exp $
 
 top: 	help
 
@@ -68,7 +68,7 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file
+IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base
 INTERNAL_MODULES 	+= vm system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
@@ -175,7 +175,7 @@ show_modules:
 
 clean_modules:
 	@$(foreach MODULE, $(AR_MODULE_FILES) $(SO_MODULE_DSOS), \
-	echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
+	@echo && echo " * Cleaning $(dir $(MODULE))" && cd "$(GPSEE_SRC_DIR)/$(dir $(MODULE))" && \
 	ls && \
 	$(MAKE) -f "$(GPSEE_SRC_DIR)/modules.mk" STREAM=$(STREAM) GPSEE_SRC_DIR=$(GPSEE_SRC_DIR) clean;\
 	)
@@ -245,6 +245,7 @@ invasive-bin-dist bin-dist:: install
 libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
+gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
