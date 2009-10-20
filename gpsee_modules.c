@@ -1077,7 +1077,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     JSBool moduleLoaded = JS_FALSE;
 
     if (!currentModulePath || !currentModulePath[0])
-      continue;
+      goto nextPath;
 
     dprintf("loadDiskModule() searching module path element: \"%s\"\n", currentModulePath);
 
@@ -1173,6 +1173,8 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     /* We need to unuse the module handle we got for this canonical module name, which yielded no usable modules */
     markModuleUnused(cx, module);
 
+    nextPath:
+
     /* No more paths? */
     if (--currentModulePathNum == 0)
     {
@@ -1182,7 +1184,6 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       return NULL;
     }
 
-    nextPath:
     /* Advance to next element in search path */
     currentModulePath += strlen(currentModulePath) + 1;
   }
