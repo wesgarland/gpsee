@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.8 2009/10/19 16:40:20 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.9 2009/10/20 20:33:31 wes Exp $
  */
 
 #include <gpsee.h>
@@ -309,6 +309,13 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
     goto stringPointer;
   }
 
+  if (JSVAL_IS_NULL(v))
+  {
+    *storagep = NULL;
+    *avaluep = storagep;
+    return JS_TRUE;
+  }
+
   if (JSVAL_IS_OBJECT(v))
   {
     memory_handle_t	*hnd;
@@ -331,13 +338,6 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
 
   if (JSVAL_IS_NUMBER(v))
     return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a numeric argument to a pointer", argn);
-
-  if (JSVAL_IS_NULL(v))
-  {
-    *storagep = NULL;
-    *avaluep = storagep;
-    return JS_TRUE;
-  }
 
   str = JS_ValueToString(cx , v);
   if (!str)
