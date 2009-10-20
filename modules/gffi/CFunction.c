@@ -475,14 +475,13 @@ fail:
 }
 
 /* @jazzdoc gffi.CFunction.prototype.call()
+ * Invokes a foreign function.
  *
  * @form CFunctionInstance.call(arguments[])
  * The exact form of invocation depends on the instantiation of the CFunction. Please see gffi.CFunction for more
  * information.
  *
  * @returns an instance of gffi.WillFinalize
- *
- * 
  */
 static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -563,14 +562,14 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
    * there is a compile-time mechanism for building trampolines to those APIs. To add or modify the list of trampolines
    * available, recompile after making the necessary changes to:
    *
-   * gpsee/modules/gffi/function_alises.incl
+   * gpsee/modules/gffi/function_aliases.incl
    *
    * The format for entries in this file is as follows:
    *
-   * function(&lt;return_type&gt;,(&lt;argument_list_types_and_names&gt;),(&lt;argument_list_names_only&gt;))
+   * function(<return_type>,(<argument_list_types_and_names>),(<argument_list_names_only>))
    *
    * The redundancy of this form is to accommodate simple implementation in the C preprocessor. To serve as an example,
-   * here are stat(2) and fstat(2) declared as ordinary C prototypes, and again as GFFI function alises:
+   * here are stat(2) and fstat(2) declared as ordinary C prototypes, and again as GFFI function aliases:
    *
    * stat(2)
    *    C:    int stat(const char *path, struct stat *buf);
