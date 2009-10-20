@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.14 2009/09/17 20:55:51 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.15 2009/10/18 03:50:25 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.15  2009/10/18 03:50:25  wes
+ *  Updated JSOPTIONS_VAROBJFIX to match current module semantics
+ *
  *  Revision 1.14  2009/09/17 20:55:51  wes
  *  Added GPSEE_NO_ASYNC_CALLBACKS switch
  *
@@ -108,7 +111,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.14 2009/09/17 20:55:51 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.15 2009/10/18 03:50:25 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -804,6 +807,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   }
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
+  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX | JSOPTION_DONT_REPORT_UNCAUGHT);
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
   interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);

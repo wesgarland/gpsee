@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.14 2009/09/17 20:55:15 wes Exp $
+ * @version	$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.14 2009/09/17 20:55:15 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -205,7 +205,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
   int			verbosity = max(whenSureLynx(sl_get_debugLevel(), 0), gpsee_verbosity(0));
   const char 		*f;
 
-  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT | JSOPTION_VAROBJFIX;
+  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
 
   /* Iterate over each flag */
   for (f=flags; *f; f++)
@@ -327,6 +327,7 @@ PRIntn findFileToInterpret(PRIntn argc, char **argv)
       ((argv[1][1] == '-')
        || strchr(argv[1] + 1, 'c')
        || strchr(argv[1] + 1, 'f')
+       || strchr(argv[1] + 1, 'F')
        || strchr(argv[1] + 1, 'h')
        || strchr(argv[1] + 1, 'n')
 #if defined(__SURELYNX__)
@@ -335,7 +336,7 @@ PRIntn findFileToInterpret(PRIntn argc, char **argv)
 #endif	
        )
       )
-    return 0;	/* -h, -c, -f, -r will always be invalid flags & force command mode */
+    return 0;	/* -h, -c, -f, -F, -r will always be invalid flags & force command mode */
 
   if ((argc > 1) && argv[1][0] != '-')
     if (access(argv[1], F_OK) == 0)
@@ -456,7 +457,6 @@ PRIntn prmain(PRIntn argc, char **argv)
 
 	case 'F':
 	  skipSheBang = 1;
-
 	case 'f':
 	  scriptFilename = optarg;
 	  break;
@@ -527,7 +527,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	fatal("Invalid syntax for file-interpreter flags! (Must begin with '-')");
 
       flags = realloc(flags, strlen(argv[1]) + 1);
-      strcpy(flags, argv[1]);
+      strcpy(flags, argv[1] + 1);
     }
 
     script_argv = argv + fiArg;
@@ -594,10 +594,15 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
       JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
+      if (JS_IsExceptionPending(jsi->cx))
+      {
+	jsi->exitType = et_exception;
+	JS_ReportPendingException(jsi->cx);
+      }
       JS_RemoveRoot(jsi->cx, &scrobj);
     }
 
-    if (JS_IsExceptionPending(jsi->cx))
+    if (jsi->exitType & et_exception)
       goto out;
   }
 
@@ -617,7 +622,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     {
       gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
       fclose(scriptFile);
-      if (jsi->exitType & et_successMask)
+      if ((jsi->exitType & et_successMask) == jsi->exitType)
 	exitCode = jsi->exitCode;
       else
 	exitCode = 1;

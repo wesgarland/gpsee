@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.19 2009/09/14 20:17:43 wes Exp $
+## @version	$Id: Makefile,v 1.21 2009/10/20 16:01:49 wes Exp $
 
 top: 	help
 
@@ -68,7 +68,7 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file
+IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base
 INTERNAL_MODULES 	+= vm system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
@@ -232,8 +232,9 @@ invasive-bin-dist:: INVASIVE_EXTRAS += $(shell ldd $(EXPORT_PROGS) $(EXPORT_LIBE
 invasive-bin-dist bin-dist:: TARGET=$(UNAME_SYSTEM)-$(UNAME_RELEASE)-$(UNAME_MACHINE)
 invasive-bin-dist bin-dist:: DATE_STAMP=$(shell date '+%b-%d-%Y')
 invasive-bin-dist bin-dist:: COUNT=$(shell ls $(STREAM)_gpsee_$(TARGET)*.tar.gz 2>/dev/null | grep -c $(DATE_STAMP))
+invasive-bin-dist bin-dist:: DIST_ARCHIVE ?= $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
 invasive-bin-dist bin-dist:: install
-	LD_LIBRARY_PATH="$(SOLIB_DIR):$(JSAPI_LIB_DIR):/lib:/usr/lib" gtar -zcvf $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz \
+	LD_LIBRARY_PATH="$(SOLIB_DIR):$(JSAPI_LIB_DIR):/lib:/usr/lib" gtar -zcvf $(DIST_ARCHIVE) \
 		$(foreach FILE, $(notdir $(EXPORT_PROGS)), "$(BIN_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBEXEC_OBJS)), "$(LIBEXEC_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
@@ -245,6 +246,7 @@ invasive-bin-dist bin-dist:: install
 libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
+gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
