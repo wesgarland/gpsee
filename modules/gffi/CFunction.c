@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.5 2009/07/30 17:12:39 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.8 2009/10/19 16:40:20 wes Exp $
  */
 
 #include <gpsee.h>
@@ -95,21 +95,6 @@ size_t ffi_type_size(ffi_type *type)
  */
 static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, cFunction_handle_t *hnd)
 {
-  if (hnd->rtype_jsv == jsve_void)
-    return JS_TRUE;
-
-  if (hnd->rtype_jsv == jsve_uchar || hnd->rtype_jsv == jsve_schar)
-  {
-    char 	c = *(char *)abi_rvalp;
-    JSString 	*str;
-
-    str = JS_NewStringCopyN(cx, &c, 1);
-    if (!str)
-      return JS_FALSE;
-    *rval = STRING_TO_JSVAL(str);
-    return JS_TRUE;
-  }
-
   if (rtype_abi == &ffi_type_pointer) 
   {
     void 		*ptr = *(void **)abi_rvalp;
@@ -160,6 +145,12 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
 #include "ffi_types.decl"
 #undef ffi_type
 #undef FFI_TYPES_NUMBERS_ONLY
+
+  if (rtype_abi == &ffi_type_void)
+  {
+    *rval = JSVAL_VOID;
+    return JS_TRUE;
+  }
 
   return gpsee_throw(cx, CLASS_ID ".call.returnType.unhandled: unhandled return type");
 }

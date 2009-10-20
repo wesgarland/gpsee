@@ -140,7 +140,6 @@ typedef struct
   void		*fn;			/**< Function pointer to call */
   ffi_cif 	*cif;			/**< FFI call details */
   ffi_type	*rtype_abi;		/**< Return type used by FFI / native ABI */
-  jsval		rtype_jsv;		/**< Return type requested by user */
   size_t	nargs;			/**< Number of arguments */
   ffi_type	**argTypes;		/**< Argument types used by FFI / native ABI */
   valueTo_fn	*argConverters;		/**< Argument converter */

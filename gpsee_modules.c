@@ -40,6 +40,10 @@
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
  *
+ *  @todo	Module cnames aren't 100% unique, because a module name of X could be loaded
+ *		via X_module.so, X_module.js, or X.js. This needs to be fixed.
+ *  @todo	programModule_dir should be eliminated in favour of smarter path inheritance.
+ *
  * <b>Design Notes (warning, rather out of date)</b>
  *
  * Module handles are stored in a dynamically-realloc()d array, jsi->modules.
@@ -91,16 +95,12 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.9 20
 
 #define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 
-#if 1
-  #define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
-#else
-  #define dprintf(a...) while(0) printf(a)
-#endif
-
-#ifdef GPSEE_DEBUG_BUILD
+#if defined(GPSEE_DEBUG_BUILD)
 # define RTLD_mode	RTLD_NOW
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
 #else
 # define RTLD_mode	RTLD_LAZY
+# define dprintf(a...) while(0) printf(a)
 #endif
 
 GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
@@ -117,6 +117,8 @@ typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *);		/**< Module finisher
 #undef InternalModule
 
 static const char *moduleNotFoundErrorMessage = "module not found";
+static const char *moduleThrewErrorMessage = "uncaught exception";
+
 static void finalizeModuleScope(JSContext *cx, JSObject *moduleObject);
 static void finalizeModuleObject(JSContext *cx, JSObject *moduleObject);
 static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module);
@@ -155,7 +157,7 @@ static JSClass module_exports_class = 		/* private member - do not touch - for u
 
 typedef enum 
 { 
-  mhf_loaded	= 1 << 0,
+  mhf_loaded	= 1 << 0,		/**< Indicates that the module has been successfully loaded */
 } moduleHandle_flags_t;
 
 struct moduleHandle
@@ -789,8 +791,9 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
                     cache_filename);
         } else {
           /* Success */
-          gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
-                    cache_filename);
+	  if (gpsee_verbosity(0) > 2)
+	    gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
+		      cache_filename);
         }
       }
       /* We are done with our deserialization context */
@@ -856,8 +859,9 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
                     cache_filename);
         } else {
           /* Success */
-          gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
-                    scriptFilename, cache_filename);
+	  if (gpsee_verbosity(0) > 2)
+	    gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
+		      scriptFilename, cache_filename);
         }
         /* We are done with our serialization context */
         JS_XDRDestroy(xdr);
@@ -944,6 +948,7 @@ static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const ch
   return NULL;
 }
 
+#if 0 /* for rooted module support */
 /**  Check to insure a full path is a child of a jail path.
  *  @param	fullPath	The full path we're checking
  *  @param	jailpath	The jail path we're checking against, or NULL for "anything goes".
@@ -961,6 +966,7 @@ static const char *checkJail(const char *fullPath, const char *jailPath)
 
   return fullPath;
 }
+#endif
 
 static int isRelativePath(const char *path)
 {
@@ -1261,9 +1267,10 @@ static moduleHandle_t *loadInternalModule(JSContext *cx, moduleHandle_t *parentM
  *  @note Returns module handle for a reason! This code can reallocate the backing module array. 
  *        Module on the way in may be at a different address on the way out.
  */
-static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module)
+static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, const char **errorMessage_p)
 {
-  JSObject	*moduleScope = module->scope;
+  JSObject		*moduleScope = module->scope;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   dprintf("initializeModule(%s)\n", module->cname);
 
   if (module->init)
@@ -1282,7 +1289,10 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module)
     JSBool	b;
 
     if (JS_SetProperty(cx, module->scope, "exports", &v) != JS_TRUE)
+    {
+      *errorMessage_p = "could not set exports property";
       return NULL;
+    }
 
     b = JS_ExecuteScript(cx, module->scope, module->script, &v); /* realloc hazard */
     module = getModuleHandle_fromScope(cx, moduleScope);
@@ -1291,8 +1301,51 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module)
     module->script = NULL;	/* No longer needed */
     module->scrobj = NULL;	/* No longer needed */
 
-    if (b != JS_TRUE)	/* uncaught exception */
-      return NULL;
+    if (b == JS_TRUE)
+    {
+      jsi->exitType |= et_finished;
+    }
+    else
+    {
+      if (JS_IsExceptionPending(cx))	/* uncaught exception */
+      {
+	jsval e;
+
+	if (JS_GetPendingException(cx, &e) == JS_TRUE)
+	{
+	  /* Throwing a number sets the exit code */
+	  if (JSVAL_IS_INT(e) || JSVAL_IS_DOUBLE(e))
+	  {
+	    jsi->exitType |= et_requested;
+	    if (JSVAL_IS_INT(e))
+	      jsi->exitCode = JSVAL_TO_INT(e);
+	    else
+	      jsi->exitCode = (int)JSVAL_TO_DOUBLE(e);
+	  }
+	  else
+	  {
+	    /* Report uncaught exceptions */
+	    jsi->exitType |= et_exception;
+	    JS_ReportPendingException(jsi->cx);
+	    *errorMessage_p = moduleThrewErrorMessage;
+	    return NULL;
+	  }
+	}
+	else
+	{
+	  GPSEE_NOT_REACHED("unreportable uncaught exception");
+	  jsi->exitType |= et_exception;
+	  *errorMessage_p = "unreportable uncaught exception";
+	  return NULL;
+	}
+      }
+      else if (!(jsi->exitType & et_requested))
+      {
+	GPSEE_NOT_REACHED("interpreter stopped without reason");
+	gpsee_log(SLOG_ERR, "%s caused the interpreter to stop running, without indicating a valid reason for doing so", 
+		  module->cname);
+      }
+    }
 
     if (!module->id) /* Don't override id if JS is ~ DSO monkey-patch */
     {
@@ -1412,7 +1465,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
   }
 
   dprintf("Initializing module at 0x%p\n", module);
-  if ((m = initializeModule(cx, module)))
+  if ((m = initializeModule(cx, module, &errorMessage)))
     module = m;
   dprintf("Initialized module now at 0x%p\n", m);
 
@@ -1444,7 +1497,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
  *  than a module file, may not be in the libexec dir, etc.
  *
  *  It is possible to have more than one program module in the module list at once,
- *  provided we can generate reasoanble canonical name for each one.
+ *  provided we can generate reasonable canonical names for each one.
  *
  *  Note that only JavaScript modules can be program modules.
  *
@@ -1494,9 +1547,27 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   else
     cnBuf[i] = (char)0;
 
+  if (scriptFile)
+  {
+    int 	e = 0;
+    struct stat sb1, sb2;
+
+    e = stat(cnBuf, &sb1);
+    if (!e)
+      e = fstat(fileno(scriptFile), &sb2);
+
+    if (e)
+      gpsee_log(SLOG_ERR, "Unable to stat program module %s: %m", cnBuf);
+    else
+    {
+      if ((sb1.st_ino != sb2.st_ino) || (sb1.st_dev != sb2.st_dev))
+	gpsee_log(SLOG_ERR, "Program module does not have a valid canonical name");
+    }
+  }
+
   if ((s = strrchr(cnBuf, '.')))
   {
-    if (!strchr(s, '/'))
+    if (strcmp(s, ".js") == 0)
       *s = (char)0;
   }
 
@@ -1504,7 +1575,6 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (!module->cname)
     panic("Out of memory");
 
-  /* jsi->programModule_dir = gpsee_dirname(module->cname, cnBuf, sizeof(cnBuf)); */
   jsi->programModule_dir = cnBuf;
   s = strrchr(cnBuf, '/');
   if (!s || (s == cnBuf))
@@ -1515,32 +1585,31 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("Program module root is %s\n", jsi->programModule_dir);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
-  if (gpsee_compileScript(cx, scriptFilename, scriptFile, &module->script,
+  if (gpsee_compileScript(cx, module->cname, scriptFile, &module->script,
       module->scope, &module->scrobj, &errorMessage))
     goto fail;
 
-  if (initializeModule(cx, module))
+  if (initializeModule(cx, module, &errorMessage))
   {
     dprintf("done running program module %s\n", moduleShortName(module->cname));
     goto good;
   }
-  else
-  {
-    errorMessage = "module initialization failed";
-  }
 
   fail:
-  dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-
-  if (JS_IsExceptionPending(cx) || gpsee_verbosity(0))
-    gpsee_log(SLOG_NOTICE, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
-  else
-    gpsee_log(SLOG_EMERG, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
-
+  GPSEE_ASSERT(errorMessage);
   if (!errorMessage)
     errorMessage = "unknown failure";
 
+  dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
+  if (errorMessage != moduleThrewErrorMessage)
+    gpsee_log(gpsee_verbosity(0) ? SLOG_NOTICE : SLOG_EMERG, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
+
+  if (JS_IsExceptionPending(cx))
+    JS_ReportPendingException(cx);
+
   good:
+  GPSEE_ASSERT(!JS_IsExceptionPending(cx));
+
   jsi->programModule_dir = NULL;
   if (module)
     markModuleUnused(cx, module);
