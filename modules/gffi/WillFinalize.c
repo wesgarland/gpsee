@@ -50,6 +50,43 @@
 
 #define CLASS_ID MODULE_ID ".WillFinalize"
 
+/* @jazzdoc gffi.WillFinalize
+ *
+ * GFFI provides the Javascript programmer with new powers and new responsibilities. Javascript programs cannot provide
+ * finalizers/destructors to clean up after objects get garbage collected. This JSClass bypasses this limitation in a
+ * manner suited specifically to the GFFI module. The goal of WillFinalize is to clean up non-Javascript resources when
+ * they become unreachable by Javascript code. This goal is congruent with Spidermonkey's limitation that JSClass finalizers
+ * may not invoke Javascript functionality. This means that the WillFinalize facility can only be used to invoke CFunctions.
+ *
+ * You will probably never instantiate deal with WillFinalize directly. Instead, gffi.CFunction.prototype.call() returns
+ * values with instance methods which will do that for you. Of course, primitive values can't have JSClasses, so we box
+ * them with gffi.BoxedPrimitive. If ever in the future gffi.CFunction.prototype.call() can return a non-primitive type,
+ * then the 'finalizer' and 'finalizeWith' properties are simply tacked onto the return value. You can bypass all of this
+ * by using gffi.CFunction.prototype.unboxedCall().
+ *
+ * You will want to utilize the power of WillFinalize through the gffi.BoxedPrimitive.prototype.finalizeWith() instance method.
+ * That method will create an instance of WillFinalize if it does not already exist in the 'finalizer' property of the
+ * BoxedPrimitive. As long as this is the only reference to the WillFinalize instance, it will get cleaned up at the same time
+ * that the BoxedPrimitive does.
+ *
+ * @form new gffi.WillFinalize(void)
+ *
+ * See gffi.WillFinalize.prototype.finalizeWith() for more usage information.
+ */
+/* @jazzdoc gffi.WillFinalize.prototype.finalizeWith()
+ *
+ * This instance method registers a finalizer for this WillFinalize instance.
+ *
+ * @form instance.finalizeWith(CFunction instance, arguments...);
+ *
+ * When 'instance' is garbage collected, its JSClass finalizer will execute the given CFunction, passing the arguments given
+ * after it as though they had been provided to the CFunction.prototype.call() instance method of the CFunction instance
+ * given as an argument.
+ *
+ * *IMPORTANT* CFunctions do some magic things to turn your Javascript arguments into typical C-language arguments. The 
+ * arguments you provide here will be evaluated at the time you invoke this instance method, not at the time the finalizer
+ * gets executed!
+ */
 JSClass *WillFinalize_clasp;
 
 /**
