@@ -256,7 +256,9 @@ docs::
 	@rm -f doxygen.log
 	doxygen
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
-	$(JAZZDOC) $(shell find modules -name \*.c -or -name \*.decl)
+
+jazzdocs::
+	-$(JAZZDOC) $(shell find modules -name \*.c -or -name \*.decl)
 
 gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
 gpsee_config.h: Makefile $(wildcard *.mk)
