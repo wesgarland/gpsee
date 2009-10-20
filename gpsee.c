@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.15 2009/10/18 03:50:25 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.16  2009/10/20 20:32:46  wes
+ *  gpsee_getInstancePrivateNTN no longer crashes on null object
+ *
  *  Revision 1.15  2009/10/18 03:50:25  wes
  *  Updated JSOPTIONS_VAROBJFIX to match current module semantics
  *
@@ -111,7 +114,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.15 2009/10/18 03:50:25 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -898,12 +901,16 @@ JSObject *gpsee_InitClass (JSContext *cx, JSObject *obj, JSObject *parent_proto,
  *  @param	cx	JavaScript context
  *  @param	obj	The object to check
  *  @param	...	Zero or more additional class pointers to check, followed by a NULL
+ *  @returns	The object's private slot
  */
 void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
 {
   va_list 	ap;
   JSClass	*clasp, *clasp2;
   void		*prvslot = NULL;
+
+  if (obj == JSVAL_TO_OBJECT(JSVAL_NULL))
+    return NULL;
 
   /* Retreive JSClass* of 'obj' argument */
   clasp = JS_GET_CLASS(cx, obj);
