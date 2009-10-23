@@ -683,7 +683,10 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   cb = interpreter->asyncCallbacks;
   interpreter->asyncCallbacks = NULL;
   /* Wait for the trigger thread to see this */
-  PR_JoinThread(interpreter->asyncCallbackTriggerThread);
+  if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS) {
+    printf("PR_JoinThread() failed!\n");
+    abort();
+  }
   interpreter->asyncCallbackTriggerThread = NULL;
   /* Now we can free the contents of the list */
   interpreter->asyncCallbacks = cb;
@@ -844,7 +847,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   /* Start the "operation callback" trigger thread */
   JS_SetOperationCallback(cx, gpsee_operationCallback);
   interpreter->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
-        interpreter, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_UNJOINABLE_THREAD, 0);
+        interpreter, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 0);
   if (!interpreter->asyncCallbackTriggerThread)
     panic(__FILE__ ": PR_CreateThread() failed!");
   /* Add a callback to spin the garbage collector occasionally */
