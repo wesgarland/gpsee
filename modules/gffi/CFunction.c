@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.9 2009/10/20 20:33:31 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.10 2009/10/23 17:01:18 wes Exp $
  */
 
 #include <gpsee.h>
@@ -430,13 +430,18 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
     return JS_FALSE;
   memset(clos, 0, sizeof(*clos));
 
-  clos->avalues = JS_malloc(cx, sizeof(clos->avalues[0]) * hnd->nargs);
-  if (!clos->avalues)
-    goto fail;
+  if (hnd->nargs)
+  {
+    clos->avalues = JS_malloc(cx, sizeof(clos->avalues[0]) * hnd->nargs);
+    if (!clos->avalues)
+      goto fail;
 
-  clos->storage = JS_malloc(cx, sizeof(clos->storage[0]) * hnd->nargs);
-  if (!clos->storage)
-    goto fail;
+    clos->storage = JS_malloc(cx, sizeof(clos->storage[0]) * hnd->nargs);
+    if (!clos->storage)
+      goto fail;
+
+    memset(clos->storage, 0, sizeof(clos->storage[0]) * hnd->nargs);
+  }
 
   if (hnd->rtype_abi != &ffi_type_void)
   {
@@ -444,8 +449,6 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
     if (!clos->rvaluep)
       goto fail;
   }
-
-  memset(clos->storage, 0, sizeof(clos->storage[0]) * hnd->nargs);
 
   /* Convert jsval argv to C ABI values */
   for (i = 0 ; i < hnd->nargs; i++)
