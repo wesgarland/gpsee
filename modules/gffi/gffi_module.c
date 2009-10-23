@@ -72,6 +72,7 @@ static JSBool gffi_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval *v
   return JS_TRUE;
 }
 
+JSObject *CFunction_proto = NULL;
 /** Initialize the module */
 const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
@@ -92,7 +93,7 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
   if (proto == NULL)
     return NULL;
 
-  proto = CFunction_InitClass(cx, moduleObject, NULL);
+  CFunction_proto = CFunction_InitClass(cx, moduleObject, NULL);
   if (proto == NULL)
     return NULL;
 
