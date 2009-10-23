@@ -683,10 +683,8 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   cb = interpreter->asyncCallbacks;
   interpreter->asyncCallbacks = NULL;
   /* Wait for the trigger thread to see this */
-  if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS) {
-    printf("PR_JoinThread() failed!\n");
-    abort();
-  }
+  if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
+    gpsee_log(SLOG_WARNING, "PR_JoinThread() failed!\n");
   interpreter->asyncCallbackTriggerThread = NULL;
   /* Now we can free the contents of the list */
   interpreter->asyncCallbacks = cb;
