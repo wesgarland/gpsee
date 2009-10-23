@@ -145,7 +145,7 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
       break;
   }
 
-  if (!CFunction_InitClass(cx, obj, NULL))
+  if (!CFunction_InitClass(cx, obj, CFunction_proto))
     return gpsee_throw(cx, CLASS_ID ".error: could not CFunction_InitClass()");
 
   return JS_TRUE;

@@ -160,6 +160,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
 /* The function that invokes a cFunction_closure_t */
 void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
+extern JSObject *CFunction_proto;
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
