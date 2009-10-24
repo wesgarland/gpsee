@@ -374,9 +374,19 @@ JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
   memory_handle_t *thatHnd;
   JSObject	  *thatObj;
 
+  /* The first operand (this) is guaranteed to be a Memory object.
+   * Check now to see if the second operand (that) is one of either
+   * an object or null */
   if (!JSVAL_IS_OBJECT(v))
   {
     *bp = JS_FALSE;
+    return JS_TRUE;
+  }
+
+  /* Check for NULL */
+  if (v == JSVAL_NULL)
+  {
+    *bp = (thisHnd->buffer == NULL) ? JS_TRUE : JS_FALSE;
     return JS_TRUE;
   }
 
@@ -388,10 +398,7 @@ JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
   }
 
   thatHnd = JS_GetPrivate(cx, thatObj);
-  if (thisHnd && thatHnd && (thisHnd->buffer == thatHnd->buffer))
-    *bp = JS_TRUE;
-  else
-    *bp = JS_FALSE;
+  *bp = (thisHnd && thatHnd && (thisHnd->buffer == thatHnd->buffer)) ? JS_TRUE : JS_FALSE;
 
   return JS_TRUE;
 }
