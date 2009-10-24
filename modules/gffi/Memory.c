@@ -99,6 +99,19 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
  *     - buffer->length when !hnd->memoryOwner != this, or
  *     - strlen
  */
+/* @jazzdoc gffi.Memory.asString()
+ * This is an interface to JS_NewStringCopyN().
+ *
+ * @form (instance of Memory).asString()
+ * This form of the asString() instance method infers the length of memory to be consumed, and the Javascript String returned,
+ * on its own. It will use strlen() to accomplish this if it does not already "know" its own length. 
+ *
+ * @form (instance of Memory).asString(-1)
+ * Like the above form, but use of strlen() is forced.
+ *
+ * @form (instance of Memory).asString(length >= 0)
+ * As the first form, but assuming the specified length.
+ */
 static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 {
   memory_handle_t	*hnd;
@@ -361,9 +374,19 @@ JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
   memory_handle_t *thatHnd;
   JSObject	  *thatObj;
 
+  /* The first operand (this) is guaranteed to be a Memory object.
+   * Check now to see if the second operand (that) is one of either
+   * an object or null */
   if (!JSVAL_IS_OBJECT(v))
   {
     *bp = JS_FALSE;
+    return JS_TRUE;
+  }
+
+  /* Check for NULL */
+  if (v == JSVAL_NULL)
+  {
+    *bp = (thisHnd->buffer == NULL) ? JS_TRUE : JS_FALSE;
     return JS_TRUE;
   }
 
@@ -375,10 +398,7 @@ JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
   }
 
   thatHnd = JS_GetPrivate(cx, thatObj);
-  if (thisHnd && thatHnd && (thisHnd->buffer == thatHnd->buffer))
-    *bp = JS_TRUE;
-  else
-    *bp = JS_FALSE;
+  *bp = (thisHnd && thatHnd && (thisHnd->buffer == thatHnd->buffer)) ? JS_TRUE : JS_FALSE;
 
   return JS_TRUE;
 }
@@ -520,7 +540,15 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 }
 
 /* @jazzdoc gffi.Memory
- * TODO document
+ * The GFFI module's Memory abstraction represents a pointer, analogous to the void* C type.
+ *
+ * @form new gffi.Memory(size:Number)
+ * This is an interface to malloc(). The returned Memory instance is the "owner" of the memory allocated this way. See
+ * gffi.Memory.prototype.ownMemory for more information on memory ownership in GFFI.
+ *
+ * @form gffi.Memory((instance of Memory-like object))
+ * This is analogous to a cast operation and can be used on objects like gffi.MutableStruct, binary.ByteArray,
+ * and binary.ByteString. The returned Memory object holds the same address as the one held by the argument given.
  */
 JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
