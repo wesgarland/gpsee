@@ -98,7 +98,7 @@ static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_ab
   if (rtype_abi == &ffi_type_pointer) 
   {
     void 		*ptr = *(void **)abi_rvalp;
-    jsval 		argv[] = { JSVAL_TO_INT(0), JSVAL_FALSE };
+    jsval 		argv[] = { INT_TO_JSVAL(0), JSVAL_FALSE };
     memory_handle_t	*memHnd;
     JSObject		*robj;
 
