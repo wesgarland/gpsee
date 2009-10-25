@@ -154,9 +154,6 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 # define JS_InitClass(a,b,c,d,e,f,g,h,i,j)	gpsee_InitClass(a,b,c,d,e,f,g,h,i,j, MODULE_ID)
 /** Wrapper macro for class names (no quotes!) for JSClass when used with GPSEE */
 # define GPSEE_CLASS_NAME(a)	MODULE_ID "." #a
-# define JS_GetGlobalObject(cx)			deprecated(gpsee_getModuleScope)		/**< @deprecated in favour of gpsee_getModuleScope () */
-# define JS_GetContextPrivate(cx,data)     	deprecated(gpsee_getContextPrivate)		/**< @deprecated in favour of gpsee_getContextPrivate() */
-# define JS_SetContextPrivate(cx,data)      	deprecated(gpsee_getContextPrivate)		/**< @deprecated in favour of gpsee_setContextPrivate() */
 #endif
 
 #if defined(JS_THREADSAFE)
@@ -273,7 +270,7 @@ JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto
 					JSPropertySpec *ps, JSFunctionSpec *fs,
 					JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
 					const char *moduleID);
-JSObject *		gpsee_getModuleObject(JSContext *cx, const char *moduleID);
+JSObject *              gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
 const char *		gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
 JSBool 			gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
 JSClass	*		gpsee_getGlobalClass(void);
