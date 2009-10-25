@@ -22,7 +22,12 @@ Options:
 	[--stream]"
 }
 
-[ "$1" ] || usage
+case "$1" in
+	""|"-h"|"--help")
+		usage
+		exit 1
+	;;
+esac
 
 while [ "$1" ]
 do
@@ -52,7 +57,7 @@ do
 	echo "@@CFLAGS@@"
 	;;
     "--cppflags")
-	echo "@@CPPFLAGS@@"
+	echo "-I@@INCLUDE_DIR@@ @@CPPFLAGS@@"
 	;;
     "--cxxflags")
 	echo "@@CXXFLAGS@@"
