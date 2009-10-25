@@ -682,17 +682,17 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   PR_Lock(interpreter->asyncCallbacks_lock);
   cb = interpreter->asyncCallbacks;
   interpreter->asyncCallbacks = NULL;
+  /* Relinquish mutex */
+  PR_Unlock(interpreter->asyncCallbacks_lock);
   /* Wait for the trigger thread to see this */
   if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
     gpsee_log(SLOG_WARNING, "PR_JoinThread() failed!\n");
   interpreter->asyncCallbackTriggerThread = NULL;
+  /* Destroy mutex */
+  PR_DestroyLock(interpreter->asyncCallbacks_lock);
   /* Now we can free the contents of the list */
   interpreter->asyncCallbacks = cb;
   gpsee_removeAsyncCallbacks(interpreter);
-  /* Relinquish mutex */
-  PR_Unlock(interpreter->asyncCallbacks_lock);
-  /* Destroy mutex */
-  PR_DestroyLock(interpreter->asyncCallbacks_lock);
 #endif
 
   gpsee_shutdownModuleSystem(interpreter->cx);
