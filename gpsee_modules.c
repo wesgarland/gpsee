@@ -1703,9 +1703,8 @@ void gpsee_shutdownModuleSystem(JSContext *cx)
  *  Generally speaking, needing this means you've made a design error
  *  in your native module. Provided to ease importing of foreign
  *  natives which think calling JS_GetGlobalObject() is a good idea.
- *  (e.g. moz jsfile.c)
  */
-JSObject *gpsee_findModuleObject_byID(JSContext *cx, const char *moduleID)
+static JSObject *gpsee_findModuleObject_byID(JSContext *cx, const char *moduleID)
 {
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t		i;
@@ -1724,11 +1723,32 @@ JSObject *gpsee_findModuleObject_byID(JSContext *cx, const char *moduleID)
   return NULL;
 }
 
+/**
+ *  Retrieve the module's var object. This is the object upon which
+ *  module-global vars are defined (module scope).
+ *
+ *  Generally speaking, needing this means you've made a design error
+ *  in your native module. Provided to ease importing of foreign
+ *  natives which think calling JS_GetGlobalObject() is a good idea.
+ */ 
+JSObject *gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID)
+{
+  JSObject *moduleObject = gpsee_findModuleObject_byID(cx, moduleID);
+
+  if (!moduleObject)
+  {
+    gpsee_log(SLOG_NOTICE, "Could not retrieve module object for module '%s'", moduleID);
+    return NULL;
+  }
+
+  return findModuleScope(cx, moduleObject);
+}
+
 /** Find a loaded module's DSO handle via the module's ID. 
  *  Provided to allow unrelated modules to steal symbols from each
  *  other's C code. Lifetime of the return value is not guaranteed.
  */
-void *gpsee_findModuleDSOHnd_byID(JSContext *cx, const char *moduleID)
+static void *gpsee_findModuleDSOHnd_byID(JSContext *cx, const char *moduleID)
 {
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t		i;
