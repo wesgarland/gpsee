@@ -67,13 +67,12 @@ static JSBool cFunction_jsapiCall_setter(JSContext *cx, JSObject *obj, jsval id,
   if (!hnd)
     return JS_FALSE;
 
-  if (JS_ConvertArguments(cx, 1, vp, "%b") == JS_FALSE)
-    return JS_FALSE;
-
   if (*vp == JSVAL_TRUE)
     hnd->noSuspend = 1;
-  else
+  else if (*vp == JSVAL_FALSE)
     hnd->noSuspend = 0;
+  else
+    return gpsee_throw(cx, CLASS_ID ".jsapiCall: assignment of non-boolean value");
 
   return JS_TRUE;
 }
