@@ -64,11 +64,11 @@ CFLAGS                  += $(EXTRA_CFLAGS)
 # Implicit Rules for building libraries
 %.$(SOLIB_EXT):	
 		$(if $(VERSION_O), $(MAKE) $(VERSION_O))
-		$(SO_AR) $@ $^ $(VERSION_O)
+		$(SO_AR) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 
 %.$(LIB_EXT):	
 		$(if $(VERSION_O), $(MAKE) $(VERSION_O))
-		$(AR_RU) $@ $(VERSION_O) $^
+		$(AR_RU) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 		$(RANLIB) $@
 
 export GPSEE_SRC_DIR BUILD STREAM

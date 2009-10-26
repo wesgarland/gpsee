@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.21 2009/10/20 16:01:49 wes Exp $
+## @version	$Id: Makefile,v 1.22 2009/10/26 20:15:42 wes Exp $
 
 top: 	help
 
@@ -64,6 +64,7 @@ $(GPSEE_SRC_DIR)/local_config.mk:
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
+-include $(GPSEE_SRC_DIR)/version.mk
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
@@ -247,7 +248,7 @@ libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
-gsr: gsr.o
+gsr: gsr.o $(VERSION_O)
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
