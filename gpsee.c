@@ -485,8 +485,8 @@ static void gpsee_asyncCallbackTriggerThreadFunc(void *jsi_vp)
     /* Relinquish mutex */
     PR_Unlock(jsi->asyncCallbacks_lock);
 
-    /* Sleep for a bit */
-    sleep(1); // TODO this should be configurable!!
+    /* Sleep for a bit; interrupted by PR_Interrupt() */
+    PR_Sleep(PR_INTERVAL_MIN); // TODO this should be configurable!!
   }
   while (jsi->asyncCallbacks);
 }
@@ -684,9 +684,12 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   interpreter->asyncCallbacks = NULL;
   /* Relinquish mutex */
   PR_Unlock(interpreter->asyncCallbacks_lock);
+  /* Interrupt the trigger thread in case it is in */
+  if (PR_Interrupt(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
+    gpsee_log(SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
   /* Wait for the trigger thread to see this */
   if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(SLOG_WARNING, "PR_JoinThread() failed!\n");
+    gpsee_log(SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
   interpreter->asyncCallbackTriggerThread = NULL;
   /* Destroy mutex */
   PR_DestroyLock(interpreter->asyncCallbacks_lock);
