@@ -48,6 +48,7 @@ MODULE_OBJ ?= $(MODULE)_module.o
 
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
+include $(GPSEE_SRC_DIR)/version.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
 include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 ifneq ($(MAKECMDGOALS),clean)
@@ -59,12 +60,22 @@ ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
 
+DEPEND_FILES += $(GPSEE_SRC_DIR)/modules.mk module.mk 
+DEPEND_FILES += $(wildcard $(MODULE_OBJ:.o=.c) $(MODULE_OBJ:.o=.cpp))
+DEPEND_FILES += $(wildcard $(EXTRA_MODULE_OBJS:.o=.c) $(EXTRA_MODULE_OBJS:.o=.cpp))
+
+ifdef VERSION_O
+ifneq (X$(wildcard $(VERSION_H)),X)
+EXTRA_MODULE_OBJS += $(VERSION_O)
+else
+VERSION_O := 
+endif
+endif
+
 $(MODULE)_module.$(LIB_EXT) $(MODULE)_module.$(SOLIB_EXT): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
 
 .PHONY: build_debug_module
 
 clean: OBJS+=$(MODULE_OBJ) $(EXTRA_MODULE_OBJS) $(MODULE)
 
-DEPEND_FILES += $(GPSEE_SRC_DIR)/modules.mk module.mk 
-DEPEND_FILES += $(wildcard $(MODULE_OBJ:.o=.c) $(MODULE_OBJ:.o=.cpp))
-DEPEND_FILES += $(wildcard $(EXTRA_MODULE_OBJS:.o=.c) $(EXTRA_MODULE_OBJS:.o=.cpp))
+

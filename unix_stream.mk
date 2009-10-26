@@ -77,3 +77,18 @@ ICONV_LIB_NAME	?= iconv
 GPSEE_C_DEFINES	+= HAVE_ICONV
 DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
 
+# Build a timestamp object, requires $(VERSION_H) [version.h]
+ifdef VERSION_O
+VERSION_C 	?= $(VERSION_O:.$(OBJ_EXT)=.c)
+VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
+
+.PHONY .INTERMEDIATE:   $(VERSION_O)
+$(VERSION_O):           $(VERSION_C)
+                        $(CC) $(CFLAGS) -c $(VERSION_C) -o $@
+$(VERSION_C):           $(VERSION_C_IN) $(VERSION_H)
+			$(MK_VERSION_C)
+else
+VERSION_C=
+VERSION_H=
+endif
+
