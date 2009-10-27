@@ -268,66 +268,38 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 {
   JSString 	*str;
   jsrefcount 	depth;
-  size_t	len, maxLen = 0;
-  char		*buf;
   int		i;
 
-  /** Coerce all args .toString() and calculate maximal buffer size */
+  /* Iterate over all arguments, converting them to strings as necessary, replacing
+   * the contents of argv with the results. */
   for (i = 0; i < argc; i++)
   {
+    /* Not already a string? */
     if (!JSVAL_IS_STRING(argv[i]))
     {
+      /* Convert to string ; may call toString() and the like */
       str = JS_ValueToString(cx, argv[i]);
       if (!str)
 	return JS_FALSE;	/* threw */
+      /* Root the string in our argument vector, we don't need the old argument now, anyway */
       argv[i] = STRING_TO_JSVAL(str);
     }
     else
       str = JSVAL_TO_STRING(argv[i]);
-
-    len = JS_GetStringLength(JSVAL_TO_STRING(argv[i]));
-    if (len > maxLen)
-      maxLen = len;
   }
 
-  buf = JS_malloc(cx, maxLen + 1);
-  if (!buf)
-    return JS_FALSE;
-
-  if (argc > 1)
-  {
-    for (i = 0; i < (argc - 1); i++)
-    {
-      str = JS_ValueToString(cx, argv[i]);
-      if (!str)
-	return JS_FALSE;
-
-      strcpy(buf, JS_GetStringBytes(str));
-      depth = JS_SuspendRequest(cx);
-      gpsee_printf("%s%s", i ? " " : "", buf);
-      JS_ResumeRequest(cx, depth);
-    }
-  }
-  else
-    i = 0;
-
-  if (argc)
+  /* Now we'll print each member of argv, which at this point contains the results of the previous
+   * loop we iterated over argv in, so they are all guaranteed to be JSVAL_STRING type. */
+  for (i = 0; i < argc; i++)
   {
     str = JS_ValueToString(cx, argv[i]);
-    if (!str)
-      return JS_FALSE;
-
-    strcpy(buf, JS_GetStringBytes(str));
+    GPSEE_ASSERT(str);
+    /* Suspend request, in case this write operation blocks TODO make optional? */
+    depth = JS_SuspendRequest(cx);
+    /* Print the argument, taking care for putting a space between arguments, and a newline at the end */
+    gpsee_printf("%s%s%s", i ? " " : "", JS_GetStringBytes(str), i+1==argc?"\n":"");
+    JS_ResumeRequest(cx, depth);
   }
-  else
-    *buf = (char)0;
-
-  depth = JS_SuspendRequest(cx);
-  gpsee_printf("%s%s\n", i ? " " : "", buf);
-  JS_ResumeRequest(cx, depth);
-
-  JS_free(cx, buf);
-
   return JS_TRUE;
 }
 
