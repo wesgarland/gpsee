@@ -84,9 +84,9 @@ VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
 
 .PHONY .INTERMEDIATE:   $(VERSION_O)
 $(VERSION_O):           $(VERSION_C)
-                        $(CC) $(CFLAGS) -c $(VERSION_C) -o $@
+	$(CC) $(CFLAGS) -c $(VERSION_C) -o $@
 $(VERSION_C):           $(VERSION_C_IN) $(VERSION_H)
-			$(MK_VERSION_C)
+	$(MK_VERSION_C)
 else
 VERSION_C=
 VERSION_H=
