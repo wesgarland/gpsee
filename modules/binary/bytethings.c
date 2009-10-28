@@ -1367,7 +1367,7 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
   /* Convert JS args to C args */
   if (!byteThing_arg2size(cx, argc, vp, &start, 1, 0, hnd->length-1, JS_TRUE, 0, clasp, methodName))
     return JS_FALSE;
-  if (!byteThing_arg2size(cx, argc, vp, &len, 2, 1, hnd->length-len, JS_TRUE, hnd->length-start, clasp, methodName))
+  if (!byteThing_arg2size(cx, argc, vp, &len, 2, 0, hnd->length-start, JS_TRUE, hnd->length-start, clasp, methodName))
     return JS_FALSE;
 
   /* Search for needle */
