@@ -1065,9 +1065,11 @@ byteThing_handle_t *byteThing_newHandle(JSContext *cx)
  *  @param    classOfResult         Either byteString_clasp or byteArray_clasp to indicate toByteString() or toByteArray() respectively.
  *  @param    protoOfResult         Either byteString_proto or byteArray_proto (or perhaps something that inherits those)
  *  @param    privAllocSizeOfResult Either sizeof(byteString_handle_to) or sizeof(byteArray_handle_t)
+ *  @param    throwPrefix
  *  @returns  JS_TRUE on success
  *  */
-JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *classOfResult, JSObject *protoOfResult, size_t privAllocSizeOfResult)
+JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *classOfResult, JSObject *protoOfResult, size_t privAllocSizeOfResult,
+                             const char *throwPrefix)
 {
   jsval			*argv = JS_ARGV(cx, vp);
   JSObject              *self = JSVAL_TO_OBJECT(JS_THIS(cx, vp));
@@ -1131,7 +1133,7 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
     if (mustBeNew || strcasecmp(sourceCharset, targetCharset))
     {
       /* Create a copy of the buffer, perhaps transcoding during the process */
-      if (!transcodeBuf_toBuf(cx, targetCharset, sourceCharset, &newBuf, &newBufLength, hnd->buffer, hnd->length, "foobity boobity"))
+      if (!transcodeBuf_toBuf(cx, targetCharset, sourceCharset, &newBuf, &newBufLength, hnd->buffer, hnd->length, throwPrefix))
         goto fail;
       /* Instantiate a new ByteThing from the transcoded character buffer */
       rval = byteThing_fromCArray(cx, newBuf, newBufLength, rval,

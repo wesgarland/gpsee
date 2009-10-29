@@ -157,12 +157,12 @@ static JSBool ByteString_decodeToString(JSContext *cx, uintN argc, jsval *vp)
 /** Implements ByteString.toByteString() */
 static JSBool ByteString_toByteString(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_toByteThing(cx, argc, vp, byteString_clasp, byteString_proto, sizeof(byteString_handle_t));
+  return byteThing_toByteThing(cx, argc, vp, byteString_clasp, byteString_proto, sizeof(byteString_handle_t), CLASS_ID ".toByteString");
 }
 /** Implements ByteString.toByteArray() */
 static JSBool ByteString_toByteArray(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_toByteThing(cx, argc, vp, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t));
+  return byteThing_toByteThing(cx, argc, vp, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), CLASS_ID ".toByteArray");
 }
 
 /* TODO this function is now identical to the ByteArray getter */

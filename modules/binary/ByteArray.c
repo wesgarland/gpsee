@@ -337,12 +337,12 @@ static JSBool byteArray_requestSize(JSContext *cx, byteArray_handle_t *hnd, size
 /** Implements ByteArray.toByteArray() */
 static JSBool ByteArray_toByteArray(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_toByteThing(cx, argc, vp, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t));
+  return byteThing_toByteThing(cx, argc, vp, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), CLASS_ID ".toByteArray");
 }
 /** Implements ByteArray.toByteString() */
 static JSBool ByteArray_toByteString(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_toByteThing(cx, argc, vp, byteString_clasp, byteString_proto, sizeof(byteString_handle_t));
+  return byteThing_toByteThing(cx, argc, vp, byteString_clasp, byteString_proto, sizeof(byteString_handle_t), CLASS_ID ".toByteString");
 }
 /** Implements ByteArray.decodeToString() */
 static JSBool ByteArray_decodeToString(JSContext *cx, uintN argc, jsval *vp)
