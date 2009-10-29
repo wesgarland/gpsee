@@ -773,7 +773,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
           }
 
           /* Ask another function to convert the Array for us */
-          len = (size_t)(bufpos - buf + buflen); /* i/o var. limits results. reports bytes read. */
+          len = (size_t)(buflen - (bufpos - buf)); /* i/o var. limits results. reports bytes read. */
           if (!copyJSArray_toBuf(cx, obj, bytesRead, &bufpos, &len, &more, methodName))
             return JS_FALSE;
           bytesRead += len;
@@ -846,12 +846,13 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
   }
 
   /* Reallocate buffer in case it's a bit big :) */
-  buf = JS_realloc(cx, buf, (size_t) (bufpos - buf));
+  buflen = (size_t) (bufpos - buf);
+  buf = JS_realloc(cx, buf, buflen);
   GPSEE_ASSERT(buf); /* should never happen */
 
   /* Return! */
   *resultBuffer = buf;
-  *resultLen = (size_t) (bufpos - buf);
+  *resultLen = buflen;
   return JS_TRUE;
 }
 
