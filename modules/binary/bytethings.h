@@ -38,7 +38,7 @@
  *                              and ByteArray native JSAPI classes.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       June 2009
- *  @version    $Id: bytethings.h,v 1.3 2009/07/28 15:21:52 wes Exp $
+ *  @version    $Id: bytethings.h,v 1.4 2009/10/29 18:35:05 wes Exp $
  */
 
 #ifndef _BYTETHINGS_H
@@ -49,6 +49,7 @@ typedef struct
   size_t                length;         /**< Number of characters in buffer */
   unsigned char         *buffer;        /**< Backing store */
   JSObject		*memoryOwner;	/**< Owner of the backing store */
+  byteThing_flags_e	btFlags;
 } byteString_handle_t;
 
 typedef struct
@@ -56,6 +57,7 @@ typedef struct
   size_t                length;         /**< Number of characters in buffer */
   unsigned char         *buffer;        /**< Backing store */
   JSObject		*memoryOwner;	/**< Owner of the backing store */
+  byteThing_flags_e	btFlags;
   unsigned char         *realBuffer;    /**< Larger block of memory encompassing 'buffer' */
   size_t                capacity;       /**< Amount of memory allocated for buffer */
 } byteArray_handle_t;
@@ -90,9 +92,9 @@ JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp);
 JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t len);
 inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName);
 JSBool byteThing_toSource(JSContext *cx, uintN argc, jsval *vp, JSClass *class);
-JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const * methodName);
+JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const *methodName, JSClass *clasp);
 JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, JSClass *clasp);
-JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
+JSBool byteThing_Cast(JSContext *cx, uintN argc, jsval *argv, jsval *rval,
 		      JSClass *clasp, JSObject *proto, size_t hndSize, const const char *throwPrefix);
 #endif/*_BYTETHINGS_H*/
 

@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteArray.c,v 1.5 2009/07/31 16:47:12 wes Exp $
+ *  @version	$Id: ByteArray.c,v 1.6 2009/10/29 18:35:05 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.5 2009/07/31 16:47:12 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.6 2009/10/29 18:35:05 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -168,10 +168,10 @@ static JSBool ByteArray_setProperty(JSContext *cx, JSObject *obj, jsval id, jsva
  */
 static JSBool ByteArray_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  JSObject 	*instance;
-  unsigned char	*buffer;
-  size_t	length;
-  int		stealBuffer = 0;
+  JSObject 		*instance;
+  unsigned char		*buffer;
+  size_t		length;
+  int			stealBuffer = 0;
 
   /* ByteArray() called as function. */   
   if (JS_IsConstructing(cx) != JS_TRUE)
@@ -296,7 +296,7 @@ static void ByteArray_Finalize(JSContext *cx, JSObject *obj)
 
 static JSBool ByteArray_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  return byteThing_Cast(cx, obj, argc, argv, rval, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), CLASS_ID);
+  return byteThing_Cast(cx, argc, argv, rval, byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), CLASS_ID);
 }
 
 static JSBool ByteArray(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -719,12 +719,12 @@ static JSBool ByteArray_displace(JSContext *cx, uintN argc, jsval *vp)
 /** Implements ByteArray.indexOf() */
 static JSBool ByteArray_indexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_findChar(cx, argc, vp, memchr, "indexOf");
+  return byteThing_findChar(cx, argc, vp, memchr, "indexOf", byteArray_clasp);
 }
 /** Implements ByteArray.lastIndexOf() */
 static JSBool ByteArray_lastIndexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf");
+  return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf", byteArray_clasp);
 }
 
 /** Initializes binary.ByteArray */
