@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.8 2009/07/31 16:47:12 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.9 2009/10/29 18:35:05 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.8 2009/07/31 16:47:12 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.9 2009/10/29 18:35:05 wes Exp $";
 
 #include "gpsee.h"
 #include "binary_module.h"
@@ -532,8 +532,8 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
   return gpsee_throw(cx, "%s.transcode.iconv.missing: Could not transcode UTF-16 String to %s charset; GPSEE was compiled without iconv "
 		     "support.", throwPrefix, charset ?: "(null)");
 #else
-   if (string_length >=  (1<<(sizeof(size_t)*8-1)))   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
-    return gpsee_throw(cx, "%s.transcode.length: String length exceeds maximum characters, cannot convert", throwPrefix);
+   if (string_length >=  1 << ((sizeof(size_t) * 8) - 1))   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
+     return gpsee_throw(cx, "%s.transcode.length: String length exceeds maximum characters, cannot convert", throwPrefix);
   else
     return transcodeBuf_toBuf(cx, charset, DEFAULT_UTF_16_FLAVOUR, bufp, lenp, (const unsigned char *)string_chars, string_length * 2, throwPrefix);
 #endif
@@ -550,9 +550,9 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
  */
 JSBool byteThing_getLength(JSContext *cx, JSObject *obj, JSClass *clasp, jsval id, jsval *vp)
 {
-  byteThing_handle_t *hnd = JS_GetInstancePrivate(cx, obj, clasp, NULL);
+  byteThing_handle_t *hnd = JS_GetPrivate(cx, obj);
 
-  if (!hnd)
+  if (!gpsee_isByteThing(cx, obj))
     return gpsee_throw(cx, "%s.length.get.invalid: property getter applied the wrong object type", clasp->name);
 
   if (((jsval)hnd->length == hnd->length) && INT_FITS_IN_JSVAL(hnd->length))
@@ -1169,12 +1169,25 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
   size_t		length;
   const char		*sourceCharset;
   jsval			*argv = JS_ARGV(cx, vp);
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  JSClass		*objClasp = JS_GET_CLASS(cx, obj);
 
-  /* Acquire our byteThing_handle_t */
-  hnd = byteThing_getHandle(cx, JS_THIS_OBJECT(cx, vp), &clasp, "decodeToString");
-  if (!hnd)
+  if (!obj)
     return JS_FALSE;
 
+  if (!gpsee_isByteThingClass(cx, objClasp))
+    return gpsee_throw(cx, MODULE_ID ".%s.decodeToString.type: Cannot call decodeToString on a %s object!", clasp->name, objClasp->name);
+
+  /* Acquire our byteThing_handle_t */
+  hnd = JS_GetPrivate(cx, obj);
+  if (!hnd->length)
+  {
+    JS_SET_RVAL(cx, vp, JS_GetEmptyStringValue(cx));
+    return JS_TRUE;
+  }
+
+  GPSEE_ASSERT(hnd->buffer);
+    
   switch(argc)
   {
     case 0:
@@ -1196,10 +1209,7 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
   /* Instantiate a JSString return value */
   s = JS_NewUCStringCopyN(cx, (jschar *)buf, length / 2);
   if (!s)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(s));
   return JS_TRUE;
@@ -1209,16 +1219,18 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
 JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp)
 {
   char 			buf[128];
-  byteThing_handle_t 	*hnd;// = JS_GetInstancePrivate(cx, JS_THIS_OBJECT(cx, vp), byteString_clasp, NULL);
+  byteThing_handle_t 	*hnd;
   JSString		*s;
   const char            *className;
   JSObject              *self;
 
   /* Fetch our JSObject */
   self = JS_THIS_OBJECT(cx, vp);
+  if (!self)
+    return JS_FALSE;
 
-  /* Make sure this is a binary.Binary instance */
-  if (!JS_InstanceOf(cx, self, byteString_clasp, NULL) && ! JS_InstanceOf(cx, self, byteArray_clasp, NULL))
+  /* Make sure this is a binary.Binary instance, or at least compatible for this call */
+  if (!gpsee_isByteThing(cx, self))
     return gpsee_throw(cx, MODULE_ID "binary.toString.invalid: native instance method applied to incompatible object");
 
   /* Fetch class name */
@@ -1303,14 +1315,21 @@ JSBool byteThing_toSource(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp)
  *                            value at the moment is byteString_clasp.
  *  @param    fullMethodName  A string of the form "className.methodName" for error reporting
  */
-JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JSClass *rtype, const char const * methodName)
+JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JSClass *rtype, const char const *methodName)
 {
-  //jsval                 *argv = JS_ARGV(cx, vp);
   byteThing_handle_t    *hnd;
   size_t                index;
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  JSClass		*objClasp = JS_GET_CLASS(cx, obj);
+
+  if (!obj)
+    return JS_FALSE;
+
+  if (!gpsee_isByteThingClass(cx, objClasp))
+    return gpsee_throw(cx, MODULE_ID ".%s.%s.type: Cannot call byteAt/charAt on a %s object!", clasp->name, methodName, objClasp->name);
 
   /* Acquire our byteThing_handle_t */
-  hnd = byteThing_getHandle(cx, JS_THIS_OBJECT(cx, vp), &clasp, methodName);
+  hnd = JS_GetPrivate(cx, obj);
   if (!hnd)
     return JS_FALSE;
 
@@ -1339,8 +1358,16 @@ JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JS
   return JS_TRUE;
 }
 
-/** Implements ByteString.indexOf(), ByteString.lastIndexOf(), ByteArray.indexOf(), and ByteArray.lastIndexOf() instance methods */
-JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const * methodName)
+/** Implements ByteString.indexOf(), ByteString.lastIndexOf(), ByteArray.indexOf(), and ByteArray.lastIndexOf() instance methods 
+ *
+ *  @param	cx		JavaScript Context
+ *  @param	argc		Number of arguments
+ *  @param	vp		JSFastNative value pointer
+ *  @param	memchr_fn	Function to use to find bytes in memory
+ *  @param	methodName	What this method is called (for display purposes only)
+ *  @param	clasp		Class that method was called as, regardless of call() object type
+ */
+JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const *methodName, JSClass *clasp)
 {
   byteThing_handle_t    *hnd;
   jsval			*argv = JS_ARGV(cx, vp);
@@ -1348,12 +1375,17 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
   size_t  		start;
   size_t  		len;
   const unsigned char 	*found;
-  JSClass               *clasp;
   const char            *errmsg;
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  JSClass		*objClasp = JS_GET_CLASS(cx, obj);
 
-  /* Acquire our byteThing_handle_t and clasp */
-  clasp = NULL;
-  hnd = byteThing_getHandle(cx, JS_THIS_OBJECT(cx, vp), &clasp, methodName);
+  if (!obj)
+    return JS_FALSE;
+
+  if (!gpsee_isByteThingClass(cx, objClasp))
+    return gpsee_throw(cx, MODULE_ID ".%s.byteAt.type: Cannot call %s on a %s object!", clasp->name, methodName, objClasp->name);
+
+  hnd = JS_GetPrivate(cx, obj);
   if (!hnd)
     return JS_FALSE;
 
@@ -1488,7 +1520,7 @@ JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, 
  *
  *  Casting in GPSEE is different than casting in C.  In GPSEE, the backing store
  *  will be copied, not shared, unless you we can verify that both the source and
- *  the target of the cast are immutable.  (There is currently no way to do this).
+ *  the target of the cast are immutable.
  *
  *  The first argument must have a private slot which is castable to a 
  *  byteThing_handle_t pointer.
@@ -1497,12 +1529,24 @@ JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, 
  *  assume the source is an ASCIZ string.  The length argument is needed because we 
  *  don't always know how much memory is in hnd->buffer, for example, in the case
  *  where the memory is returned by an FFI function.
+ *
+ *  @param	cx 		JavaScript Context
+ *  @param	argc		Number of arguments passed to cast function
+ *  @param	argv		Arguments passed to cast function
+ *  		- argv[0]	ByteThing we are casting
+ *  		- argv[1]	Optional length parameter
+ *  @param	clasp		The type we're casting into (i.e. ByteString or ByteArray)
+ *  @param	proto		Prototype for the new object
+ *  @param	threwPrefix	Prefix for exception messages
+ *
+ *  @returns	JS_TRUE unless an exception is thrown
  */
-JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval,
+JSBool byteThing_Cast(JSContext *cx, uintN argc, jsval *argv, jsval *rval,
 		      JSClass *clasp, JSObject *proto, size_t hndSize, const char *throwPrefix)
 {
   byteThing_handle_t	*hnd;
   ssize_t		length;
+  JSObject		*obj;
 
   if ((argc != 1) && (argc != 2))
     return gpsee_throw(cx, "%s.cast.arguments.count", throwPrefix);
@@ -1516,21 +1560,9 @@ JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
     obj = JSVAL_TO_OBJECT(argv[0]);
 
   if (!gpsee_isByteThing(cx, obj))
-  {
-    JSClass 	*tclasp = JS_GET_CLASS(cx, obj);
-    const char	*className;
-
-    if (!tclasp)
-      className = "Object";
-    else
-      className = (tclasp->name && tclasp->name[0]) ? tclasp->name : "corrupted";
-
-    return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, className, tclasp->name);
-  }
+    return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, (obj ? JS_GET_CLASS(cx, obj)->name : "null"), clasp->name);
   
   hnd = JS_GetPrivate(cx, obj);
-  if (!hnd)
-    return gpsee_throw(cx, "%s.cast.invalidObject", throwPrefix);
 
   if (argc == 1)
     length = hnd->length;
@@ -1554,12 +1586,26 @@ JSBool byteThing_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
       length = strlen((const char *)hnd->buffer);
   }
 
-  obj = byteThing_fromCArray(cx, hnd->buffer, length, NULL, clasp, proto, hndSize, 0);
-  if (!obj)
-    return JS_FALSE;
+  if ((clasp == byteString_clasp) && (hnd->btFlags & bt_immutable))
+  {
+    /* casting from immutable to immutable: can avoid copy */
+    byteThing_handle_t	*newHnd = JS_malloc(cx, sizeof(*newHnd));
+    
+    if (!newHnd)
+      return JS_FALSE;
+
+    *newHnd = *hnd;
+    obj = JS_NewObject(cx, clasp, proto, NULL);
+    JS_SetPrivate(cx, obj, newHnd);
+  }
+  else
+  {
+    obj = byteThing_fromCArray(cx, hnd->buffer, length, NULL, clasp, proto, hndSize, 0);
+    if (!obj)
+      return JS_FALSE;
+  }
 
   *rval = OBJECT_TO_JSVAL(obj);
-
   return JS_TRUE;
 }
 

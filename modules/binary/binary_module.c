@@ -40,12 +40,13 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $
+ *  @version	$Id: binary_module.c,v 1.2 2009/10/29 18:35:05 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: binary_module.c,v 1.1 2009/05/27 04:51:45 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: binary_module.c,v 1.2 2009/10/29 18:35:05 wes Exp $";
 
 #include "gpsee.h"
+#define _BINARY_MODULE_C
 #include "binary_module.h"
 
 JSClass *byteString_clasp;

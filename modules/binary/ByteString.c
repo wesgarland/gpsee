@@ -38,14 +38,14 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteString.c,v 1.6 2009/07/28 15:21:52 wes Exp $
+ *  @version	$Id: ByteString.c,v 1.7 2009/10/29 18:35:05 wes Exp $
  *
  *  Based on https://wiki.mozilla.org/ServerJS/Binary/B
  *  Extensions:
  *  - Missing or falsy charset in constructor means to inflate/deflate
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.6 2009/07/28 15:21:52 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.7 2009/10/29 18:35:05 wes Exp $";
 #include "gpsee.h"
 #include "binary_module.h"
 
@@ -136,7 +136,7 @@ inline int byteString_retrieveAndCheckIndexArgument(JSContext *cx, byteString_ha
  */
 JSBool ByteString_indexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_findChar(cx, argc, vp, memchr, "indexOf");
+  return byteThing_findChar(cx, argc, vp, memchr, "indexOf", byteString_clasp);
 }
 
 /** Implements ByteString::lastIndexOf method. Method arguments are
@@ -145,7 +145,7 @@ JSBool ByteString_indexOf(JSContext *cx, uintN argc, jsval *vp)
  */
 static JSBool ByteString_lastIndexOf(JSContext *cx, uintN argc, jsval *vp)
 {
-  return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf");
+  return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf", byteString_clasp);
 }
 
 /** Implements ByteString::decodeToString method */
@@ -211,6 +211,8 @@ static JSBool ByteString_Constructor(JSContext *cx, JSObject *obj, uintN argc, j
   unsigned char	*buffer;          /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   size_t	length;           /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   int		stealBuffer = 0;  /* whether or not we want a further private constructor function to make its own copy */
+
+  byteArray_handle_t 	*hnd;
 
   /* This case is easy */
   if (argc == 0)
@@ -286,13 +288,16 @@ static JSBool ByteString_Constructor(JSContext *cx, JSObject *obj, uintN argc, j
   if (!instance)
     return JS_FALSE;
 
+  hnd = JS_GetPrivate(cx, instance);
+  hnd->btFlags |= bt_immutable;
+
   *rval = OBJECT_TO_JSVAL(instance);
   return JS_TRUE;
 }  
 
 static JSBool ByteString_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  return byteThing_Cast(cx, obj, argc, argv, rval, byteString_clasp, byteString_proto, sizeof(byteString_handle_t), CLASS_ID);
+  return byteThing_Cast(cx, argc, argv, rval, byteString_clasp, byteString_proto, sizeof(byteString_handle_t), CLASS_ID);
 }
 
 static JSBool ByteString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -644,7 +649,7 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
 		   obj, 		/* Object to use for initializing class (constructor arg?) */
 		   parentProto,		/* parent_proto - parent class (ByteString.__proto__) */
  		   &byteString_class,	/* clasp - Class struct to init. Defs class for use by other API funs */
-		   ByteString,	/* constructor function - Scope matches obj */
+		   ByteString,		/* constructor function - Scope matches obj */
 		   0,			/* nargs - Number of arguments for constructor (can be MAXARGS) */
 		   instance_props,	/* ps - props struct for parent_proto */
 		   instance_methods, 	/* fs - functions struct for parent_proto (normal "this" methods) */

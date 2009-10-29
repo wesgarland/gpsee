@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.19 2009/09/21 21:33:41 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.20 2009/10/29 18:35:05 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.20  2009/10/29 18:35:05  wes
+ *  ByteThing casting, apply(), call() mutability fixes
+ *
  *  Revision 1.19  2009/09/21 21:33:41  wes
  *  Implemented Memory equality operator in gffi module
  *
@@ -412,6 +415,11 @@ static jsbool_t  __attribute__((unused)) __jsbool = js_false;
 static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 #endif
 
+typedef enum 
+{ 
+  bt_immutable	= 1 << 0,	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
+} byteThing_flags_e;
+
 /** Generic structure for representing pointer-like-things which we store in 
  *  private slots for various modules, used to facilitate casts.  All byteThing
  *  private handles must start like this one.
@@ -429,6 +437,7 @@ typedef struct
   size_t                length;                 /**< Number of characters in buf */
   unsigned char         *buffer;                /**< Backing store */
   JSObject		*memoryOwner;		/**< What JS Object owns the memory? NULL means "nobody" */
+  byteThing_flags_e	btFlags;		/**< Flags describing this ByteThing variant */
 } byteThing_handle_t;
 
 /** Macro to insure a proper byteThing is being set up. Requirements;
@@ -437,6 +446,7 @@ typedef struct
  *  - Type X has x_class JSClass
  */
 #define GPSEE_DECLARE_BYTETHING_CLASS(cls)	 								\
+GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, btFlags) == offsetOf(byteThing_handle_t, btFlags)); 		\
 GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, length) == offsetOf(byteThing_handle_t, length)); 		\
 GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, buffer) == offsetOf(byteThing_handle_t, buffer)); 		\
 GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, memoryOwner) == offsetOf(byteThing_handle_t, memoryOwner)); 	\
@@ -445,6 +455,6 @@ cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 
 
-#define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls) }
+#define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls); ecls ## _eclass.base = ecls ##_class; }
 
 #endif /* GPSEE_H */

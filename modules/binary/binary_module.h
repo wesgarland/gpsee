@@ -37,7 +37,7 @@
  *  @file	binary_module.h		Symbols shared between classes/objects in the binary module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: binary_module.h,v 1.4 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: binary_module.h,v 1.6 2009/10/29 18:35:05 wes Exp $
  */
 
 #ifndef GPSEE_BINARY_MODULE_H
@@ -56,10 +56,12 @@ JSObject *Binary_InitClass(JSContext *cx, JSObject *obj);
 #endif
 void *memrchr(const void *s, int c, size_t n);
 
+#ifndef _BINARY_MODULE_C
 extern JSClass *byteString_clasp;
 extern JSClass *byteArray_clasp;
 extern JSObject *byteString_proto;
 extern JSObject *byteArray_proto;
+#endif
 
 #ifdef HAVE_ICONV
 # if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)

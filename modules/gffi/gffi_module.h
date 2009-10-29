@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.6 2009/09/14 21:19:09 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.9 2009/10/29 18:35:05 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -85,6 +85,7 @@ typedef struct
   size_t		length;		/**< Size of buffer or 0 if unknown */
   char          	*buffer;	/**< Pointer to memory */
   JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
+  byteThing_flags_e	btFlags;	/**< GPSEE ByteThing attributes (bitmask) */
 } memory_handle_t;
 
 /** Private handle used to describe an instance of a MutableStruct or ImmutableStruct object */
@@ -93,6 +94,7 @@ typedef struct
   size_t		length;		/**< Number of bytes allocated for the struct or 0 if we didn't allocate */
   char          	*buffer;	/**< Pointer to the start of the struct */
   JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
+  byteThing_flags_e	btFlags;	/**< GPSEE ByteThing attributes (bitmask) */
   structShape		*descriptor;	/**< Description of the struct this handle describes */
 } struct_handle_t;
 
