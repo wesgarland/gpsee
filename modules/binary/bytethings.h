@@ -84,7 +84,8 @@ JSBool byteThing_arg2ssize(JSContext *cx, uintN argc, jsval *vp, ssize_t *retval
 const char * byteThing_val2size(JSContext *cx, jsval val, size_t *rval, const char const * methodName);
 JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, uintN argn, size_t min, size_t max,
                           JSBool mayDefault, size_t defaultSize, JSClass *clasp, const char const *methodName);
-JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *classOfResult, JSObject *protoOfResult, size_t privAllocSizeOfResult);
+JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *classOfResult, JSObject *protoOfResult, size_t privAllocSizeOfResult,
+                             const char *throwPrefix);
 JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp);
 JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JSClass *rtype, const char const * methodName);
 JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp);
