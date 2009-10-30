@@ -330,6 +330,13 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 #endif
   size_t	approxChars;
 
+  /* Empty string? */
+  if (inputBufferLength == 0) {
+    *outputBuffer_p = NULL;
+    *outputBufferLength_p = 0;
+    return JS_TRUE;
+  }
+
   if ((sourceCharset == targetCharset) || (sourceCharset && targetCharset && (strcasecmp(sourceCharset, targetCharset) == 0)))
   {
     *outputBuffer_p = JS_malloc(cx, inputBufferLength);

@@ -132,6 +132,8 @@ function(t){return t.eq(new ByteArray("hello").get(4), 111)},
 function(){return new ByteArray("hello").length === 5},
 function(){return new ByteArray("hello", "utf-8").toByteString("utf-8", "utf-16").length === 12},
 function(){return (new ByteArray("hello") instanceof Binary) === true},
+/* Test iconv(3) on empty string */
+function(t){return t.eq(new ByteArray("").toByteString("ascii", "utf-8").decodeToString("ascii"), '')},
 /* indexOf tests */
 function(t){return t.eq(new ByteArray("Where's Waldo?!").indexOf('W'.charCodeAt(0)), 0)},
 function(t){return t.eq(new ByteArray("Where's Waldo?!").indexOf('W'.charCodeAt(0),0), 0)},
