@@ -81,7 +81,7 @@ exports.ByteArray.prototype.every = function(f) {
  */
 exports.ByteArray.prototype.some = function(f) {
     for (var i=0, l=this.length; i<l; i++)
-      if (f(this[i], i, this));
+      if (f(this[i], i, this))
         return true;
     return false;
 }
@@ -151,4 +151,3 @@ exports.ByteArray.prototype.reduceRight = function(f) {
     rval = f(rval, this[i]);
   return rval;
 }
-

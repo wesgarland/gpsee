@@ -184,7 +184,17 @@ function(t){var b=new ByteArray("ABC"),s='';b.forEach(function(a,b){s+=','+a+','
 /* filter */
 function(t){var b=new ByteArray;for(var i=0;i<256;i++)b.push(i);var c=b.filter(function(x){return x==42}); return t.eq(c.length, 1) && t.eq(c[0], 42)},
 /* map, some, and every */
-function(t){var b=new ByteArray;for(var i=0;i<256;i++)b.push(i);var c=b.map(function(x){return x|7}); return t.eq(b.some(function(x){return x&7?true:false}), true) && t.eq(c.every(function(x){return x&7?true:false}), true)},
+function(t) {
+  var b = new ByteArray;
+  for (var i=0; i<256; i++)
+    b.push(i);
+  var c = b.map(function(x){return x|7});
+  var d = b.map(function(x){return x&~7});
+  return t.eq(b.some(function(x){return x&7?true:false}), true) &&
+         t.eq(c.every(function(x){return x&7?true:false}), true) && 
+         t.eq(b.every(function(x){return x&7?true:false}), false) &&
+         t.eq(d.some(function(x){return x&7?true:false}), false);
+},
 /* reduce */
 function(t){var b=new ByteArray;for(var i=0;i<8;i++)b.push(1<<i);return t.eq(b.reduce(function(a,b){return a|b}), 255)},
 /* reduce and reduceRight */
