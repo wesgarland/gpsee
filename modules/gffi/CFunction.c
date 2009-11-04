@@ -428,6 +428,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   if (!clos)
     return JS_FALSE;
   memset(clos, 0, sizeof(*clos));
+  clos->hnd = hnd;
 
   if (hnd->nargs)
   {
@@ -458,7 +459,6 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   }
 
   /* Return the prepared FFI call */
-  clos->hnd = hnd;
   *clospp = clos;
   return JS_TRUE;
 
