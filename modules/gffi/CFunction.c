@@ -317,15 +317,14 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
 
   if (JSVAL_IS_OBJECT(v))
   {
-    memory_handle_t	*hnd;
-
     JSObject *obj = JSVAL_TO_OBJECT(v);
-
-    hnd = gpsee_getInstancePrivate(cx, obj, memory_clasp, mutableStruct_clasp, immutableStruct_clasp);
-    if (hnd)
+    if (gpsee_isByteThing(cx, obj))
     {
-      *avaluep = &hnd->buffer;
-      return JS_TRUE;
+      memory_handle_t *hnd = JS_GetPrivate(cx, obj);
+      if (hnd) {
+        *avaluep = &hnd->buffer;
+        return JS_TRUE;
+      }
     }
   }
 
