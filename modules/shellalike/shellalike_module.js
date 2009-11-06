@@ -10,6 +10,7 @@ const {ByteString,ByteArray} = require('binary');
 /* GFFI decls */
 const _pipe = new ffi.CFunction(ffi.int, 'pipe', ffi.pointer);
 const _p2open = new ffi.CFunction(ffi.int, '__gpsee_p2open', ffi.pointer, ffi.pointer);
+const _p2close = new ffi.CFunction(ffi.int, 'gpsee_p2close', ffi.pointer);
 const _open = new ffi.CFunction(ffi.int, 'open', ffi.pointer, ffi.int);
 const _creat = new ffi.CFunction(ffi.int, 'creat', ffi.pointer, ffi.int);
 const _close = new ffi.CFunction(ffi.int, 'close', ffi.int);
@@ -22,17 +23,19 @@ const _fwrite = new ffi.CFunction(ffi.size_t, 'fwrite', ffi.pointer, ffi.size_t,
 const _fflush = new ffi.CFunction(ffi.int, 'fflush', ffi.pointer);
 const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 
-function $G(src) {
-  var args = Array.prototype.slice.call(arguments, 1), that = this;
-  function read_generator() {
-    for (var each in src.apply(that, args))
-      yield each;
-  }
-  return read_generator;
-}
 
+/* Convenience stuff */
+/* numeric range generator */
+function range(start,stop){for(var i=start;i<stop;i++)yield i}
+/* Generator.prototype.toArray() */
+(function(){yield})().__proto__.toArray = function(){var a=[];for(var v in this)a.push(v);return a}
+/* Zap the new/apply contention with help from eval()
+ * NOTE that this does NOT WORK on NATIVE constructor functions! */
+Function.prototype.new = function(){ return eval('new this('+range(0,arguments.length).toArray().map(function(n)'arguments['+n+']')+')') }
+/* Bind an instance method to some 'this' object */
 function $P(f,t) {
-  return function() f.apply(t||this, arguments);
+  if (arguments.length==1) t = this;
+  return function() f.apply(t, arguments);
 }
 
 ffi.Memory.prototype.intAt = (function() {
@@ -46,15 +49,24 @@ ffi.Memory.prototype.intAt = (function() {
   return Memory_intAt;
 })();
 
+/* @jazzdoc shellalike.p2open
+ * Mostly intended as an internal function.
+ * TODO add finalizer! this will require repairing the missing
+ * linked-list functionality in __gpsee_p2open() et al.
+ */
 const p2open = (function() {
   var FDs = new ffi.Memory(8); // TODO sizeof(int)*2
+  //FDs.finalizeWith(_free, FDs);
   function p2open(command) {
+    print('p2open() with', command);
     var n = _p2open.call(command, FDs);
     if (n|0)
       throw new Error('p2open() failed (TODO better error)');
     var psink = _fdopen.call(FDs.intAt(0), "w"),
         psrc  = _fdopen.call(FDs.intAt(4), "r");
-    return {'src':psrc, 'snk':psink};
+    /* GFFI MAGIC! See gffi.BoxedPrimitive for help! */
+    //n.finalizeWith(_p2close, FDs.intAt(0), FDs.intAt(4), 9);
+    return {'src':psrc, 'snk':psink, /*'__gcreqs__': [n]*/ };
   }
   return p2open;
 })();
@@ -85,12 +97,13 @@ const flines = (function(){
  * nothing is set in stone, yet
  */
 function Process(command) {
-  var {src,snk} = exports.p2open(command);
+  print('Process with', command);
+  var {src,snk} = p2open(command);
   /* @jazzdoc shellalike.Process.__iterator__
    * @form for (line in new Process(command)) {...}
    * Allows line-by-line iteration over the output of a shell command.
    */
-  this.__iterator__ = $G(flines, src);
+  this.__iterator__ = function()flines(src).__iterator__();
 
   /* @jazzdoc shellalike.Process.write
    * @form (instance of Process).write(string)
@@ -142,7 +155,14 @@ ExecAPI.prototype = {'__proto__': Process.prototype};
  */
 ExecAPI.prototype.initialized = false;
 ExecAPI.prototype.initialize = function() {
-  Process.call(this, this.command);
+  if (this.command)
+    Process.call(this, this.command);
+  else if (this.generator)
+    throw new Error("TODO implement ExecAPI generators!");
+  else if (this.iterator)
+    throw new Error("TODO impelment ExecAPI iterators!");
+  else
+    throw new Error("This ExecAPI instance appears empty!");
   this.initialize = function(){};
 }
 ExecAPI.prototype.write = function() {
@@ -164,13 +184,16 @@ ExecAPI.prototype.__iterator__ = function() {
  * but this might change in the future.
  */
 ExecAPI.splice = function(snk, src) {
-  print('splicing', snk, '|', src);
+  print('splicing', snk);
+  print('    with', src);
   if (arguments.length < 2)
     return arguments[0];
   if (arguments.length == 2) {
     /* Consolidate multiple external commands */
-    if (snk.command && src.command)
-      return new ExecAPI(snk.command + "|" + src.command);
+    if (snk.command && src.command) {
+      var rval = exec(snk.command + "|" + src.command);
+      return rval;
+    }
 
     /* Consolidate multiple internal commands */
     return {
@@ -192,7 +215,51 @@ ExecAPI.extend = function() {
 ExecAPI.prototype.cat = function() {
   return 'meow!';
 }
+ExecAPI.prototype.toString = function() {
+  if (this.command)
+    return '[ExecAPI External Process "'+this.command+'"]';
+  else if (this.generator)
+    return '[ExecAPI Generator Process "'+this.generator.name+'"]';
+  else if (this.__iterator__)
+    return '[ExecAPI Iterator Process]';
+  else
+    return '[ExecAPI NULL]';
+}
+/* @jazzdoc ExecAPI.prototype.exec
+ * Short-hand compostion and execution operations.
+ *
+ * @form instance.exec()
+ * Run the pipeline until all stages are exhausted. This is useful for pipelines which
+ * have no output, and therefore cannot be executed in the typcal course of consuming
+ * the pipeline's output. It's also useful for pipelines which have neither output nor
+ * input.
+ *
+ * @form instance.exec(commandString)
+ * @form instance.exec(generatorFunction)
+ * @form instance.exec(iteratorObject)
+ * Same as ExecAPI.splice(instance, new ExecAPI(argument)) whatever argument may be
+ * from the above mentioned forms. This, in tandem with Shellalike.exec() provides 
+ * a convenient short-hand form of using the Shellalike module. Here's an example:
+ *
+ *   exec(generatorFunc).exec("sink-command")
+ */
+ExecAPI.prototype.exec = function() {
+  if (arguments.length == 0)
+    throw new Error("TODO: Implement .exec() pipeline executor!");
+  print(this+ '.exec('+Array.prototype.join.call(arguments,',')+')');
 
+  /* Construct an argument vector of the form [this, exec(arg0), ... exec(argN)] */
+  var args = [this];
+  args.push.apply(args, Array.prototype.map.call(arguments, function(a)exec(a)));
+  /* NOTE the new/apply contention above! if ExecAPI ever accepts more args, we'll have to refactor here! */
+  print('@@splicing', args);
+  return ExecAPI.splice.apply(this, args);
+}
+
+/* @jazzdoc shellalike.exec
+ * This is the most convenient and powerful API for the shellalike module.
+ * See ExecAPI.prototype.exec for more information.
+ */
 function exec(command) {
   var rval = {
     '__proto__': ExecAPI.prototype,
@@ -204,9 +271,10 @@ function exec(command) {
     rval.generator = command;
   }
   else if (command.__iterator__) {
-    rval.__iterator__ = $G(command.__iterator__,command);
+    rval.__iterator__ = function()command.__iterator__()
   }
   else throw new Error("Invalid exec() command");
+  return rval;
 }
 
 /* exports */
