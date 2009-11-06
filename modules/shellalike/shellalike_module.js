@@ -22,17 +22,10 @@ const _fwrite = new ffi.CFunction(ffi.size_t, 'fwrite', ffi.pointer, ffi.size_t,
 const _fflush = new ffi.CFunction(ffi.int, 'fflush', ffi.pointer);
 const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 
-function $G(src) {
-  var args = Array.prototype.slice.call(arguments, 1), that = this;
-  function read_generator() {
-    for (var each in src.apply(that, args))
-      yield each;
-  }
-  return read_generator;
-}
-
+/* Bind an instance method to some 'this' object */
 function $P(f,t) {
-  return function() f.apply(t||this, arguments);
+  if (arguments.length==1) t = this;
+  return function() f.apply(t, arguments);
 }
 
 ffi.Memory.prototype.intAt = (function() {
@@ -90,7 +83,7 @@ function Process(command) {
    * @form for (line in new Process(command)) {...}
    * Allows line-by-line iteration over the output of a shell command.
    */
-  this.__iterator__ = $G(flines, src);
+  this.__iterator__ = flines(src);
 
   /* @jazzdoc shellalike.Process.write
    * @form (instance of Process).write(string)
@@ -164,13 +157,16 @@ ExecAPI.prototype.__iterator__ = function() {
  * but this might change in the future.
  */
 ExecAPI.splice = function(snk, src) {
-  print('splicing', snk, '|', src);
+  print('splicing', snk);
+  print('    with', src);
   if (arguments.length < 2)
     return arguments[0];
   if (arguments.length == 2) {
     /* Consolidate multiple external commands */
-    if (snk.command && src.command)
-      return new ExecAPI(snk.command + "|" + src.command);
+    if (snk.command && src.command) {
+      var rval = exec(snk.command + "|" + src.command);
+      return rval;
+    }
 
     /* Consolidate multiple internal commands */
     return {
@@ -179,6 +175,7 @@ ExecAPI.splice = function(snk, src) {
         snk.initialize();
         src.initialize();
         this.write = $P(snk.write,snk);
+        this.write = $P(snk,'write');
         this.__iterator__ = $P(src.__iterator__,src);
       }
     };
@@ -192,6 +189,10 @@ ExecAPI.extend = function() {
 ExecAPI.prototype.cat = function() {
   return 'meow!';
 }
+ExecAPI.prototype.toString = function() {
+  if (this.command)
+    return '[ExecAPI External Process "'+this.command+'"]';
+}
 
 function exec(command) {
   var rval = {
@@ -204,9 +205,10 @@ function exec(command) {
     rval.generator = command;
   }
   else if (command.__iterator__) {
-    rval.__iterator__ = $G(command.__iterator__,command);
+    rval.__iterator__ = command.__iterator__();
   }
   else throw new Error("Invalid exec() command");
+  return rval;
 }
 
 /* exports */
