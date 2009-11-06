@@ -267,7 +267,7 @@ int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 //extern int _insert(pid_t pid, int fd);
 //extern pid_t _delete(int fd);
 int __gpsee_p2open(const char *cmd, int fds[2]);
-int __gpese_p2close(int *fdp, FILE **fpp, int kill_sig);
+int __gpsee_p2close(int *fdp, FILE **fpp, int kill_sig);
 
 int
 gpsee_p2open(const char *cmd, FILE *fp[2])
@@ -377,4 +377,10 @@ __gpsee_p2close(int *fdp, FILE **fpp, int kill_sig)
 	(void) signal(SIGQUIT, qstat);
 	(void) signal(SIGHUP, hstat);
 	return (status);
+}
+int gpsee_p2close_easy(int fd0, int fd1, int kill_sig) {
+  int FDs[2];
+  FDs[0] = fd0;
+  FDs[1] = fd1;
+  return __gpsee_p2close(FDs, NULL, kill_sig);
 }
