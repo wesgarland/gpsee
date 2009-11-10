@@ -1,0 +1,4 @@
+function(clock_getcpuclockid)
+function(fpclassify)
+function(alloca)
+function(va_alist)
