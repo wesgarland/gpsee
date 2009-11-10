@@ -47,7 +47,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Nov 2009
- *  @version	$Id: std_functions.c,v 1.2 2009/11/10 20:18:22 wes Exp $
+ *  @version	$Id: std_functions.c,v 1.3 2009/11/10 20:42:59 wes Exp $
  */
 
 #include "std_gpsee_no.h"
@@ -61,7 +61,7 @@ struct fn_s
 
 static inline int vstrcmp(const void *s1, const void *s2)
 {
-  return strcmp((const char *)s1, (const char *)s2);
+  return strcmp((const char *)s1, ((struct fn_s *)s2)->functionName);
 }
 
 void *findPreDefFunction(const char *functionName)
