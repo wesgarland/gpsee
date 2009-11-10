@@ -33,14 +33,14 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
- *  @file	functions.c	Support code for GPSEE's gffi module which
+ *  @file	CFunction.c	Support code for GPSEE's gffi module which
  *				exposes C functions to JavaScript.
  *
  *  @author	Wes Garland
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.10 2009/10/23 17:01:18 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.11 2009/11/10 20:20:50 wes Exp $
  */
 
 #include <gpsee.h>
@@ -329,7 +329,7 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
   }
 
   if (JSVAL_IS_VOID(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a void argument to a pointer", argn);
+    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert undefined argument to a pointer", argn);
 
   if (v == JSVAL_TRUE || v == JSVAL_FALSE)
     return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a bool argument to a pointer", argn);
@@ -622,6 +622,8 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
   }
 
 rtldDefault:
+  if (!(hnd->fn = findPreDefFunction(hnd->functionName)))
+  {
     /* No Library instance. Try RTLD_DEFAULT. See dlopen(3) for details. */
     hnd->fn = dlsym(RTLD_DEFAULT, hnd->functionName);
     /* To overcome difficult linkage scenarios (so far, this only includes macros and weak symbols) upon
@@ -640,6 +642,7 @@ rtldDefault:
         /* Try dlsym() again with the new mangled name! */
         hnd->fn = dlsym(RTLD_DEFAULT, functionName);
     }
+  }
 
 dlsymOver:
   /* Throw an exception on dlsym() failure */

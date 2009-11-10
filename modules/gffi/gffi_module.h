@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.9 2009/10/29 18:35:05 wes Exp $
+ *  @version	$Id: gffi_module.h,v 1.10 2009/11/10 20:20:51 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -162,6 +162,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
 /* The function that invokes a cFunction_closure_t */
 void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
+void *findPreDefFunction(const char *functionName);
 extern JSObject *CFunction_proto;
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
