@@ -1,5 +1,4 @@
 #include "gpsee_config.h"
-//#define GPSEE_STD_SUSV3
 
 #if defined(GPSEE_GNU_SOURCE)
 # define GPSEE_STD_SOURCE

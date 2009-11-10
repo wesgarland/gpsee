@@ -47,11 +47,11 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Nov 2009
- *  @version	$Id: std_functions.c,v 1.1 2009/11/10 20:09:50 wes Exp $
+ *  @version	$Id: std_functions.c,v 1.2 2009/11/10 20:18:22 wes Exp $
  */
 
-#include "gpsee_no.h"
-#include "functions.h"
+#include "std_gpsee_no.h"
+#include "std_functions.h"
 
 struct fn_s
 {
