@@ -74,7 +74,7 @@ LIB_EXT		?=a
 SOLIB_EXT	?=so
 
 ICONV_LIB_NAME	?= iconv
-GPSEE_C_DEFINES	+= HAVE_ICONV
+GPSEE_C_DEFINES	+= HAVE_ICONV GPSEE_STD_SUSV3
 DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
 
 # Build a timestamp object, requires $(VERSION_H) [version.h]
