@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
- *  @file	functions.c	Support code for GPSEE's gffi module which
+ *  @file	std_functions.c	Support code for GPSEE's gffi module which
  *				exposes standard C function symbols to 
  *				CFunction.
  *
@@ -47,7 +47,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Nov 2009
- *  @version	$Id: std_functions.c,v 1.3 2009/11/10 20:42:59 wes Exp $
+ *  @version	$Id: std_functions.c,v 1.4 2009/11/10 22:04:54 wes Exp $
  */
 
 #include "std_gpsee_no.h"
@@ -55,16 +55,16 @@
 
 struct fn_s
 {
-  const char 	*functionName;		/* must be first for strcmp! */
-  void		*functionAddress;	
+  const char 	*name;
+  void		*address;	
 };
 
 static inline int vstrcmp(const void *s1, const void *s2)
 {
-  return strcmp((const char *)s1, ((struct fn_s *)s2)->functionName);
+  return strcmp((const char *)s1, ((struct fn_s *)s2)->name);
 }
 
-void *findPreDefFunction(const char *functionName)
+void *findPreDefFunction(const char *name)
 {
   void 		*p;
   static struct fn_s	unixFunctions[] =
@@ -86,14 +86,17 @@ void *findPreDefFunction(const char *functionName)
 #if defined(GPSEE_DEBUG_BUILD) || defined(GPSEE_DRELEASE_BUILD)
   assert(sizeof(unixFunctions));
 #endif
-  p = bsearch(functionName, unixFunctions, sizeof(unixFunctions) / sizeof(unixFunctions[0]), sizeof(unixFunctions[0]), vstrcmp);
+  p = bsearch(name, unixFunctions, sizeof(unixFunctions) / sizeof(unixFunctions[0]), sizeof(unixFunctions[0]), vstrcmp);
 
 #if defined(GPSEE_XCURSES)
   assert(sizeof(cursesFunctions));
   if (!p)
-    p = bsearch(functionName, cursesFunctions, sizeof(cursesFunctions) / sizeof(cursesFunctions[0]), sizeof(cursesFunctions[0]), vstrcmp);
+    p = bsearch(name, cursesFunctions, sizeof(cursesFunctions) / sizeof(cursesFunctions[0]), sizeof(cursesFunctions[0]), vstrcmp);
 #endif
 
-  return p;
+  if (!p)
+    return NULL;
+
+  return ((struct fn_s *)p)->address;
 }
 
