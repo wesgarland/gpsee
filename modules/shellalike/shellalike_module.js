@@ -29,8 +29,7 @@ const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 function range(start,stop){for(var i=start;i<stop;i++)yield i}
 /* Generator.prototype.toArray() */
 (function(){yield})().__proto__.toArray = function(){var a=[];for(var v in this)a.push(v);return a}
-/* Zap the new/apply contention with help from eval()
- * NOTE that this does NOT WORK on NATIVE constructor functions! */
+/* Zap the new/apply contention with help from eval() */
 Function.prototype.new = function(){ return eval('new this('+range(0,arguments.length).toArray().map(function(n)'arguments['+n+']')+')') }
 /* Bind an instance method to some 'this' object */
 function $P(f,t) {
@@ -253,7 +252,7 @@ ExecAPI.prototype.exec = function() {
   args.push.apply(args, Array.prototype.map.call(arguments, function(a)exec(a)));
   /* NOTE the new/apply contention above! if ExecAPI ever accepts more args, we'll have to refactor here! */
   print('@@splicing', args);
-  return ExecAPI.splice.apply(this, args);
+  return ExecAPI.splice.apply(null, args);
 }
 
 /* @jazzdoc shellalike.exec
@@ -269,6 +268,9 @@ function exec(command) {
   }
   else if ('function' === typeof command) {
     rval.generator = command;
+  }
+  else if (command.functor) {
+    rval.__functor__ = function()command.__iterator__()
   }
   else if (command.__iterator__) {
     rval.__iterator__ = function()command.__iterator__()
