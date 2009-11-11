@@ -71,8 +71,6 @@
 #include "std_headers.h"
 #include <syslog.h>
 #include <assert.h>
-#include <crypt.h>
-#include <stropts.h>
 #include <setjmp.h>
 #include <langinfo.h>
 #include <ndbm.h>
