@@ -556,9 +556,10 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
    *
    * gpsee/modules/gffi/function_aliases.incl
    *
-   * The format for entries in this file is as follows:
+   * The format for entries in this file comes in two forms:
    *
-   * function(<return_type>,(<argument_list_types_and_names>),(<argument_list_names_only>))
+   * function(<return_type>,<function_name>,(<argument_list_types_and_names>),(<argument_list_names_only>))
+   * voidfunction(<function_name>,(<argument_list_types_and_names>),(<argument_list_names_only>))
    *
    * The redundancy of this form is to accommodate simple implementation in the C preprocessor. To serve as an example,
    * here are stat(2) and fstat(2) declared as ordinary C prototypes, and again as GFFI function aliases:
@@ -740,6 +741,8 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
  * little name mangling, and a little preplanning. */
 #define function(rtype, name, argdecl, argv) \
   rtype gffi_alias_ ## name argdecl { return name argv; }
+#define voidfunction(name, argdecl, argv) \
+  void  gffi_alias_ ## name argdecl { name argv; }
 #include "function_aliases.incl"
 #undef function
 

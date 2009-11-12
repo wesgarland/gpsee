@@ -3,6 +3,7 @@
 #if defined(GPSEE_GNU_SOURCE)
 # define GPSEE_STD_SOURCE
 # define GPSEE_STD_SUSV3
+# define GPSEE_STD_XSI
 #endif
 
 #if defined(GPSEE_STD_P92)
@@ -73,7 +74,28 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <langinfo.h>
+#if defined(_GNU_SOURCE)
+#include <net/if.h>
+#include <setjmp.h>
+#include <sys/types.h>
+#include <utime.h>
+#include <ulimit.h>
+#include <iconv.h>
+/* At least on Ubuntu Jaunty, db.h seems to clash with search.h */
+#define FIND FIND_RENAMED
+#define ENTER ENTER_RENAMED
+#define ACTION ACTION_RENAMED
+#define ENTRY ENTRY_RENAMED
+#define entry entry_RENAMED
+#include <db.h>
+#undef FIND
+#undef ENTER
+#undef ACTION
+#undef ENTRY
+#undef entry
+#else
 #include <ndbm.h>
+#endif
 #include <dlfcn.h>
 #include <inttypes.h>
 #include <wchar.h>
