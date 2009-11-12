@@ -37,13 +37,13 @@ include $(GPSEE_SRC_DIR)/ffi.mk
 include sanity.mk
 
 DEFS	 	 	= gpsee std network posix
-AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl 
+AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_headers.h std_gpsee_no.h
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
-EXTRA_MODULE_OBJS	+= util.o structs.o defines.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o
+EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
-LDFLAGS			+= $(LIBFFI_LDFLAGS)
+LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
 MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
 .PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
@@ -59,6 +59,22 @@ gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
 gffi_module.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
+std_functions.o std_gpsee_no.h: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS)
+std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
+std_functions.o: std_headers.h std_gpsee_no.h
+std_headers.h:	$(DEF_FILES) posix_defs.c std_defs.c math_defs.c
+	@echo " * Building $@"
+	@echo "/* `date` */" > $@
+	$(EGREP) -h "^#include <" $^ >> $@
+
+std_gpsee_no.h: std_functions.h
+	@echo " * Building $@"
+	@echo "/* `date` */" > $@
+	$(EGREP) '^function[(]' function_aliases.incl | sed -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(EGREP) '^voidfunction[(]' function_aliases.incl | sed -e 's/^[^(]*(//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(EGREP) '^function[(]' unsupported_functions.incl | sed -e 's/.*[(]//' -e 's/[)].*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | sed 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
+		sed -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 
 %.dmp defines.incl: sort=LC_COLLATE=C sort
 

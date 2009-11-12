@@ -1,3 +1,5 @@
+#! /bin/bash
+#
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -32,9 +34,38 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-ICONV_LIB_NAME		 =
-GPSEE_C_DEFINES		+= HAVE_MEMRCHR
-GPSEE_C_DEFINES		+= HAVE_IDENTITY_TRANSCODING_ICONV
-EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
-GFFI_LDFLAGS		?= -ldb
-GFFI_CPPFLAGS		?= -D_GNU_SOURCE -DDB_DBM_HSEARCH=1
+#
+# @file extract_xcurses.sh	This file is not part of the build.
+# 				Its job is to create the xcurses_api.incl file from xcurses_api.tdf.
+# 				xcurses_api.tdf cannot be redistributed with the FOSS distro.
+# 				It is checked into CVS, in case we ever need to regenerated 
+#				xcurses_api.incl.
+#
+# @author	Wes Garland, wes@page.ca
+# @date		Sep 2009
+#
+
+echo "/* Generated on `date` by $USER@`hostname` -- please do not hand-edit this file */"
+echo
+cat ../../licenses/license_block.c
+
+dos2unix < "$1" 2>/dev/null \
+	| egrep -v '^[	]*$' \
+	| grep -v '^[^	]' \
+	| grep '()' \
+	| sed -e 's/^	//' -e 's/()	/	/' \
+	| grep '^[a-z]' \
+	| while read function SUSV3 U98 U95 P92 C99 SVID3 BSD
+	  do
+	    filter="0"
+	    [ $SUSV3 = m ] && filter="$filter || defined(GPSEE_STD_SUSV3)"
+	    [ $U98 = m ] && filter="$filter || defined(GPSEE_STD_U98)"
+	    [ $U95 = m ] && filter="$filter || defined(GPSEE_STD_U95)"
+	    [ $P92 = m ] && filter="$filter || defined(GPSEE_STD_P92)"
+	    [ $C99 = m ] && filter="$filter || defined(GPSEE_STD_C99)"
+	    [ $SVID3 = m ] && filter="$filter || defined(GPSEE_STD_SVID3)"
+	    [ "$BSD" = "m" ] && filter="$filter || defined(GPSEE_STD_BSD)"
+	    echo "#if $filter"
+	    echo "defineFunction($function)"
+	    echo "#endif"
+	  done

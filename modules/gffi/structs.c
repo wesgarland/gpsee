@@ -50,7 +50,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: structs.c,v 1.5 2009/09/14 21:12:51 wes Exp $
+ *  @version	$Id: structs.c,v 1.6 2009/11/10 19:57:59 wes Exp $
  */
 
 #include <gpsee.h>
@@ -361,7 +361,7 @@ JSBool struct_setArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
   }
 
   if (JSVAL_IS_VOID(*vp))
-    return gpsee_throw(cx, "%s.invalid: cannot convert a void argument to an array", throwLabel);
+    return gpsee_throw(cx, "%s.invalid: cannot convert an undefined argument to an array", throwLabel);
 
   if (*vp == JSVAL_TRUE || *vp == JSVAL_FALSE)
     return gpsee_throw(cx, "%s.invalid: cannot convert a bool argument to an array", throwLabel);

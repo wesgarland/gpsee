@@ -33,14 +33,14 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
- *  @file	functions.c	Support code for GPSEE's gffi module which
+ *  @file	CFunction.c	Support code for GPSEE's gffi module which
  *				exposes C functions to JavaScript.
  *
  *  @author	Wes Garland
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.10 2009/10/23 17:01:18 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.11 2009/11/10 20:20:50 wes Exp $
  */
 
 #include <gpsee.h>
@@ -329,7 +329,7 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
   }
 
   if (JSVAL_IS_VOID(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a void argument to a pointer", argn);
+    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert undefined argument to a pointer", argn);
 
   if (v == JSVAL_TRUE || v == JSVAL_FALSE)
     return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a bool argument to a pointer", argn);
@@ -556,9 +556,10 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
    *
    * gpsee/modules/gffi/function_aliases.incl
    *
-   * The format for entries in this file is as follows:
+   * The format for entries in this file comes in two forms:
    *
-   * function(<return_type>,(<argument_list_types_and_names>),(<argument_list_names_only>))
+   * function(<return_type>,<function_name>,(<argument_list_types_and_names>),(<argument_list_names_only>))
+   * voidfunction(<function_name>,(<argument_list_types_and_names>),(<argument_list_names_only>))
    *
    * The redundancy of this form is to accommodate simple implementation in the C preprocessor. To serve as an example,
    * here are stat(2) and fstat(2) declared as ordinary C prototypes, and again as GFFI function aliases:
@@ -622,6 +623,8 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
   }
 
 rtldDefault:
+  if (!(hnd->fn = findPreDefFunction(hnd->functionName)))
+  {
     /* No Library instance. Try RTLD_DEFAULT. See dlopen(3) for details. */
     hnd->fn = dlsym(RTLD_DEFAULT, hnd->functionName);
     /* To overcome difficult linkage scenarios (so far, this only includes macros and weak symbols) upon
@@ -640,6 +643,7 @@ rtldDefault:
         /* Try dlsym() again with the new mangled name! */
         hnd->fn = dlsym(RTLD_DEFAULT, functionName);
     }
+  }
 
 dlsymOver:
   /* Throw an exception on dlsym() failure */
@@ -737,6 +741,8 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
  * little name mangling, and a little preplanning. */
 #define function(rtype, name, argdecl, argv) \
   rtype gffi_alias_ ## name argdecl { return name argv; }
+#define voidfunction(name, argdecl, argv) \
+  void  gffi_alias_ ## name argdecl { name argv; }
 #include "function_aliases.incl"
 #undef function
 
