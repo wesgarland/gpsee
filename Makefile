@@ -118,7 +118,7 @@ EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= libgpsee.$(SOLIB_EXT)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES)
-EXPORT_HEADERS		= gpsee.h gpsee-jsapi.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h
+EXPORT_HEADERS		= gpsee.h gpsee-jsapi.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h gpsee_iconv.h
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
 LOADLIBES		+= -lgpsee
