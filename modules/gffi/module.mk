@@ -36,8 +36,8 @@
 include $(GPSEE_SRC_DIR)/ffi.mk
 include sanity.mk
 
-DEFS	 	 	= gpsee std network posix
-AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_headers.h std_gpsee_no.h
+DEFS	 	 	= gpsee std
+AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
@@ -61,11 +61,7 @@ structs.o: structs.incl
 defines.o: defines.incl
 std_functions.o std_gpsee_no.h: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS)
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
-std_functions.o: std_headers.h std_gpsee_no.h
-std_headers.h:	$(DEF_FILES) posix_defs.c std_defs.c math_defs.c
-	@echo " * Building $@"
-	@echo "/* `date` */" > $@
-	$(EGREP) -h "^#include <" $^ >> $@
+std_functions.o: std_gpsee_no.h
 
 std_gpsee_no.h: std_functions.h
 	@echo " * Building $@"
@@ -94,22 +90,10 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h
+gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee_iconv.h
 std_defs.%:	HEADERS  = errno.h sys/types.h sys/stat.h fcntl.h unistd.h stdlib.h stdint.h stdio.h limits.h
-math_defs.%:	HEADERS  = float.h fenv.h limits.h complex.h math.h 
-network_defs.%:	HEADERS  = sys/types.h sys/socket.h time.h poll.h arpa/inet.h sys/select.h netinet/in.h arpa/nameser.h
 
-network_defs.%:	HEADERS +=  resolv.h netdb.h
-posix_defs.%:	HEADERS  = locale.h unistd.h stdio.h limits.h termios.h dirent.h errno.h fcntl.h sys/select.h signal.h sys/stat.h
-
-posix_defs.%:	HEADERS += sys/wait.h sys/socket.h aio.h libgen.h strings.h string.h nl_types.h sys/types.h
-posix_defs.%:	HEADERS += sys/types.h stdlib.h grp.h netdb.h utmpx.h fmtmsg.h fnmatch.h sys/statvfs.h sys/ipc.h ftw.h
-posix_defs.%:	HEADERS += ucontext.h grp.h sys/resource.h sys/socket.h glob.h search.h arpa/inet.h math.h
-posix_defs.%:	HEADERS += ctype.h sys/mman.h sys/msg.h spawn.h poll.h pthread.h sys/uio.h regex.h sched.h
-posix_defs.%:	HEADERS += semaphore.h sys/sem.h pwd.h sys/shm.h monetary.h wchar.h sys/time.h sys/times.h sys/utsname.h
-posix_defs.%:	HEADERS += wordexp.h 
-
-############# BEWARE - Dragons Below ###############
+############ BEWARE - Dragons Below ###############
 
 # for sed
 DEFINE=^ *\# *define
