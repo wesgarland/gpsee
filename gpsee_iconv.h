@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -31,39 +31,30 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** 
+ *
+ * @file	gpsee_iconv.h	Formal way for GPSEE apps/modules to include iconv.h
+ *				that matches the iconv library GPSEE links against.
+ * @author	Wes Garland, wes@page.ca
+ * @date	Nov 2009
+ * @version	$Id: gpsee_iconv.h,v 1.1 2009/11/13 19:34:48 wes Exp $
  */
 
-/**
- *  @file	binary_module.h		Symbols shared between classes/objects in the binary module.
- *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @date	March 2009
- *  @version	$Id: binary_module.h,v 1.7 2009/11/13 19:34:48 wes Exp $
+#ifdef HAVE_ICONV
+# if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)
+/*
+ * /usr/sfw gcc can find sunfreeware gnu libiconv header,
+ * then explode at runtime when solaris iconv lib gets used
  */
-
-#ifndef GPSEE_BINARY_MODULE_H
-#define GPSEE_BINARY_MODULE_H
-#include "gpsee.h"
-#include "bytethings.h"
-
-#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.binary"
-
-JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
-JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
-JSObject *Binary_InitClass(JSContext *cx, JSObject *obj);
-
-#ifndef HAVE_MEMRCHR
-#define memrchr gpsee_memrchr
+#  define _LIBICONV_H
+#  include "/usr/include/iconv.h"
+# else
+#  include <iconv.h>
+ 
+static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **out$
+{
+  return iconv(cd, (char **)inbuf, inbytesleft, outbuf, outbytesleft);
+}
+# define iconv(a,b,c,d,e)       gpsee_non_susv3_iconv(a,b,c,d,e)
+ 
+# endif
 #endif
-void *memrchr(const void *s, int c, size_t n);
-
-#ifndef _BINARY_MODULE_C
-extern JSClass *byteString_clasp;
-extern JSClass *byteArray_clasp;
-extern JSObject *byteString_proto;
-extern JSObject *byteArray_proto;
-#endif
-
-#include "gpsee_iconv.h"
-
-#endif/*GPSEE_BINARY_MODULE_H*/
-
