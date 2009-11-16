@@ -162,18 +162,25 @@ ExecAPI.prototype.initialize = function() {
     throw new Error("TODO impelment ExecAPI iterators!");
   else
     throw new Error("This ExecAPI instance appears empty!");
+
   this.initialize = function(){};
 }
 ExecAPI.prototype.write = function() {
   this.initialize();
+  if (this.write == ExecAPI.prototype.__iterator)
+    throw new Error(this+" has no write method");
   return this.write.apply(this, arguments);
 }
 ExecAPI.prototype.flush = function() {
   this.initialize();
+  if (this.flush == ExecAPI.prototype.__iterator)
+    throw new Error(this+" has no flush method");
   return this.flush.apply(this, arguments);
 }
 ExecAPI.prototype.__iterator__ = function() {
   this.initialize();
+  if (this.__iterator__ == ExecAPI.prototype.__iterator)
+    throw new Error(this+" has no __iterator__ method");
   return this.__iterator__();
 }
 
@@ -219,6 +226,9 @@ ExecAPI.prototype.toString = function() {
     return '[ExecAPI External Process "'+this.command+'"]';
   else if (this.generator)
     return '[ExecAPI Generator Process "'+this.generator.name+'"]';
+  else if (this.functor) {
+    return '[ExecAPI Simple Function "'+this.functor.name+'"]';
+  }
   else if (this.__iterator__)
     return '[ExecAPI Iterator Process]';
   else
@@ -270,10 +280,10 @@ function exec(command) {
     rval.generator = command;
   }
   else if (command.functor) {
-    rval.__functor__ = function()command.__iterator__()
+    rval.functor = command.functor;
   }
   else if (command.__iterator__) {
-    rval.__iterator__ = function()command.__iterator__()
+    rval.iterator = function()command.__iterator__()
   }
   else throw new Error("Invalid exec() command");
   return rval;
