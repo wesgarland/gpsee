@@ -1,0 +1,14 @@
+function(int, fstat, (int fd, struct stat *buf), (fd, buf))
+#define DB_DBM_HSEARCH 1
+#include <db.h>
+function(int, dbm_clearerr, (DBM *db), (db))
+voidfunction(dbm_close, (DBM *db), (db))
+function(int, dbm_delete, (DBM *db, datum key), (db, key))
+function(int, dbm_error, (DBM *db), (db))
+function(datum, dbm_fetch, (DBM *db, datum key), (db, key))
+function(datum, dbm_firstkey, (DBM *db), (db))
+function(datum, dbm_nextkey, (DBM *db), (db))
+function(DBM *, dbm_open, (const char *file, int open_flags, mode_t file_mode), (file, open_flags, file_mode))
+function(int, dbm_store, (DBM *db, datum key, datum content, int store_mode), (db, key, content, store_mode))
+#include <setjmp.h>
+function(int, sigsetjmp, (struct __jmp_buf_tag __env[1], int __savemask), (__env, __savemask))
