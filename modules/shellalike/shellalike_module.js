@@ -21,6 +21,7 @@ const _fdopen = new ffi.CFunction(ffi.pointer, 'fdopen', ffi.int, ffi.pointer);
 const _fgets = new ffi.CFunction(ffi.pointer, 'fgets', ffi.pointer, ffi.int, ffi.pointer);
 const _fwrite = new ffi.CFunction(ffi.size_t, 'fwrite', ffi.pointer, ffi.size_t, ffi.size_t, ffi.pointer);
 const _fflush = new ffi.CFunction(ffi.int, 'fflush', ffi.pointer);
+const _fclose = new ffi.CFunction(ffi.int, 'fclose', ffi.pointer);
 const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 
 
@@ -102,28 +103,31 @@ function Process(command) {
    * @form for (line in new Process(command)) {...}
    * Allows line-by-line iteration over the output of a shell command.
    */
-  this.__iterator__ = function()flines(src).__iterator__();
+  this.__iterator__ = function()flines(src);
 
   /* @jazzdoc shellalike.Process.write
    * @form (instance of Process).write(string)
-   * Writes the contents of string to the process's stdin stream.
+   * Writes a ByteString to the Process's sink.
+   * Other types will be coerced to a ByteString.
    */
   this.write = function(s) {
-    if (!(s instanceof ByteString)) {
-      if ('string' == typeof s)
-        s = new ByteString(String(s));
-    }
-    print(s.toSource());
-    if (s instanceof ByteString)
-      return _fwrite.call(s, 1, s.length, snk);
-    throw new Error('argument must be ByteString or String');
+    if (!(s instanceof ByteString))
+      s = new ByteString(String(s));
+    return _fwrite.call(s, 1, s.length, snk);
   }
   /* @jazzdoc shellalike.Process.flush
    * @form (instance of Process).flush()
-   * Flushes our output into the Process's stdin.
+   * Flushes the Process's sink
    */
   this.flush = function() {
     return _fflush.call(snk);
+  }
+  /* @jazzdoc shellalike.Process.close
+   * @form (instance of Process)f.flush()
+   * Closes the Process's sink
+   */
+  this.close = function() {
+    return _fclose.call(snk);
   }
 }
 
@@ -189,38 +193,68 @@ ExecAPI.prototype.__iterator__ = function() {
  * happen to uninitialized ExecAPI instances (see ExecAPI.prototype.initialized)
  * but this might change in the future.
  */
-ExecAPI.splice = function(snk, src) {
-  print('splicing', snk);
-  print('    with', src);
+ExecAPI.splice = function(a, b) {
+  print('splicing', a);
+  print('    with', b);
   if (arguments.length < 2)
     return arguments[0];
   if (arguments.length == 2) {
-    /* Consolidate multiple external commands */
-    if (snk.command && src.command) {
-      var rval = exec(snk.command + "|" + src.command);
-      return rval;
-    }
-
+    /* Link a's source to b's sink */
+    a.src = b;
+    b.src = a;
     /* Consolidate multiple internal commands */
     return {
       '__proto__':  ExecAPI.prototype,
       'initialize': function() {
-        snk.initialize();
-        src.initialize();
-        this.write = $P(snk.write,snk);
-        this.__iterator__ = $P(src.__iterator__,src);
-      }
+        /* Initialize both child ExecAPIs */
+        a.initialize();
+        b.initialize();
+        /* Allow user to write to our sink */
+        this.write = $P(a.write,a);
+        this.flush = $P(a.flush,a);
+        /* Allow user to read from our source */
+        this.__iterator__ = $P(b.__iterator__,b);
+      },
+      'src': b.src,
+      'snk': a.snk,
     };
   }
   if (arguments.length > 2) {
     return Array.prototype.reduce.call(arguments, function(a,b)ExecAPI.splice(a,b));
   }
 }
+ExecAPI.pipelineType = function(pipeline) {
+  var internal = [i.isInternal()?'i':'e' for each(i in pipeline)].join('');
+  for each(var [nam,pat] in [
+    ['empty',         /^$/],
+    ['all internal',  /^i+$]/],
+    ['all external',  /^e+$]/],
+    ['to internal',   /^e+i+$/],
+    ['to external',   /^e*i+e+$/],
+                            ]) {
+    if (pat.match(internal))
+      return nam;
+  }
+  return 'interleaved';
+}
+ExecAPI.prototype.pipeline = function() {
+  var top = this;
+  var rval = [];
+  while (top.src) {
+    print(top.src);
+    top = top.src;
+  }
+  do rval.push(top);
+  while (top = top.snk);
+  return rval;
+}
+
 ExecAPI.extend = function() {
 }
 ExecAPI.prototype.cat = function() {
   return 'meow!';
 }
+ExecAPI.prototype.isInternal = function()!this.command;
 ExecAPI.prototype.toString = function() {
   if (this.command)
     return '[ExecAPI External Process "'+this.command+'"]';
@@ -253,15 +287,17 @@ ExecAPI.prototype.toString = function() {
  *   exec(generatorFunc).exec("sink-command")
  */
 ExecAPI.prototype.exec = function() {
-  if (arguments.length == 0)
-    throw new Error("TODO: Implement .exec() pipeline executor!");
+  if (arguments.length == 0) {
+    /* Execute an enclosed pipeline */
+  }
   print(this+ '.exec('+Array.prototype.join.call(arguments,',')+')');
 
   /* Construct an argument vector of the form [this, exec(arg0), ... exec(argN)] */
   var args = [this];
-  args.push.apply(args, Array.prototype.map.call(arguments, function(a)exec(a)));
+  args.forEach(function(a)args.push(exec(a)));
+  //args.push.apply(args, Array.prototype.map.call(arguments, function(a)exec(a)));
   /* NOTE the new/apply contention above! if ExecAPI ever accepts more args, we'll have to refactor here! */
-  print('@@splicing', args);
+  print('splicing', args);
   return ExecAPI.splice.apply(null, args);
 }
 
@@ -288,6 +324,207 @@ function exec(command) {
   else throw new Error("Invalid exec() command");
   return rval;
 }
+
+
+
+
+
+
+
+
+/* Digraph class */
+function Digraph() {
+  /* Private variables */
+  var m_graph = this;
+  var m_elements = [];
+  var m_elementData = [];
+  var m_passkey = {};
+  function pass(key, rval) {
+    if (m_passkey !== key)
+      throw new Error("Private access denied");
+    return rval;
+  }
+
+  /* Privileged Digraph.toString() instance method */
+  function Digraph_toString() {
+    return '[Digraph with '+m_elements.length+' elements]';
+  }
+  this.toString = Digraph_toString;
+
+  /* Element class */
+  function Digraph_Element(data) {
+    /* Private variables */
+    var m_element = this;
+    var m_elementData = data;
+    var m_id = m_elements.length;
+    var m_pads = {
+      'src': [],
+      'snk': [],
+    };
+
+    /* Pad class */
+    function Digraph_Element_Pad(type, data) {
+      /* Private variables */
+      var m_type = String(type);
+      var m_pad = this;
+      var m_padData = data;
+
+      /* There are only two types of Pad */
+      if (type != 'src' && type != 'snk')
+        throw new Error('invalid pad type "'+type+'"');
+
+      /* Function to link two pads */
+      function Digraph_Element_Pad_link(p) {
+        if (this._private(m_passkey) !== m_pad)
+          throw new Error("OOP violation");
+        if (m_element.owner !== p.owner.owner)
+          throw new Error("Pad link parameters must descend from the same Digraph instance");
+        if (this.linked || p.linked)
+          throw new Error("Pad link parameters must be unlinked");
+        if (m_type == p.type)
+          throw new Error("Pad link parameters must be heterogeneous (both pads are of type "+m_type+")");
+
+        p = p._private(m_passkey);
+
+        p.linked = true;
+        m_pad.linked = true;
+
+        p[m_type] = m_pad;
+        m_pad[p.type] = p;
+
+      }
+
+      /* Private variable Digraph::Element::m_pads keeps track of its pads */
+      m_pads[type].push(m_pad);
+      /* Restricted variables */
+      this.owner = m_element;
+      /* Public Digraph_Element_Pad interface */
+      return m_pad.iface = {
+        '__proto__':      Digraph_Element_Pad.prototype,
+        get link()        Digraph_Element_Pad_link,
+        get type()        m_type,
+        get owner()       m_element,
+        get toString()    function() "["+(m_pad.linked?"Linked":"Unlinked")+" "+m_type+"Pad ("+m_padData+") of "+m_element+"]",
+        get linked()      Boolean(m_pad.linked),
+        '_private':       function(key) pass(key, m_pad),
+      };
+    } /* Digraph_Element_Pad constructor */
+
+    /* Function to add a pad to this element */
+    function Digraph_Element_addPad(type, data) {
+      return new Digraph_Element_Pad(type, data);
+    }
+    this.addPad = Digraph_Element_addPad;
+
+    /* Digraph Element toString() privileged instance method */
+    function Digraph_Element_toString() {
+      return '[Element '+m_id+' ('+m_elementData+') of '+m_graph+']';
+    }
+    this.toString = Digraph_Element_toString;
+
+    this._private = function(key) pass(key, {'pads':m_pads});
+  } /* Digraph_Element constructor */
+
+  /* Function to add a new element to the digraph */
+  function Digraph_addElement(data) {
+    var el = new Digraph_Element(data);
+    m_elements.push(el);
+    m_elementData.push(data);
+
+    /* Return public Digraph_Element interface */
+    el.owner = m_graph;
+    return el.iface = {
+      '__proto__':      data,
+      get toString()    function() el.toString(),
+      get addPad()      function() el.addPad.apply(el,arguments),
+      get owner()       m_graph,
+      get _private()    function(key) pass(key, el),
+    };
+  }
+
+  /* Function to determine whether or not each pad is linked to only one other pad,
+   * that the digraph is acyclic, and there are only two unlinked pads.
+   */
+  function Digraph_isLinear() {
+    if (this.isCyclic())
+      return false;
+    var el = m_elements[0];
+    for each(let [next,other] in [['src','snk'],['snk','src']]) {
+      while (1) {
+        if (el[other].length > 1)
+          return false;
+        if (el[next].length == 0)
+          break;
+        else if (el[next].length == 1)
+          el = el[next][0].src.owner;
+        else
+          return false;
+      }
+    }
+  }
+
+  /* Function to determine whether or not the digraph is cyclic */
+  function Digraph_isCyclic() {
+    var visited = [];
+    function visit(el, dir, rid) {
+      if (visited.indexOf(el) >= 0)
+        throw visit;
+      visited.push(el);
+      for each(let pad in el._private(m_passkey).pads[dir]) {
+        if (pad.linked) {
+          //print('yay', rid, pad[rid]);
+          visit(pad[rid].owner, dir, rid);
+        }
+      }
+      visited.pop();
+    }
+    try {
+      for each(let [dir,rid] in [['src','snk'],['snk','src']]) {
+        visit(m_elements[0], dir, rid);
+      }
+    }
+    catch (e if e == visit) {
+      return true;
+    }
+    return false;
+  }
+  this.isCyclic = Digraph_isCyclic;
+
+  /* Return public Digraph interface */
+  return m_graph.iface = {
+    '__proto__':        Digraph.prototype,
+    get toString()      Digraph_toString,
+    get addElement()    Digraph_addElement,
+    get isLinear()      Digraph_isLinear,
+    get isCyclic()      Digraph_isCyclic,
+  };
+}
+
+exports.Digraph = Digraph;
+
+function Stream() {
+  /* Private variables */
+  var src, snk;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* exports */
 exports.Process = Process;
