@@ -54,6 +54,7 @@ function test1() {
   print('\t', snk2);
   print('\t', src2);
   print('cycles:', x.isCyclic());
+  print('linear:', x.isLinear());
   snk2.link(src1);
   print('linked two of the pads:');
   print('\t', snk1);
@@ -61,6 +62,7 @@ function test1() {
   print('\t', snk2);
   print('\t', src2);
   print('cycles:', x.isCyclic());
+  print('linear:', x.isLinear());
   snk1.link(src2);
   print('linked the final two pads:');
   print('\t', snk1);
@@ -68,6 +70,7 @@ function test1() {
   print('\t', snk2);
   print('\t', src2);
   print('cycles:', x.isCyclic());
+  print('linear:', x.isLinear());
 }
 
 try {

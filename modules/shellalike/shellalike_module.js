@@ -384,27 +384,28 @@ function Digraph() {
         if (m_type == p.type)
           throw new Error("Pad link parameters must be heterogeneous (both pads are of type "+m_type+")");
 
-        p = p._private(m_passkey);
+        var priv = p._private(m_passkey);
 
-        p.linked = true;
-        m_pad.linked = true;
-
-        p[m_type] = m_pad;
+        priv[m_type] = m_pad;
         m_pad[p.type] = p;
 
+        priv.linked = true;
+        m_pad.linked = true;
       }
 
       /* Private variable Digraph::Element::m_pads keeps track of its pads */
       m_pads[type].push(m_pad);
       /* Restricted variables */
       this.owner = m_element;
+      /* Privileged toString() instance method */
+      this.toString = function()"["+(m_pad.linked?"Linked":"Unlinked")+" "+m_type+"Pad ("+m_padData+") of "+m_element+"]"
       /* Public Digraph_Element_Pad interface */
       return m_pad.iface = {
         '__proto__':      Digraph_Element_Pad.prototype,
         get link()        Digraph_Element_Pad_link,
         get type()        m_type,
         get owner()       m_element,
-        get toString()    function() "["+(m_pad.linked?"Linked":"Unlinked")+" "+m_type+"Pad ("+m_padData+") of "+m_element+"]",
+        get toString()    function() m_pad.toString(),
         get linked()      Boolean(m_pad.linked),
         '_private':       function(key) pass(key, m_pad),
       };
@@ -442,25 +443,51 @@ function Digraph() {
     };
   }
 
-  /* Function to determine whether or not each pad is linked to only one other pad,
-   * that the digraph is acyclic, and there are only two unlinked pads.
-   */
-  function Digraph_isLinear() {
-    if (this.isCyclic())
-      return false;
-    var el = m_elements[0];
-    for each(let [next,other] in [['src','snk'],['snk','src']]) {
-      while (1) {
-        if (el[other].length > 1)
-          return false;
-        if (el[next].length == 0)
-          break;
-        else if (el[next].length == 1)
-          el = el[next][0].src.owner;
-        else
-          return false;
+  function Digraph_isContinuous() {
+    var visited = [];
+    function visit(el) {
+      if (visited.indexOf(el) < 0) {
+        visited.push(el);
+        for each(let [dir,rid] in [['src','snk'],['snk','src']])
+        for each(let pad in el._private(m_passkey).pads[dir]) {
+          if (pad.linked) {
+            visit(pad[rid].owner, dir, rid);
+          }
+        }
       }
     }
+    visit(m_elements[0]);
+    for each(let el in m_elements)
+      if (visited.indexOf(el) < 0)
+        return false;
+    return true;
+  }
+
+  /* Function to determine whether or not each pad is linked to only one other pad,
+   * that the digraph is acyclic, that all of each elements' sources and sinks are
+   * connected to the sinks and sources (respectively) of only one other element
+   * (individually) and that there are no discontinuitities or unlinked pads.
+   */
+  function Digraph_isLinear() {
+    if (!this.isContinuous())
+      return false;
+    if (this.isCyclic())
+      return false;
+    for each(let [dir,rid] in [['src','snk'],['snk','src']]) {
+      let el = m_elements[0];
+      while (1) {
+        let pads = el._private(m_passkey).pads[dir];
+        if (pads.length > 1)
+          return false;
+        else if (pads.length == 1) {
+          if (pads[0].linked)
+            el = pads[0][rid].owner;
+          else break;
+        }
+        else break;
+      }
+    }
+    return true;
   }
 
   /* Function to determine whether or not the digraph is cyclic */
@@ -492,11 +519,12 @@ function Digraph() {
 
   /* Return public Digraph interface */
   return m_graph.iface = {
-    '__proto__':        Digraph.prototype,
-    get toString()      Digraph_toString,
-    get addElement()    Digraph_addElement,
-    get isLinear()      Digraph_isLinear,
-    get isCyclic()      Digraph_isCyclic,
+    '__proto__':            Digraph.prototype,
+    get toString()          Digraph_toString,
+    get addElement()        Digraph_addElement,
+    get isLinear()          Digraph_isLinear,
+    get isCyclic()          Digraph_isCyclic,
+    get isContinuous()   Digraph_isContinuous,
   };
 }
 
