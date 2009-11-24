@@ -37,48 +37,104 @@ function test_graph() {
   print('@@', x.pipeline());
   //sh.ExecAPI.pipeline(x);
 }
-function test1() {
+function test1(t) {
   var x = new sh.Digraph;
   var el1 = x.addElement({'name':'alice','toString':function()this.name});
   var el2 = x.addElement({'name':'bob','toString':function()this.name});
-  print('added two elements:');
-  print('\t', el1);
-  print('\t', el2);
+  t.note('added two elements:');
+  t.note('\t', el1);
+  t.note('\t', el2);
   var snk1 = el1.addPad('snk', {'name':'chloe','toString':function()this.name});
   var src1 = el1.addPad('src', {'name':'danielle','toString':function()this.name});
   var snk2 = el2.addPad('snk', {'name':'eleanor','toString':function()this.name});
   var src2 = el2.addPad('src', {'name':'francesca','toString':function()this.name});
-  print('added four pads:');
-  print('\t', snk1);
-  print('\t', src1);
-  print('\t', snk2);
-  print('\t', src2);
-  print('cycles:', x.isCyclic());
-  print('linear:', x.isLinear());
+  t.note('added four pads:');
+  t.note('\t', snk1);
+  t.note('\t', src1);
+  t.note('\t', snk2);
+  t.note('\t', src2);
+  t.eq(x.isCyclic(), false);
+  t.eq(x.isLinear(), false);
   snk2.link(src1);
-  print('linked two of the pads:');
-  print('\t', snk1);
-  print('\t', src1);
-  print('\t', snk2);
-  print('\t', src2);
-  print('cycles:', x.isCyclic());
-  print('linear:', x.isLinear());
+  t.note('linked two of the pads:');
+  t.note('\t', snk1);
+  t.note('\t', src1);
+  t.note('\t', snk2);
+  t.note('\t', src2);
+  t.eq(x.isCyclic(), false);
+  t.eq(x.isLinear(), true);
   snk1.link(src2);
-  print('linked the final two pads:');
-  print('\t', snk1);
-  print('\t', src1);
-  print('\t', snk2);
-  print('\t', src2);
-  print('cycles:', x.isCyclic());
-  print('linear:', x.isLinear());
+  t.note('linked the final two pads:');
+  t.note('\t', snk1);
+  t.note('\t', src1);
+  t.note('\t', snk2);
+  t.note('\t', src2);
+  t.eq(x.isCyclic(), true);
+  t.eq(x.isLinear(), false);
+}
+function test2() {
+  var x = new sh.Pipeline;
+  x.add("tail -f /var/log/auth.log");
+  x.add("rot13");
+  x.add(function(src){for(var each in src)yield src});
+  var shape = x.shape();
+  if (shape !== 'to internal')
+    throw new Error('shape "'+shape+'" !== "to internal"');
 }
 
+var args = Array.apply(null, arguments);
+var harness = {
+  'eq': function() {
+      if (arguments.length < 2) throw 'too few arguments to testUtils.eq()';
+      for(var i=1, l=arguments.length; i<l; i++) {
+          if (('object' == typeof arguments[0]) && ('object' == typeof arguments[i])) {
+              var vals0 = values(arguments[0]);
+              var valsi = values(arguments[i]);
+              if (vals0.length != valsi.length) {
+                  print('OBJECT SIZE MISMATCH');
+                  print('V1 "'+vals0+'"');
+                  print('V2 "'+valsi+'"');
+                  return false;
+              }
+              for (var j=0, jl=vals0.length; j<jl; j++) {
+                  /* TODO recursion instead of one level-deep bs */
+                  if (vals0[j] !== valsi[j]) {
+                      print('OBJECT VALUE MISMATCH');
+                      print('V1 "'+arguments[0]+'"');
+                      print('V2 "'+arguments[i]+'"');
+                      return false;
+                  }
+              }
+          } else {
+              if (arguments[0] !== arguments[i]) {
+                  print('VALUE MISMATCH');
+                  print('V1 "'+arguments[0]+'"');
+                  print('V2 "'+arguments[i]+'"');
+                  return false;
+              }
+          }
+      }
+      return true;
+  },
+  'test': function() {
+    for(let i=0;i<arguments.length;i++) {
+      try { arguments[i](this) }
+      catch (e) {
+        print('FAILED:', test.name);
+        print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
+      }
+    }
+  }
+}
+
+/* Note API */
+if (args.indexOf('-v') >= 0)
+  harness.note = print;
+else
+  harness.note = function()void 0;
+
 try {
-  test1();
-  //test_out_file();
-  //test_graph();
-  //io_test_close();
-  print("done.");
+  harness.test(test1, test2);
 } catch (e) {
   print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
   //throw(-1);
