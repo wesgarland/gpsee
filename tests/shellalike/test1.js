@@ -116,6 +116,17 @@ function test6() {
   if (shape !== 'interleaved')
     throw new Error('shape "'+shape+'" !== "interleaved"');
 }
+function test7() {
+  var shape = sh.exec("cat test-file").exec("rot13").exec(function(src){for each(let each in src)print(each)})._pipeline.shape();
+  if (shape !== 'to internal')
+    throw new Error('shape "'+shape+'" !== "to internal"');
+}
+function test8() {
+  sh.exec(function(){yield'ONE';yield'TWO';yield'THREE'}).print();
+}
+function test9() {
+  sh.exec("cat tests/shellalike/test1.js").exec("rot13").rtrim().print();
+}
 
 var args = Array.apply(null, arguments);
 var harness = {
@@ -175,12 +186,14 @@ else
   harness.note = function()void 0;
 
 try {
-  var failed = harness.test(test1, test2, test3, test4);
+  var failed = harness.test(test1, test2, test3, test4, test5, test6, test7, test8, test9);
   if (failed) {
     print(failed, "tests failed");
-    throw -1;
+    //throw -1;
   }
-  print('success');
+  else {
+    print('success');
+  }
 } catch (e) {
   print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
   //throw(-1);
