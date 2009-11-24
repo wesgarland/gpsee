@@ -482,7 +482,6 @@ function Digraph() {
   function Digraph_linearize(userfun) {
     if (!this.isLinear())
       throw new Error("Cannot linearize non-linear graph");
-            print('%%', m_elements[0].data);
     var rval = [userfun(m_elements[0].data)];
     for each(let [dir,rid,add] in [['src','snk','push'],['snk','src','unshift']]) {
       let el = m_elements[0];
@@ -493,7 +492,6 @@ function Digraph() {
         else if (pads.length == 1) {
           if (pads[0].linked) {
             el = pads[0][rid].owner;
-            print('%%', el.data);
             rval[add](userfun(el.data));
           }
           else break;
@@ -564,8 +562,8 @@ function Pipeline() {
 
     for each(var [nam,pat] in [
       ['empty',         /^$/],
-      ['all internal',  /^i+$]/],
-      ['all external',  /^e+$]/],
+      ['all internal',  /^i+$/],
+      ['all external',  /^e+$/],
       ['to internal',   /^e+i+$/],
       ['to external',   /^e*i+e+$/],
                               ]) {
