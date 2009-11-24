@@ -223,20 +223,6 @@ ExecAPI.splice = function(a, b) {
     return Array.prototype.reduce.call(arguments, function(a,b)ExecAPI.splice(a,b));
   }
 }
-ExecAPI.pipelineType = function(pipeline) {
-  var internal = [i.isInternal()?'i':'e' for each(i in pipeline)].join('');
-  for each(var [nam,pat] in [
-    ['empty',         /^$/],
-    ['all internal',  /^i+$]/],
-    ['all external',  /^e+$]/],
-    ['to internal',   /^e+i+$/],
-    ['to external',   /^e*i+e+$/],
-                            ]) {
-    if (pat.match(internal))
-      return nam;
-  }
-  return 'interleaved';
-}
 ExecAPI.prototype.pipeline = function() {
   var top = this;
   var rval = [];
@@ -355,7 +341,7 @@ function Digraph() {
   function Digraph_Element(data) {
     /* Private variables */
     var m_element = this;
-    var m_elementData = data;
+    var m_elementData = this.data = data;
     var m_id = m_elements.length;
     var m_pads = {
       'src': [],
@@ -490,6 +476,34 @@ function Digraph() {
     return true;
   }
 
+  /* Stop-gap means of building pipelines before the prop query system is
+   * fully implemented.
+   */
+  function Digraph_linearize(userfun) {
+    if (!this.isLinear())
+      throw new Error("Cannot linearize non-linear graph");
+            print('%%', m_elements[0].data);
+    var rval = [userfun(m_elements[0].data)];
+    for each(let [dir,rid,add] in [['src','snk','push'],['snk','src','unshift']]) {
+      let el = m_elements[0];
+      while (1) {
+        let pads = el._private(m_passkey).pads[dir];
+        if (pads.length > 1)
+          throw new Error("graph appears unlinear!");
+        else if (pads.length == 1) {
+          if (pads[0].linked) {
+            el = pads[0][rid].owner;
+            print('%%', el.data);
+            rval[add](userfun(el.data));
+          }
+          else break;
+        }
+        else break;
+      }
+    }
+    return rval;
+  }
+
   /* Function to determine whether or not the digraph is cyclic */
   function Digraph_isCyclic() {
     var visited = [];
@@ -524,15 +538,107 @@ function Digraph() {
     get addElement()        Digraph_addElement,
     get isLinear()          Digraph_isLinear,
     get isCyclic()          Digraph_isCyclic,
-    get isContinuous()   Digraph_isContinuous,
+    get isContinuous()      Digraph_isContinuous,
+    get linearize()         Digraph_linearize,
   };
 }
 
-exports.Digraph = Digraph;
+function SimplePad() {}
+SimplePad.prototype.toString = function()'simple pipeline pad';
 
-function Stream() {
+/* A pipeline is an extension of the Digraph class. Presently it is quite limited,
+ * but the use cases it covers are very typical.
+ */
+function Pipeline() {
   /* Private variables */
-  var src, snk;
+  var m_graph;
+  var m_topElement;
+  var m_pipeline = this;
+
+  /* Determine what sort of execution implementation is needed to run this pipeline
+   */
+  function shape() {
+    var ie = m_graph.linearize(function(x)x.internal?'i':'e').join('');
+    if (!m_graph.isLinear())
+      throw new Error("Currently only linear pipelines are supported!");
+
+    for each(var [nam,pat] in [
+      ['empty',         /^$/],
+      ['all internal',  /^i+$]/],
+      ['all external',  /^e+$]/],
+      ['to internal',   /^e+i+$/],
+      ['to external',   /^e*i+e+$/],
+                              ]) {
+      if (ie.match(pat))
+        return nam;
+    }
+    return 'interleaved';
+  }
+
+  function Pipeline_validateGraph() {
+    if (!m_graph.isLinear())
+      throw new Error("Currently only linear pipelines are supported!");
+    return true;
+  }
+
+  function Pipeline_realizeGraph() {
+    switch (shape()) {
+      case 'empty':
+        return;
+      case 'all internal':
+      case 'all external':
+      case 'to internal':
+      case 'to external':
+    }
+  }
+  
+  function Pipeline_append(el) {
+    if ('undefined' !== typeof m_topElement) {
+      var srcPad = m_topElement.addPad('src', new SimplePad);
+      var snkPad = el.addPad('snk', new SimplePad);
+      srcPad.link(snkPad);
+    }
+    m_topElement = el;
+  }
+
+  function Pipeline_addExternalCommand(command) {
+    Pipeline_append(m_graph.addElement({
+          'toString':     function()'[External Command '+command+']',
+          'internal':     false,
+          'command':      command,
+    }));
+  }
+  function Pipeline_addGenerator(generator) {
+    Pipeline_append(m_graph.addElement({
+          'toString':     function()'[Generator '+(generator.name||'anonymous')+']',
+          'internal':     true,
+          'generator':    generator,
+    }));
+  }
+  function Pipeline_addIterator(iterator) {
+    Pipeline_append(m_graph.addElement({
+          'toString':     function()'[Iterator]',
+          'internal':     true,
+          'iterator':     iterator,
+    }));
+  }
+  function Pipeline_add(a) {
+    if ('string'===typeof a)
+      Pipeline_addExternalCommand(a);
+    else if ('function'===typeof a)
+      Pipeline_addGenerator(a);
+    else throw new Error("Don't know how to add this type of argument to a Pipeline");
+  }
+
+  m_graph = new Digraph({
+    'validateGraph': Pipeline_validateGraph,
+    'realizeGraph':  Pipeline_realizeGraph,
+  });
+
+  return this.iface = {
+    'shape':        shape,
+    'add':          Pipeline_add,
+  };
 }
 
 
@@ -555,6 +661,8 @@ function Stream() {
 
 
 /* exports */
+exports.Digraph = Digraph;
+exports.Pipeline = Pipeline;
 exports.Process = Process;
 exports.flines = flines;
 exports.p2open = p2open;
