@@ -27,7 +27,7 @@ const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 
 /* Convenience stuff */
 /* numeric range generator */
-function range(start,stop){for(var i=start;i<stop;i++)yield i}
+function range(start,stop){if('undefined'===typeof stop){stop=start;start=0}for(var i=start;i<stop;i++)yield i};
 /* Generator.prototype.toArray() */
 (function(){yield})().__proto__.toArray = function(){var a=[];for(var v in this)a.push(v);return a}
 /* Zap the new/apply contention with help from eval() */
@@ -130,193 +130,6 @@ function Process(command) {
     return _fclose.call(snk);
   }
 }
-
-/* @jazzdoc shallalike.ExecAPI
- * @form exec(command)
- * @form exec(command).exec(command2)
- * @form exec(command).cat(file1...).match(/hdon/)
- * etc.
- * nothing is set in stone, yet
- */
-function ExecAPI() {
-  /* Call superclass constructor */
-  //Process.apply(this, arguments);
-  //not yet!
-  //this.command = cmd;
-}
-ExecAPI.prototype = {'__proto__': Process.prototype};
-
-/* @jazzdoc ExecAPI.prototype.initialized
- * The 'initialized' member of an ExecAPI instance is true if the pipeline has
- * begun working. If it has not begun working, the instance inherits a value of
- * false for its 'initialized' property.
- *
- * While an ExecAPI instance inherits from shellalike.Process, it does not call
- * its superclass constructor until the pipeline is read from (by iterating over
- * it.) Then, each of the members of the pipeline are initialized at once, and
- * data begins flowing.
- */
-ExecAPI.prototype.initialized = false;
-ExecAPI.prototype.initialize = function() {
-  if (this.command)
-    Process.call(this, this.command);
-  else if (this.generator)
-    throw new Error("TODO implement ExecAPI generators!");
-  else if (this.iterator)
-    throw new Error("TODO impelment ExecAPI iterators!");
-  else
-    throw new Error("This ExecAPI instance appears empty!");
-
-  this.initialize = function(){};
-}
-ExecAPI.prototype.write = function() {
-  this.initialize();
-  if (this.write == ExecAPI.prototype.__iterator)
-    throw new Error(this+" has no write method");
-  return this.write.apply(this, arguments);
-}
-ExecAPI.prototype.flush = function() {
-  this.initialize();
-  if (this.flush == ExecAPI.prototype.__iterator)
-    throw new Error(this+" has no flush method");
-  return this.flush.apply(this, arguments);
-}
-ExecAPI.prototype.__iterator__ = function() {
-  this.initialize();
-  if (this.__iterator__ == ExecAPI.prototype.__iterator)
-    throw new Error(this+" has no __iterator__ method");
-  return this.__iterator__();
-}
-
-/* @jazzdoc ExecAPI.splice
- * Chain together any number of shell-like serial pipeline stages. This can only
- * happen to uninitialized ExecAPI instances (see ExecAPI.prototype.initialized)
- * but this might change in the future.
- */
-ExecAPI.splice = function(a, b) {
-  print('splicing', a);
-  print('    with', b);
-  if (arguments.length < 2)
-    return arguments[0];
-  if (arguments.length == 2) {
-    /* Link a's source to b's sink */
-    a.src = b;
-    b.src = a;
-    /* Consolidate multiple internal commands */
-    return {
-      '__proto__':  ExecAPI.prototype,
-      'initialize': function() {
-        /* Initialize both child ExecAPIs */
-        a.initialize();
-        b.initialize();
-        /* Allow user to write to our sink */
-        this.write = $P(a.write,a);
-        this.flush = $P(a.flush,a);
-        /* Allow user to read from our source */
-        this.__iterator__ = $P(b.__iterator__,b);
-      },
-      'src': b.src,
-      'snk': a.snk,
-    };
-  }
-  if (arguments.length > 2) {
-    return Array.prototype.reduce.call(arguments, function(a,b)ExecAPI.splice(a,b));
-  }
-}
-ExecAPI.prototype.pipeline = function() {
-  var top = this;
-  var rval = [];
-  while (top.src) {
-    print(top.src);
-    top = top.src;
-  }
-  do rval.push(top);
-  while (top = top.snk);
-  return rval;
-}
-
-ExecAPI.extend = function() {
-}
-ExecAPI.prototype.cat = function() {
-  return 'meow!';
-}
-ExecAPI.prototype.isInternal = function()!this.command;
-ExecAPI.prototype.toString = function() {
-  if (this.command)
-    return '[ExecAPI External Process "'+this.command+'"]';
-  else if (this.generator)
-    return '[ExecAPI Generator Process "'+this.generator.name+'"]';
-  else if (this.functor) {
-    return '[ExecAPI Simple Function "'+this.functor.name+'"]';
-  }
-  else if (this.__iterator__)
-    return '[ExecAPI Iterator Process]';
-  else
-    return '[ExecAPI NULL]';
-}
-/* @jazzdoc ExecAPI.prototype.exec
- * Short-hand compostion and execution operations.
- *
- * @form instance.exec()
- * Run the pipeline until all stages are exhausted. This is useful for pipelines which
- * have no output, and therefore cannot be executed in the typcal course of consuming
- * the pipeline's output. It's also useful for pipelines which have neither output nor
- * input.
- *
- * @form instance.exec(commandString)
- * @form instance.exec(generatorFunction)
- * @form instance.exec(iteratorObject)
- * Same as ExecAPI.splice(instance, new ExecAPI(argument)) whatever argument may be
- * from the above mentioned forms. This, in tandem with Shellalike.exec() provides 
- * a convenient short-hand form of using the Shellalike module. Here's an example:
- *
- *   exec(generatorFunc).exec("sink-command")
- */
-ExecAPI.prototype.exec = function() {
-  if (arguments.length == 0) {
-    /* Execute an enclosed pipeline */
-  }
-  print(this+ '.exec('+Array.prototype.join.call(arguments,',')+')');
-
-  /* Construct an argument vector of the form [this, exec(arg0), ... exec(argN)] */
-  var args = [this];
-  args.forEach(function(a)args.push(exec(a)));
-  //args.push.apply(args, Array.prototype.map.call(arguments, function(a)exec(a)));
-  /* NOTE the new/apply contention above! if ExecAPI ever accepts more args, we'll have to refactor here! */
-  print('splicing', args);
-  return ExecAPI.splice.apply(null, args);
-}
-
-/* @jazzdoc shellalike.exec
- * This is the most convenient and powerful API for the shellalike module.
- * See ExecAPI.prototype.exec for more information.
- */
-function exec(command) {
-  var rval = {
-    '__proto__': ExecAPI.prototype,
-  };
-  if ('string' === typeof command) {
-    rval.command = command;
-  }
-  else if ('function' === typeof command) {
-    rval.generator = command;
-  }
-  else if (command.functor) {
-    rval.functor = command.functor;
-  }
-  else if (command.__iterator__) {
-    rval.iterator = function()command.__iterator__()
-  }
-  else throw new Error("Invalid exec() command");
-  return rval;
-}
-
-
-
-
-
-
-
 
 /* Digraph class */
 function Digraph() {
@@ -627,7 +440,35 @@ function Pipeline() {
       Pipeline_addGenerator(a);
     else throw new Error("Don't know how to add this type of argument to a Pipeline");
   }
-
+  /* runs the pipeline */
+  function Pipeline_run() {
+    print('running a "'+shape()+'"-type pipeline');
+    switch (shape()) {
+      case 'empty':
+        return;
+      case 'all internal':
+        /* Get an array of all generator functions */
+        var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
+        print(generators.join('\nTHEN\n'));
+        /* We have to use eval to nest an arbitrary number of generators this way (maybe?) TODO recursive non-eval solution? */
+        return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
+      case 'all external':
+        var cmd = m_graph.linearize(function(x)x.command).join('|');
+        var p = new Process(cmd);
+        p.close();
+        break;
+      case 'to internal':
+        var cmd = m_graph.linearize(function(x)x).filter(function(x)x.hasOwnProperty('command')).map(function(x)x.command).join('|');
+        var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
+        function process(){for(var x in new Process(cmd))yield x}
+        generators.unshift(process);
+        print(generators.join('\nTHEN\n'));
+        return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
+        break;
+      case 'to external':
+    }
+  }
+  
   m_graph = new Digraph({
     'validateGraph': Pipeline_validateGraph,
     'realizeGraph':  Pipeline_realizeGraph,
@@ -636,27 +477,39 @@ function Pipeline() {
   return this.iface = {
     'shape':        shape,
     'add':          Pipeline_add,
+    'run':          Pipeline_run,
   };
 }
 
+function ExecAPI_writeToFile(src) {
+}
+function ExecAPI_appendToFile(src) {
+}
+var ExecAPI = {
+  'print':  function() this.exec(function(src){for each(let x in src)print(x)}).exec(),
+  'trim':   function() this.exec(function(src){for each(let x in src)yield x.trim()}),
+  'rtrim':  function() this.exec(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
+  'write':  ExecAPI_writeToFile,
+  'append': ExecAPI_appendToFile,
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+function exec(cmd) {
+  var m_pipeline = new Pipeline;
+  m_pipeline.add(cmd);
+  return {
+    '__proto__': ExecAPI,
+    '_pipeline': m_pipeline,
+    'exec': function(cmd) {
+      if (arguments.length == 0) {
+        m_pipeline.run();
+      }
+      else {
+        m_pipeline.add(cmd);
+      }
+      return this;
+    }
+  };
+}
 
 /* exports */
 exports.Digraph = Digraph;
