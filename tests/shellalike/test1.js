@@ -76,10 +76,45 @@ function test2() {
   var x = new sh.Pipeline;
   x.add("tail -f /var/log/auth.log");
   x.add("rot13");
+  var shape = x.shape();
+  if (shape !== 'all external')
+    throw new Error('shape "'+shape+'" !== "all external"');
+}
+function test3() {
+  var x = new sh.Pipeline;
+  x.add(function(src){yield 'one\n';yield 'two\n';yield 'three\n'});
+  x.add(function(src){for each(let each in src)yield '"'+each+'"'})
+  x.add(function(src){for each(let each in src) print(each)});
+  var shape = x.shape();
+  if (shape !== 'all internal')
+    throw new Error('shape "'+shape+'" !== "all internal"');
+}
+function test4() {
+  var x = new sh.Pipeline;
+  x.add("tail -f /var/log/auth.log");
+  x.add("rot13");
   x.add(function(src){for(var each in src)yield src});
   var shape = x.shape();
   if (shape !== 'to internal')
     throw new Error('shape "'+shape+'" !== "to internal"');
+}
+function test5() {
+  var x = new sh.Pipeline;
+  x.add(function(src){yield 'one\n';yield 'two\n';yield 'three\n'});
+  x.add("rot13");
+  x.add("cat > output-test");
+  var shape = x.shape();
+  if (shape !== 'to external')
+    throw new Error('shape "'+shape+'" !== "to external"');
+}
+function test6() {
+  var x = new sh.Pipeline;
+  x.add(function(src){yield 'one\n';yield 'two\n';yield 'three\n'});
+  x.add("rot13");
+  x.add(function(src){for each(let each in src) print(each)});
+  var shape = x.shape();
+  if (shape !== 'interleaved')
+    throw new Error('shape "'+shape+'" !== "interleaved"');
 }
 
 var args = Array.apply(null, arguments);
@@ -117,13 +152,19 @@ var harness = {
       return true;
   },
   'test': function() {
+    var failed = 0;
     for(let i=0;i<arguments.length;i++) {
-      try { arguments[i](this) }
-      catch (e) {
+      let test = arguments[i];
+      try { 
+        harness.note("RUNNING TEST:", test.name);
+        test(this)
+      } catch (e) {
+        failed++;
         print('FAILED:', test.name);
         print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
       }
     }
+    return failed;
   }
 }
 
@@ -134,7 +175,12 @@ else
   harness.note = function()void 0;
 
 try {
-  harness.test(test1, test2);
+  var failed = harness.test(test1, test2, test3, test4);
+  if (failed) {
+    print(failed, "tests failed");
+    throw -1;
+  }
+  print('success');
 } catch (e) {
   print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
   //throw(-1);
