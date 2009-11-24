@@ -57,7 +57,7 @@ static JSBool gffi_errno_getter(JSContext *cx, JSObject *obj, jsval id, jsval *v
 static JSBool gffi_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   if (JSVAL_IS_INT(*vp))
-    errno = JSVAL_TO_INT(vp);
+    errno = JSVAL_TO_INT(*vp);
   else
   {
     jsdouble d;
