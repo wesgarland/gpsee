@@ -237,7 +237,7 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
       if (JSVAL_IS_OBJECT(argv[0]) != JS_TRUE)
 	return gpsee_throw(cx, MODULE_ID ".include.arguments.0.notObject");
 
-      if (JSVAL_IS_NULL(thisObj) == JS_TRUE)
+      if (JSVAL_IS_NULL(argv[0]) == JS_TRUE)
 	return gpsee_throw(cx, MODULE_ID ".include.arguments.0.isNull");
 
       break;
