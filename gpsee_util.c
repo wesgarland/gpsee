@@ -315,7 +315,7 @@ __gpsee_p2open(const char *cmd, int fds[2])
 		(void) close(1);
 		(void) fcntl(fromcmd[1], F_DUPFD, 1);
 		(void) close(fromcmd[1]);
-		(void) execl("/bin/sh", "sh", "-c", cmd, 0);
+		(void) execl("/bin/sh", "sh", "-c", cmd, (char *)0);
 		_exit(1);
 	}
 	if (pid == (pid_t)-1)
