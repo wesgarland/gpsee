@@ -90,7 +90,7 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee_iconv.h
+gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h
 ifneq (X$(ICONV_LIB_NAME),X)
 gpsee_defs:	EXTRA_LDFLAGS           += -l$(ICONV_LIB_NAME)
 endif
