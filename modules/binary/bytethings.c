@@ -239,7 +239,7 @@ JSBool copyJSArray_toBuf(JSContext *cx, JSObject *arr, size_t start, unsigned ch
     /* Validate array member */
     if (d != (unsigned char)d)
     {
-      gpsee_throw(cx, "%s.array.range: element %i (value %lf) does not fit in a byte", throwPrefix, start+i, d);
+      gpsee_throw(cx, "%s.array.range: element " GPSEE_UINT32_FMT " (value %lf) does not fit in a byte", throwPrefix, start+i, d);
       goto failOut;
     }
 
@@ -655,7 +655,7 @@ const char * byteThing_val2byte(JSContext *cx, jsval val, unsigned char *retval)
     /* Binary types must contain only one byte */
     if (hnd->length != 1)
     {
-      snprintf(errmsg, sizeof(errmsg), "Binary-type object contains too %s bytes (%d bytes) where it must contain exactly one byte",
+      snprintf(errmsg, sizeof(errmsg), "Binary-type object contains too %s bytes (" GPSEE_SIZET_FMT " bytes) where it must contain exactly one byte",
                hnd->length < 1 ?"few":"many", hnd->length);
       return errmsg;
     }
@@ -905,12 +905,12 @@ JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, 
 
   /* Check lower bound */
   if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than %u, got %u",
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_UINT32_FMT,
                        clasp->name, methodName, argn, min, *retval);
 
   /* Check upper bound */
   if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than %u, got %u",
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_UINT32_FMT,
                        clasp->name, methodName, argn, max, *retval);
 
   /* Success! */
@@ -959,12 +959,12 @@ JSBool byteThing_arg2ssize(JSContext *cx, uintN argc, jsval *vp, ssize_t *retval
 
   /* Check lower bound */
   if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than %d, got %d",
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
                        clasp->name, methodName, argn, min, *retval);
 
   /* Check upper bound */
   if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than %d, got %d",
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_INT32_FMT,
                        clasp->name, methodName, argn, max, *retval);
 
   /* Success! */
@@ -1251,7 +1251,7 @@ JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp)
     return gpsee_throw(cx, MODULE_ID ".%s.toString.invalid: %s.toString applied the wrong object type", className, className);
 
   /* Compose the abbreviated string representation of our object */
-  snprintf(buf, sizeof(buf), "[object %s %i]", className, hnd->length);
+  snprintf(buf, sizeof(buf), "[object %s " GPSEE_SIZET_FMT "]", className, hnd->length);
   /* Make a JSString from our C string */
   s = JS_NewStringCopyZ(cx, buf);
   if (!s)

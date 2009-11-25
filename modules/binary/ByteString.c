@@ -89,7 +89,7 @@ inline int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 
   }
   if (index >= bs->length)
   {
-    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=%d", methodName, index, bs->length);
+    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=" GPSEE_SIZET_FMT, methodName, index, bs->length);
     return JS_FALSE;
   }
   return JS_TRUE;
