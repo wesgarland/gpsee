@@ -208,6 +208,7 @@ function Digraph() {
       var m_type = String(type);
       var m_pad = this;
       var m_padData = data;
+      this.linked = false;
 
       /* There are only two types of Pad */
       if (type != 'src' && type != 'snk')
@@ -541,12 +542,16 @@ function exec(cmd) {
     '_pipeline': m_pipeline,
     'exec': function(cmd) {
       if (arguments.length == 0) {
-        m_pipeline.run();
+        return m_pipeline.run();
       }
       else {
         m_pipeline.add(cmd);
       }
       return this;
+    },
+    '__iterator__': function() {
+      m_pipeline.add(function(src){for(let x in src)yield x});
+      return m_pipeline.run();
     }
   };
 }
