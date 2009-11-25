@@ -50,7 +50,7 @@
 # else
 #  include <iconv.h>
  
-static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **out$
+static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
 {
   return iconv(cd, (char **)inbuf, inbytesleft, outbuf, outbytesleft);
 }
