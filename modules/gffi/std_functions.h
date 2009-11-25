@@ -63,7 +63,7 @@
 #endif
 
 /* Make sure we get right iconv.h */
-#include "gpsee_iconv.h"
+#include "gpsee-iconv.h"
 
 #include <stdio.h>
 #include <sys/types.h>

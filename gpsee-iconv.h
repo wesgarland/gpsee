@@ -32,11 +32,11 @@
  *
  * ***** END LICENSE BLOCK ***** 
  *
- * @file	gpsee_iconv.h	Formal way for GPSEE apps/modules to include iconv.h
+ * @file	gpsee-iconv.h	Formal way for GPSEE apps/modules to include iconv.h
  *				that matches the iconv library GPSEE links against.
  * @author	Wes Garland, wes@page.ca
  * @date	Nov 2009
- * @version	$Id: gpsee_iconv.h,v 1.1 2009/11/13 19:34:48 wes Exp $
+ * @version	$Id: gpsee-iconv.h,v 1.1 2009/11/13 19:34:48 wes Exp $
  */
 
 #ifdef HAVE_ICONV

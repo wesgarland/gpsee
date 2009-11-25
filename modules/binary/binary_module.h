@@ -63,7 +63,7 @@ extern JSObject *byteString_proto;
 extern JSObject *byteArray_proto;
 #endif
 
-#include "gpsee_iconv.h"
+#include "gpsee-iconv.h"
 
 #endif/*GPSEE_BINARY_MODULE_H*/
 
