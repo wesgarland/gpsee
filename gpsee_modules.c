@@ -1744,6 +1744,7 @@ JSObject *gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID)
   return findModuleScope(cx, moduleObject);
 }
 
+#if 0
 /** Find a loaded module's DSO handle via the module's ID. 
  *  Provided to allow unrelated modules to steal symbols from each
  *  other's C code. Lifetime of the return value is not guaranteed.
@@ -1766,3 +1767,4 @@ static void *gpsee_findModuleDSOHnd_byID(JSContext *cx, const char *moduleID)
 
   return NULL;
 }
+#endif
