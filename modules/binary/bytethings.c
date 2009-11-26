@@ -1618,3 +1618,42 @@ JSBool byteThing_Cast(JSContext *cx, uintN argc, jsval *argv, jsval *rval,
   return JS_TRUE;
 }
 
+/**
+ *  This function casts an int-sized portion of a byteThing's memory as an int
+ *  and then returns it, optionally performing byte-order conversion.
+ *
+ *  @param      cx
+ *  @param      argc
+ *  @param      vp
+ *  @param      throwPrefix     Prefix for exception messages
+ */
+JSBool byteThing_intAt(JSContext *cx, uintN argc, jsval *vp, const char *throwPrefix)
+{
+  byteThing_handle_t *hnd;
+  size_t idx;
+  JSObject *self;
+  jsval *argv;
+  int rval;
+  const char *err;
+
+  self = JS_THIS_OBJECT(cx, vp);
+  if (!self)
+    goto invalid;
+
+  hnd = JS_GetPrivate(cx, self);
+  if (!hnd)
+    goto invalid;
+
+  argv = JS_ARGV(cx, vp);
+
+  err = byteThing_val2size(cx, argv[0], &idx, NULL);
+  if (err)
+    return gpsee_throw(cx, "%s.argument.0.invalid: %s", throwPrefix, err);
+
+  rval = *((int*)&hnd->buffer[idx]);
+  JS_SET_RVAL(cx, vp, INT_TO_JSVAL(rval));
+  return JS_TRUE;
+
+  invalid:
+    return gpsee_throw(cx, "%s.invalid: method applied to non-bytething", throwPrefix);
+}
