@@ -239,7 +239,7 @@ JSBool copyJSArray_toBuf(JSContext *cx, JSObject *arr, size_t start, unsigned ch
     /* Validate array member */
     if (d != (unsigned char)d)
     {
-      gpsee_throw(cx, "%s.array.range: element " GPSEE_UINT32_FMT " (value %lf) does not fit in a byte", throwPrefix, start+i, d);
+      gpsee_throw(cx, "%s.array.range: element " GPSEE_SIZET_FMT " (value %lf) does not fit in a byte", throwPrefix, start+i, d);
       goto failOut;
     }
 
@@ -905,12 +905,12 @@ JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, 
 
   /* Check lower bound */
   if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_UINT32_FMT,
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
                        clasp->name, methodName, argn, min, *retval);
 
   /* Check upper bound */
   if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_UINT32_FMT,
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
                        clasp->name, methodName, argn, max, *retval);
 
   /* Success! */
@@ -959,12 +959,12 @@ JSBool byteThing_arg2ssize(JSContext *cx, uintN argc, jsval *vp, ssize_t *retval
 
   /* Check lower bound */
   if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SSIZET_FMT ", got " GPSEE_SSIZET_FMT,
                        clasp->name, methodName, argn, min, *retval);
 
   /* Check upper bound */
   if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_INT32_FMT,
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SSIZET_FMT ", got " GPSEE_SSIZET_FMT,
                        clasp->name, methodName, argn, max, *retval);
 
   /* Success! */
