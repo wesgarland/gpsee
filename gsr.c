@@ -550,6 +550,10 @@ PRIntn prmain(PRIntn argc, char **argv)
     putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
   }
 
+  if (!script_argv) {
+    static const char const * empty_argv[] = {NULL};
+    script_argv = empty_argv;
+  }
   jsi = gpsee_createInterpreter(script_argv, script_environ);
   processFlags(jsi, flags);
   free(flags);
