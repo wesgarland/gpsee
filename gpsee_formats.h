@@ -40,7 +40,8 @@
  *  @version	$Id: gpsee_formats.h,v 1.1 2009/09/14 21:01:44 wes Exp $
  */
 
-#define GPSEE_SIZET_FMT       "%zd"
+#define GPSEE_SIZET_FMT       "%zu"
+#define GPSEE_SSIZET_FMT      "%zd"
 #if defined(GPSEE_SUNOS_SYSTEM)
 #define GPSEE_PTR_FMT         "0x%p"
 #else
