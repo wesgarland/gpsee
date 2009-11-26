@@ -88,6 +88,7 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
                              const char *throwPrefix);
 JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp);
 JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JSClass *rtype, const char const * methodName);
+JSBool byteThing_intAt(JSContext *cx, uintN argc, jsval *vp, const char *throwPrefix);
 JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp);
 /* TODO toArray() needs to be like toString above and accept the direct JSAPI call */
 JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t len);

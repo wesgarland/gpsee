@@ -587,6 +587,11 @@ JSBool ByteString_toSource(JSContext *cx, uintN argc, jsval *vp)
 {
   return byteThing_toSource(cx, argc, vp, byteString_clasp);
 }
+/** ByteString_xintAt() implements the ByteString member method xintAt() */
+JSBool ByteString_xintAt(JSContext *cx, uintN argc, jsval *vp)
+{
+  return byteThing_intAt(cx, argc, vp, CLASS_ID);
+}
 
 /** Implements ByteString.length getter */
 static JSBool ByteString_getLength(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -624,6 +629,7 @@ JSObject *ByteString_InitClass(JSContext *cx, JSObject *obj, JSObject *parentPro
     JS_FN("lastIndexOf",	ByteString_lastIndexOf,		0, 0),
     JS_FN("charAt",		ByteString_charAt,		0, 0),
     JS_FN("byteAt",		ByteString_byteAt,		0, 0),
+    JS_FN("xintAt",             ByteString_xintAt,              0, 0),
     JS_FN("charCodeAt",		ByteString_charCodeAt,          0, 0),
     JS_FN("get",        	ByteString_get,   		0, 0),
     JS_FN("split",              ByteString_split,               0, 0),

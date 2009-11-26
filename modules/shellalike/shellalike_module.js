@@ -78,17 +78,8 @@ function $P(f,t) {
   if (arguments.length==1) t = this;
   return function() f.apply(t, arguments);
 }
+ffi.Memory.prototype.intAt = ByteString.prototype.xintAt;
 
-ffi.Memory.prototype.intAt = (function() {
-  function Memory_intAt(idx) {
-    var f = ByteString.prototype.charCodeAt;
-    return  f.call(this, idx+0)        |
-           (f.call(this, idx+1) << 8)  |
-           (f.call(this, idx+2) << 16) |
-           (f.call(this, idx+3) << 24) ;
-  }
-  return Memory_intAt;
-})();
 
 /* @jazzdoc shellalike.p2open
  * Mostly intended as an internal function.

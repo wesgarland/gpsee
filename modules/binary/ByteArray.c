@@ -726,6 +726,11 @@ static JSBool ByteArray_lastIndexOf(JSContext *cx, uintN argc, jsval *vp)
 {
   return byteThing_findChar(cx, argc, vp, memrchr, "lastIndexOf", byteArray_clasp);
 }
+/** ByteArray_xintAt() implements the ByteArray member method xintAt() */
+JSBool ByteArray_xintAt(JSContext *cx, uintN argc, jsval *vp)
+{
+  return byteThing_intAt(cx, argc, vp, CLASS_ID);
+}
 
 /** Initializes binary.ByteArray */
 JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
@@ -771,6 +776,7 @@ JSObject *ByteArray_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
     JS_FN("decodeToString",       ByteArray_decodeToString, 0, 0),
     JS_FN("reverse",              ByteArray_reverse,        0, 0),
     JS_FN("byteAt",               ByteArray_byteAt,         0, 0),
+    JS_FN("xintAt",               ByteArray_xintAt,         0, 0),
     JS_FN("get",                  ByteArray_get,            0, 0),
     JS_FN("concat",               ByteArray_concat,         0, 0),
     JS_FN("pop",                  ByteArray_pop,            0, 0),
