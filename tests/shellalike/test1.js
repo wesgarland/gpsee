@@ -62,12 +62,12 @@ function io_test_close() {
   for (var x in cat) print(x.trim());
 }
 function io_test_tail() {
-  var log = sh.exec("tail /var/log/auth.log").exec("rot13");
+  var log = sh.exec("tail /var/log/auth.log")("rot13");
   for (var line in log)
     print(line.trim());
 }
 function test_out_file() {
-  sh.exec("echo SUCCESS > EVER").exec();
+  sh.exec("echo SUCCESS > EVER")();
 }
 function test_no_op() {
   // TODO make work!
@@ -77,7 +77,7 @@ function test_writing() {
   var rot13 = sh.exec("");
 }
 function test_graph() {
-  var x = sh.exec("one").exec("two").exec(function(src){for(var each in src)yield '+++'+each+'+++'});
+  var x = sh.exec("one")("two")(function(src){for(var each in src)yield '+++'+each+'+++'});
   print('@@', x.pipeline());
   //sh.ExecAPI.pipeline(x);
 }
@@ -161,7 +161,7 @@ function test6() {
     throw new Error('shape "'+shape+'" !== "interleaved"');
 }
 function test7() {
-  var shape = sh.exec("cat test-file").exec("rot13").exec(function(src){for each(let each in src)print(each)})._pipeline.shape();
+  var shape = sh.exec("cat test-file")("rot13")(function(src){for each(let each in src)print(each)})._pipeline.shape();
   if (shape !== 'to internal')
     throw new Error('shape "'+shape+'" !== "to internal"');
 }
@@ -169,7 +169,7 @@ function test8() {
   sh.exec(function(){yield'ONE';yield'TWO';yield'THREE'}).print();
 }
 function test9() {
-  sh.exec("cat tests/shellalike/test1.js").exec("rot13").rtrim().print();
+  sh.exec("cat tests/shellalike/test1.js")("rot13").rtrim().print();
 }
 
 var args = Array.apply(null, arguments);
