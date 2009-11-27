@@ -90,7 +90,7 @@ const p2open = (function() {
   var FDs = new ffi.Memory(8); // TODO sizeof(int)*2
   //FDs.finalizeWith(_free, FDs);
   function p2open(command) {
-    print('p2open() with', command);
+    //print('p2open() with', command);
     var n = _p2open.call(command, FDs);
     if (n|0)
       throw new Error('p2open() failed (TODO better error)');
@@ -102,7 +102,6 @@ const p2open = (function() {
   }
   return p2open;
 })();
-//412-969-0006 call Chuck to find addresses of places in Lawrenceville
 /* @jazzdoc shellalike.flines
  * @form for (line in flines(source)) {...}
  * Allows line-by-line iteration over a readable stdio FILE* source.
@@ -129,7 +128,7 @@ const flines = (function(){
  * nothing is set in stone, yet
  */
 function Process(command) {
-  print('Process with', command);
+  //print('Process with', command);
   var {src,snk} = p2open(command);
   /* @jazzdoc shellalike.Process.__iterator__
    * @form for (line in new Process(command)) {...}
@@ -475,14 +474,14 @@ function Pipeline() {
   }
   /* runs the pipeline */
   function Pipeline_run() {
-    print('running a "'+shape()+'"-type pipeline');
+    //print('running a "'+shape()+'"-type pipeline');
     switch (shape()) {
       case 'empty':
         return;
       case 'all internal':
         /* Get an array of all generator functions */
         var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
-        print(generators.join('\nTHEN\n'));
+        //print(generators.join('\nTHEN\n'));
         /* We have to use eval to nest an arbitrary number of generators this way (maybe?) TODO recursive non-eval solution? */
         return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
       case 'all external':
@@ -495,7 +494,7 @@ function Pipeline() {
         var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
         function process(){for(var x in new Process(cmd))yield x}
         generators.unshift(process);
-        print(generators.join('\nTHEN\n'));
+        //print(generators.join('\nTHEN\n'));
         return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
       case 'to external':
     }
