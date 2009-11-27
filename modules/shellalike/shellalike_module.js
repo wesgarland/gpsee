@@ -102,7 +102,7 @@ const p2open = (function() {
   }
   return p2open;
 })();
-
+//412-969-0006 call Chuck to find addresses of places in Lawrenceville
 /* @jazzdoc shellalike.flines
  * @form for (line in flines(source)) {...}
  * Allows line-by-line iteration over a readable stdio FILE* source.
@@ -518,9 +518,9 @@ function ExecAPI_writeToFile(src) {
 function ExecAPI_appendToFile(src) {
 }
 var ExecAPI = {
-  'print':  function() this.exec(function(src){for each(let x in src)print(x)}).exec(),
-  'trim':   function() this.exec(function(src){for each(let x in src)yield x.trim()}),
-  'rtrim':  function() this.exec(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
+  'print':  function() this(function(src){for each(let x in src)print(x)})(),
+  'trim':   function() this(function(src){for each(let x in src)yield x.trim()}),
+  'rtrim':  function() this(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
   'write':  ExecAPI_writeToFile,
   'append': ExecAPI_appendToFile,
 }
@@ -528,23 +528,29 @@ var ExecAPI = {
 function exec(cmd) {
   var m_pipeline = new Pipeline;
   m_pipeline.add(cmd);
-  return {
-    '__proto__': ExecAPI,
-    '_pipeline': m_pipeline,
-    'exec': function(cmd) {
-      if (arguments.length == 0) {
-        return m_pipeline.run();
-      }
-      else {
-        m_pipeline.add(cmd);
-      }
-      return this;
-    },
-    '__iterator__': function() {
-      m_pipeline.add(function(src){for(let x in src)yield x});
+
+  /* This closure will be our return value. We'll give it some properties
+   * and a different __proto__, too.
+   */
+  function _exec(cmd) {
+    if (arguments.length == 0) {
       return m_pipeline.run();
     }
-  };
+    else {
+      m_pipeline.add(cmd);
+    }
+    return _exec;
+  }
+  function ExecAPI___iterator__() {
+    /* This last stage guarantees that we have an internal stage at the end.
+     * TODO check if the last one is internal first */
+    m_pipeline.add(function(src){for(let x in src)yield x});
+    return m_pipeline.run();
+  }
+  _exec.__proto__ = ExecAPI;
+  _exec._pipeline = m_pipeline;
+  
+  return _exec;
 }
 
 /* exports */
