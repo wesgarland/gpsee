@@ -400,7 +400,7 @@ function Pipeline() {
 
   /* Determine what sort of execution implementation is needed to run this pipeline
    */
-  function shape() {
+  function Pipeline_shape() {
     var ie = m_graph.linearize(function(x)x.internal?'i':'e').join('');
     if (!m_graph.isLinear())
       throw new Error("Currently only linear pipelines are supported!");
@@ -425,7 +425,7 @@ function Pipeline() {
   }
 
   function Pipeline_realizeGraph() {
-    switch (shape()) {
+    switch (Pipeline_shape()) {
       case 'empty':
         return;
       case 'all internal':
@@ -474,8 +474,8 @@ function Pipeline() {
   }
   /* runs the pipeline */
   function Pipeline_run() {
-    //print('running a "'+shape()+'"-type pipeline');
-    switch (shape()) {
+    //print('running a "'+Pipeline_shape()+'"-type pipeline');
+    switch (Pipeline_shape()) {
       case 'empty':
         return;
       case 'all internal':
@@ -500,13 +500,14 @@ function Pipeline() {
     }
   }
   
+  /* TODO note this style of digraph inheritance isn't actually implemented yet */
   m_graph = new Digraph({
     'validateGraph': Pipeline_validateGraph,
     'realizeGraph':  Pipeline_realizeGraph,
   });
 
   return this.iface = {
-    'shape':        shape,
+    'shape':        Pipeline_shape,
     'add':          Pipeline_add,
     'run':          Pipeline_run,
   };
@@ -520,8 +521,11 @@ var ExecAPI = {
   'print':  function() this(function(src){for each(let x in src)print(x)})(),
   'trim':   function() this(function(src){for each(let x in src)yield x.trim()}),
   'rtrim':  function() this(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
-  'write':  ExecAPI_writeToFile,
-  'append': ExecAPI_appendToFile,
+  'fwrite': ExecAPI_writeToFile,
+  'fappend':ExecAPI_appendToFile,
+  /* A function will inherit from ExecAPI, so we'll make it feel as much like a standard function as possible */
+  'call':   Function.prototype.call,
+  'apply':  Function.prototype.apply,
 }
 
 function exec(cmd) {
