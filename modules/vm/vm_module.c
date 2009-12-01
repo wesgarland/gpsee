@@ -38,15 +38,18 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm_module.c,v 1.1 2009/03/30 23:55:45 wes Exp $
+ *  @version    $Id: vm_module.c,v 1.2 2009/12/01 21:30:11 wes Exp $
  *
  *  $Log: vm_module.c,v $
+ *  Revision 1.2  2009/12/01 21:30:11  wes
+ *  Changed vm.gc semantic so that no-args now means force-gc instead of maybe-gc
+ *
  *  Revision 1.1  2009/03/30 23:55:45  wes
  *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.1 2009/03/30 23:55:45 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.2 2009/12/01 21:30:11 wes Exp $";
  
 #include "gpsee.h"
 
@@ -85,7 +88,7 @@ static JSBool vm_gc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
   if (argc == 0)
   {
-    JS_MaybeGC(cx);
+    JS_GC(cx);
   }
   else
   {
