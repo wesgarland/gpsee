@@ -254,6 +254,9 @@ JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
 JSDOC=java -jar "$(JSDOC_DIR)/jsrun.jar" "$(JSDOC_DIR)/app/run.js" -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
 
+JAZZDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jazzdoc/template.html
+JAZZDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
+
 docs-dir::
 	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
 
@@ -265,7 +268,7 @@ docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
 docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)))
-docs-jazz:: CONFIG_OBJ = "{ home: '$(strip $(dir $(lastword jazzdoc,$(JAZZDOC))))', template: 'docgen/jazzdoc/template.html', output: 'docs/jazz.html' }"
+docs-jazz:: CONFIG_OBJ = "{ home: '$(strip $(dir $(lastword jazzdoc,$(JAZZDOC))))', template: '$(JAZZDOC_TEMPLATE)', output: '$(JAZZDOC_TARGET_DIR)/jazzdocs.html' }"
 docs-jazz::
 	$(JAZZDOC) $(CONFIG_OBJ) $(DOCFILES)
 
