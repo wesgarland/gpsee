@@ -254,14 +254,26 @@ JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
 JSDOC=java -jar "$(JSDOC_DIR)/jsrun.jar" "$(JSDOC_DIR)/app/run.js" -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
 
-docs::
+docs-dir::
 	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
+
+docs-doxygen::
 	@rm -f doxygen.log
 	doxygen
+
+docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
-jazzdocs::
-	-$(JAZZDOC) $(shell find modules -name \*.c -or -name \*.decl)
+docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)))
+docs-jazz:: CONFIG_OBJ = "{ home: '$(strip $(dir $(lastword jazzdoc,$(JAZZDOC))))', template: 'docgen/jazzdoc/template.html', output: 'docs/jazz.html' }"
+docs-jazz::
+	$(JAZZDOC) $(CONFIG_OBJ) $(DOCFILES)
+
+docs:: docs-dir docs-doxygen docs-jdocs docs-jazz
+	@echo " * Documentation generation complete"
+
+publish-docs::
+	@tar -cf - docs | ssh wes@www.page.ca 'cd public_html/opensource/gpsee && tar -xvf -'
 
 gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
 gpsee_config.h: Makefile $(wildcard *.mk)
@@ -312,3 +324,22 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
