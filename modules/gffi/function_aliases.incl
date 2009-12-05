@@ -1,0 +1,25 @@
+function(uint32_t, htonl, (uint32_t num), (num));
+function(uint16_t, htons, (uint16_t num), (num));
+function(uint32_t, ntohl, (uint32_t num), (num));
+function(uint16_t, ntohs, (uint16_t num), (num));
+
+#if defined(GPSEE_LINUX_SYSTEM)
+/* Select /usr/include/db.h version of ndbm on Linux, among several 
+ * variants available, as is does not require extra packages
+ */
+# define DB_DBM_HSEARCH 1
+# include <db.h>
+#else
+# include <ndbm.h>
+#endif
+function(int, dbm_clearerr, (DBM *db), (db))
+voidfunction(dbm_close, (DBM *db), (db))
+function(int, dbm_delete, (DBM *db, datum key), (db, key))
+function(int, dbm_error, (DBM *db), (db))
+function(datum, dbm_fetch, (DBM *db, datum key), (db, key))
+function(datum, dbm_firstkey, (DBM *db), (db))
+function(datum, dbm_nextkey, (DBM *db), (db))
+function(DBM *, dbm_open, (const char *file, int open_flags, mode_t file_mode), (file, open_flags, file_mode))
+function(int, dbm_store, (DBM *db, datum key, datum content, int store_mode), (db, key, content, store_mode))
+#include <setjmp.h>
+function(int, sigsetjmp, (sigjmp_buf env, int savemask), (env, savemask))
