@@ -144,7 +144,7 @@ function tryRequireMozShell(print)
 
 function main()
 {
-  var inputModule = require("repl/input");
+  var inputModule = require("./repl/input");
   var history = new inputModule.History();
   var clipboard = new Array();
   var buffer = "";
