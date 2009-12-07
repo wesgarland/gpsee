@@ -110,7 +110,7 @@ const flines = (function(){
   var buf = new ffi.Memory(4096);
   function flines(src) {
     var line;
-    while (line = _fgets.call(buf, 4096, src))
+    while ((line = _fgets.call(buf, 4096, src)))
       yield ByteString(line, _strlen.call(line)).decodeToString('ascii');
   }
   return flines;
@@ -482,8 +482,8 @@ function Pipeline() {
         /* Get an array of all generator functions */
         var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
         //print(generators.join('\nTHEN\n'));
-        /* We have to use eval to nest an arbitrary number of generators this way (maybe?) TODO recursive non-eval solution? */
-        return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
+        // Construct each generator (ie. for 3 generators: g[2](g[1](g[0])))
+        return $CS(generators);
       case 'all external':
         var cmd = m_graph.linearize(function(x)x.command).join('|');
         var p = new Process(cmd);
@@ -495,7 +495,8 @@ function Pipeline() {
         function process(){for(var x in new Process(cmd))yield x}
         generators.unshift(process);
         //print(generators.join('\nTHEN\n'));
-        return eval((function(n)"generators["+n+"]("+(n?arguments.callee(n-1):'')+')')(generators.length-1));
+        // Construct each generator (ie. for 3 generators: g[2](g[1](g[0])))
+        return $CS(generators);
       case 'to external':
     }
   }
