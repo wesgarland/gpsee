@@ -90,11 +90,13 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h
 ifneq (X$(ICONV_LIB_NAME),X)
-gpsee_defs:	EXTRA_LDFLAGS           += -l$(ICONV_LIB_NAME)
+std_defs gpsee_defs:	EXTRA_LDFLAGS           += -l$(ICONV_LIB_NAME)
 endif
+
+std_defs:	EXTRA_CPPFLAGS += -I.
 std_defs.%:	HEADERS  = std_functions.h stdint.h
+gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h
 
 ############ BEWARE - Dragons Below ###############
 
@@ -157,8 +159,8 @@ STRING_EXPR="([^\\"]|\\\\|\\")*"
 	>> $@
 	@echo " - Floating-point Expression"
 	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
-	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveFloat(\2,%e100," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
+		| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+		printf("haveFloat(\2,%100e," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Strings"
 	@$(EGREP) '$(START)$(STRING_EXPR)$$' $*_defs.dmp \

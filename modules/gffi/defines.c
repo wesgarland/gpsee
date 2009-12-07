@@ -51,6 +51,15 @@
 
 #include <gpsee.h>
 #include "gffi_module.h"
+#include <math.h>
+
+#if !defined(nan)
+# if defined(NAN)
+#  define nan NAN
+# else
+#  define nan __builtin_nanf("")
+# endif
+#endif
 
 typedef enum { cdeft_signedInt, cdeft_unsignedInt, cdeft_floatingPoint, cdeft_string } type_e;
 typedef union 
