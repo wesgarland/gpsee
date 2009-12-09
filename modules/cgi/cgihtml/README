@@ -1,0 +1,4 @@
+This is cgihtml-1.69 by Eugene Eric Kim, eekim@eekim.com.
+
+It has been trivially modified to eliminate bugs, compile nicely with C99,
+and provide flexibility in the upload path. EEK does not seem interested in accepting patches anymore.
