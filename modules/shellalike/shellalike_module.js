@@ -79,14 +79,21 @@ function $P(f,t) {
   return function() f.apply(t, arguments);
 }
 ffi.Memory.prototype.intAt = ByteString.prototype.xintAt;
-
+/* Recursively invoke each member of the stack (Array) 's' such that the return value of each function is supplied as
+ * a single argument to the next deepest function. The deepest function is given no arguments.
+ */
+function $CS(s){var f=s.pop();return s.length?f(arguments.callee(s)):f()}
 
 /* @jazzdoc shellalike.p2open
  * Mostly intended as an internal function.
  * TODO add finalizer! this will require repairing the missing
  * linked-list functionality in __gpsee_p2open() et al.
  */
-const p2open = (function() {
+const [p2open,p2close] = (function() {
+  /* This catalog is used to keep tabs on all launched processes and their corresponding file descriptors  */  
+  var FDCatalog = [];
+  var PIDCatalog = [];
+  /* FDs is a temporary C array for holding two file descriptors */
   var FDs = new ffi.Memory(8); // TODO sizeof(int)*2
   //FDs.finalizeWith(_free, FDs);
   function p2open(command) {
@@ -100,7 +107,9 @@ const p2open = (function() {
     //n.finalizeWith(_p2close, FDs.intAt(0), FDs.intAt(4), 9);
     return {'src':psrc, 'snk':psink, /*'__gcreqs__': [n]*/ };
   }
-  return p2open;
+  function p2close(fd0, fd1) {
+  }
+  return [p2open,p2close];
 })();
 /* @jazzdoc shellalike.flines
  * @form for (line in flines(source)) {...}
