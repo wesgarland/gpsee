@@ -268,9 +268,8 @@ docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
 docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)))
-docs-jazz:: CONFIG_OBJ = "{ home: '$(strip $(dir $(lastword jazzdoc,$(JAZZDOC))))', template: '$(JAZZDOC_TEMPLATE)', output: '$(JAZZDOC_TARGET_DIR)/jazzdocs.html' }"
 docs-jazz::
-	$(JAZZDOC) $(CONFIG_OBJ) $(DOCFILES)
+	$(JAZZDOC) -O 'template: "$(JAZZDOC_TEMPLATE)", output: "$(JAZZDOC_TARGET_DIR)/jazzdocs.html", title: "GPSEE Module Documentation"' -- $(DOCFILES)
 
 docs:: docs-dir docs-doxygen docs-jdocs docs-jazz
 	@echo " * Documentation generation complete"
