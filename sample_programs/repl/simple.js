@@ -44,7 +44,7 @@ screen.scrolling = true;
 
 function main()
 {
-  var inputModule = require("input");
+  var inputModule = require("./input");
   var history = new inputModule.History();
   var clipboard = new Array();
   var buffer = "";

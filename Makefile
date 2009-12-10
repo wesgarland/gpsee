@@ -69,8 +69,8 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base
-INTERNAL_MODULES 	+= vm system
+IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base fs-base
+INTERNAL_MODULES 	+= vm system 
 
 include $(GPSEE_SRC_DIR)/ffi.mk
 
@@ -254,14 +254,28 @@ JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
 JSDOC=java -jar "$(JSDOC_DIR)/jsrun.jar" "$(JSDOC_DIR)/app/run.js" -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) 
 
-docs::
+JAZZDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jazzdoc/template.html
+JAZZDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
+
+docs-dir::
 	@[ -d docs/source/gpsee ] || mkdir -p docs/source/gpsee
+
+docs-doxygen::
 	@rm -f doxygen.log
 	doxygen
+
+docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
-jazzdocs::
-	-$(JAZZDOC) $(shell find modules -name \*.c -or -name \*.decl)
+docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)))
+docs-jazz::
+	$(JAZZDOC) -O 'template: "$(JAZZDOC_TEMPLATE)", output: "$(JAZZDOC_TARGET_DIR)/jazzdocs.html", title: "GPSEE Module Documentation"' -- $(DOCFILES)
+
+docs:: docs-dir docs-doxygen docs-jdocs docs-jazz
+	@echo " * Documentation generation complete"
+
+publish-docs::
+	@tar -cf - docs | ssh wes@www.page.ca 'cd public_html/opensource/gpsee && tar -xvf -'
 
 gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
 gpsee_config.h: Makefile $(wildcard *.mk)
@@ -312,3 +326,22 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
