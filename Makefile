@@ -267,7 +267,7 @@ docs-doxygen::
 docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
-docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)))
+docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuffix /*.decl, $(ALL_MODULE_DIRS)) $(addsuffix /*.js, $(ALL_MODULE_DIRS)))
 docs-jazz::
 	$(JAZZDOC) -O 'template: "$(JAZZDOC_TEMPLATE)", output: "$(JAZZDOC_TARGET_DIR)/jazzdocs.html", title: "GPSEE Module Documentation"' -- $(DOCFILES)
 
