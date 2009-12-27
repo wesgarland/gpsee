@@ -163,7 +163,7 @@ function Process(command) {
     return _fflush.call(snk);
   }
   /* @jazzdoc shellalike.Process.close
-   * @form (instance of Process)f.flush()
+   * @form (instance of Process).close()
    * Closes the Process's sink
    */
   this.close = function() {
