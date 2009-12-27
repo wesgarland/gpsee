@@ -305,6 +305,17 @@ static JSBool signal_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
   return JS_TRUE;
 }
 
+/* @jazzdoc signal.kill
+ * @form kill(signal)
+ * Send the specified signal to the current process.
+ *
+ * 'signal' can be specified as a number (e.g. 9) or named by string (e.g. "KILL")
+ *
+ * @form kill(signal, pid)
+ * Send the specified signal to a given process or process group.
+ *
+ * 'pid' represents a process ID if it is non-negative, and represents a process group ID if it negative.
+ */
 static JSBool signal_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   int32		sig;
@@ -384,6 +395,13 @@ static JSBool signal_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   return JS_TRUE;
 }
 
+/* @jazzdoc signal.raise
+ * @form raise(signal:Number)
+ * @form raise(signal:String)
+ * Raise the specified signal in the current process.
+ *
+ * 'signal' can be specified as a number (e.g. 9) or named by string (e.g. "KILL")
+ */
 static JSBool signal_raise(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   if (argc != 1)
@@ -392,6 +410,14 @@ static JSBool signal_raise(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
   return signal_kill(cx, obj, argc, argv, rval);  
 }
 
+/* @jazzdoc signal.send
+ * @form send(signal, pid)
+ * Send the specified signal to a given process or process group.
+ *
+ * 'signal' can be specified as a number (e.g. 9) or named by string (e.g. "KILL")
+ *
+ * 'pid' represents a process ID if it is non-negative, and represents a process group ID if it negative.
+ */
 static JSBool signal_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   if (argc != 2)
