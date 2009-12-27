@@ -48,7 +48,7 @@ while (dent = _readdir.call(dirp))				/* dent returned as instanceof Memory or n
 
   owner = ffi.MutableStruct(pwent, "struct passwd").pw_name;	/* Type cast (no copy), then dereference member */
 
-  if (sb.st_mode & ffi.posix.S_IFDIR)				/* S_IFDIR is an int jsval defined in header collection named posix */
+  if (sb.st_mode & ffi.std.S_IFDIR)				/* S_IFDIR is an int jsval defined in header collection named posix */
     print(filename + " is a directory owned by " + owner)
   else
     print(filename + " is a " + sb.st_size + " byte file owned by " + owner);

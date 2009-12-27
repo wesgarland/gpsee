@@ -19,7 +19,7 @@ function perror(msg)
 
 function mmap(filename)
 {
-  var fd = _open.call(filename, ffi.posix.O_RDONLY, 0666);
+  var fd = _open.call(filename, ffi.std.O_RDONLY, 0666);
   if (fd == -1)
     throw(new Error(perror("Cannot open file " + filename)));
 
@@ -29,7 +29,7 @@ function mmap(filename)
     if (_fstat.call(fd, sb) != 0)
       throw(new Error(perror("Cannot stat file " + filename)));
 
-    var mem = _mmap.call(null, sb.st_size, ffi.posix.PROT_READ, ffi.posix.MAP_PRIVATE, fd, 0);
+    var mem = _mmap.call(null, sb.st_size, ffi.std.PROT_READ, ffi.std.MAP_PRIVATE, fd, 0);
     if (mem == ffi.Memory(-1))
       throw(new Error(perror("Cannot read file " + filename)));
 
