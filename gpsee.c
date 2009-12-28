@@ -347,18 +347,10 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
     length = strlen(message);
   }
 
-  messageStr = JS_NewStringCopyN(cx, message, length);
-  if (!messageStr)
-  {
-    gpsee_log(SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Unthrown Exception: %s\n", message);
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to throw exception - out of memory?");
-  }
-
   if (JS_IsExceptionPending(cx) == JS_TRUE)
     gpsee_log(SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
   else
-    JS_SetPendingException(cx, STRING_TO_JSVAL(messageStr));
-
+    JS_ReportError(cx, "%s", message);
   return JS_FALSE;
 }
 
