@@ -62,22 +62,22 @@ function io_test_close() {
   for (var x in cat) print(x.trim());
 }
 function io_test_tail() {
-  var log = sh.exec("tail /var/log/auth.log")("rot13");
+  var log = sh.cay("tail /var/log/auth.log")("rot13");
   for (var line in log)
     print(line.trim());
 }
 function test_out_file() {
-  sh.exec("echo SUCCESS > EVER")();
+  sh.cay("echo SUCCESS > EVER")();
 }
 function test_no_op() {
   // TODO make work!
-  var noop = sh.exec("echo FAILURE > TEST");
+  var noop = sh.cay("echo FAILURE > TEST");
 }
 function test_writing() {
-  var rot13 = sh.exec("");
+  var rot13 = sh.cay("");
 }
 function test_graph() {
-  var x = sh.exec("one")("two")(function(src){for(var each in src)yield '+++'+each+'+++'});
+  var x = sh.cay("one")("two")(function(src){for(var each in src)yield '+++'+each+'+++'});
   print('@@', x.pipeline());
   //sh.ExecAPI.pipeline(x);
 }
@@ -161,15 +161,15 @@ function test6() {
     throw new Error('shape "'+shape+'" !== "interleaved"');
 }
 function test7() {
-  var shape = sh.exec("cat test-file")("rot13")(function(src){for each(let each in src)print(each)})._pipeline.shape();
+  var shape = sh.cay("cat test-file")("rot13")(function(src){for each(let each in src)print(each)})._pipeline.shape();
   if (shape !== 'to internal')
     throw new Error('shape "'+shape+'" !== "to internal"');
 }
 function test8() {
-  sh.exec(function(){yield'ONE';yield'TWO';yield'THREE'}).print();
+  sh.cay(function(){yield'ONE';yield'TWO';yield'THREE'}).print();
 }
 function test9() {
-  sh.exec("cat tests/shellalike/test1.js")("rot13").rtrim().print();
+  sh.cay("cat tests/shellalike/test1.js")("rot13").rtrim().print();
 }
 
 var args = Array.apply(null, arguments);
@@ -242,4 +242,4 @@ try {
   print('\nuncaught exception\n', e, '\n\n', 'backtrace:\n', e.stack);
   //throw(-1);
 }
-//print(sh.ExecAPI.splice(sh.exec('tail -f /var/log/syslog'), sh.exec('cat > whatever')));
+//print(sh.ExecAPI.splice(sh.cay('tail -f /var/log/syslog'), sh.cay('cat > whatever')));

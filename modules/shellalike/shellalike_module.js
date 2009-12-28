@@ -574,22 +574,22 @@ function Pipeline() {
   };
 }
 
-function ExecAPI_writeToFile(src) {
+function CAY_writeToFile(src) {
 }
-function ExecAPI_appendToFile(src) {
+function CAY_appendToFile(src) {
 }
-var ExecAPI = {
+var CAY = {
   'print':  function() this(function(src){for each(let x in src)print(x)})(),
   'trim':   function() this(function(src){for each(let x in src)yield x.trim()}),
   'rtrim':  function() this(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
-  'fwrite': ExecAPI_writeToFile,
-  'fappend':ExecAPI_appendToFile,
-  /* A function will inherit from ExecAPI, so we'll make it feel as much like a standard function as possible */
+  'fwrite': CAY_writeToFile,
+  'fappend':CAY_appendToFile,
+  /* A function will inherit from CAY, so we'll make it feel as much like a standard function as possible */
   'call':   Function.prototype.call,
   'apply':  Function.prototype.apply,
 }
 
-function exec(cmd) {
+function cay(cmd) {
   var m_pipeline = new Pipeline;
   m_pipeline.add(cmd);
 
@@ -605,13 +605,13 @@ function exec(cmd) {
     }
     return _exec;
   }
-  function ExecAPI___iterator__() {
+  function CAY___iterator__() {
     /* This last stage guarantees that we have an internal stage at the end.
      * TODO check if the last one is internal first */
     m_pipeline.add(function(src){for(let x in src)yield x});
     return m_pipeline.run();
   }
-  _exec.__proto__ = ExecAPI;
+  _exec.__proto__ = CAY;
   _exec._pipeline = m_pipeline;
   
   return _exec;
@@ -622,5 +622,5 @@ exports.Digraph = Digraph;
 exports.Pipeline = Pipeline;
 exports.Process = Process;
 exports.flines = flines;
-exports.exec = exec;
-exports.ExecAPI = ExecAPI;
+exports.cay = cay;
+exports.CAY = CAY;
