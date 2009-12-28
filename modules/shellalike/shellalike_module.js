@@ -47,25 +47,32 @@
 /* Module requirements */
 const ffi = require('gffi');
 const {ByteString,ByteArray} = require('binary');
+const system = require('system');
 
 /* GFFI decls */
 const _pipe = new ffi.CFunction(ffi.int, 'pipe', ffi.pointer);
-const _p2open = new ffi.CFunction(ffi.int, '__gpsee_p2open', ffi.pointer, ffi.pointer);
-const _p2close = new ffi.CFunction(ffi.int, 'gpsee_p2close', ffi.pointer);
+const _gpsee_p2open = new ffi.CFunction(ffi.int, 'gpsee_p2open', ffi.pointer, ffi.pointer, ffi.pointer);
+const _p2close = new ffi.CFunction(ffi.int, 'gpsee_p2close', ffi.pointer, ffi.pointer, ffi.int, ffi.pid_t);
+const _waitpid = new ffi.CFunction(ffi.pid_t, 'waitpid', ffi.pid_t, ffi.pointer, ffi.int);
 const _open = new ffi.CFunction(ffi.int, 'open', ffi.pointer, ffi.int);
 const _creat = new ffi.CFunction(ffi.int, 'creat', ffi.pointer, ffi.int);
 const _close = new ffi.CFunction(ffi.int, 'close', ffi.int);
 const _read = new ffi.CFunction(ffi.ssize_t, 'read', ffi.int, ffi.pointer, ffi.size_t);
 const _write = new ffi.CFunction(ffi.ssize_t, 'write', ffi.int, ffi.pointer, ffi.size_t);
+const _fsync = new ffi.CFunction(ffi.int, 'fsync', ffi.int);
 const _memset = new ffi.CFunction(ffi.pointer, 'memset', ffi.pointer, ffi.int, ffi.size_t);
 const _fdopen = new ffi.CFunction(ffi.pointer, 'fdopen', ffi.int, ffi.pointer);
 const _fgets = new ffi.CFunction(ffi.pointer, 'fgets', ffi.pointer, ffi.int, ffi.pointer);
 const _fwrite = new ffi.CFunction(ffi.size_t, 'fwrite', ffi.pointer, ffi.size_t, ffi.size_t, ffi.pointer);
 const _fflush = new ffi.CFunction(ffi.int, 'fflush', ffi.pointer);
 const _fclose = new ffi.CFunction(ffi.int, 'fclose', ffi.pointer);
+const _feof = new ffi.CFunction(ffi.int, 'feof', ffi.pointer);
+const _ferror = new ffi.CFunction(ffi.int, 'ferror', ffi.pointer);
 const _strlen = new ffi.CFunction(ffi.size_t, 'strlen', ffi.pointer);
 
-
+/* TODO add this sort of thing to GFFI proper */
+const sizeofInt = 4;
+const sizeofPtr = 4;
 /* Convenience stuff */
 /* numeric range generator */
 function range(start,stop){if('undefined'===typeof stop){stop=start;start=0}for(var i=start;i<stop;i++)yield i};
@@ -78,49 +85,51 @@ function $P(f,t) {
   if (arguments.length==1) t = this;
   return function() f.apply(t, arguments);
 }
+/* Patch Memory with GPSEE's xintAt() ByteString method */
 ffi.Memory.prototype.intAt = ByteString.prototype.xintAt;
+/* Patch Memory with ptrAt() function; returns C-equivalent of ((void*)this)[offset]
+ * TODO endiannize. implement in C?
+ */
+ffi.Memory.prototype.ptrAt = function Memory_ptrAt(offset) {
+  var addr = '@0x';
+  for(let i=sizeofPtr-1; i>=0; i--) {
+    var s = ByteString.prototype.charCodeAt.call(this, i+offset).toString(16);
+    if (s.length < 2)
+      s = '0' + s;
+    addr += s;
+  }
+  return ffi.Memory(addr);
+}
+/* Patch Memory with a function to return a pointer at a given offset of the given pointer.
+ * TODO add to Memory proper? */
+ffi.Memory.prototype.offset = function Memory_offset(offset) ffi.Memory('@0x'+(offset+parseInt(this.toString().substr(3), 16)).toString(16))
 /* Recursively invoke each member of the stack (Array) 's' such that the return value of each function is supplied as
  * a single argument to the next deepest function. The deepest function is given no arguments.
  */
 function $CS(s){var f=s.pop();return s.length?f(arguments.callee(s)):f()}
 
-/* @jazzdoc shellalike.p2open
- * Mostly intended as an internal function.
- * TODO add finalizer! this will require repairing the missing
- * linked-list functionality in __gpsee_p2open() et al.
- */
-const [p2open,p2close] = (function() {
-  /* This catalog is used to keep tabs on all launched processes and their corresponding file descriptors  */  
-  var FDCatalog = [];
-  var PIDCatalog = [];
-  /* FDs is a temporary C array for holding two file descriptors */
-  var FDs = new ffi.Memory(8); // TODO sizeof(int)*2
-  //FDs.finalizeWith(_free, FDs);
-  function p2open(command) {
-    //print('p2open() with', command);
-    var n = _p2open.call(command, FDs);
-    if (n|0)
-      throw new Error('p2open() failed (TODO better error)');
-    var psink = _fdopen.call(FDs.intAt(0), "w"),
-        psrc  = _fdopen.call(FDs.intAt(4), "r");
-    /* GFFI MAGIC! See gffi.BoxedPrimitive for help! */
-    //n.finalizeWith(_p2close, FDs.intAt(0), FDs.intAt(4), 9);
-    return {'src':psrc, 'snk':psink, /*'__gcreqs__': [n]*/ };
-  }
-  function p2close(fd0, fd1) {
-  }
-  return [p2open,p2close];
-})();
 /* @jazzdoc shellalike.flines
  * @form for (line in flines(source)) {...}
  * Allows line-by-line iteration over a readable stdio FILE* source.
  */
 const flines = (function(){
-  var buf = new ffi.Memory(4096);
-  function flines(src) {
+  var buflen = 4096, buf = new ffi.Memory(buflen);
+  function flines(fdsrc) {
+    /* fdopen(3) just for fgets(3) */
+    var src = _fdopen.call(fdsrc, "r");
     var line;
-    while ((line = _fgets.call(buf, 4096, src)))
+    print('flines buf', buf);
+    print('flines src', src);
+    while ((line = _fgets.call(buf, buflen, src))) {
       yield ByteString(line, _strlen.call(line)).decodeToString('ascii');
+    }
+    /* Check ferror(3) */
+    var err = _ferror.call(src);
+    if (err|0)
+      print('throw new Error("fgets() threw error "+err);');
+    /* Check feof(3) */
+    if (_feof.call(src)|0)
+      return;
   }
   return flines;
 })();
@@ -137,37 +146,79 @@ const flines = (function(){
  * nothing is set in stone, yet
  */
 function Process(command) {
-  //print('Process with', command);
-  var {src,snk} = p2open(command);
+  print('Process with', command);
+  var FDs = new ffi.Memory(sizeofInt*2);
+  var pidPtr = new ffi.Memory(sizeofInt);
+  var result = _gpsee_p2open.call(command, FDs, pidPtr);
+  print('  result', result);
+
+  var pid = pidPtr.intAt(0);
+  var snk = FDs.intAt(sizeofInt);
+  var src = FDs.intAt(0);
+
+  print('  pid', pid);
+  print('  src', src);
+  print('  snk', snk);
+
+  //var {src,snk} = p2open(command);
   /* @jazzdoc shellalike.Process.__iterator__
    * @form for (line in new Process(command)) {...}
    * Allows line-by-line iteration over the output of a shell command.
    */
+  function Process___iterator__() {
+    for (let line in flines(src))
+      yield line;
+  }
   this.__iterator__ = function()flines(src);
 
+  /* @jazzdoc shellalike.Process.check
+   * @form (instance of Process).check()
+   * Returns 0 if the process is still running, and non-zero if the process has exited.
+   */
+  var check_status = new ffi.Memory(sizeofInt);
+  this.check = function Process_check() {
+    var result = _waitpid.call(pid, check_status, ffi.std.WNOHANG);
+    return result|0;
+  }
   /* @jazzdoc shellalike.Process.write
    * @form (instance of Process).write(string)
    * Writes a ByteString to the Process's sink.
    * Other types will be coerced to a ByteString.
    */
-  this.write = function(s) {
-    if (!(s instanceof ByteString))
+  this.write = function Process_write(s) {
+    print("WRITING TO", snk, 'THIS', s);
+    if (!s instanceof ByteString)
       s = new ByteString(String(s));
-    return _fwrite.call(s, 1, s.length, snk);
+    var result = _write.call(snk, s, s.length);
+    /* Write error */
+    if (result < 0) {
+      if (this.check())
+        throw new Error("Attempt to write to a process which has already exited");
+      throw new Error("write(2) error! TODO error report");
+    }
+    return result;
   }
   /* @jazzdoc shellalike.Process.flush
    * @form (instance of Process).flush()
    * Flushes the Process's sink
+   * TODO figure out why fsync(2) is returning an error on simple cat test
    */
   this.flush = function() {
-    return _fflush.call(snk);
+    print("SYNCING", snk);
+    var result = _fsync.call(snk);
+    if (result<0) {
+      if (this.check())
+        throw new Error("Attempt to flush to a process which has already exited");
+      throw new Error("fsync(2) error! TODO error report");
+    }
   }
   /* @jazzdoc shellalike.Process.close
    * @form (instance of Process).close()
    * Closes the Process's sink
    */
   this.close = function() {
-    return _fclose.call(snk);
+    /* TODO discover why this returns -1 when the process has exited prematurely */
+    return _close.call(snk);
   }
 }
 
@@ -496,7 +547,7 @@ function Pipeline() {
       case 'all external':
         var cmd = m_graph.linearize(function(x)x.command).join('|');
         var p = new Process(cmd);
-        p.close();
+        p.close(); // TODO will this shutdown the process?
         break;
       case 'to internal':
         var cmd = m_graph.linearize(function(x)x).filter(function(x)x.hasOwnProperty('command')).map(function(x)x.command).join('|');
@@ -571,6 +622,5 @@ exports.Digraph = Digraph;
 exports.Pipeline = Pipeline;
 exports.Process = Process;
 exports.flines = flines;
-exports.p2open = p2open;
 exports.exec = exec;
 exports.ExecAPI = ExecAPI;

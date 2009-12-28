@@ -263,124 +263,85 @@ int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 #include <errno.h>
 //#include "lib_gen.h"
 
-/* functions in libc */
-//extern int _insert(pid_t pid, int fd);
-//extern pid_t _delete(int fd);
-int __gpsee_p2open(const char *cmd, int fds[2]);
-int __gpsee_p2close(int *fdp, FILE **fpp, int kill_sig);
-
-int
-gpsee_p2open(const char *cmd, FILE *fp[2])
+int gpsee_p2open(const char *cmd, int *FDs, pid_t *pid)
 {
-	int	fds[2];
+  int tocmd[2];
+  int fromcmd[2];
 
-	if (__gpsee_p2open(cmd, fds) == -1)
-		return (-1);
-
-	fp[0] = fdopen(fds[0], "w");
-	fp[1] = fdopen(fds[1], "r");
-	return (0);
-}
-
-int
-gpsee_p2close(FILE *fp[2])
-{
-	return (__gpsee_p2close(NULL, fp, 0));
-}
-
-int
-__gpsee_p2open(const char *cmd, int fds[2])
-{
-	int	tocmd[2];
-	int	fromcmd[2];
-	pid_t	pid;
-
-	if (pipe(tocmd) < 0 || pipe(fromcmd) < 0)
-		return (-1);
+  if (pipe(tocmd) < 0 || pipe(fromcmd) < 0)
+    return (-1);
 #ifndef _LP64
-	if (tocmd[1] >= 256 || fromcmd[0] >= 256) {
-		(void) close(tocmd[0]);
-		(void) close(tocmd[1]);
-		(void) close(fromcmd[0]);
-		(void) close(fromcmd[1]);
-		return (-1);
-	}
-#endif	/*	_LP64	*/
-	if ((pid = fork()) == 0) {
-		(void) close(tocmd[1]);
-		(void) close(0);
-		(void) fcntl(tocmd[0], F_DUPFD, 0);
-		(void) close(tocmd[0]);
-		(void) close(fromcmd[0]);
-		(void) close(1);
-		(void) fcntl(fromcmd[1], F_DUPFD, 1);
-		(void) close(fromcmd[1]);
-		(void) execl("/bin/sh", "sh", "-c", cmd, (char *)0);
-		_exit(1);
-	}
-	if (pid == (pid_t)-1)
-		return (-1);
-	//(void) _insert(pid, tocmd[1]);
-	//(void) _insert(pid, fromcmd[0]);
-	(void) close(tocmd[0]);
-	(void) close(fromcmd[1]);
-	fds[0] = tocmd[1];
-	fds[1] = fromcmd[0];
-	return (0);
+  if (tocmd[1] >= 256 || fromcmd[0] >= 256) {
+    (void) close(tocmd[0]);
+    (void) close(tocmd[1]);
+    (void) close(fromcmd[0]);
+    (void) close(fromcmd[1]);
+    return (-1);
+  }
+#endif  /*      _LP64   */
+  if ((*pid = fork()) == 0) {
+    (void) close(tocmd[1]);
+    (void) close(0);
+    (void) fcntl(tocmd[0], F_DUPFD, 0);
+    (void) close(tocmd[0]);
+    (void) close(fromcmd[0]);
+    (void) close(1);
+    (void) fcntl(fromcmd[1], F_DUPFD, 1);
+    (void) close(fromcmd[1]);
+    (void) execl("/bin/sh", "sh", "-c", cmd, (char *)0);
+    _exit(1);
+  }
+  if (*pid == (pid_t)-1)
+    return (-1);
+  (void) close(tocmd[0]);
+  (void) close(fromcmd[1]);
+
+  FDs[0] = fromcmd[0];
+  FDs[1] = tocmd[1];
+  return (0);
 }
 
-int
-__gpsee_p2close(int *fdp, FILE **fpp, int kill_sig)
+int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pid)
 {
-	int		fds[2];
-	int		status;
-	void		(*hstat)(int), (*istat)(int), (*qstat)(int);
-	pid_t pid, r;
+  int             fds[2];
+  int             status;
+  void            (*hstat)(int), (*istat)(int), (*qstat)(int);
+  pid_t r;
 
-	if (fdp != NULL) {
-		fds[0] = fdp[0];
-		fds[1] = fdp[1];
-	} else if (fpp != NULL) {
-		fds[0] = fileno(fpp[0]);
-		fds[1] = fileno(fpp[1]);
-	} else {
-		return (-1);
-	}
+  /* Kill process */
 
-	//pid = _delete(fds[0]);
-	//if (pid != _delete(fds[1]))
-		//return (-1);
+  if (pid == (pid_t)-1)
+    return (-1);
 
-	if (pid == (pid_t)-1)
-		return (-1);
+  if (kill_sig != 0) {
+    (void) kill(pid, kill_sig);
+  }
 
-	if (kill_sig != 0) {
-		(void) kill(pid, kill_sig);
-	}
+  /* Finalize stdio */
 
-	if (fdp != NULL) {
-		(void) close(fds[0]);
-		(void) close(fds[1]);
-	} else {
-		(void) fclose(fpp[0]);
-		(void) fclose(fpp[1]);
-	}
+  if (tocmd && *tocmd) {
+    fclose(*tocmd);
+    *tocmd = NULL;
+  }
+  if (fromcmd && *fromcmd) {
+    fclose(*fromcmd);
+    *fromcmd = NULL;
+  }
 
-	istat = signal(SIGINT, SIG_IGN);
-	qstat = signal(SIGQUIT, SIG_IGN);
-	hstat = signal(SIGHUP, SIG_IGN);
-	while ((r = waitpid(pid, &status, 0)) == (pid_t)-1 && errno == EINTR)
-		;
-	if (r == (pid_t)-1)
-		status = -1;
-	(void) signal(SIGINT, istat);
-	(void) signal(SIGQUIT, qstat);
-	(void) signal(SIGHUP, hstat);
-	return (status);
+  /* Wait for process to exit */
+
+  istat = signal(SIGINT, SIG_IGN);
+  qstat = signal(SIGQUIT, SIG_IGN);
+  hstat = signal(SIGHUP, SIG_IGN);
+  while ((r = waitpid(pid, &status, 0)) == (pid_t)-1 && errno == EINTR)
+    ;
+  if (r == (pid_t)-1)
+    status = -1;
+  (void) signal(SIGINT, istat);
+  (void) signal(SIGQUIT, qstat);
+  (void) signal(SIGHUP, hstat);
+
+  /* Return the child process's exit status */
+  return (status);
 }
-int gpsee_p2close_easy(int fd0, int fd1, int kill_sig) {
-  int FDs[2];
-  FDs[0] = fd0;
-  FDs[1] = fd1;
-  return __gpsee_p2close(FDs, NULL, kill_sig);
-}
+
