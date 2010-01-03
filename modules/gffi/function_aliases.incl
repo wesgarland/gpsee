@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 function(uint32_t, htonl, (uint32_t num), (num));
 function(uint16_t, htons, (uint16_t num), (num));
 function(uint32_t, ntohl, (uint32_t num), (num));
