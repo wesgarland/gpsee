@@ -746,6 +746,39 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
 #include "function_aliases.incl"
 #undef function
 
+/** Implements CFunction.toString() */
+JSBool cFunction_toString(JSContext *cx, uintN argc, jsval *vp)
+{
+  JSObject *self;
+  cFunction_handle_t *hnd;
+  JSString *str;
+  char buf[256];
+
+  /* Fetch our 'this' JSObject */
+  self = JS_THIS_OBJECT(cx, vp);
+  if (!self)
+    return JS_FALSE;
+
+  /* Fetch our private data */
+  hnd = JS_GetInstancePrivate(cx, self, cFunction_clasp, NULL);
+  if (!hnd)
+    return gpsee_throw(cx, CLASS_ID "prototype.toString applied to non-CFunction object");
+    /* TODO handle CFunction prototype object differently? */
+
+  /* Assemble the our string description */
+  snprintf(buf, sizeof(buf), "[" CLASS_ID " \"%s\" %s]", hnd->functionName, hnd->noSuspend?"fast":"slow");
+  /* Make a JSString from our C string */
+  str = JS_NewStringCopyZ(cx, buf);
+  if (!str)
+    return JS_FALSE;
+
+  /* Return the JSString */
+  JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(str));
+
+  /* Success */
+  return JS_TRUE;
+}
+
 JSClass *cFunction_clasp;
 
 /**
@@ -778,6 +811,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
   static JSFunctionSpec instance_methods[] = 
   {
     JS_FN("unboxedCall",  cFunction_call,      0, 0),
+    JS_FN("toString",     cFunction_toString,  0, 0),
     JS_FS_END
   };
 
