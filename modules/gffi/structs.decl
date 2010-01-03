@@ -83,3 +83,7 @@ termio
 termios
 dirent
 */
+
+#include <sys/select.h>
+beginStruct(fd_set)
+endStruct(fd_set)
