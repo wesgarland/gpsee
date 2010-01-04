@@ -594,13 +594,52 @@ function CAY_writeToFile(src) {
 function CAY_appendToFile(src) {
 }
 var CAY = {
+  /* @jazzdoc shellalike.cay.prototype.print
+   * @form (cay initializer).print()
+   * Terminates a CAY pipeline with a printer (with newlines. Use
+   * shellalike.cay.prototype.rtrim() to remove excess newlines before
+   * printing.
+   */
   'print':  function() this(function(src){for each(let x in src)print(x)})(),
+  /* @jazzdoc shellalike.cay.prototype.trim
+   * @form (cay initializer).trim()
+   * Trims whitespace from both ends of each chunk of data coming through
+   * the CAY pipeline. This is accomplished by calling a .trim() method
+   * on each value yielded.
+   */
   'trim':   function() this(function(src){for each(let x in src)yield x.trim()}),
+  /* @jazzdoc shellalike.cay.prototype.trim
+   * @form (cay initializer).trim()
+   * Trims whitespace from the end of each chunk of data coming through
+   * the CAY pipeline. This is accomplished by regexp on each value yielded.
+   */
   'rtrim':  function() this(function(src){for each(let x in src)yield x.match(/(.*)\s*/)[1]}),
+  /* @jazzdoc shellalike.cay.prototype.fwrite
+   * @form (cay initializer).fwrite(filename)
+   * Sends CAY pipeline data directly to a file that is truncated upon execution
+   * of this CAY pipeline. This dynamic CAY pipeline stage will avoid
+   * extra trips between process boundaries by implementing itself as internal
+   * if its source is internal, and external if its source is external.
+   */
   'fwrite': CAY_writeToFile,
+  /* @jazzdoc shellalike.cay.prototype.fappend
+   * @form (cay initializer).fappend(filename)
+   * Appends CAY pipeline data directly to a file. This dynamic CAY pipeline
+   * stage will avoid extra trips between process boundaries by implementing
+   * itself as internal if its source is internal, and external if its source
+   * is external.
+   */
   'fappend':CAY_appendToFile,
+
   /* A function will inherit from CAY, so we'll make it feel as much like a standard function as possible */
+
+  /* @jazzdoc shellalike.cay.prototype.call
+   * This is a reference to Function.prototype.call()
+   */
   'call':   Function.prototype.call,
+  /* @jazzdoc shellalike.cay.prototype.apply
+   * This is a reference to Function.prototype.apply()
+   */
   'apply':  Function.prototype.apply,
 }
 
