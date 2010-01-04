@@ -150,15 +150,15 @@ function Process(command) {
   var FDs = new ffi.Memory(sizeofInt*2);
   var pidPtr = new ffi.Memory(sizeofInt);
   var result = _gpsee_p2open.call(command, FDs, pidPtr);
-  print('  result', result);
+  //print('  result', result);
 
   var pid = pidPtr.intAt(0);
   var snk = FDs.intAt(sizeofInt);
   var src = FDs.intAt(0);
 
-  print('  pid', pid);
-  print('  src', src);
-  print('  snk', snk);
+  //print('  pid', pid);
+  //print('  src', src);
+  //print('  snk', snk);
 
   //var {src,snk} = p2open(command);
   /* @jazzdoc shellalike.Process.__iterator__
@@ -168,17 +168,32 @@ function Process(command) {
   function Process___iterator__() {
     for (let line in flines(src))
       yield line;
+    if (this.check()) {
+      let exitStatus = this.checkStatus();
+      if (exitStatus)
+        throw new Error("Command exited " + exitStatus);
+    }
   }
-  this.__iterator__ = function()flines(src);
+  this.__iterator__ = Process___iterator__;
 
   /* @jazzdoc shellalike.Process.check
    * @form (instance of Process).check()
    * Returns 0 if the process is still running, and non-zero if the process has exited.
    */
-  var check_status = new ffi.Memory(sizeofInt);
+  var statusVar = new ffi.Memory(sizeofInt);
   this.check = function Process_check() {
-    var result = _waitpid.call(pid, check_status, ffi.std.WNOHANG);
+    var result = _waitpid.call(pid, statusVar, ffi.std.WNOHANG);
+    //print('waitpid returns', result);
     return result|0;
+  }
+  /* @jazzdoc shellalike.Process.checkStatus
+   * @form (instance of Process).checkStatus():Number
+   * If the process has exited, returns the exit status. Otherwise throws an Error.
+   */
+  this.checkStatus = function Process_checkStatus() {
+    if (!this.check())
+      throw new Error('Process has not exited, so no exit status is available');
+    return statusVar.intAt(0);
   }
   /* @jazzdoc shellalike.Process.write
    * @form (instance of Process).write(string)
