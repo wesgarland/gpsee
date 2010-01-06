@@ -457,6 +457,32 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     }
   }
 
+  if (module->cname) {
+    JSObject *    moduleVar;
+    char *        moduleIdDup;
+    JSString *    moduleId;
+
+    /* Create 'module' property of module scope */
+    moduleVar = JS_NewObject(cx, NULL, NULL, module->scope);
+    if (!moduleVar)
+      return NULL;
+
+    GPSEE_ASSERT(
+        JS_DefineProperty(cx, module->scope, "module", OBJECT_TO_JSVAL(moduleVar), NULL, NULL,
+        JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_TRUE);
+
+    /* Add 'id' property to 'module' property of module scope */
+    moduleIdDup = JS_strdup(cx, module->cname);
+    if (!moduleIdDup)
+      return NULL;
+    moduleId = JS_NewString(cx, moduleIdDup, strlen(module->cname));
+    if (!moduleId)
+      return NULL;
+    GPSEE_ASSERT(
+        JS_DefineProperty(cx, moduleVar, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
+        JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY));
+  }
+
   return module;
 }
 
