@@ -1083,11 +1083,21 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     }
   }
 
-  /* TODO ask about this */
+  /* An absolute path is permissible only if the module has already been loaded, thus
+   * require(module.id) is a valid, sane expression. */
   if (moduleName[0] == '/')
   {
-    *errorMessage_p = "rooted modules not supported";
-    return NULL;
+    /* Acquire module handle. Check for end-of-world errors like OOM, propagating exceptions */
+    module = acquireModuleHandle(cx, moduleName, parentModule ? parentModule->scope : NULL);
+    if (!module)
+      return NULL;
+    *errorMessage_p = loadJSModule(cx, module, fnBuf);
+    if (*errorMessage_p)
+    {
+      markModuleUnused(cx, module);
+      return NULL;
+    }
+    return module;
   }
 
   /* Iterate over each component of the full GPSEE_PATH list, or relative path alternative */
