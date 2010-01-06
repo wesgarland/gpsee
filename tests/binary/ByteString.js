@@ -67,29 +67,24 @@ var testUtils = {
             print(msg);
     },
     /* 'startswith' string function for gpsee exception handling */
-    'sw': function(part)
-    {
-        return function(full)
-        {
-            testUtils.dbg(1, 'testing exception: '+full);
-            if (full.indexOf(part) == 0) return true;
+    'sw': function(criteria) {
+        return function(ex) {
+            testUtils.dbg(1, 'testing exception: '+ex.message);
+            if (ex.message.substr(0, criteria.length) == criteria) return true;
             print('EXCEPTION MISMATCH');
-            print('V1', full);
-            print('V2', part);
+            print('V1', ex.message);
+            print('V2', criteria);
             return false;
         }
     },
     /* 'endswith' string function for gpsee exception handling */
-    'ew': function(part)
-    {
-        return function(full)
-        {
-            testUtils.dbg(1, 'testing exception: '+full);
-            full = full.toString();
-            if (full.indexOf(part) == (full.length - part.length)) return true;
+    'ew': function(criteria) {
+        return function(ex) {
+            testUtils.dbg(1, 'testing exception: "'+ex.message+'"');
+            if (ex.message.substr(ex.message.length-criteria.length) == criteria) return true;
             print('EXCEPTION MISMATCH');
-            print('V1', full);
-            print('V2', part);
+            print('V1', ex.message);
+            print('V2', criteria);
             return false;
         }
     },
