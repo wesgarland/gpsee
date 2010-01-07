@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.1 2010/01/07 21:27:05 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.2 2010/01/07 21:50:00 wes Exp $
  */
 
 const binary = require("binary");
@@ -342,11 +342,11 @@ exports.changeOwner = function changeOwner(path, owner)
     if ((pwent = getpwnam(owner)))
       owner = pwent.pw_uid;
     else
-      throw("Cannot determine user ID for user '" + owner + "'" + syserr());
+      throw(new Error("Cannot determine user ID for user '" + owner + "'" + syserr()));
   }
 
   if (_chown.call(path, owner, -1) != 0)
-    throw("Cannot change ownership of  '" + path + "'" + syserr());
+    throw(new Error("Cannot change ownership of  '" + path + "'" + syserr()));
 }
 
 /**
@@ -369,7 +369,7 @@ exports.changePermissions = function changePermissions(path, permissions)
   var p = new Permissions(permissions);
 
   if (_chmod.call(path, p.toUnix()) != 0)
-    throw("Cannot change permissions on  '" + path + "'" + syserr());
+    throw(new Error("Cannot change permissions on  '" + path + "'" + syserr()));
 }
 
 /**
@@ -378,7 +378,7 @@ exports.changePermissions = function changePermissions(path, permissions)
 exports.link = function link(source, target)
 {
   if (_symlink.call(source, target) != 0)
-    throw("Cannot create symbolic link '" + target + "'" + syserr());
+    throw(new Error("Cannot create symbolic link '" + target + "'" + syserr()));
 }
 
 /** 
@@ -389,7 +389,7 @@ exports.link = function link(source, target)
 exports.hardLink = function hardLink(source, target)
 {
   if (_link.call(source, target) != 0)
-    throw("Cannot create hard link '" + target + "'" + syserr());
+    throw(new Error("Cannot create hard link '" + target + "'" + syserr()));
 }
 
 /**
@@ -400,7 +400,7 @@ exports.readLink = function readLink(path)
   var buf = new ffi.Memory(dh.FILENAME_MAX);
 
   if (_readlink.call(path, buf, buf.size) != 0)
-    throw("Cannot read link '" + path + "'" + syserr());
+    throw(new Error("Cannot read link '" + path + "'" + syserr()));
 
   return buf.asString(-1);
 }
