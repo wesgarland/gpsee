@@ -991,20 +991,16 @@ JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_
   /* Allocate and initialize our private ByteThing handle */
   byteThing_handle_t 	*hnd;
   
-  if (clasp == byteString_clasp)
-    hnd = (byteThing_handle_t*) JS_malloc(cx, btallocsize);
-  else if (clasp == byteArray_clasp)
-    hnd = (byteThing_handle_t*) JS_malloc(cx, btallocsize);
-  else
+  if (!gpsee_isByteThingClass(cx, clasp))
   {
     gpsee_throw(cx, MODULE_ID ".internalerror: byteThing_fromCArray() asked to instantiate a new %s", clasp?clasp->name:"(NULL CLASP)");
     return NULL;
   }
 
+  hnd = (byteThing_handle_t*) JS_malloc(cx, btallocsize);
   if (!hnd)
     return NULL;
-
-  memset(hnd, 0, clasp==byteString_clasp?sizeof(byteString_handle_t):sizeof(byteArray_handle_t));
+  memset(hnd, 0, btallocsize);
   hnd->length = length;
 
   if (stealBuffer)
