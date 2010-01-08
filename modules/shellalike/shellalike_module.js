@@ -146,7 +146,7 @@ const flines = (function(){
  * nothing is set in stone, yet
  */
 function Process(command) {
-  print('Process with', command);
+  //print('Process with', command);
   var FDs = new ffi.Memory(sizeofInt*2);
   var pidPtr = new ffi.Memory(sizeofInt);
   var result = _gpsee_p2open.call(command, FDs, pidPtr);
