@@ -398,7 +398,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   gpsee_interpreter_t	*jsi;				/* Handle describing JS interpreter */
   const char		*scriptCode = NULL;		/* String with JavaScript program in it */
   const char		*scriptFilename = NULL;		/* Filename with JavaScript program in it */
-  char * const		*script_argv = NULL;		/* Becomes arguments array in JS program */
+  char * const		*script_argv;			/* Becomes arguments array in JS program */
   char * const  	*script_environ = NULL;		/* Environment to pass to script */
   char			*flags = malloc(8);		/* Flags found on command line */
   int			noRunScript = 0;		/* !0 = compile but do not run */
@@ -504,8 +504,13 @@ PRIntn prmain(PRIntn argc, char **argv)
       }
     } /* getopt wend */
 
-    if (optind < argc)
-      script_argv = argv + optind;
+    /* Create the script's argument vector with the script name as arguments[0] */
+    {
+      char **nc_script_argv = malloc(sizeof(argv[0]) * (2 + (argc - optind)));
+      nc_script_argv[0] = (char *)scriptFilename;
+      memcpy(nc_script_argv + 1, argv + optind, sizeof(argv[0]) * ((1 + argc) - optind));
+      script_argv = nc_script_argv;
+    }
 
     *flag_p = (char)0;
 
@@ -530,6 +535,7 @@ PRIntn prmain(PRIntn argc, char **argv)
       strcpy(flags, argv[1] + 1);
     }
 
+    /* This is a file interpreter; script_argv is correct at offset fiArg. */
     script_argv = argv + fiArg;
   }
 
@@ -550,10 +556,6 @@ PRIntn prmain(PRIntn argc, char **argv)
     putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
   }
 
-  if (!script_argv) {
-    static const char const * empty_argv[] = {NULL};
-    script_argv = empty_argv;
-  }
   jsi = gpsee_createInterpreter(script_argv, script_environ);
   processFlags(jsi, flags);
   free(flags);
