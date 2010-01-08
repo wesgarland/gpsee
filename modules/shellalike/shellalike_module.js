@@ -118,8 +118,8 @@ const flines = (function(){
     /* fdopen(3) just for fgets(3) */
     var src = _fdopen.call(fdsrc, "r");
     var line;
-    print('flines buf', buf);
-    print('flines src', src);
+    //print('flines buf', buf);
+    //print('flines src', src);
     while ((line = _fgets.call(buf, buflen, src))) {
       yield ByteString(line, _strlen.call(line)).decodeToString('ascii');
     }
@@ -563,7 +563,7 @@ function Pipeline() {
   }
   /* runs the pipeline */
   function Pipeline_run() {
-    print('running a "'+Pipeline_shape()+'"-type pipeline');
+    //print('running a "'+Pipeline_shape()+'"-type pipeline');
     switch (Pipeline_shape()) {
       case 'empty':
         return;
