@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.2 2010/01/07 21:50:00 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.3 2010/01/08 18:04:30 wes Exp $
  */
 
 const binary = require("binary");
@@ -169,6 +169,15 @@ exports.openRaw = function(path, mode, permissions)
   if (mode.exclusive)	m |= dh.O_EXCL;
   if (mode.truncate)	m |= dh.O_TRUNC;
 
+  if (mode.append && !mode.write)
+    throw new Error("Cannot open '" + path + "' for append without write");
+
+  if (mode.exclusive && !mode.create)
+    throw new Error("Cannot open '" + path + "' for exclusive without create");
+
+  if (mode.truncate && !mode.write)
+    throw new Error("Cannot open '" + path + "' for truncate without write");
+
   oldUmask = _umask.call(0);
   fd = _open.call(path, m, p.toUnix());
   _umask.call(oldUmask);
@@ -253,15 +262,21 @@ exports.makeDirectory = function makeDirectory(path, permissions)
 }
 
 /**
- *  Removes a directory if it is empty. If it is not, or cannot be removed for another 
- *  reason an exception will be thrown.
+ *  Removes a directory if it is empty. If path is not empty, not a directory, or cannot 
+ *  be removed for another reason an exception will be thrown. If path is a link, the 
+ *  link will be removed if the canonical name of the link is a directory. 
  *
  *  @param	path		The name of the directory to remove
  */
 exports.removeDirectory = function removeDirectory(path)
 {
   if (_rmdir.call(path) != 0)
+  {
+    if (exports.isLink(path) && exports.isDirectory(exports.canonical(path)))
+      if (_unlink.call(path) == 0)
+	return;
     throw(new Error("Cannot remove directory '" + path + "'" + syserror()));
+  }
 }
 
 /**
@@ -460,7 +475,7 @@ exports.isLink = function isLink(path)
  */
 exports.isReadable = function isReadable(path)
 {
-  return _access.call(path, dh.R_OK) == 0;
+  return (_access.call(path, dh.R_OK) == 0);
 };
 
 /**
@@ -474,13 +489,36 @@ exports.isWritable = function isWritable(path)
 };
 
 /**
- *  Determine whether two paths refer to the same storage, either by virtue of 
- *  symbolic or hard links, such that modifying one would modify the other.
+ *  Determine whether two paths refer to the same storage (file or directory), either by 
+ *  virtue of symbolic or hard links, such that modifying one would modify the other. In 
+ *  the case where either some or all paths do not exist, we return false. If we are 
+ *  unable to verify if the storage is the same (such as by having insufficient permissions), 
+ *  an exception is thrown.
+ *
+ *  @param	pathA		A file or directory name
+ *  @param	pathB		A file or directory name
+ *  @returns	boolean
  */
-exports.same = function same(path1, path2)
+exports.same = function same(pathA, pathB)
 {
-  var sb1 = stat(path1);
-  var sb2 = stat(path2);
+  var sb1 = new MutableStruct("struct stat");
+  var sb2 = new MutableStruct("struct stat");
+
+  if (_stat.call(path, sb1) != 0)
+    sb1 = false;
+  else
+  {
+    if (_stat.call(path, sb1) != 0)
+      sb2 = false;
+  }
+
+  if (!sb1 || !sb2)
+  {
+    if (ffi.errno == ffi.dh.ENOENT)
+      return false;
+
+    throw new Error("Unable to compare '" + pathA + "' and '" + pathB + "'" + syserr());
+  }
 
   if (typeof sb1.st_dev != "undefined")
     if (sb1.st_dev != sb2.st_dev)
