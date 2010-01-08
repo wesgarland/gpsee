@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.3 2010/01/08 18:04:30 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.4 2010/01/08 22:28:23 wes Exp $
  */
 
 const binary = require("binary");
@@ -91,7 +91,7 @@ function syserr(force)
  */
 function stat(path)
 {
-  var sb = new MutableStruct("struct stat");
+  var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) != 0)
     throw(new Error("Cannot stat path '"+path+"'" + syserr()));
@@ -127,6 +127,8 @@ exports.openDescriptor = function openDescriptor(fd, mode)
     _close.call(fd);
     throw(new Error("Unable to create stdio file stream" + syserr()));
   }
+
+  stream.finalizeWith(_fclose, stream);
 
   return new Stream(stream, fd, mode);
 }
@@ -184,8 +186,6 @@ exports.openRaw = function(path, mode, permissions)
 
   if (fd == -1)
     throw(new Error("Unable to open file '" + path + "'" + syserr()));
-
-  fd.finalizeWith(_close, fd);
 
   return exports.openDescriptor(fd, mode);
 };
@@ -426,9 +426,9 @@ exports.readLink = function readLink(path)
  */
 exports.exists = function exists(path)
 {
-  var sb = new MutableStruct("struct stat");
+  var sb = new ffi.MutableStruct("struct stat");
 
-  return _stat.call(path, junk_sb) == 0;
+  return _stat.call(path, sb) == 0;
 };
 
 /**
@@ -437,7 +437,7 @@ exports.exists = function exists(path)
  */
 exports.isFile = function isFile(path)
 {
-  var sb = new MutableStruct("struct stat");
+  var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) == 0)
     return (sb.st_mode & dh.S_IFREG) != 0;
@@ -450,7 +450,7 @@ exports.isFile = function isFile(path)
  */
 exports.isDirectory = function isDirectory(path)
 {
-  var sb = new MutableStruct("struct stat");
+  var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) == 0)
     return (sb.st_mode & dh.S_IFDIR) != 0;
@@ -462,7 +462,7 @@ exports.isDirectory = function isDirectory(path)
  */
 exports.isLink = function isLink(path)
 {
-  var sb = new MutableStruct("struct stat");
+  var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) == 0)
     return (sb.st_mode & dh.S_IFLINK) != 0;
@@ -501,8 +501,8 @@ exports.isWritable = function isWritable(path)
  */
 exports.same = function same(pathA, pathB)
 {
-  var sb1 = new MutableStruct("struct stat");
-  var sb2 = new MutableStruct("struct stat");
+  var sb1 = new ffi.MutableStruct("struct stat");
+  var sb2 = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb1) != 0)
     sb1 = false;
@@ -723,7 +723,7 @@ function Stream(stream, fd, mode)
  *  @note	Inefficient, should be optimized to take advantage of ByteString COW capabilities.
  *  @param	encoding	Character encoding of file
  */
-Stream.prototype.readln = function(encoding)
+Stream.prototype.readlines = function Stream_readlines(encoding)
 {
   if (encoding)
   {
@@ -748,11 +748,29 @@ Stream.prototype.readln = function(encoding)
       yield a;
     }
   }
-
-  throw StopIteration;
 }
 
-Stream.prototype.writeln = function(buffer)
+Stream.prototype.readln = function Stream_readln()
 {
-  _fputs.call(buffer, this.stream);
+  var buf = new ffi.Memory(1024);
+
+  if (_fgets.call(buf, buf.size, this.stream))
+    return buf.asString(-1);
+  else
+    return null;
 }
+
+Stream.prototype.writeln = function Stream_writeln(buffer)
+{
+  if (_fputs.call(buffer + "\n", this.stream) == dh.EOF)
+    throw new Error("Cannot write to stream!" + syserr());
+}
+
+Stream.prototype.close = function Stream_close()
+{
+  if (this.stream)
+    this.stream.destroy();
+  else
+    _close.call(this.fd);
+}
+
