@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.24 2010/01/07 21:20:06 wes Exp $
+## @version	$Id: Makefile,v 1.25 2010/01/08 22:27:25 wes Exp $
 
 top: 	help
 
@@ -326,22 +326,4 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
