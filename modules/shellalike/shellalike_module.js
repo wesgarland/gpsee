@@ -201,7 +201,7 @@ function Process(command) {
    * Other types will be coerced to a ByteString.
    */
   this.write = function Process_write(s) {
-    print("WRITING TO", snk, 'THIS', s);
+    //print("WRITING TO", snk, 'THIS', s);
     if (!s instanceof ByteString)
       s = new ByteString(String(s));
     var result = _write.call(snk, s, s.length);
@@ -533,6 +533,13 @@ function Pipeline() {
           'generator':    generator,
     }));
   }
+  function Pipeline_addMap(func) {
+    Pipeline_append(m_graph.addElement({
+          'toString':     function()'[Mapping '+(func.name||'anonymous')+']',
+          'internal':     true,
+          'generator':    function(src){for(let y in src)yield func(y)},
+    }));
+  }
   function Pipeline_addIterator(iterator) {
     Pipeline_append(m_graph.addElement({
           'toString':     function()'[Iterator]',
@@ -541,15 +548,22 @@ function Pipeline() {
     }));
   }
   function Pipeline_add(a) {
-    if ('string'===typeof a)
-      Pipeline_addExternalCommand(a);
-    else if ('function'===typeof a)
-      Pipeline_addGenerator(a);
-    else throw new Error("Don't know how to add this type of argument to a Pipeline");
+    switch (typeof a) {
+      case 'string':
+        return Pipeline_addExternalCommand(a);
+      case 'function':
+        return Pipeline_addGenerator(a);
+      case 'object':
+        switch (a.cmd) {
+          case 'map':
+            return Pipeline_addMap(a.func);
+        }
+    }
+    throw new Error("Don't know how to add this type of argument to a Pipeline");
   }
   /* runs the pipeline */
   function Pipeline_run() {
-    //print('running a "'+Pipeline_shape()+'"-type pipeline');
+    print('running a "'+Pipeline_shape()+'"-type pipeline');
     switch (Pipeline_shape()) {
       case 'empty':
         return;
@@ -573,6 +587,11 @@ function Pipeline() {
         // Construct each generator (ie. for 3 generators: g[2](g[1](g[0])))
         return $CS(generators);
       case 'to external':
+        var cmd = m_graph.linearize(function(x)x).filter(function(x)x.hasOwnProperty('command')).map(function(x)x.command).join('|');
+        var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
+        function process(src){var p = new Process(cmd); for(var y in src) { p.write(y) } };
+        generators.push(process);
+        return $CS(generators);
     }
   }
   
@@ -585,6 +604,7 @@ function Pipeline() {
   return this.iface = {
     'shape':        Pipeline_shape,
     'add':          Pipeline_add,
+    'addMap':       Pipeline_addMap,
     'run':          Pipeline_run,
   };
 }
@@ -631,6 +651,15 @@ var CAY = {
    */
   'fappend':CAY_appendToFile,
 
+  /* @jazzdoc shellalike.cay.prototype.map
+   * @form (cay initializer).map(func)
+   * Invokes func() on all CAY data passing through this pipeline element,
+   * yielding the return value of func(). Notionally similar to
+   * Array.prototype.map, but no Array is ever materialized, therefore a data
+   * set can be arbitrarily large and may be computed over time.
+   */
+  'map': function CAY_map(func) this({'cmd':'map', 'func':func}),
+
   /* A function will inherit from CAY, so we'll make it feel as much like a standard function as possible */
 
   /* @jazzdoc shellalike.cay.prototype.call
@@ -650,14 +679,14 @@ function cay(cmd) {
   /* This closure will be our return value. We'll give it some properties
    * and a different __proto__, too.
    */
-  function _exec(cmd) {
+  function _cay(cmd) {
     if (arguments.length == 0) {
       return m_pipeline.run();
     }
     else {
       m_pipeline.add(cmd);
     }
-    return _exec;
+    return _cay;
   }
   function CAY___iterator__() {
     /* This last stage guarantees that we have an internal stage at the end.
@@ -665,10 +694,10 @@ function cay(cmd) {
     m_pipeline.add(function(src){for(let x in src)yield x});
     return m_pipeline.run();
   }
-  _exec.__proto__ = CAY;
-  _exec._pipeline = m_pipeline;
+  _cay.__proto__ = CAY;
+  _cay._pipeline = m_pipeline;
   
-  return _exec;
+  return _cay;
 }
 
 /* exports */
