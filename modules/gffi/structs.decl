@@ -87,3 +87,9 @@ dirent
 #include <sys/select.h>
 beginStruct(fd_set)
 endStruct(fd_set)
+
+#include <utime.h>
+beginStruct(struct utimbuf)
+  member(time_t, actime,	integer)	/* access time */
+  member(time_t, modtime,	integer)	/* modification time */
+endStruct(utime)
