@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.25 2010/01/08 22:27:25 wes Exp $
+## @version	$Id: Makefile,v 1.26 2010/01/11 16:10:50 wes Exp $
 
 top: 	help
 
@@ -264,6 +264,10 @@ docs-doxygen::
 	@rm -f doxygen.log
 	doxygen
 
+#docs-test:: JSDOC_TEMPLATE=/export/home/wes/svn/jsdoc-toolkit-read-only/jsdoc-toolkit/templates/jsdoc
+docs-test::
+	gsr -c "global=this" -Sddf $(HOME)/svn/jsdoc-toolkit-read-only/jsdoc-toolkit/app/run.js -- -x=jsdoc -a -t=$(JSDOC_TEMPLATE) --directory=$(JSDOC_TARGET_DIR) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
+
 docs-jsdocs::
 	$(JSDOC) $(addprefix $(GPSEE_SRC_DIR)/,$(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc)))
 
@@ -271,7 +275,7 @@ docs-jazz:: DOCFILES = $(wildcard $(addsuffix /*.c, $(ALL_MODULE_DIRS)) $(addsuf
 docs-jazz::
 	$(JAZZDOC) -O 'template: "$(JAZZDOC_TEMPLATE)", output: "$(JAZZDOC_TARGET_DIR)/jazzdocs.html", title: "GPSEE Module Documentation"' -- $(DOCFILES)
 
-docs:: docs-dir docs-doxygen docs-jdocs docs-jazz
+docs:: docs-dir docs-doxygen docs-jsdocs docs-jazz
 	@echo " * Documentation generation complete"
 
 publish-docs::
