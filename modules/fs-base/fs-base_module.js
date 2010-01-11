@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.4 2010/01/08 22:28:23 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.5 2010/01/11 16:09:45 wes Exp $
  */
 
 const binary = require("binary");
@@ -63,7 +63,7 @@ const _utime		= new dl.CFunction(ffi.int,	"utime",		ffi.pointer, ffi.pointer);
 const _mkdir		= new dl.CFunction(ffi.int,	"mkdir",		ffi.pointer, ffi.int);
 const _rmdir		= new dl.CFunction(ffi.int,	"rmdir",		ffi.pointer);
 const _gpsee_resolvepath= new dl.CFunction(ffi.int, 	"gpsee_resolvepath", 	ffi.pointer, ffi.size_t);
-const _getcwd		= new dl.CFunction(ffi.pointer, "getcwd",		ffi.pointer);
+const _getcwd		= new dl.CFunction(ffi.pointer, "getcwd",		ffi.pointer, ffi.size_t);
 const _chdir		= new dl.CFunction(ffi.int,	"chdir",		ffi.pointer);
 const _getpwuid		= new dl.CFunction(ffi.pointer, "getpwuid",		ffi.uid_t);
 const _getpwnam		= new dl.CFunction(ffi.pointer, "getpwnam",		ffi.pointer);
@@ -72,6 +72,9 @@ const _symlink		= new dl.CFunction(ffi.int,	"symlink",		ffi.pointer, ffi.pointer
 const _readlink		= new dl.CFunction(ffi.ssize_t,	"readlink",		ffi.pointer, ffi.pointer, ffi.size_t);
 const _readdir 		= new dl.CFunction(ffi.pointer, "readdir", 		ffi.pointer);
 const _opendir 		= new dl.CFunction(ffi.pointer, "opendir", 		ffi.pointer);
+const _fwrite		= new dl.CFunction(ffi.size_t,	"fwrite",		ffi.pointer, ffi.size_t, ffi.size_t, ffi.pointer);
+const _fread		= new dl.CFunction(ffi.size_t,	"fread",		ffi.pointer, ffi.size_t, ffi.size_t, ffi.pointer);
+const _ftello		= new dl.CFunction(ffi.off_t,	"ftello", 		ffi.pointer);
 
 /**
  *  Return a string documenting the most recent OS-level error, if there was one.
@@ -307,7 +310,7 @@ exports.canonical = function canonical(path)
 exports.workingDirectory = function workingDirectory()
 {
   var 	buf = new ffi.Memory(dh.FILENAME_MAX);
-  var	dirp = _getcwd(buf, buf.size);
+  var	dirp = _getcwd.call(buf, buf.size);
 
   if (!dirp)
     throw(new Error("Cannot determine working directory" + syserr()));
@@ -549,7 +552,7 @@ exports.lastModified = function lastModified(path)
 
 /**
  *  List the names of all the files in a directory, in lexically sorted order. 
- *  Throws a ValueError if the directory is inaccessible or does not exist. 
+ *  Throws an Error if the directory is inaccessible or does not exist. 
  *  @note list("x") of a directory containing "a" and "b"  returns ["a", "b"], not ["x/a", "x/b"]. 
  */
 exports.list = function list(path, sortArgument)
@@ -558,8 +561,8 @@ exports.list = function list(path, sortArgument)
   var dent;
   var dirp;
 
-  if (!isDirectory(path))
-    throw new ValueError("'" + path + "' is not a directory");
+  if (!exports.isDirectory(path))
+    throw new Error("'" + path + "' is not a directory");
   
   if (!(dirp = _opendir.call(path)))
     throw new Error("Cannot open directory '" + path + "'" + syserr());
@@ -570,7 +573,11 @@ exports.list = function list(path, sortArgument)
     dirlist.push(dent.d_name.asString(-1));
   }
 
-  dirlist.sort(sortArgument);
+  if (sortArgument)
+    dirlist.sort(sortArgument);
+  else
+    dirlist.sort();
+
   return dirlist;
 }
 
@@ -580,7 +587,7 @@ exports.list = function list(path, sortArgument)
  */
 exports.iterate = function iterate(path)
 {
-  if (!isDirectory(path))
+  if (!exports.isDirectory(path))
     throw StopIteration;
 
   if (!(dirp = _opendir.call(path)))
@@ -766,6 +773,63 @@ Stream.prototype.writeln = function Stream_writeln(buffer)
     throw new Error("Cannot write to stream!" + syserr());
 }
 
+Stream.prototype.write = function Stream_write(buffer, encoding)
+{
+  var bytesWritten;
+
+  switch(typeof(buffer))
+  {
+    case "object":
+      if (buffer instanceof ffi.MutableStruct)
+	buffer = gffi.Memory(buffer);
+      if (buffer instanceof ffi.Memory)
+      {
+	buffer.length = buffer.size;
+	break;
+      }
+      if ((buffer instanceof require("binary").ByteString) || (buffer instanceof require("binary").ByteArray))
+	break;
+    default:
+      buffer = buffer.toString();
+    case "string":
+      buffer = new (require("binary").ByteString)(buffer, encoding);
+      encoding = null;
+      break;
+  }
+
+  if (encoding)
+    throw new Error("Cannot pass encoding parameter when writing " + typeof(buffer) + " values");
+
+  bytesWritten = _fwrite.call(buffer, 1, buffer.length, this.stream);
+  if (bytesWritten != buffer.length)
+    throw new Error("Could not write entire buffer; only wrote " + bytesWritten + " of " + buffer.length + " bytes!" + syserr());
+}
+
+Stream.prototype.read = function Stream_read(howMuch)
+{
+  var sb = stat(this);
+  var bytesRead;
+  var bytesLeft;
+  var pos;
+  var buffer;
+
+  if (pos = _ftello.call(this.stream))
+    throw new Error("Could not determine current stream offset!" + syserr());
+
+  bytesLeft = sb.st_size - pos;
+
+  if (typeof howMuch === "undefined" || howMuch > bytesLeft)
+    howMuch = bytesLeft;
+
+  buffer = new Memory(howMuch);
+
+  bytesRead = _fread.call(buffer, 1, howMuch, this.stream);
+  if (bytesRead != buffer.size)
+    throw new Error("Could not read enough to fill buffer; only read " + bytesRead + " of " + buffer.size + " bytes!" + syserr());
+
+  return buffer;
+}
+
 Stream.prototype.close = function Stream_close()
 {
   if (this.stream)
@@ -773,4 +837,5 @@ Stream.prototype.close = function Stream_close()
   else
     _close.call(this.fd);
 }
+
 
