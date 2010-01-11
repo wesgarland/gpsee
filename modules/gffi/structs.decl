@@ -93,3 +93,13 @@ beginStruct(struct utimbuf)
   member(time_t, actime,	integer)	/* access time */
   member(time_t, modtime,	integer)	/* modification time */
 endStruct(utime)
+
+#include <sys/utsname.h>
+beginStruct(struct utsname)
+  member(char,	sysname,	array)
+  member(char,	nodename,	array)
+  member(char,	release,	array)
+  member(char,	version,	array)
+  member(char,	machine,	array)
+endStruct(struct utsname)
+
