@@ -12,7 +12,7 @@ The patches have been created as cleanly as possible, using the third-party
 build system as effectively as possible, and generally acting by intercepting
 JSAPI calls and replacing them with equivalent GPSEE calls.
 
-These patches are likely to be very version sensitive. If have trouble
+These patches are likely to be very version sensitive. If you have trouble
 building, either download the version or contact the the GPSEE team.
 
 You can verify from script that you are in fact in a GPSEE namespace. To do
