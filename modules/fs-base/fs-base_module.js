@@ -235,7 +235,7 @@ exports.touch = function touch(path, when)
   {
     tb = new ffi.MutableStruct("struct utimbuf");
     
-    tb.actime = when.valueOf() % 1000;
+    tb.actime = when.valueOf() / 1000;
     tb.modtime = tb.actime;
   }
 
