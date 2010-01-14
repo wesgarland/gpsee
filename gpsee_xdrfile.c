@@ -198,6 +198,10 @@ static void xdrfile_finalize (JSXDRState *xdr)
 {
   /* Do we have a raw chunk needing to be freed? */
   xdrfile_commit_raw(xdr);
+  if (self->raw) {
+    free(self->raw);
+    self->raw = NULL;
+  }
 
   /* Un-map the file from memory if necessary */
   #ifdef XDR_USES_MMAP
@@ -215,8 +219,7 @@ static void xdrfile_finalize (JSXDRState *xdr)
   /* Close the underlying file */
   if (self->f)
   {
-    if (self->own_file)
-      fclose(self->f);
+    fclose(self->f);
     self->f = NULL;
   }
 }
