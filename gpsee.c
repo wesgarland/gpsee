@@ -917,7 +917,7 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
  *  @param      message         Arbitrary text describing the
  *  @note       Exits with status 1
  */
-void __attribute__((noreturn)) panic(const char *message)
+void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
 {
   fprintf(stderr, __FILE__" Fatal Error:  %s\n", message);
   exit(1);
