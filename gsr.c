@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $
+ * @version	$Id: gsr.c,v 1.17 2010/01/13 20:07:59 jbj Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.2 2010/01/13 20:07:59 jbj Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -473,7 +473,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	case 'x':
 	case 'z':
 	{
-	  char *flags_storage = realloc(flags, (flag_p - flags) + 1 /* NUL */);
+	  char *flags_storage = realloc(flags, (flag_p - flags) + 1 + 1);
 	    
 	  if (flags_storage != flags)
 	  {
@@ -482,6 +482,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	  }
 
 	  *flag_p++ = c;
+	  *flag_p = '\0';
 	}
 	break;
 
@@ -569,6 +570,9 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
   }
 
+#if !defined(SYSTEM_GSR)
+#define	SYSTEM_GSR	"/usr/bin/gsr"
+#endif
   if ((argv[0][0] == '/') && (strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
   {
     char preloadScriptFilename[FILENAME_MAX];
