@@ -912,4 +912,15 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
     JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
 }
 
+/** Handler for fatal GPSEE errors.
+ *
+ *  @param      message         Arbitrary text describing the
+ *  @note       Exits with status 1
+ */
+void __attribute__((noreturn)) panic(const char *message)
+{
+  fprintf(stderr, __FILE__" Fatal Error:  %s\n", message);
+  exit(1);
+}
+
 
