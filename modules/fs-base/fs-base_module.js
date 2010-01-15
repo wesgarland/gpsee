@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.5 2010/01/11 16:09:45 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.6 2010/01/15 15:45:55 wes Exp $
  */
 
 const binary = require("binary");
@@ -190,12 +190,18 @@ exports.openRaw = function(path, mode, permissions)
   if (fd == -1)
     throw(new Error("Unable to open file '" + path + "'" + syserr()));
 
+  if (!mode.write && exports.isDirectory(path)) /* open(2) already threw if writing a dir */
+  {
+    _close.call(fd);
+    throw new Error("Cannot open '" + path + "' - is a directory");
+  }
+
   return exports.openDescriptor(fd, mode);
 };
 
 /** Move a file at one path to another. If necessary, copies then removes the original. 
- *  All moves (renames) are performed atomically. Moves across filesystems are not
- *  supported.
+ *  All moves (renames) are performed atomically. Directory Moves across filesystems are 
+ *  not supported, but files are copy/unlinked.
  *
  *  @param	source		Source filename
  *  @param	target		Target filename
@@ -203,16 +209,24 @@ exports.openRaw = function(path, mode, permissions)
 exports.move = function move(source, target)
 {
   if (_rename.call(source, target) != 0)
-    throw(new Error("Cannot rename '" + source + "' to '" + target + "'" + syserror()));
+    return throw(new Error("Cannot rename '" + source + "' to '" + target + "'" + syserror()));
 }
 
 /** 
  *  Remove the file at the given path.
  */
-exports.remove = function remove(filename)
+exports.remove = function remove(path)
 {
-  if (_unlink.call(filename) != 0)
-    throw(new Error("Cannot remove '" + filename + "'" + syserror()));
+  var sb = new ffi.MutableStruct("struct stat");
+
+  if (_stat.call(path, sb) != 0)
+    throw(new Error("Cannot remove '" + path + "'" + syserror()));
+
+  if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLINK)) == 0)
+    throw(new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
+
+  if (_unlink.call(path) != 0)
+    throw(new Error("Cannot remove '" + path + "'" + syserror()));
 }
 
 /** 
@@ -226,6 +240,14 @@ exports.remove = function remove(filename)
 exports.touch = function touch(path, when)
 {
   var tb;
+  var sb = new ffi.MutableStruct("struct stat");
+
+  if (_stat.call(path, sb) != 0)
+  {
+    if (ffi.errno != dh.ENONET)
+      throw(new Error("Cannot touch '" + path + "'" + syserror()));
+    exports.openRaw(path, { write: true, create: true, exclusive: true }).close();
+  }
 
   if (typeof(when) == "undefined")
   {
@@ -534,12 +556,42 @@ exports.same = function same(pathA, pathB)
   return sb1.st_ino == sb2.st_ino;
 }
 
+exports.sameFilesystem = function sameFilesystem(pathA, pathB)
+{
+  function filesystem(path)
+  {
+    var sb = new MutableStruct("struct stat");
+    var a;
+
+    do
+    {
+      if (_stat.call(path) == 0)
+	return sb.st_dev;
+
+      if (ffi.errno != dh.ENOENT)
+	throw new Error("Could not determine filesystem for '" + path + "'" + syserr());
+
+      if (!a)
+	a = path.split('/');
+      a.pop();
+      path = a.join('/');
+    } while(path.length);
+  }
+
+  return filesystem(pathA) == filesystem(pathB);
+}
+
 /**
  *  Return the size of a file in bytes
  */
 exports.size = function size(path)
 {
-  return stat(path).st_size;
+  var sb = stat(path);
+
+  if ((sb.st_mode & (dh.S_IFLNK | dh.S_IFREG)) == 0)
+    throw new Error("Cannot determine size of '" + path "' - not a regular file or link");
+
+  return sb.st_size;
 }
 
 /**
