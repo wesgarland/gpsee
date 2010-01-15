@@ -55,13 +55,15 @@ EXPORT_PROGS		= gpsee-js
 $(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
 	$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
 	echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+	echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
+	echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
 
 $(SHELL_BUILD)/gpsee-js.cpp: gpsee-js.cpp
 	$(CP) gpsee-js.cpp $@
 
 gpsee-js: $(SHELL_BUILD)/gpsee-js.mk
 	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
-	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk "CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
+	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
 	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
 
 clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
