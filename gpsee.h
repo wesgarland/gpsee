@@ -260,7 +260,7 @@ void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
-JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));;
+JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
 int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
 void 			gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
@@ -418,7 +418,7 @@ static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 
 typedef enum 
 { 
-  bt_immutable	= 1 << 0,	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
+  bt_immutable	= 1 << 0 	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
 } byteThing_flags_e;
 
 /** Generic structure for representing pointer-like-things which we store in 
