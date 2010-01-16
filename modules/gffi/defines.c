@@ -72,22 +72,36 @@ typedef union
 
 struct define
 { 
-  const char	*name;
-  size_t	size;
-  type_e	type;
-  value_u	value;
+  const char	*name;		/**< Name of the define */
+  size_t	size;		/**< Size of the value */ 
+  type_e	type;		/**< Type of the value */
+  value_u	value;		/**< The value (union) */
 };
 
 typedef struct define define_s;
 
+/* Declare a series of arrays containing defines.
+ * Each array is from a different header group.  Different
+ * header groups allow not only conflicting symbols, but 
+ * conflicting standards.  For example, one header group might
+ * use "platform-default" I/O whereas another one might force
+ * long files -- which has affects all over the API, in particular,
+ * on constants.
+ */
 #define startDefines(a)		static struct define a ## _defines[]={
 #define	haveInt(a,b,c,d)	{ #a, d, c ? cdeft_signedInt : cdeft_unsignedInt, { .unsignedInt = b } },
 #define haveFloat(a,b,c)	{ #a, c, cdeft_floatingPoint, { .floatingPoint = b } },
 #define haveString(a,b)		{ #a, sizeof(b), cdeft_string, { .string = b } },
 #define endDefines(a)		};
+#define haveExpr(a,b)		/**/
+#define haveAlias(a,b)		/**/
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define haveDef(a)		/**/
 #include "defines.incl"
+#undef haveExpr
+#undef haveArgMacro
+#undef haveAlias
 #undef startDefines
 #undef haveInt
 #undef haveFloat
@@ -96,16 +110,20 @@ typedef struct define define_s;
 #undef haveDef
 #undef endDefines
 
+/* Groups of defines, declared above, indexed by name */
 struct 
-{  
-  const char 		*name;
-  struct define		*defines;
-  size_t 		length;
+{  	
+  const char 		*name;		/**< Name of define group */
+  struct define		*defines;	/**< Array of defines */
+  size_t 		length;		/**< Size of the defines array */
 } cdefGroupList[] = {
 #define startDefines(a)		/**/
 #define haveInt(a, ...) 	/**/
 #define haveFloat(a, ...) 	/**/
 #define haveString(a, ...) 	/**/
+#define haveExpr(a,b)		/**/
+#define haveAlias(a,b)		/**/
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define endDefines(a)		/**/
 #define haveDef(a)		{ #a, a ## _defines, sizeof(a ## _defines) / sizeof(a ## _defines[0]) },
@@ -114,6 +132,9 @@ struct
 #undef haveInt
 #undef haveFloat
 #undef haveString
+#undef haveArgMacro
+#undef haveExpr
+#undef haveAlias
 #undef haveDefs
 #undef haveDef
 #undef endDefines
@@ -137,6 +158,13 @@ static size_t cdefGroupLength(const define_s *cdefGroup)
   return 0;
 }
 
+/** Compare the name of a define against a string.  Used as 
+ *  bsearch comparison function.
+ *
+ *  @param	vKey	String containing name of define we want
+ *  @param	vDefine	Define structure we want to check
+ *  @returns	-1 when smaller, 0 when same, 1 when bigger
+ */
 static int strcmpDefineName(const void *vKey, const void *vDefine)
 {
   const char 		*key = vKey;
@@ -171,6 +199,15 @@ JSBool getDefine(const define_s *cdefGroup, const char *name, type_e *type_p, va
   return JS_TRUE;
 }
 
+/** Get the value of a define, coerced into an appropriate JavaScript type.
+ *
+ *  @param	cx		JSAPI Context
+ *  @param	cdefGroup	Define group to search
+ *  @param	define		Name of the value
+ *  @param	vp [out]	Value pointer
+ *
+ *  @returns	JS_TRUE unless we throw
+ */
 JSBool getDefineValue(JSContext *cx, const define_s *cdefGroup, const char *name, jsval *vp)
 {
   type_e	type;
@@ -227,6 +264,10 @@ JSBool getDefineValue(JSContext *cx, const define_s *cdefGroup, const char *name
   return JS_TRUE;
 }
 
+/** Locate a specific array (group) of defines
+ *  @param	name	Name of the group 
+ *  @returns	The group, if found, or NULL
+ */
 const define_s *cdefGroup(const char *name)
 {
   int i;
@@ -241,6 +282,9 @@ const define_s *cdefGroup(const char *name)
   return NULL;
 }
 
+/** JSAPI resolve operator which operates on instances of define groups. Lazily resolves
+ *  specific defines within the groups.
+ */
 JSBool cdefGroup_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
 {
   const define_s *group = JS_GetPrivate(cx, obj);
@@ -301,6 +345,9 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject)
 #define	haveInt(a,b,c,d)	/**/
 #define haveFloat(a,b,c)	/**/
 #define haveString(a,b)		/**/
+#define haveExpr(a,b)		/**/
+#define haveAlias(a,b)		/**/
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define haveDef(a)		/**/
 #include "defines.incl"
@@ -308,6 +355,9 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject)
 #undef haveInt
 #undef haveFloat
 #undef haveString
+#undef haveExpr
+#undef haveAlias
+#undef haveArgMacro
 #undef haveDefs
 #undef haveDef
 #undef endDefines

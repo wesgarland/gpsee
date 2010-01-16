@@ -104,6 +104,7 @@ gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.
 DEFINE=^ *\# *define
 NAME=[^ ][^ ]*
 START=$(DEFINE) $(NAME)[ ][ ]*
+ARGMACRO_START=$(DEFINE) $(NAME)[ ]*[(][^)]*[)]
 
 # for egrep; each expression must be parenthesized
 OWS=([ ]*)
@@ -141,25 +142,33 @@ FLOAT_EXPR:=($(FLOAT_EXPR)|($(LPAR)$(FLOAT_EXPR)$(RPAR)))
 FLOAT_EXPR:=($(FLOAT_EXPR)|$(FLOAT_EXPR)($(OPER)$(FLOAT_EXPR)))+
 FLOAT_EXPR:=($(FLOAT_EXPR)|($(LPAR)$(FLOAT_EXPR)$(RPAR))+)
 
+# This isn't bad
 STRING_EXPR="([^\\"]|\\\\|\\")*"
+
+# But this is
+TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 
 %_defs.c: %_defs.dmp
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-	@echo " - Integer Expression"
+		@echo " - Integer Expression"
 	@$(foreach HEADER, $(HEADERS), echo "#include <$(HEADER)>" >> $@;)
 	@echo "#include <stdio.h>" >> $@
 	@echo "#include \"../../gpsee_formats.h\"" >> $@
 	@echo "#undef main" >> $@
 	@echo "int main(int argc, char **argv) {" >> $@
 	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp \
-	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveInt(\2,");\
-		printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));/' \
+	| sed \
+		-e 's/  */ /g' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+		printf("haveInt(\2,"); \
+	        printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Floating-point Expression"
 	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
-		| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+		| sed \
+		-e 's/  */ /g' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveFloat(\2,%100e," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Strings"
@@ -167,6 +176,38 @@ STRING_EXPR="([^\\"]|\\\\|\\")*"
 	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveString(\2,\\\"%s\\\")\\n",(\2));/' \
 	>> $@
+
+	@echo " - Transitive Macros & Simple Expressions"
+	@$(EGREP) '$(START)$(TMS_EXPR)$$' $*_defs.dmp\
+	| $(EGREP) -v '($(ARGMACRO_START))|($(START)$(STRING_EXPR))|($(START)$(INT_EXPR))|($(START)$(FLOAT_EXPR))' \
+	| sed \
+		-e '/./h' \
+		-e 's/\"/\\\\\\\"/g'\
+		-e '/^\(#define \)\([^ ][^ ]*\)\(  *\)\([A-Za-z0-9_]*\)$$/b simple' \
+		-e ':complex' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\(  *\)\(.*\)$$/puts("haveExpr(\2,\\"\4\\")");/' \
+		-e '/./p' \
+		-e '/./d' \
+		-e ':simple'\
+	        -e 's/^\(#define \)\([^ ][^ ]*\)\(  *\)\([A-Za-z0-9_]*\)$$/#ifdef \4/' \
+		-e '/./p' \
+		-e '/./g' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\( *\)\(.*\)/puts("haveAlias(\2, \4)");/' \
+		-e '/./p'\
+		-e '/./g'\
+		-e '/./i\
+#else' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\( *\)\(.*\)$$/puts("haveExpr(\2,\\"\4\\")");/' \
+		-e '/./a\
+#endif'\
+		>>$@
+#	@echo " - Argument Macro Expressions"
+#	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
+#	| sed \
+#		-e 's/^#define  *//' \
+#		-e 's/\"/\\\\\\\"/g'\
+#		-e 's/^\([^(]*\)\( *\)\([(][^)]*[)]\)\( *\)\(.*\)$$/puts("haveArgMacro(\1, \\"\3\\",\\"\5\\")");/' \
+#		>>$@
 	@echo "return 0; }" >> $@
 
 check:
@@ -217,3 +258,19 @@ structs.incl: structs.decl module.mk
 		-e '/^#undef member_offset/p' \
 		-e 's/member_offset/member_size/' \
 	< structs.decl > $@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
