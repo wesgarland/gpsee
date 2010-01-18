@@ -58,6 +58,9 @@
 static const char __attribute__((unused)) rcsid[]="$Id: $";
 
 struct callback_data {
+    CURL* handle;
+
+    // used in callbacks
     JSContext* cx;
     JSObject* obj;
 };
@@ -137,7 +140,6 @@ static void easycurl_slist_finalize(JSContext* cx, JSObject* obj)
     }
 }
 
-
 static JSFunctionSpec easycurl_slist_fn[] = {
     JS_FS("append", easycurl_slist_append, 1, 0, 0),
     JS_FS("valueOf", easycurl_slist_valueOf, 0, 0, 0),
@@ -157,30 +159,11 @@ static JSClass easycurl_slist_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-/*******************************************************
- * easycurl callbacks
- * When HTTP headers and data is recieved a callback function
- *  is invoked.  (there are a few other callbacks in easycurl
- *  currently not implemented).
+/**
+ * CALLBACKS
+ *   C callbacks are defined which then call curl object javascript methods
  *
- * Instead of making special objects for each callback, we make
- *  one "easycurl_cb" object has pre-canned callbacks that
- *  call javascript functions.
- *
- *  For instance, using:
- *  var curl = new easycurl();
- *  var cb = new easycurl_callback();
- *  cb.headers = [];
- *  cb.callbacks.header = function(s) { this.headers.push(s); }
- *  z.setopt(z.CURLOPT_HEADERFUNCTION, cb.callbacks);
- *
- *  At the end of the curl function the cb.headers would be filled.
- *
- * This could probably could be simplified on the javascript end by
- *  specifing functions in the "setopt" call, as the expense of more
- *  complicated C code.
  */
-
 static size_t
 write_callback( void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -210,6 +193,7 @@ header_callback( void *ptr, size_t size, size_t nmemb, void *stream)
 {
 
     size_t len = size * nmemb;
+
     // passback from the read/write/header operations
     struct callback_data* cb = (struct callback_data*)(stream);
 
@@ -222,48 +206,18 @@ header_callback( void *ptr, size_t size, size_t nmemb, void *stream)
     if (!s)
         return -1;
 
+    jsval rval;
+
     jsval argv[1];
     argv[0] = STRING_TO_JSVAL(s);
+    // TBD -- needed or this is auto-rooted in call below?
     //JS_AddRoot(cx, &(argv[0]));
-    jsval rval;
     if (!JS_CallFunctionName(cx, obj, "header", 1, argv, &rval))
         return -1;
 
     return len;
 }
 
-static void easycurl_cb_finalize(JSContext* cx, JSObject* obj)
-{
-    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
-    // TBD ASSERT HERE
-    free(cb);
-}
-
-static JSClass easycurl_cb_class = {
-    "easycurl_callback", JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
-    JS_PropertyStub,
-    JS_PropertyStub,
-    JS_PropertyStub,
-    JS_PropertyStub,
-    JS_EnumerateStub,
-    JS_ResolveStub,
-    JS_ConvertStub,
-    easycurl_cb_finalize,  /* FINALIZE */
-    JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
-static JSBool easycurl_cb_ctor(JSContext* cx, JSObject* obj,
-                               uintN argc, jsval* vp, jsval* rval)
-{
-    JSObject* newobj = JS_NewObject(cx, &easycurl_cb_class, NULL, NULL);
-    *rval = OBJECT_TO_JSVAL(newobj);
-
-    struct callback_data* cb = (struct callback_data* )malloc(sizeof(struct callback_data));
-    cb->cx = cx;
-    cb->obj = newobj;
-
-    return JS_SetPrivate(cx, newobj, (void*) cb);
-}
 
 /*******************************************************/
 
@@ -272,7 +226,9 @@ static JSBool
 jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc,
                jsval* argv, jsval* rval)
 {
-    CURL* handle = (CURL*)(JS_GetPrivate(cx, obj));
+    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+    CURL* handle = cb->handle;
+
     int opt = 0;
     CURLcode c = 0;
 
@@ -381,10 +337,10 @@ jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc,
 }
 
 static JSBool
-jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc,
-              jsval* argv, jsval* rval)
+jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-    CURL* handle = (CURL*)(JS_GetPrivate(cx, obj));
+    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+    CURL* handle = cb->handle;
     int opt = 0;
     CURLcode c = 0;
     jsval arg = argv[0];
@@ -440,28 +396,8 @@ jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc,
             c = curl_easy_setopt(handle, opt, val);
         }
         }
-    } else {
-        // CALLBACKS
-        JSObject* objcb = JSVAL_TO_OBJECT(argv[1]);
-        struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx,objcb));
-        switch (opt) {
-        case CURLOPT_WRITEFUNCTION:
-            c = curl_easy_setopt(handle, opt, write_callback);
-            c = curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb);
-            break;
-        case CURLOPT_READFUNCTION:
-            c = curl_easy_setopt(handle, opt, write_callback);
-            c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
-            break;
-        case CURLOPT_HEADERFUNCTION:
-            c = curl_easy_setopt(handle, opt, header_callback);
-            c = curl_easy_setopt(handle, CURLOPT_WRITEHEADER, cb);
-            break;
-        default:
-            JS_ReportError(cx, "not supported yet");
-            return JS_FALSE;
-        }
     }
+
     if (c == 0) {
         return JS_TRUE;
     }
@@ -472,11 +408,10 @@ jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc,
 }
 
 static JSBool
-jscurl_perform(JSContext* cx, JSObject* obj, uintN argc,
-               jsval* argv, jsval* rval)
+jscurl_perform(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-    CURL* handle = (CURL*)(JS_GetPrivate(cx, obj));
-    CURLcode c = curl_easy_perform(handle);
+    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+    CURLcode c = curl_easy_perform(cb->handle);
     if (c == 0) {
         return JS_TRUE;
     }
@@ -486,18 +421,44 @@ jscurl_perform(JSContext* cx, JSObject* obj, uintN argc,
     return JS_FALSE;
 }
 
-static JSBool
-jscurl_reset(JSContext* cx, JSObject* obj, uintN argc,
-             jsval* argv, jsval* rval)
+
+/*
+ * Internal Helper function
+ */
+static JSBool jscurl_setupcallbacks(struct callback_data* cb)
 {
-    CURL* handle = (CURL*)(JS_GetPrivate(cx, obj));
-    curl_easy_reset(handle);
+    CURL* handle = cb->handle;
+
+    CURLcode c = 0;
+    // TBD error check
+    // TBD why are read and write the same thing.  Doh!
+    //     which is which?
+    c = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
+    c = curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb);
+
+    c = curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_callback);
+    c = curl_easy_setopt(handle, CURLOPT_HEADERDATA, cb);
+
+    c = curl_easy_setopt(handle, CURLOPT_READFUNCTION, write_callback);
+    c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
+
     return JS_TRUE;
 }
 
 static JSBool
-jscurl_version(JSContext* cx, JSObject* obj, uintN argc,
-               jsval* argv, jsval* rval)
+jscurl_reset(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
+{
+    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+    CURL* handle = cb->handle;
+    curl_easy_reset(handle);
+
+    return jscurl_setupcallbacks(cb);
+
+
+}
+
+static JSBool
+jscurl_version(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
     char* v = curl_version();
     JSString* s = JS_NewStringCopyN(cx, v, strlen(v));
@@ -527,9 +488,12 @@ jscurl_getdate(JSContext* cx, JSObject* obj, uintN argc,
 
 static void easycurl_finalize(JSContext* cx, JSObject* obj)
 {
-    CURL* handle = (CURL*)(JS_GetPrivate(cx, obj));
-    curl_easy_cleanup(handle);
-    JS_SetPrivate(cx, obj, 0);
+    struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+    if (cb) {
+	curl_easy_cleanup(cb->handle);
+	free(cb);
+	JS_SetPrivate(cx, obj, 0);
+    }
 }
 
 static JSFunctionSpec easycurl_fn[] = {
@@ -565,7 +529,22 @@ static JSBool easycurl_ctor(JSContext* cx, JSObject* obj,
     }
     JSObject* newobj = JS_NewObject(cx, &easycurl_class, NULL, NULL);
     *rval = OBJECT_TO_JSVAL(newobj);
-    JS_SetPrivate(cx, newobj, (void*) handle);
+
+    struct callback_data* cb = (struct callback_data* )malloc(sizeof(struct callback_data));
+    if (!cb) {
+      return JS_FALSE;
+    }
+
+    cb->handle = handle;
+    cb->cx = cx;
+    cb->obj = newobj;
+
+    if (!jscurl_setupcallbacks(cb)) {
+      free(cb);
+      return JS_FALSE;
+    }
+
+    JS_SetPrivate(cx, newobj, (void*) cb);
     return JS_TRUE;
 }
 
@@ -576,6 +555,7 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
 
     JSObject* curlmem = Memory_InitClass(cx, obj);
     if (!curlmem) {
+      // TBD REPORTING
 	return NULL;
     }
 
@@ -604,21 +584,6 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
     if (!JS_DefineConstDoubles(cx, easycurl_proto, easycurl_info)) {
         // TBD ERROR REPORTING
         fprintf(stderr, "whoopsies -- bad info spec");
-        return NULL;
-    }
-
-    JSObject* easycurl_cb_proto =
-        JS_InitClass(cx, obj,
-                     NULL,             /* prototype   */
-                     &easycurl_cb_class,  /* class       */
-                     easycurl_cb_ctor, 0, /* ctor, args  */
-                     NULL,             /* properties  */
-                     NULL,
-                     NULL,                /* static_ps   */
-                     NULL                 /* static_fs   */
-                     );
-
-    if (!easycurl_cb_proto) {
         return NULL;
     }
 

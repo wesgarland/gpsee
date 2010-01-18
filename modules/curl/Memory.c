@@ -69,18 +69,18 @@ JSObject *memory_proto = NULL;
  */
 JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp)
 {
-JSString              *str;
-char                  ptrbuf[1 + 2 + (sizeof(void *) * 2) + 1];       /* @ 0x hex_number NUL */
+    JSString              *str;
+    char                  ptrbuf[1 + 2 + (sizeof(void *) * 2) + 1];       /* @ 0x hex_number NUL */
 
-snprintf(ptrbuf, sizeof(ptrbuf), "@" GPSEE_PTR_FMT, pointer);
+    snprintf(ptrbuf, sizeof(ptrbuf), "@" GPSEE_PTR_FMT, pointer);
 
-str = JS_NewStringCopyZ(cx, ptrbuf);
-if (!str)
-    return JS_FALSE;
+    str = JS_NewStringCopyZ(cx, ptrbuf);
+    if (!str)
+        return JS_FALSE;
 
-*vp = STRING_TO_JSVAL(str);
+    *vp = STRING_TO_JSVAL(str);
 
-return JS_TRUE;
+    return JS_TRUE;
 }
 
 /**
@@ -108,33 +108,33 @@ return JS_TRUE;
  */
 static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 {
-byteThing_handle_t   *hnd;
-JSObject      *obj = JS_THIS_OBJECT(cx, vp);
-JSString      *str;
-size_t        length;
-jsval         *argv = JS_ARGV(cx, vp);
+    byteThing_handle_t   *hnd;
+    JSObject      *obj = JS_THIS_OBJECT(cx, vp);
+    JSString      *str;
+    size_t        length;
+    jsval         *argv = JS_ARGV(cx, vp);
 
-if (!obj)
-    return JS_FALSE;
+    if (!obj)
+        return JS_FALSE;
 
-hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
-if (!hnd)
-    return JS_FALSE;
+    hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+    if (!hnd)
+        return JS_FALSE;
 
-if (!hnd->buffer)
-    {
-*vp = JSVAL_NULL;
-return JS_TRUE;
-}
+    if (!hnd->buffer)
+        {
+            *vp = JSVAL_NULL;
+            return JS_TRUE;
+        }
 
-length = hnd->length;
+    length = hnd->length;
 
-str = JS_NewStringCopyN(cx, (char *)hnd->buffer, length);
-if (!str)
-    return JS_FALSE;
+    str = JS_NewStringCopyN(cx, (char *)hnd->buffer, length);
+    if (!str)
+        return JS_FALSE;
 
-*vp = STRING_TO_JSVAL(str);
-return JS_TRUE;
+    *vp = STRING_TO_JSVAL(str);
+    return JS_TRUE;
 }
 
 /**
@@ -144,17 +144,17 @@ return JS_TRUE;
  */
 static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
 {
-byteThing_handle_t   *hnd;
- JSObject      *thisObj = JS_THIS_OBJECT(cx, vp);
+    byteThing_handle_t   *hnd;
+    JSObject      *thisObj = JS_THIS_OBJECT(cx, vp);
 
- if (!thisObj)
-     return JS_FALSE;
+    if (!thisObj)
+        return JS_FALSE;
 
- hnd = JS_GetInstancePrivate(cx, thisObj, memory_clasp, NULL);
- if (!hnd)
-     return JS_FALSE;
+    hnd = JS_GetInstancePrivate(cx, thisObj, memory_clasp, NULL);
+    if (!hnd)
+        return JS_FALSE;
 
- return pointer_toString(cx, hnd->buffer, vp);
+    return pointer_toString(cx, hnd->buffer, vp);
 }
 
 
@@ -408,11 +408,11 @@ JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_
         memcpy(hnd->buffer, buffer, length);
     }
 
-    GPSEE_ASSERT(!obj || (JS_GET_CLASS(cx, obj) ==  memory_clasp));
+    //    GPSEE_ASSERT(!obj || (JS_GET_CLASS(cx, obj) ==  memory_clasp));
 
-    if (!obj) {
-        obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
-    }
+    //if (!obj) {
+    JSObject* obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
+    //}
     if (obj) {
         JS_SetPrivate(cx, obj, hnd);
         hnd->memoryOwner = obj;
