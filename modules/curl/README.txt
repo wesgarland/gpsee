@@ -11,17 +11,11 @@ Comments Welcome!
 TODO:
  * I've add "// TBD:" near code that needs help
  * add GPSEE's error reporting if there is a problem in module load
- * Use GPSEE ByteArray/String/ByteThing for the body of the request
-   WARNING: Right now, all data is converted to ASCII in order not
-     to blow up the UTF8 conversion in the js engine.
  * Figure out minimum libcurl supported, may it's just a matter of adding
    around everything
     #ifdef OPTION_NAME
        code using OPTION_NAME
     #endif
- * Anyway to prevent this type of bug?
-   var cb = new easycurl_cb; /* YES */
-   var cb = easycurl_cb();   /* NO */
 
 EXAMPLE CODE:
 
@@ -72,8 +66,8 @@ Not that glamourous, but any high level code could convert an array to
 
 CALLBACKS
 
-There are a few callbacks in libcurl.   Ideally you would just pass a
-JS function to setopt and it would Just Work.
+There are a few callbacks in libcurl.  Instead of using "setopt" you
+define "header" and "write" functions IN YOUR EASY CURL OBJECT.
 
 For whatever reason I did this instead:
 
@@ -84,22 +78,14 @@ For example:
 
     //   callbacks must live as long as the request is in use.
     var z = mycurlistance...
-
-    // important: make sure to use 'new'
-    this.callbacks = new easycurl_callback();
-    this.callbacks.blob = "";
-    this.callbacks.header_list = [];
-    this.callbacks.write  = function(s) { this.blob += s; }
-    this.callbacks.header = function(s) { this.header_list.push(s); }
-    z.setopt(z.CURLOPT_WRITEFUNCTION, this.callbacks);
-    z.setopt(z.CURLOPT_HEADERFUNCTION, this.callbacks);
+    z.blob = "";
+    z.header_list = [];
+    z.write  = function(s) { this.blob += s; }
+    z.header = function(s) { this.header_list.push(s); }
 
     // this isn't a call back but you'll want to define something like 
     // this to be called at the start of each request.
-    this.callbacks.reset  = function(s) { this.blob = "";this.header_list =[];}
-
-While a bit screwy, the C code is now very simple since the GC and scope
-issues are handled by the calling code, not the C code.
+    z.clear_callbacks  = function(s) { this.blob = "";this.header_list =[];}
 
 enjoy!
 
