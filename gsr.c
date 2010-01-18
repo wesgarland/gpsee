@@ -602,14 +602,16 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!script || !scrobj)
 	goto out;
 
-      JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
-      JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
-      if (JS_IsExceptionPending(jsi->cx))
-      {
-	jsi->exitType = et_exception;
-	JS_ReportPendingException(jsi->cx);
+      if (!noRunScript) {
+        JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
+        JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
+        if (JS_IsExceptionPending(jsi->cx))
+        {
+          jsi->exitType = et_exception;
+          JS_ReportPendingException(jsi->cx);
+        }
+        JS_RemoveRoot(jsi->cx, &scrobj);
       }
-      JS_RemoveRoot(jsi->cx, &scrobj);
     }
 
     if (jsi->exitType & et_exception)
@@ -630,13 +632,32 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
     else
     {
-      gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
+      /* Just compile and exit? */
+      if (noRunScript)
+      {
+        const char      *errmsg;
+        JSScript        *script;
+        JSObject        *scrobj;
+        gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Compiling script \"%s\"", scriptFilename);
+        if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
+        {
+          dprintf("failed running program %s because: %s\n", scriptFilename, errmsg ?: "unknown failure");
+          GPSEE_ASSERT(errmsg);
+          exitCode = 1;
+        }
+        gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Successfully did \"%s\"", scriptFilename);
+      }
+      else /* noRunScript is false; run the program */
+      {
+        gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
+        if ((jsi->exitType & et_successMask) == jsi->exitType)
+          exitCode = jsi->exitCode;
+        else
+          exitCode = 1;
+      }
       fclose(scriptFile);
-      if ((jsi->exitType & et_successMask) == jsi->exitType)
-	exitCode = jsi->exitCode;
-      else
-	exitCode = 1;
     }
+    goto out;
   }
 
   out:
