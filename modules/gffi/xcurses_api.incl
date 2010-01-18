@@ -1,0 +1,1152 @@
+/* Generated on Fri Sep 18 17:02:08 EDT 2009 by wes@wes -- please do not hand-edit this file */
+
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Initial Developer of the Original Code is PageMail, Inc.
+ *
+ * Portions created by the Initial Developer are 
+ * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ *
+ * Contributor(s): 
+ * 
+ * Alternatively, the contents of this file may be used under the terms of
+ * either of the GNU General Public License Version 2 or later (the "GPL"),
+ * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** 
+ */
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(add_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(add_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(add_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(addch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(addchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(addchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(addnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(addnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(addstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(addwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(attr_get)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(attr_off)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(attr_on)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(attr_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(attroff)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(attron)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(attrset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(baudrate)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(beep)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(bkgd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(bkgdset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(bkgrnd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(bkgrndset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(border)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(border_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(box)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(box_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(can_change_color)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(chgat)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(clear)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P92) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID3) || defined(GPSEE_STD_BSD)
+defineFunction(clearerr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(clearok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(clrtobot)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(clrtoeol)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(color_content)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(color_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(copywin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(curs_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(def_prog_mode)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(def_shell_mode)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(del_curterm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(delay_output)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(delch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(deleteln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(delscreen)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(delwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(derwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(dupwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(echo)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(echo_wchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(echochar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(endwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(erase)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(erasechar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(erasewchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(filter)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(flash)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(flushinp)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(get_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(get_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(getbegyx)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(getbkgd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(getbkgrnd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(getmaxyx)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(getn_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(getparyx)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(getstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(getwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(getyx)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(halfdelay)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(has_colors)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(has_ic)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(has_il)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(hline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(hline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(idcok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(idlok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(ilogb)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(immedok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(in_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(in_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(in_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(inch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(inchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(inchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(init_color)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(init_pair)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(initscr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(innstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(innwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(ins_nwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(ins_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(ins_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(insch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(insdelln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(insertln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(insnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(insstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(instr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(intrflush)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(inwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(is_linetouched)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(is_wintouched)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(isendwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(key_name)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(keyname)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(keypad)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(killchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(killwchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(leaveok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(longname)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(meta)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(move)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvadd_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvadd_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvadd_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvaddch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvaddchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvaddchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvaddnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvaddnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvaddstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvaddwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvchgat)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvcur)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvdelch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvderwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvget_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvget_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvgetch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvgetn_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvgetnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvgetstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvhline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvhline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvin_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvin_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvin_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvinnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvins_nwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvins_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvins_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinsch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinsnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinsstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvinstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvinwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvprintw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvscanw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvvline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvvline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwadd_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwadd_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwadd_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwaddch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwaddchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwaddchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwaddnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwaddnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwaddstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwaddwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwchgat)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwdelch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwget_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwget_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwgetch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwgetn_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwgetnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwgetstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwhline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwhline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwin_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwin_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwin_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwinnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwins_nwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwins_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwins_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinsch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinsnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinsstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwinstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwinwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwprintw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(mvwscanw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwvline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(mvwvline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(napms)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(newpad)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(newterm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(newwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(nl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(nocbreak)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(nodelay)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(noecho)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(nonl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(noqiflush)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(noraw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(notimeout)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(overlay)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(overwrite)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(pair_content)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(pecho_wchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(pechochar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(pnoutrefresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(prefresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(printw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(putp)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(putwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(qiflush)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(raw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(redrawwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(refresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(reset_prog_mode)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(reset_shell_mode)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(resetty)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(restartterm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(ripoffline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(savetty)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scr_dump)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scr_init)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scr_restore)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scr_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scrl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scroll)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(scrollok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(set_curterm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(set_term)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(setcchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(setscrreg)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(setupterm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(slk_attr_off)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(slk_attr_on)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(slk_attr_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_attroff)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_attron)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_attrset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_clear)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(slk_color)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_init)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_label)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_noutrefresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_refresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_restore)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(slk_touch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(slk_wset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(standend)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(standout)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(start_color)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(stdscr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(subpad)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(subwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(syncok)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(term_attrs)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(termattrs)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(termname)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tgetent)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tgetflag)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tgetnum)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tgetstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tgoto)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tigetflag)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tigetnum)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tigetstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(timeout)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(touchline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(touchwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tparm)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(tputs)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(typeahead)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(unctrl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(unget_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(ungetch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(untouchwin)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(use_env)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vid_attr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vid_puts)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(vidattr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(vidputs)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vw_printw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(vw_scanw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(vwprintw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(vwscanw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wadd_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wadd_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wadd_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(waddch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(waddchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(waddchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(waddnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(waddnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(waddstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(waddwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wattr_get)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wattr_off)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wattr_on)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wattr_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wattroff)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wattron)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wattrset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wbkgd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wbkgdset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wbkgrnd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wbkgrndset)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wborder)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wborder_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wchgat)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wclear)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wclrtobot)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wclrtoeol)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wcolor_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wcursyncup)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wdelch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wdeleteln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wecho_wchar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wechochar)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(werase)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wget_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wget_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wgetbkgrnd)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wgetch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wgetn_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wgetnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wgetstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(whline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(whline_set)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(win_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(win_wchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(win_wchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winchnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winchstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(winnwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wins_nwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wins_wch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wins_wstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winsch)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winsdelln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winsertln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winsnstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winsstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(winstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(winwstr)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wmove)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wnoutrefresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wprintw)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wredrawln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wrefresh)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wscrl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wsetscrreg)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wstandend)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wstandout)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wsyncdown)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wsyncup)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wtimeout)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wtouchln)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wunctrl)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID3)
+defineFunction(wvline)
+#endif
+#if 0 || defined(GPSEE_STD_SUSV3) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95)
+defineFunction(wvline_set)
+#endif
