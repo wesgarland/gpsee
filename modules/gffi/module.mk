@@ -40,7 +40,7 @@ DEFS	 	 	= gpsee std
 AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
-PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
+PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
@@ -260,17 +260,4 @@ structs.incl: structs.decl module.mk
 	< structs.decl > $@
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+defines-test:	LDFLAGS = $(shell gpsee-config --ldflags)
