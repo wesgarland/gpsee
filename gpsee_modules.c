@@ -371,35 +371,34 @@ static JSObject *newModuleScope(JSContext *cx, JSObject *parentObject, moduleHan
  *  Module handles are used to 
  *  - track shutdown requirements over the lifetime of  the interpreter
  *  - track module objects so they don't get garbage collected
- *  - enforce { parentModulePath / moduleName } singleton-ness.
  *
  *  Note that the module objects in here can't be made GC roots, as the
- *  whole structure is subject reallocation.  Hence gpsee_moduleGCCallback().
+ *  whole structure is subject reallocation. Hence moduleGCCallback().
  *
  *  Any module handle returned from this routine is guaranteed to have a cname, so that it
  *  can be identified.
  *
  *  @param cx			JavaScript context
  *  @param parentObject		Object to use to find parentModuleScope when creating handle
- *  @param moduleName		Name of the module we're interested in; may contain slashses, relative ..s etc
+ *  @param cname                Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
+ *                              or name an internal module.
  *  @returns 			A module handle, possibly one already initialized.
- *
- *  @note	A special mode of this function allows it find an empty slot if moduleName is NULL. This mode
- *		is for loading program modules; program module loaders are expected to provide module->cname
- *		themselves.
  */
 static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSObject *parentObject)
 {
   moduleHandle_t	*module, **moduleSlot = NULL;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t		i;
+  jsval                 jsv;
+
+  GPSEE_ASSERT(cname != NULL);
 
   /* Scan for free slots and/or cname repetition (modules are singletons) */
   for (i=0; i < jsi->modules_len; i++)
   {
     module = jsi->modules[i];
 
-    if (module && cname && module->cname && (strcmp(module->cname, cname) == 0))
+    if (module && module->cname && (strcmp(module->cname, cname) == 0))
       return module;	/* seen this one already */
 
     if (!moduleSlot && !module)
@@ -457,29 +456,33 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     }
   }
 
-  if (module->cname) {
-    JSObject *    moduleVar;
-    char *        moduleIdDup;
-    JSString *    moduleId;
+  /* Create 'module' property of module scope, unless it already exists. */
+  if (!JS_GetProperty(cx, module->scope, "module", &jsv))
+    return NULL;
+  /* Assume if it is not JSVAL_VOID, it was created here. This should be kept true by the property attributes. */
+  if (jsv == JSVAL_VOID)
+  {
+    JSObject      *modDotModObj;
+    char          *moduleIdDup;
+    JSString      *moduleId;
 
-    /* Create 'module' property of module scope */
-    moduleVar = JS_NewObject(cx, NULL, NULL, module->scope);
-    if (!moduleVar)
+    modDotModObj = JS_NewObject(cx, NULL, NULL, module->scope);
+    if (!modDotModObj)
       return NULL;
 
     GPSEE_ASSERT(
-        JS_DefineProperty(cx, module->scope, "module", OBJECT_TO_JSVAL(moduleVar), NULL, NULL,
+        JS_DefineProperty(cx, module->scope, "module", OBJECT_TO_JSVAL(modDotModObj), NULL, NULL,
         JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_TRUE);
 
-    /* Add 'id' property to 'module' property of module scope */
-    moduleIdDup = JS_strdup(cx, module->cname);
+    /* Add 'id' property to 'module' property of module scope. */
+    moduleIdDup = JS_strdup(cx, moduleId);
     if (!moduleIdDup)
       return NULL;
-    moduleId = JS_NewString(cx, moduleIdDup, strlen(module->cname));
+    moduleId = JS_NewString(cx, moduleIdDup, strlen(moduleId));
     if (!moduleId)
       return NULL;
     GPSEE_ASSERT(
-        JS_DefineProperty(cx, moduleVar, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
+        JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
         JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY));
   }
 
@@ -1552,13 +1555,6 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   char			*s;
 
-  module = acquireModuleHandle(cx, NULL, jsi->globalObj);
-  if (!module)
-  {
-    errorMessage = "could not allocate module handle";
-    goto fail;
-  }
-
   if (scriptFilename[0] == '/')
   {
     i = gpsee_resolvepath(scriptFilename, cnBuf, sizeof(cnBuf));
@@ -1610,6 +1606,13 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   module->cname = strdup(cnBuf);
   if (!module->cname)
     panic("Out of memory");
+
+  module = acquireModuleHandle(cx, module->cname, jsi->globalObj);
+  if (!module)
+  {
+    errorMessage = "could not allocate module handle";
+    goto fail;
+  }
 
   jsi->programModule_dir = cnBuf;
   s = strrchr(cnBuf, '/');
