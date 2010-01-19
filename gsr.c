@@ -641,7 +641,7 @@ PRIntn prmain(PRIntn argc, char **argv)
         gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Compiling script \"%s\"", scriptFilename);
         if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
         {
-          dprintf("failed running program %s because: %s\n", scriptFilename, errmsg ?: "unknown failure");
+          gpsee_log(SLOG_NOTICE, "failed running program %s because: %s\n", scriptFilename, errmsg ?: "unknown failure");
           GPSEE_ASSERT(errmsg);
           exitCode = 1;
         }
