@@ -475,7 +475,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
         JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_TRUE);
 
     /* Add 'id' property to 'module' property of module scope. */
-    moduleIdDup = JS_strdup(cx, moduleId);
+    moduleIdDup = JS_strdup(cx, cname);
     if (!moduleIdDup)
       return NULL;
     moduleId = JS_NewString(cx, moduleIdDup, strlen(moduleId));
