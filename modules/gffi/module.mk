@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2009-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -179,27 +179,11 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 
 	@echo " - Transitive Macros & Simple Expressions"
 	@$(EGREP) '$(START)$(TMS_EXPR)$$' $*_defs.dmp\
-	| $(EGREP) -v '($(ARGMACRO_START))|($(START)$(STRING_EXPR))|($(START)$(INT_EXPR))|($(START)$(FLOAT_EXPR))' \
-	| sed \
-		-e '/./h' \
-		-e 's/\"/\\\\\\\"/g'\
-		-e '/^\(#define \)\([^ ][^ ]*\)\(  *\)\([A-Za-z0-9_]*\)$$/b simple' \
-		-e ':complex' \
-		-e 's/^\(#define \)\([^ ][^ ]*\)\(  *\)\(.*\)$$/puts("haveExpr(\2,\\"\4\\")");/' \
-		-e '/./p' \
-		-e '/./d' \
-		-e ':simple'\
-	        -e 's/^\(#define \)\([^ ][^ ]*\)\(  *\)\([A-Za-z0-9_]*\)$$/#ifdef \4/' \
-		-e '/./p' \
-		-e '/./g' \
-		-e 's/^\(#define \)\([^ ][^ ]*\)\( *\)\(.*\)/puts("haveAlias(\2, \4)");/' \
-		-e '/./p'\
-		-e '/./g'\
-		-e '/./i\
-#else' \
-		-e 's/^\(#define \)\([^ ][^ ]*\)\( *\)\(.*\)$$/puts("haveExpr(\2,\\"\4\\")");/' \
-		-e '/./a\
-#endif'\
+	| $(EGREP) -v '($(ARGMACRO_START))|($(START)$(STRING_EXPR))' \
+	| $(EGREP) -v '($(START)$(STRING_EXPR))' \
+	| $(EGREP) -v '($(START)$(INT_EXPR))' \
+	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' \
+	| sed -f tmse_parse.sed \
 		>>$@
 #	@echo " - Argument Macro Expressions"
 #	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
@@ -241,8 +225,6 @@ aux_types.incl: aux_types aux_types.decl
 structs.incl: structs.decl module.mk
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-# Warning: regexps lack precision, and sed really does need literal newlines in the insert command
-
 	sed \
 		-e '/beginStruct/h' \
 		-e 's/\(beginStruct[(]\)\([^)]*\)\([)].*\)/#define member_offset(X) offsetOf(\2,X)/' \
@@ -257,7 +239,7 @@ structs.incl: structs.decl module.mk
 		-e 's/\(endStruct[(]\)\([^)]*\)\([)].*\)/#undef member_offset/' \
 		-e '/^#undef member_offset/p' \
 		-e 's/member_offset/member_size/' \
-	< structs.decl > $@
+	< structs.decl >> $@
 
 
-defines-test:	LDFLAGS = $(shell gpsee-config --ldflags)
+defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
