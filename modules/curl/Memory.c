@@ -69,18 +69,18 @@ JSObject *memory_proto = NULL;
  */
 JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp)
 {
-  JSString              *str;
-  char                  ptrbuf[1 + 2 + (sizeof(void *) * 2) + 1];       /* @ 0x hex_number NUL */
+    JSString              *str;
+    char                  ptrbuf[1 + 2 + (sizeof(void *) * 2) + 1];       /* @ 0x hex_number NUL */
 
-  snprintf(ptrbuf, sizeof(ptrbuf), "@" GPSEE_PTR_FMT, pointer);
+    snprintf(ptrbuf, sizeof(ptrbuf), "@" GPSEE_PTR_FMT, pointer);
 
-  str = JS_NewStringCopyZ(cx, ptrbuf);
-  if (!str)
-    return JS_FALSE;
+    str = JS_NewStringCopyZ(cx, ptrbuf);
+    if (!str)
+        return JS_FALSE;
 
-  *vp = STRING_TO_JSVAL(str);
+    *vp = STRING_TO_JSVAL(str);
 
-  return JS_TRUE;
+    return JS_TRUE;
 }
 
 /**
@@ -97,10 +97,8 @@ JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp)
  * This is an interface to JS_NewStringCopyN().
  *
  * @form (instance of Memory).asString()
- *
- * This form of the asString() instance method infers the length of memory to be consumed, and the Javascript
- * String returned, on its own. It will use strlen() to accomplish this if it does not already "know" its own
- * length.
+ * This form of the asString() instance method infers the length of memory to be consumed, and the Javascript String returned,
+ * on its own. It will use strlen() to accomplish this if it does not already "know" its own length.
  *
  * @form (instance of Memory).asString(-1)
  * Like the above form, but use of strlen() is forced.
@@ -110,33 +108,33 @@ JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp)
  */
 static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 {
-  byteThing_handle_t   *hnd;
-  JSObject      *obj = JS_THIS_OBJECT(cx, vp);
-  JSString      *str;
-  size_t        length;
-  jsval         *argv = JS_ARGV(cx, vp);
+    byteThing_handle_t   *hnd;
+    JSObject      *obj = JS_THIS_OBJECT(cx, vp);
+    JSString      *str;
+    size_t        length;
+    jsval         *argv = JS_ARGV(cx, vp);
 
-  if (!obj)
-    return JS_FALSE;
+    if (!obj)
+        return JS_FALSE;
 
-  hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
-  if (!hnd)
-    return JS_FALSE;
+    hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+    if (!hnd)
+        return JS_FALSE;
 
-  if (!hnd->buffer)
-  {
-    *vp = JSVAL_NULL;
+    if (!hnd->buffer)
+        {
+            *vp = JSVAL_NULL;
+            return JS_TRUE;
+        }
+
+    length = hnd->length;
+
+    str = JS_NewStringCopyN(cx, (char *)hnd->buffer, length);
+    if (!str)
+        return JS_FALSE;
+
+    *vp = STRING_TO_JSVAL(str);
     return JS_TRUE;
-  }
-
-  length = hnd->length;
-
-  str = JS_NewStringCopyN(cx, (char *)hnd->buffer, length);
-  if (!str)
-    return JS_FALSE;
-
-  *vp = STRING_TO_JSVAL(str);
-  return JS_TRUE;
 }
 
 /**
@@ -146,17 +144,17 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
  */
 static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
 {
-  byteThing_handle_t   *hnd;
-  JSObject      *thisObj = JS_THIS_OBJECT(cx, vp);
+    byteThing_handle_t   *hnd;
+    JSObject      *thisObj = JS_THIS_OBJECT(cx, vp);
 
-  if (!thisObj)
-    return JS_FALSE;
+    if (!thisObj)
+        return JS_FALSE;
 
-  hnd = JS_GetInstancePrivate(cx, thisObj, memory_clasp, NULL);
-  if (!hnd)
-    return JS_FALSE;
+    hnd = JS_GetInstancePrivate(cx, thisObj, memory_clasp, NULL);
+    if (!hnd)
+        return JS_FALSE;
 
-  return pointer_toString(cx, hnd->buffer, vp);
+    return pointer_toString(cx, hnd->buffer, vp);
 }
 
 
@@ -165,23 +163,23 @@ static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
  */
 static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  byteThing_handle_t   *hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
-  jsdouble      d;
+    byteThing_handle_t   *hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+    jsdouble      d;
 
-  if (!hnd)
-    return JS_FALSE;
+    if (!hnd)
+        return JS_FALSE;
 
-  if (INT_FITS_IN_JSVAL(hnd->length))
-  {
-    *vp = INT_TO_JSVAL(hnd->length);
-    return JS_TRUE;
-  }
+    if (INT_FITS_IN_JSVAL(hnd->length))
+        {
+            *vp = INT_TO_JSVAL(hnd->length);
+            return JS_TRUE;
+        }
 
-  d = hnd->length;
-  if (hnd->length != d)
-    return gpsee_throw(cx, CLASS_ID ".size.getter.overflow");
+    d = hnd->length;
+    if (hnd->length != d)
+        return gpsee_throw(cx, CLASS_ID ".size.getter.overflow");
 
-  return JS_NewNumberValue(cx, d, vp);
+    return JS_NewNumberValue(cx, d, vp);
 }
 
 /**
@@ -207,66 +205,66 @@ static JSBool memory_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *
  */
 JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  byteThing_handle_t   *hnd;
+    byteThing_handle_t   *hnd;
 
-  if ((argc != 1) && (argc != 2))
-    return gpsee_throw(cx, CLASS_ID ".arguments.count");
+    if ((argc != 1) && (argc != 2))
+        return gpsee_throw(cx, CLASS_ID ".arguments.count");
 
-  *rval = OBJECT_TO_JSVAL(obj);
+    *rval = OBJECT_TO_JSVAL(obj);
 
-  hnd = JS_malloc(cx, sizeof(*hnd));
-  if (!hnd)
-    return JS_FALSE;
-
-  /* cleanup now solely the job of the finalizer */
-  memset(hnd, 0, sizeof(*hnd));
-  JS_SetPrivate(cx, obj, hnd);
-
-  if (JSVAL_IS_INT(argv[0]))
-  {
-    hnd->length = JSVAL_TO_INT(argv[0]);
-  }
-  else
-  {
-    jsdouble d;
-
-    if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
-      return JS_FALSE;
-
-    hnd->length = d;
-    if (d != hnd->length)
-      return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
-  }
-
-  if (hnd->length)
-  {
-    hnd->buffer = JS_malloc(cx, hnd->length);
-    if (!hnd->buffer)
-      return JS_FALSE;
-
-    hnd->memoryOwner = obj;
-    memset(hnd->buffer, 0, hnd->length);
-  }
-
-  if (argc == 2) /* Allow JS programmer to override sanity */
-  {
-    if (argv[1] != JSVAL_TRUE && argv[1] != JSVAL_FALSE)
-    {
-      JSBool b;
-
-      if (JS_ValueToBoolean(cx, argv[1], &b) == JSVAL_FALSE)
+    hnd = JS_malloc(cx, sizeof(*hnd));
+    if (!hnd)
         return JS_FALSE;
-      else
-        argv[1] = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
-    }
 
-    if (argv[1] == JSVAL_TRUE)
-      hnd->memoryOwner = obj;
+    /* cleanup now solely the job of the finalizer */
+    memset(hnd, 0, sizeof(*hnd));
+    JS_SetPrivate(cx, obj, hnd);
+
+    if (JSVAL_IS_INT(argv[0]))
+        {
+            hnd->length = JSVAL_TO_INT(argv[0]);
+        }
     else
-      hnd->memoryOwner = NULL;
-  }
+        {
+            jsdouble d;
 
-  return JS_TRUE;
+            if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
+                return JS_FALSE;
+
+            hnd->length = d;
+            if (d != hnd->length)
+                return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
+        }
+
+    if (hnd->length)
+        {
+            hnd->buffer = JS_malloc(cx, hnd->length);
+            if (!hnd->buffer)
+                return JS_FALSE;
+
+            hnd->memoryOwner = obj;
+            memset(hnd->buffer, 0, hnd->length);
+        }
+
+    if (argc == 2) /* Allow JS programmer to override sanity */
+        {
+            if (argv[1] != JSVAL_TRUE && argv[1] != JSVAL_FALSE)
+                {
+                    JSBool b;
+
+                    if (JS_ValueToBoolean(cx, argv[1], &b) == JSVAL_FALSE)
+                        return JS_FALSE;
+                    else
+                        argv[1] = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
+                }
+
+            if (argv[1] == JSVAL_TRUE)
+                hnd->memoryOwner = obj;
+            else
+                hnd->memoryOwner = NULL;
+        }
+
+    return JS_TRUE;
 }
 
 /* @jazzdoc gffi.Memory
@@ -282,10 +280,10 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  */
 JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  if (JS_IsConstructing(cx) != JS_TRUE)
-    return Memory_Cast(cx, obj, argc, argv, rval);
-  else
-    return Memory_Constructor(cx, obj, argc, argv, rval);
+    if (JS_IsConstructing(cx) != JS_TRUE)
+        return Memory_Cast(cx, obj, argc, argv, rval);
+    else
+        return Memory_Constructor(cx, obj, argc, argv, rval);
 }
 
 /**
@@ -296,17 +294,17 @@ JSBool Memory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
  */
 static void Memory_Finalize(JSContext *cx, JSObject *obj)
 {
-  byteThing_handle_t   *hnd = JS_GetPrivate(cx, obj);
+    byteThing_handle_t   *hnd = JS_GetPrivate(cx, obj);
 
-  if (!hnd)
+    if (!hnd)
+        return;
+
+    if (hnd->buffer && (hnd->memoryOwner == obj))
+        JS_free(cx, hnd->buffer);
+
+    JS_free(cx, hnd);
+
     return;
-
-  if (hnd->buffer && (hnd->memoryOwner == obj))
-    JS_free(cx, hnd->buffer);
-
-  JS_free(cx, hnd);
-
-  return;
 }
 
 /**
@@ -319,62 +317,62 @@ static void Memory_Finalize(JSContext *cx, JSObject *obj)
  */
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj)
 {
-  /** Description of this class: */
-  static JSExtendedClass byteThing_eclass =
-    {
-      {
-        GPSEE_CLASS_NAME(Memory),     /**< its name is Memory */
-        JSCLASS_HAS_PRIVATE | JSCLASS_IS_EXTENDED,    /**< private slot in use, this is really a JSExtendedClass */
-        JS_PropertyStub,          /**< addProperty stub */
-        JS_PropertyStub,          /**< deleteProperty stub */
-        JS_PropertyStub,          /**< custom getProperty */
-        JS_PropertyStub,          /**< setProperty stub */
-        JS_EnumerateStub,         /**< enumerateProperty stub */
-        JS_ResolveStub,           /**< resolveProperty stub */
-        JS_ConvertStub,           /**< convertProperty stub */
-        Memory_Finalize,          /**< it has a custom finalizer */
+    /** Description of this class: */
+    static JSExtendedClass byteThing_eclass =
+        {
+            {
+                GPSEE_CLASS_NAME(Memory),     /**< its name is Memory */
+                JSCLASS_HAS_PRIVATE | JSCLASS_IS_EXTENDED,    /**< private slot in use, this is really a JSExtendedClass */
+                JS_PropertyStub,          /**< addProperty stub */
+                JS_PropertyStub,          /**< deleteProperty stub */
+                JS_PropertyStub,          /**< custom getProperty */
+                JS_PropertyStub,          /**< setProperty stub */
+                JS_EnumerateStub,         /**< enumerateProperty stub */
+                JS_ResolveStub,           /**< resolveProperty stub */
+                JS_ConvertStub,           /**< convertProperty stub */
+                Memory_Finalize,          /**< it has a custom finalizer */
 
-        JSCLASS_NO_OPTIONAL_MEMBERS
-      },                  /**< JSClass        base */
-      NULL,               /**< JSEqualityOp   equality */
-      NULL,               /**< JSObjectOp     outerObject */
-      NULL,               /**< JSObjectOp     innerObject */
-      NULL,               /**< JSIteratorOp   iteratorObject */
-      NULL,               /**< JSObjectOp     wrappedObject */
-    };
+                JSCLASS_NO_OPTIONAL_MEMBERS
+            },                  /**< JSClass        base */
+            NULL,               /**< JSEqualityOp   equality */
+            NULL,               /**< JSObjectOp     outerObject */
+            NULL,               /**< JSObjectOp     innerObject */
+            NULL,               /**< JSIteratorOp   iteratorObject */
+            NULL,               /**< JSObjectOp     wrappedObject */
+        };
 
-  static JSPropertySpec memory_props[] =
-    {
-      { "size",       0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, JS_PropertyStub },
-      { NULL, 0, 0, NULL, NULL }
-    };
+    static JSPropertySpec memory_props[] =
+        {
+            { "size",       0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, memory_size_getter, JS_PropertyStub },
+            { NULL, 0, 0, NULL, NULL }
+        };
 
-  static JSFunctionSpec memory_methods[] =
-    {
-      JS_FN("toString",   memory_toString,    0, JSPROP_ENUMERATE),
-      JS_FN("asString",   memory_asString,    0, JSPROP_ENUMERATE),
-      JS_FS_END
-    };
+    static JSFunctionSpec memory_methods[] =
+        {
+            JS_FN("toString",   memory_toString,    0, JSPROP_ENUMERATE),
+            JS_FN("asString",   memory_asString,    0, JSPROP_ENUMERATE),
+            JS_FS_END
+        };
 
-  GPSEE_DECLARE_BYTETHING_EXTCLASS(byteThing);
+    GPSEE_DECLARE_BYTETHING_EXTCLASS(byteThing);
 
-  memory_clasp = &byteThing_eclass.base;
+    memory_clasp = &byteThing_eclass.base;
 
-  memory_proto =
-    JS_InitClass(cx,              /* JS context from which to derive runtime information */
-                 obj,             /* Object to use for initializing class (constructor arg?) */
-                 NULL,            /* parent_proto - Prototype object for the class */
-                 memory_clasp,    /* clasp - Class struct to init. Defs class for use by other API funs */
-                 NULL,            /* constructor function - Scope matches obj */
-                 0,               /* nargs - Number of arguments for constructor (can be MAXARGS) */
-                 memory_props,    /* ps - props struct for parent_proto */
-                 memory_methods,  /* fs - functions struct for parent_proto (normal "this" methods) */
-                 NULL,            /* static_ps - props struct for constructor */
-                 NULL);           /* static_fs - funcs struct for constructor (methods like Math.Abs()) */
+    memory_proto =
+        JS_InitClass(cx,              /* JS context from which to derive runtime information */
+                     obj,             /* Object to use for initializing class (constructor arg?) */
+                     NULL,            /* parent_proto - Prototype object for the class */
+                     memory_clasp,    /* clasp - Class struct to init. Defs class for use by other API funs */
+                     NULL,            /* constructor function - Scope matches obj */
+                     0,               /* nargs - Number of arguments for constructor (can be MAXARGS) */
+                     memory_props,    /* ps - props struct for parent_proto */
+                     memory_methods,  /* fs - functions struct for parent_proto (normal "this" methods) */
+                     NULL,            /* static_ps - props struct for constructor */
+                     NULL);           /* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
-  GPSEE_ASSERT(memory_proto);
+    GPSEE_ASSERT(memory_proto);
 
-  return memory_proto;
+    return memory_proto;
 }
 
 /**
@@ -388,36 +386,37 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj)
  */
 JSObject *byteThing_fromCArray(JSContext *cx, const unsigned char *buffer, size_t length)
 {
-  /* Allocate and initialize our private ByteThing handle */
-  byteThing_handle_t  *hnd;
+    /* Allocate and initialize our private ByteThing handle */
+    byteThing_handle_t  *hnd;
 
-  hnd = (byteThing_handle_t*) JS_malloc(cx, sizeof(byteThing_handle_t));
-  if (!hnd)
-    return NULL;
+    hnd = (byteThing_handle_t*) JS_malloc(cx, sizeof(byteThing_handle_t));
+    if (!hnd)
+        return NULL;
 
-  memset(hnd, 0, sizeof(byteThing_handle_t));
-  hnd->length = length;
+    memset(hnd, 0, sizeof(byteThing_handle_t));
+    hnd->length = length;
 
-  if (length) {
-    hnd->buffer = JS_malloc(cx, length);
-    if (!hnd->buffer) {
-      JS_free(cx, hnd);
-      return NULL;
+    if (length) {
+        hnd->buffer = JS_malloc(cx, length);
+        if (!hnd->buffer) {
+            JS_free(cx, hnd);
+            return NULL;
+        }
     }
-  }
 
-  if (buffer)
-    memcpy(hnd->buffer, buffer, length);
+    if (buffer) {
+        memcpy(hnd->buffer, buffer, length);
+    }
 
-  GPSEE_ASSERT(!obj || (JS_GET_CLASS(cx, obj) ==  memory_clasp));
+    //    GPSEE_ASSERT(!obj || (JS_GET_CLASS(cx, obj) ==  memory_clasp));
 
-  if (!obj)
-    obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
+    //if (!obj) {
+    JSObject* obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
+    //}
+    if (obj) {
+        JS_SetPrivate(cx, obj, hnd);
+        hnd->memoryOwner = obj;
+    }
 
-  if (obj) {
-    JS_SetPrivate(cx, obj, hnd);
-    hnd->memoryOwner = obj;
-  }
-
-  return obj;
+    return obj;
 }
