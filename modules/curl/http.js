@@ -9,7 +9,6 @@ var ByteArray = require('binary').ByteArray;
 // Only three items exported.
 easycurl = curlmod.easycurl;
 easycurl_slist = curlmod.easycurl_slist;
-easycurl_callback = curlmod.easycurl_callback;
 
 
 http = function()
@@ -27,7 +26,7 @@ http = function()
     z.setopt(z.CURLOPT_COOKIEFILE, '');
 
     // 0 or 1 for debuggig output
-    z.setopt(z.CURLOPT_VERBOSE, 0);
+    z.setopt(z.CURLOPT_VERBOSE, 1);
 
     // on redirect, follow it
     z.setopt(z.CURLOPT_FOLLOWLOCATION, 1);
@@ -39,23 +38,22 @@ http = function()
     // SSL: don't bother with peer verification
     z.setopt(z.CURLOPT_SSL_VERIFYPEER, 0);
 
-    // important: make sure to use 'new'
-    this.callbacks = new easycurl_callback();
-    this.callbacks.blobs = [];
-    this.callbacks.header_list = [];
-    this.callbacks.write  = function(s) {
+    // CALLBACKS FOR READS AND HEADERS
+    z.blobs = [];
+    z.header_list = [];
+    z.write  = function(s) {
         this.blobs.push(ByteArray(s));
     }
-    this.callbacks.header = function(s) { this.header_list.push(s); }
-    z.setopt(z.CURLOPT_WRITEFUNCTION, this.callbacks);
-    z.setopt(z.CURLOPT_HEADERFUNCTION, this.callbacks);
+    z.header = function(s) {
+	this.header_list.push(s);
+    }
 
-    // this isn't a call back but you'll want to define
+    // You'll want to define
     // something like this to be called at the start of
     // each request.
-    this.callbacks.reset  = function(s) {
-        this.blobs = [];
-        this.header_list =[];
+    this.reset  = function(s) {
+        this.curl.blobs = [];
+        this.curl.header_list =[];
     }
 
     /*
@@ -100,7 +98,7 @@ http.prototype = {
         var z = this.curl;
         z.setopt(z.CURLOPT_URL, url);
         z.setopt(z.CURLOPT_REFERER, referrer || "");
-        this.callbacks.reset();
+        this.reset();
         z.perform();
 
         // code http 100 is a bit funny
@@ -111,7 +109,7 @@ http.prototype = {
         var code = 100;
         var i = 0;
         while (code === 100) {
-            var status = this.callbacks.header_list[i].trim();
+            var status = this.curl.header_list[i].trim();
             if (status.length > 0) {
                 var parts = /^HTTP\/[0-9.]+ ([0-9]+)/(status);
                 code = parseInt(parts[1]);
@@ -119,19 +117,19 @@ http.prototype = {
             ++i; // future: break if i > XXX?
         }
 
-        var parts = this.callbacks.blobs.length;
+        var parts = this.curl.blobs.length;
         if (parts == 0) {
             this.body = null;
         } else {
-            this.body =this.callbacks.blobs[0];
+            this.body =this.curl.blobs[0];
             print("Memory buf size is " + this.body.length);
 
             for (var i=1; i< parts; ++i) {
                 print(i + ": " + this.body.length);
-                this.body.concat(this.callbacks.blobs[i]);
+                this.body.concat(this.curl.blobs[i]);
             }
         }
-        this.headers = this.callbacks.header_list;
+        this.headers = this.curl.header_list;
 
         return code;
     },
