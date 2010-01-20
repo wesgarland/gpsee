@@ -690,12 +690,14 @@ function cay(cmd) {
   }
   function CAY___iterator__() {
     /* This last stage guarantees that we have an internal stage at the end.
-     * TODO check if the last one is internal first */
+     * TODO check if the last one is internal first.
+     * TODO do something more efficient than nesting another identity generator */
     m_pipeline.add(function(src){for(let x in src)yield x});
     return m_pipeline.run();
   }
   _cay.__proto__ = CAY;
   _cay._pipeline = m_pipeline;
+  _cay.__iterator__ = CAY___iterator__;
   
   return _cay;
 }
