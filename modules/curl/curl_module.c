@@ -431,14 +431,22 @@ static JSBool jscurl_setupcallbacks(struct callback_data* cb)
 
     CURLcode c = 0;
     // TBD error check
+<<<<<<< local
 
+=======
+    // TBD why are read and write the same thing.  Doh!
+    //     which is which?
+>>>>>>> other
     c = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
     c = curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb);
 
     c = curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_callback);
     c = curl_easy_setopt(handle, CURLOPT_HEADERDATA, cb);
 
+<<<<<<< local
     // TBD
+=======
+>>>>>>> other
     c = curl_easy_setopt(handle, CURLOPT_READFUNCTION, write_callback);
     c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
 
