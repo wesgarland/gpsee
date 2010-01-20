@@ -325,6 +325,33 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
     }
 }
 
+/**
+ * Helper function to determine what type of value a curl_setopt takes
+ *
+ * @return 0 if invalid, 1,2,3 if valid
+ */
+static int option_expected_type(int opt) {
+
+  if (opt < CURLOPTTYPE_LONG) {
+    // invalid
+    return 0;
+  }
+  if (opt < CURLOPTTYPE_OBJECTPOINT) {
+    // it's a LONG
+    return 1;
+  }
+  if (opt < CURLOPTTYPE_FUNCTIONPOINT) {
+    // its a object pointer
+    return 2;
+  }
+  if (opt < CURLOPTTYPE_OFF_T) {
+    // function pointer (callback)
+    return 3;
+  }
+
+  return 0;
+}
+
 static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
     struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
@@ -339,15 +366,18 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
 
     arg = argv[1];
     int optype = option_expected_type(opt);
-
-    if (optype == 0) {
+    if (!optype) {
+      JS_ReportError(cx, "Unknown or invalid curl_setopt option value");
+      return JS_FALSE;
+    }
+    if (optype == 1) {
         int val;
         if (!JS_ValueToInt32(cx, argv[1], &val)) {
             JS_ReportError(cx, "second arg not an int");
             return JS_FALSE;
         }
         c = curl_easy_setopt(handle, opt, val);
-    } else if (optype == 1) {
+    } else if (optype == 2) {
         switch (opt) {
         case CURLOPT_HTTPHEADER:
         case CURLOPT_HTTP200ALIASES:
