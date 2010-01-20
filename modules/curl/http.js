@@ -26,7 +26,7 @@ http = function()
     z.setopt(z.CURLOPT_COOKIEFILE, '');
 
     // 0 or 1 for debuggig output
-    z.setopt(z.CURLOPT_VERBOSE, 1);
+    z.setopt(z.CURLOPT_VERBOSE, 0);
 
     // on redirect, follow it
     z.setopt(z.CURLOPT_FOLLOWLOCATION, 1);
