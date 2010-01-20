@@ -34,21 +34,3 @@ for mo in re.finditer(r'CINIT.([A-Z_]+), *([A-Z]+), *([0-9]+)', text):
 
 print "{0,0,0,{0,0,0}}";
 print "};";
-
-
-print "int option_expected_type(int opt) {";
-print "switch (opt) {"
-for i in longargs:
-    print "case CURLOPT_%s: " % i
-print "return 0;";
-for i in objargs:
-    print "case CURLOPT_%s: " % i
-print "return 1;";
-for i in fnargs:
-    print "case CURLOPT_%s: " % i
-print "return 2;";
-print "default: return -1;"
-print "}"
-print "}"
-
-
