@@ -18,10 +18,10 @@ function strerror(error){};
 function sleep(sleepTime){};
 
 /** Load and interpreter a script in the caller's context 
+ *  @param	thisObj		(OPTIONAL) JS object to bind as global/this during execution. Optional.
  *  @param	filename	Script filename, either relative or rooted.
- *  @param	thisObj		JS object to bind as global/this during execution. Optional.
  */
-function input(filename, thisObj){};
+function include(thisObj, filename){};
 
 /** Issue a shell command 
  *  @param	command		Command to execute with shell.
