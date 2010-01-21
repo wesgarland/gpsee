@@ -6,7 +6,7 @@
 var curlmod = require('curl');
 var ByteArray = require('binary').ByteArray;
 
-// Only three items exported.
+// Only two items exported.
 easycurl = curlmod.easycurl;
 easycurl_slist = curlmod.easycurl_slist;
 
@@ -122,16 +122,13 @@ http.prototype = {
             this.body = null;
         } else {
             this.body =this.curl.blobs[0];
-            print("Memory buf size is " + this.body.length);
-
             for (var i=1; i< parts; ++i) {
-                print(i + ": " + this.body.length);
                 this.body.concat(this.curl.blobs[i]);
             }
         }
         this.headers = this.curl.header_list;
 
-        return code;
+	return {status:code, headers:this.headers,body:this.body}
     },
 
     /*
