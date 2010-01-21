@@ -170,7 +170,8 @@ struct moduleHandle
   JSObject		*object;	/**< JavaScript object holding module contents (require/loadModule return). 
 					     Private slot reserved for module's use. */
   JSObject		*scope;		/**< Scope object for JavaScript modules; preserved only from load->init */
-  JSScript		*script;	/**< Script object for JavaScript modules; preserved only from load->init */
+  JSScript              *script;        /**< Script object for JavaScript modules; preserved only from
+                                                                                          load -> JS_ExecuteScript() */
   JSObject		*scrobj;	/**< GC thing for script, used by GC callback */
 
   char			*idStorage;	/**< Storage for module id, should come from malloc if used */
@@ -478,7 +479,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     moduleIdDup = JS_strdup(cx, cname);
     if (!moduleIdDup)
       return NULL;
-    moduleId = JS_NewString(cx, moduleIdDup, strlen(moduleId));
+    moduleId = JS_NewString(cx, moduleIdDup, strlen(cname));
     if (!moduleId)
       return NULL;
     GPSEE_ASSERT(
@@ -1094,13 +1095,11 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
     module = acquireModuleHandle(cx, moduleName, parentModule ? parentModule->scope : NULL);
     if (!module)
       return NULL;
-    *errorMessage_p = loadJSModule(cx, module, fnBuf);
-    if (*errorMessage_p)
-    {
-      markModuleUnused(cx, module);
-      return NULL;
-    }
-    return module;
+    /* If the module has already been loaded, return it; otherwise ditch it */
+    if (module->flags & mhf_loaded)
+      return module;
+    markModuleUnused(cx, module);
+    return NULL;
   }
 
   /* Iterate over each component of the full GPSEE_PATH list, or relative path alternative */
@@ -1324,6 +1323,7 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
 
   if (module->script)
   {
+    JSScript    *script;
     jsval 	v = OBJECT_TO_JSVAL(module->object);
     JSBool	b;
 
@@ -1333,11 +1333,17 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
       return NULL;
     }
 
-    b = JS_ExecuteScript(cx, module->scope, module->script, &v); /* realloc hazard */
-    module = getModuleHandle_fromScope(cx, moduleScope);
-    GPSEE_ASSERT(module != NULL);
+    /* Once we begin evaluating module code, that module code must never begin evaluating again. Setting module->script
+     * to NULL signifies that the module code has already begun (and possibly finished) evaluating its module code.
+     * Note that this code block is guarded by if(module->script). Note also that module->flags & dhf_loaded is used
+     * elsewhere to short-circuit the module initialization process, simply producing the existing module object.
+     */
+    script = module->script;
+    module->script = NULL;
+    b = JS_ExecuteScript(cx, module->scope, script, &v); /* realloc hazard */
 
-    module->script = NULL;	/* No longer needed */
+    GPSEE_ASSERT(module == getModuleHandle_fromScope(cx, moduleScope));
+
     module->scrobj = NULL;	/* No longer needed */
 
     if (b == JS_TRUE)
@@ -1359,7 +1365,7 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
 	    if (JSVAL_IS_INT(e))
 	      jsi->exitCode = JSVAL_TO_INT(e);
 	    else
-	      jsi->exitCode = (int)JSVAL_TO_DOUBLE(e);
+	      jsi->exitCode = (int)*JSVAL_TO_DOUBLE(e);
 	  }
 	  else
 	  {
@@ -1603,11 +1609,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
       *s = (char)0;
   }
 
-  module->cname = strdup(cnBuf);
-  if (!module->cname)
-    panic("Out of memory");
-
-  module = acquireModuleHandle(cx, module->cname, jsi->globalObj);
+  module = acquireModuleHandle(cx, cnBuf, jsi->globalObj);
   if (!module)
   {
     errorMessage = "could not allocate module handle";
@@ -1624,9 +1626,14 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("Program module root is %s\n", jsi->programModule_dir);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
-  if (gpsee_compileScript(cx, module->cname, scriptFile, &module->script,
+  /* cnBuf is unused below this point, so it should be safe to recycle */
+  gpsee_resolvepath(scriptFilename, cnBuf, PATH_MAX);
+  if (gpsee_compileScript(cx, cnBuf, scriptFile, &module->script,
       module->scope, &module->scrobj, &errorMessage))
     goto fail;
+
+  /* Enable 'mhf_loaded' flag before calling initializeModule() */
+  module->flags |= mhf_loaded;
 
   if (initializeModule(cx, module, &errorMessage))
   {
