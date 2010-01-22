@@ -61,10 +61,10 @@ install-nodeps install:	XPROGS =$(strip $(EXPORT_PROGS))
 install-nodeps install:	XCGIS =$(strip $(CGI_PROGS))
 install:	$(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_PROGS) $(CGI_PROGS)
 ifneq (X$(EXPORT_LIBS)$(EXPORT_LIBEXEC_OBJS),X)
-		@make install-solibs
+		@$(MAKE) install-solibs
 endif
-		@make install-nodeps
-		@make srcmaint
+		@$(MAKE) install-nodeps
+		@$(MAKE) srcmaint
 
 install-nodeps:
 		@$(if $(XPROGS),[ -d $(BIN_DIR) ] || mkdir -p $(BIN_DIR))

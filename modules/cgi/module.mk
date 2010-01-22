@@ -49,10 +49,10 @@ endif
 endif
 
 build:
-	cd ../.. && make 
+	cd ../.. && $(MAKE)
 
 cgihtml/cgihtml.a: $(wildcard cgihtml/*.[ch])
-	cd cgihtml && make "CFLAGS=$(CFLAGS)"
+	cd cgihtml && $(MAKE) "CFLAGS=$(CFLAGS)"
 
 clean: OBJS += $(wildcard cgihtml/*.o)
 

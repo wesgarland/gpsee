@@ -26,7 +26,7 @@ test.cgi: $(LIB) test.cgi.o
 	$(CC) -o $@ test.cgi.o $(LIB)
 
 $(LIB):
-	cd ..; make cgihtml.a
+	cd ..; $(MAKE) cgihtml.a
 
 all: $(TARGETS)
 
