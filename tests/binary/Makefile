@@ -38,11 +38,13 @@
 ##				`make commit` commits test results.
 ## @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
 ## @date	June 2009
-## @version	$Id:$
+## @version	$Id: Makefile,v 1.1 2010/01/22 16:34:08 wes Exp $
+
+GPSEE_SRC_DIR ?= ../..
 
 all ::
-	-./ByteString.js -q > ByteString.test.temp && touch ByteString ByteString.test && diff ByteString.test ByteString.test.temp
-	-./ByteArray.js -q > ByteArray.test.temp && touch ByteArray.test && diff ByteArray.test ByteArray.test.temp
+	@$(GPSEE_SRC_DIR)/gsr -ddzzF ./ByteString.js -- -q > ByteString.test.temp && touch ByteString ByteString.test && diff ByteString.test ByteString.test.temp
+	@$(GPSEE_SRC_DIR)/gsr -ddzzF ./ByteArray.js -- -q > ByteArray.test.temp && touch ByteArray.test && diff ByteArray.test ByteArray.test.temp
 
 commit ::
 	-mv ByteString.test.temp ByteString.test
