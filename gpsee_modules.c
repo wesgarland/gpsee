@@ -1556,6 +1556,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
 {
   moduleHandle_t 	*module;
   char			cnBuf[PATH_MAX];
+  char			fnBuf[PATH_MAX];
   int			i;
   const char		*errorMessage = NULL;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
@@ -1603,6 +1604,10 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     }
   }
 
+  /* Before mangling cnBuf, let's copy it to fnBuf to be used in gpsee_compileScript() */
+  strcpy(fnBuf, cnBuf);
+
+  /* The "cname" argument to acquireModuleHandle() names a module, not a file, so let's remove the .js extension */
   if ((s = strrchr(cnBuf, '.')))
   {
     if (strcmp(s, ".js") == 0)
@@ -1626,9 +1631,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("Program module root is %s\n", jsi->programModule_dir);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
-  /* cnBuf is unused below this point, so it should be safe to recycle */
-  gpsee_resolvepath(scriptFilename, cnBuf, PATH_MAX);
-  if (gpsee_compileScript(cx, cnBuf, scriptFile, &module->script,
+  if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
       module->scope, &module->scrobj, &errorMessage))
     goto fail;
 
