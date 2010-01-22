@@ -278,6 +278,7 @@ static JSBool ByteString_Constructor(JSContext *cx, JSObject *obj, uintN argc, j
 
     if (b == JS_TRUE)
       goto instanciate;
+    return JS_FALSE;
   }
 
   return gpsee_throw(cx, CLASS_ID ".constructor.arguments: invalid kind or number of arguments");
