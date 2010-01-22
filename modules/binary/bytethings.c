@@ -382,6 +382,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     iconv_t	cd1;
     iconv_t	cd2; 
 
+    /* Here we'll iconv_open() just as a feature test */
     depth = JS_SuspendRequest(cx);
     if ((cd1 = iconv_open(targetCharset, NEUTRAL_CHARSET)) != (iconv_t)-1)
       iconv_close(cd1);
@@ -472,6 +473,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     }
   } while (result == -1);
 
+  iconv_close(cd);
   *outputBufferLength_p = outbuf - outbufStart;
   if (*outputBufferLength_p != allocBytes)
   {
