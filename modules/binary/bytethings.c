@@ -467,7 +467,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 	default:
 	  JS_free(cx, outbufStart);
 	  iconv_close(cd);
-	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte %i (%m)", 
+	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte " GPSEE_SIZET_FMT " (%m)", 
 			     throwPrefix, ((unsigned char *)inbuf - inputBuffer));
       }
     }
@@ -1080,7 +1080,7 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
   JSObject              *self = JSVAL_TO_OBJECT(JS_THIS(cx, vp));
   byteThing_handle_t    *hnd;
   int                   mustBeNew = 0; // in some cases we don't need to return a new object, we can return a reference ourself
-  const char *          className;
+  const char *          className = NULL;
   const char *          methodName;
 
   /* Deduce our method name as well as an appropriate prototype object from the JSClass we're given */
