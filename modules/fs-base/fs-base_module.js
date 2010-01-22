@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.6 2010/01/15 15:45:55 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.7 2010/01/22 16:34:34 wes Exp $
  */
 
 const binary = require("binary");
@@ -97,7 +97,7 @@ function stat(path)
   var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) != 0)
-    throw(new Error("Cannot stat path '"+path+"'" + syserr()));
+    throw new Error("Cannot stat path '"+path+"'" + syserr());
   
   return sb;
 }
@@ -128,7 +128,7 @@ exports.openDescriptor = function openDescriptor(fd, mode)
   if (!stream)
   {
     _close.call(fd);
-    throw(new Error("Unable to create stdio file stream" + syserr()));
+    throw new Error("Unable to create stdio file stream" + syserr());
   }
 
   stream.finalizeWith(_fclose, stream);
@@ -188,7 +188,7 @@ exports.openRaw = function(path, mode, permissions)
   _umask.call(oldUmask);
 
   if (fd == -1)
-    throw(new Error("Unable to open file '" + path + "'" + syserr()));
+    throw new Error("Unable to open file '" + path + "'" + syserr());
 
   if (!mode.write && exports.isDirectory(path)) /* open(2) already threw if writing a dir */
   {
@@ -209,7 +209,7 @@ exports.openRaw = function(path, mode, permissions)
 exports.move = function move(source, target)
 {
   if (_rename.call(source, target) != 0)
-    return throw(new Error("Cannot rename '" + source + "' to '" + target + "'" + syserror()));
+    throw new Error("Cannot rename '" + source + "' to '" + target + "'" + syserror());
 }
 
 /** 
@@ -220,13 +220,13 @@ exports.remove = function remove(path)
   var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) != 0)
-    throw(new Error("Cannot remove '" + path + "'" + syserror()));
+    throw new Error("Cannot remove '" + path + "'" + syserror());
 
   if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLINK)) == 0)
-    throw(new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
+    throw new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
 
   if (_unlink.call(path) != 0)
-    throw(new Error("Cannot remove '" + path + "'" + syserror()));
+    throw new Error("Cannot remove '" + path + "'" + syserror());
 }
 
 /** 
@@ -245,7 +245,7 @@ exports.touch = function touch(path, when)
   if (_stat.call(path, sb) != 0)
   {
     if (ffi.errno != dh.ENONET)
-      throw(new Error("Cannot touch '" + path + "'" + syserror()));
+      throw new Error("Cannot touch '" + path + "'" + syserror());
     exports.openRaw(path, { write: true, create: true, exclusive: true }).close();
   }
 
@@ -262,7 +262,7 @@ exports.touch = function touch(path, when)
   }
 
   if (_utime.call(path, tb) != 0)
-    throw(new Error("Cannot touch '" + path + "'" + syserror()));
+    throw new Error("Cannot touch '" + path + "'" + syserror());
 }
 
 /**
@@ -283,7 +283,7 @@ exports.makeDirectory = function makeDirectory(path, permissions)
   var p = new Permissions(permissions);
   
   if (_mkdir.call(path, p.toUnix()) != 0)
-    throw(new Error("Cannot create directory '" + path + "'" + syserror()));
+    throw new Error("Cannot create directory '" + path + "'" + syserror());
 }
 
 /**
@@ -300,7 +300,7 @@ exports.removeDirectory = function removeDirectory(path)
     if (exports.isLink(path) && exports.isDirectory(exports.canonical(path)))
       if (_unlink.call(path) == 0)
 	return;
-    throw(new Error("Cannot remove directory '" + path + "'" + syserror()));
+    throw new Error("Cannot remove directory '" + path + "'" + syserror());
   }
 }
 
@@ -318,7 +318,7 @@ exports.canonical = function canonical(path)
   var	buf = new ffi.Memory(dh.FILENAME_MAX);
 
   if (_gpsee_resolvepath.call(path, buf.size) != 0)
-    throw(new Error("Cannot resolve path '"+path+"'" + syserr()));
+    throw new Error("Cannot resolve path '"+path+"'" + syserr());
 
   return path.asString(-1);
 };
@@ -335,7 +335,7 @@ exports.workingDirectory = function workingDirectory()
   var	dirp = _getcwd.call(buf, buf.size);
 
   if (!dirp)
-    throw(new Error("Cannot determine working directory" + syserr()));
+    throw new Error("Cannot determine working directory" + syserr());
 
   return dirp.asString(-1);
 };
@@ -347,7 +347,7 @@ exports.workingDirectory = function workingDirectory()
 exports.changeWorkingDirectory = function changeWorkingDirectory(path)
 {
   if (_chdir.call(path) != 0)
-    throw(new Error("Cannot change working directory to '" + path + "'" + syserr()));
+    throw new Error("Cannot change working directory to '" + path + "'" + syserr());
 }
 
 /** 
@@ -382,11 +382,11 @@ exports.changeOwner = function changeOwner(path, owner)
     if ((pwent = getpwnam(owner)))
       owner = pwent.pw_uid;
     else
-      throw(new Error("Cannot determine user ID for user '" + owner + "'" + syserr()));
+      throw new Error("Cannot determine user ID for user '" + owner + "'" + syserr());
   }
 
   if (_chown.call(path, owner, -1) != 0)
-    throw(new Error("Cannot change ownership of  '" + path + "'" + syserr()));
+    throw new Error("Cannot change ownership of  '" + path + "'" + syserr());
 }
 
 /**
@@ -409,7 +409,7 @@ exports.changePermissions = function changePermissions(path, permissions)
   var p = new Permissions(permissions);
 
   if (_chmod.call(path, p.toUnix()) != 0)
-    throw(new Error("Cannot change permissions on  '" + path + "'" + syserr()));
+    throw new Error("Cannot change permissions on  '" + path + "'" + syserr());
 }
 
 /**
@@ -418,7 +418,7 @@ exports.changePermissions = function changePermissions(path, permissions)
 exports.link = function link(source, target)
 {
   if (_symlink.call(source, target) != 0)
-    throw(new Error("Cannot create symbolic link '" + target + "'" + syserr()));
+    throw new Error("Cannot create symbolic link '" + target + "'" + syserr());
 }
 
 /** 
@@ -429,7 +429,7 @@ exports.link = function link(source, target)
 exports.hardLink = function hardLink(source, target)
 {
   if (_link.call(source, target) != 0)
-    throw(new Error("Cannot create hard link '" + target + "'" + syserr()));
+    throw new Error("Cannot create hard link '" + target + "'" + syserr());
 }
 
 /**
@@ -440,7 +440,7 @@ exports.readLink = function readLink(path)
   var buf = new ffi.Memory(dh.FILENAME_MAX);
 
   if (_readlink.call(path, buf, buf.size) != 0)
-    throw(new Error("Cannot read link '" + path + "'" + syserr()));
+    throw new Error("Cannot read link '" + path + "'" + syserr());
 
   return buf.asString(-1);
 }
@@ -589,7 +589,7 @@ exports.size = function size(path)
   var sb = stat(path);
 
   if ((sb.st_mode & (dh.S_IFLNK | dh.S_IFREG)) == 0)
-    throw new Error("Cannot determine size of '" + path "' - not a regular file or link");
+    throw new Error("Cannot determine size of '" + path + "' - not a regular file or link");
 
   return sb.st_size;
 }
@@ -684,7 +684,7 @@ function Permissions(p)
           }
           break;
         default:
-          throw(new TypeError(typeof(obj[el]) + " " + el + " doesn't belong in a Permissions object!"));
+          throw new TypeError(typeof(obj[el]) + " " + el + " doesn't belong in a Permissions object!");
       }
     }
   }
