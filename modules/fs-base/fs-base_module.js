@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.7 2010/01/22 16:34:34 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.8 2010/01/22 16:41:59 wes Exp $
  */
 
 const binary = require("binary");
@@ -576,6 +576,8 @@ exports.sameFilesystem = function sameFilesystem(pathA, pathB)
       a.pop();
       path = a.join('/');
     } while(path.length);
+
+    return null;
   }
 
   return filesystem(pathA) == filesystem(pathB);
@@ -865,7 +867,7 @@ Stream.prototype.read = function Stream_read(howMuch)
   var pos;
   var buffer;
 
-  if (pos = _ftello.call(this.stream))
+  if ((pos = _ftello.call(this.stream)))
     throw new Error("Could not determine current stream offset!" + syserr());
 
   bytesLeft = sb.st_size - pos;
