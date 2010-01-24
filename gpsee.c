@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.17 2010/01/24 04:46:53 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.17  2010/01/24 04:46:53  wes
+ *  Deprecated mozfile, mozshell and associated libgpsee baggage
+ *
  *  Revision 1.16  2009/10/20 20:32:46  wes
  *  gpsee_getInstancePrivateNTN no longer crashes on null object
  *
@@ -114,17 +117,13 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.17 2010/01/24 04:46:53 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
 #include "gpsee_private.h"
 
 #define	GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY	0xfff
-
-#ifdef GPSEE_DEBUG_BUILD
-int *gpsee_stackBase;		/**< Hook for debug module, populated by main-intercept macro in gpsee.h */
-#endif
 
 extern rc_list rc;
 
