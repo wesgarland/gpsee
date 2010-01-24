@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.26 2010/01/11 16:10:50 wes Exp $
+## @version	$Id: Makefile,v 1.27 2010/01/24 04:46:07 wes Exp $
 
 top: 	help
 
@@ -117,7 +117,7 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= libgpsee.$(SOLIB_EXT)
-EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES)
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES) $(JSC_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee-jsapi.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h gpsee-iconv.h
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 
@@ -151,6 +151,13 @@ modules.h: Makefile $(STREAM)_stream.mk
 		| $(TR) ' ' '\n'  \
 		| $(SED) -e 's/.*/InternalModule(&)/' \
 		>> $@
+
+# Precompiled JS Module Support
+JS_FILES 	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))))
+JSC_FILES 	:= $(join $(dir $(JS_FILES)),$(addsuffix c,$(addprefix .,$(notdir $(JS_FILES)))))
+$(JSC_FILES):	gsr
+	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//')
+
 show_modules:
 	@echo 
 	@echo "*** GPSEE-$(STREAM) Module Configuration ***"
@@ -330,4 +337,3 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
-
