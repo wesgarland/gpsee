@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.17 2010/01/13 20:07:59 jbj Exp $
+ * @version	$Id: gsr.c,v 1.18 2010/01/24 04:46:07 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.2 2010/01/13 20:07:59 jbj Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.18 2010/01/24 04:46:07 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -602,7 +602,8 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!script || !scrobj)
 	goto out;
 
-      if (!noRunScript) {
+      if (!noRunScript)
+      {
         JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
         JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
         if (JS_IsExceptionPending(jsi->cx))
@@ -638,14 +639,17 @@ PRIntn prmain(PRIntn argc, char **argv)
         const char      *errmsg;
         JSScript        *script;
         JSObject        *scrobj;
-        gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Compiling script \"%s\"", scriptFilename);
+
         if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
         {
-          gpsee_log(SLOG_NOTICE, "failed running program %s because: %s\n", scriptFilename, errmsg ?: "unknown failure");
+          gpsee_log(SLOG_NOTICE, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
           GPSEE_ASSERT(errmsg);
           exitCode = 1;
         }
-        gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Successfully did \"%s\"", scriptFilename);
+	else
+	{
+	  exitCode = 0;
+	}
       }
       else /* noRunScript is false; run the program */
       {
