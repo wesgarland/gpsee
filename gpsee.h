@@ -37,9 +37,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.20 2009/10/29 18:35:05 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.21 2010/01/24 04:46:54 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.21  2010/01/24 04:46:54  wes
+ *  Deprecated mozfile, mozshell and associated libgpsee baggage
+ *
  *  Revision 1.20  2009/10/29 18:35:05  wes
  *  ByteThing casting, apply(), call() mutability fixes
  *
@@ -389,11 +392,6 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 
 #if defined(__cplusplus)
 }
-#endif
-
-#if defined(GPSEE_DEBUG_BUILD)
-extern int *gpsee_stackBase;
-# define main(c,v)	gpsee_main(c,v); int main(int argc, char *argv[]) { int i; gpsee_stackBase = &i; return gpsee_main(argc,argv); }; int gpsee_main(c,v)
 #endif
 
 #if defined(GPSEE_DEBUG_BUILD)
