@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.17 2010/01/24 04:46:53 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.18 2010/01/25 22:05:27 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.18  2010/01/25 22:05:27  wes
+ *  Trivial code clean-up
+ *
  *  Revision 1.17  2010/01/24 04:46:53  wes
  *  Deprecated mozfile, mozshell and associated libgpsee baggage
  *
@@ -117,7 +120,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.17 2010/01/24 04:46:53 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.18 2010/01/25 22:05:27 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -149,6 +152,17 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
   abort();
 }   
 #endif
+
+/** Handler for fatal GPSEE errors.
+ *
+ *  @param      message         Arbitrary text describing the
+ *  @note       Exits with status 1
+ */
+void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
+{
+  fprintf(stderr, "GPSEE Fatal Error: %s\n", message);
+  exit(1);
+}
 
 /** Error Reporter for Spidermonkey. Used to report warnings and
  *  uncaught exceptions.
@@ -327,7 +341,6 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
 {
   char 		*message;
-  JSString	*messageStr;
   va_list	ap;
   size_t	length;
   char		fmtNew[GPSEE_MAX_LOG_MESSAGE_SIZE];
@@ -350,6 +363,7 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
     gpsee_log(SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
   else
     JS_ReportError(cx, "%s", message);
+
   return JS_FALSE;
 }
 
@@ -911,15 +925,6 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
     JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
 }
 
-/** Handler for fatal GPSEE errors.
- *
- *  @param      message         Arbitrary text describing the
- *  @note       Exits with status 1
- */
-void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
-{
-  fprintf(stderr, __FILE__" Fatal Error:  %s\n", message);
-  exit(1);
-}
+
 
 
