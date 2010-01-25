@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.5 2009/05/27 04:51:44 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.6 2010/01/25 22:05:27 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.5 2009/05/27 04:51:44 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.6 2010/01/25 22:05:27 wes Exp $:";
 
 #include "gpsee.h"
 
@@ -303,7 +303,6 @@ int gpsee_p2open(const char *cmd, int *FDs, pid_t *pid)
 
 int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pid)
 {
-  int             fds[2];
   int             status;
   void            (*hstat)(int), (*istat)(int), (*qstat)(int);
   pid_t r;

@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses_module.c,v 1.4 2009/07/31 16:47:31 wes Exp $
+ *  @version	$Id: curses_module.c,v 1.5 2010/01/25 22:05:27 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.4 2009/07/31 16:47:31 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: curses_module.c,v 1.5 2010/01/25 22:05:27 wes Exp $";
 
 #include "gpsee.h"
 #include <stdlib.h>
@@ -69,7 +69,7 @@ void cursesStdScrErrorLogger(JSContext *cx, const char *prefix, const char *mess
   attroff(A_BOLD);
   addstr((char *)" ");
   addstr((char *)message);
-  addstr("\n\n");
+  addstr((char *)"\n\n");
   refresh();
 
   JS_ResumeRequest(cx, depth);
