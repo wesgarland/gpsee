@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.27 2010/01/24 04:46:07 wes Exp $
+## @version	$Id: Makefile,v 1.28 2010/01/25 19:18:50 wes Exp $
 
 top: 	help
 
@@ -92,7 +92,7 @@ AR_MODULE_DIRS_ALL		:= $(AR_MODULE_DIRS_GLOBAL) $(AR_MODULE_DIRS_STREAM)
 LOADABLE_MODULE_DIRS_ALL	:= $(LOADABLE_MODULE_DIRS_GLOBAL) $(LOADABLE_MODULE_DIRS_STREAM)
 AR_MODULE_FILES			:= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
 SO_MODULE_DSOS			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ -r "$(DIR)/$(notdir $(DIR))_module.c" ] || [ -r "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.$(SOLIB_EXT)";))
-SO_MODULE_FILES			:= $(SO_MODULE_DSOS) $(wildcard $(SO_MODULE_DSOS:.$(SOLIB_EXT)=.js))
+SO_MODULE_FILES			:= $(SO_MODULE_DSOS)
 JS_MODULE_FILES			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ ! -r "$(DIR)/$(notdir $(DIR))_module.c" ] && [ ! -r "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.js";))
 ALL_MODULE_DIRS			:= $(sort $(AR_MODULE_DIRS_ALL) $(LOADABLE_MODULE_DIRS_ALL) $(dir $(JS_MODULE_FILES)))
 
@@ -117,9 +117,12 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 EXPORT_PROGS	 	= gsr gpsee-config
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= libgpsee.$(SOLIB_EXT)
-EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES) $(JS_MODULE_FILES) $(JSC_FILES)
+EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
 EXPORT_HEADERS		= gpsee.h gpsee-jsapi.h gpsee_config.h gpsee_lock.c gpsee_flock.h gpsee_formats.h gpsee-iconv.h
 EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
+EXPORT_LIBEXEC_JS	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE_DSOS:.$(SOLIB_EXT)=.js))))
+TARGET_LIBEXEC_JS	:= $(addprefix $(LIBEXEC_DIR)/, $(notdir $(EXPORT_LIBEXEC_JS)))
+TARGET_LIBEXEC_JSC 	:= $(join $(dir $(TARGET_LIBEXEC_JS)), $(addsuffix c,$(addprefix .,$(notdir $(TARGET_LIBEXEC_JS)))))
 
 LOADLIBES		+= -lgpsee
 $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
@@ -127,10 +130,9 @@ $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
-.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help
+.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help install_js_components
 build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
-
-install: gsr-link
+install: $(TARGET_LIBEXEC_JSC) gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
@@ -152,10 +154,12 @@ modules.h: Makefile $(STREAM)_stream.mk
 		| $(SED) -e 's/.*/InternalModule(&)/' \
 		>> $@
 
-# Precompiled JS Module Support
-JS_FILES 	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE_FILES:.$(SOLIB_EXT)=.js))))
-JSC_FILES 	:= $(join $(dir $(JS_FILES)),$(addsuffix c,$(addprefix .,$(notdir $(JS_FILES)))))
-$(JSC_FILES):	gsr
+install_js_components:
+		@echo " * Installing JavaScript module components"
+		@$(if $(TARGET_LIBEXEC_JS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
+		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
+
+$(TARGET_LIBEXEC_JSC):	install_js_components gsr $(TARGET_LIBEXEC_JS)
 	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//')
 
 show_modules:
