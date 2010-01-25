@@ -341,3 +341,5 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
+test:
+	@echo $(JSC_FILES)
