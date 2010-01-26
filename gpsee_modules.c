@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.9 2009/09/14 20:53:59 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -81,7 +81,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.9 2009/09/14 20:53:59 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -183,15 +183,22 @@ struct moduleHandle
 
 /** Retrieve the parent module based on the scopedObject of the current call.
  *  Safe to run inside a finalizer.
+ *
+ *  Shortcuts - scopedObject can be a scope and return itself
+ *            - we recognize cx->globalObj as a scope
  */
 static JSObject *findModuleScope(JSContext *cx, JSObject *scopedObject)
 {
   JSObject		*obj;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   /* Find module scope by walking up scope chain */
   for (obj = scopedObject; obj != NULL; obj = JS_GetParent(cx, obj))
   {
     if (JS_GET_CLASS(cx, obj) == &module_scope_class)
+      return obj;
+
+    if (obj == jsi->globalObj)
       return obj;
   }
 
