@@ -171,7 +171,7 @@ struct moduleHandle
 					     Private slot reserved for module's use. */
   JSObject		*scope;		/**< Scope object for JavaScript modules; preserved only from load->init */
   JSScript              *script;        /**< Script object for JavaScript modules; preserved only from
-                                                                                          load -> JS_ExecuteScript() */
+                                             load -> JS_ExecuteScript() */
   JSObject		*scrobj;	/**< GC thing for script, used by GC callback */
 
   char			*idStorage;	/**< Storage for module id, should come from malloc if used */
@@ -299,7 +299,8 @@ static JSObject *acquireModuleObject(JSContext *cx, JSObject *moduleScope)
   JSObject 		*moduleObject;
   moduleHandle_t	*module;
 
-  if (JS_GetClass(cx, moduleScope) != &module_scope_class)
+  if ((JS_GetClass(cx, moduleScope) != &module_scope_class) &&
+      (JS_GetClass(cx, moduleScope) != gpsee_getGlobalClass()))
     return NULL;
 
   if ((module = getModuleHandle_fromScope(cx, moduleScope)) && module->object)
@@ -329,6 +330,12 @@ static JSObject *acquireModuleObject(JSContext *cx, JSObject *moduleScope)
  *
  *  The private slot for this object is reserved for (and contains) the module handle.
  *
+ *  @param cx             JavaScript context
+ *  @param parentObject   The parent module's module object, eventually used to resolve 
+ *                        relative paths in require. Passing parentObject == NULL indicates
+ *                        we are initializing a program module, and as such want to run
+ *                        in the truly global scope to work around a JIT issue in SpiderMonkey.
+ *  @param      module    The handle describing the module we are building
  *  @returns	NULL on failure, or an object which is in unrooted
  *		but in the recently-created slot. 
  */
@@ -342,29 +349,37 @@ static JSObject *newModuleScope(JSContext *cx, JSObject *parentObject, moduleHan
   if (JS_EnterLocalRootScope(cx) != JS_TRUE)
     return NULL;
 
-  moduleScope = JS_NewObject(cx, &module_scope_class, NULL, parentObject); 
-  if (!moduleScope)
-    return NULL;
+  if (parentObject)
+  {
+    moduleScope = JS_NewObject(cx, &module_scope_class, NULL, parentObject); 
+    if (!moduleScope)
+      goto errout;
 
-/*
- *  if (JS_DefineProperty(cx, moduleScope, "exports", JSVAL_NULL, NULL, NULL,
- *			JSPROP_ENUMERATE | JSPROP_PERMANENT) != JS_TRUE)
- *    return NULL;
- */
-
-  if (JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 0, 0) == NULL)
-    return NULL;
+    if (JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 0, 0) == NULL)
+      goto errout;
+  }
+  else
+  {
+    gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+    moduleScope = jsi->globalObj;
+  }
 
   if (JS_DefineProperty(cx, moduleScope, "moduleName", 
 			STRING_TO_JSVAL(JS_NewStringCopyZ(cx, module->cname)), NULL, NULL, 
 			JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
-    return NULL;
+  {
+    goto errout;
+  }
   
   setModuleHandle_forScope(cx, moduleScope, module);
 
   JS_LeaveLocalRootScopeWithResult(cx, OBJECT_TO_JSVAL(moduleScope));
 
   return moduleScope;
+
+  errout:
+  JS_LeaveLocalRootScope(cx);
+  return NULL;
 }
 
 /** Find existing or create new module handle.
@@ -380,7 +395,8 @@ static JSObject *newModuleScope(JSContext *cx, JSObject *parentObject, moduleHan
  *  can be identified.
  *
  *  @param cx			JavaScript context
- *  @param parentObject		Object to use to find parentModuleScope when creating handle
+ *  @param parentObject		Object to use to find parentModuleScope when creating handle; NULL
+ *                              when we are building a program module due to JIT bug in SpiderMonkey.
  *  @param cname                Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
  *                              or name an internal module.
  *  @returns 			A module handle, possibly one already initialized.
@@ -1341,7 +1357,7 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
     script = module->script;
     module->script = NULL;
     b = JS_ExecuteScript(cx, module->scope, script, &v); /* realloc hazard */
-
+    module = getModuleHandle_fromScope(cx, moduleScope);
     GPSEE_ASSERT(module == getModuleHandle_fromScope(cx, moduleScope));
 
     module->scrobj = NULL;	/* No longer needed */
@@ -1614,7 +1630,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
       *s = (char)0;
   }
 
-  module = acquireModuleHandle(cx, cnBuf, jsi->globalObj);
+  module = acquireModuleHandle(cx, cnBuf, NULL);
   if (!module)
   {
     errorMessage = "could not allocate module handle";
