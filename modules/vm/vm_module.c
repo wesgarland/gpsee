@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm_module.c,v 1.2 2009/12/01 21:30:11 wes Exp $
+ *  @version    $Id: vm_module.c,v 1.3 2010/01/26 22:37:30 wes Exp $
  *
  *  $Log: vm_module.c,v $
+ *  Revision 1.3  2010/01/26 22:37:30  wes
+ *  Test for JITable program modules
+ *
  *  Revision 1.2  2009/12/01 21:30:11  wes
  *  Changed vm.gc semantic so that no-args now means force-gc instead of maybe-gc
  *
@@ -49,7 +52,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.2 2009/12/01 21:30:11 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.3 2010/01/26 22:37:30 wes Exp $";
  
 #include "gpsee.h"
 
@@ -189,6 +192,22 @@ static JSBool vm_isCompilableUnit(JSContext *cx, JSObject *obj, uintN argc, jsva
   return JS_TRUE;
 }
 
+static JSBool vm_jit_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  *vp = (JS_GetOptions(cx) & JSOPTION_JIT) ? JSVAL_TRUE : JSVAL_FALSE;
+  return JS_TRUE;
+}
+
+
+static JSBool vm_jit_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  if (gpsee_isFalsy(cx, *vp))
+    JS_SetOptions(cx, JS_GetOptions(cx) & ~JSOPTION_JIT);
+  else
+    JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_JIT);
+  return JS_TRUE;
+}
+
 const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   static JSFunctionSpec vm_static_methods[] = 
@@ -203,7 +222,8 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
 
   static JSPropertySpec vm_static_props[] = 
   {
-    { "version",	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_version_getter, JS_PropertyStub },
+    { "version",	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_version_getter, 	JS_PropertyStub },
+    { "jit",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			vm_jit_getter,		vm_jit_setter },
     { NULL, 0, 0, NULL, NULL }
   };
 
