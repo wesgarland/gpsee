@@ -694,7 +694,7 @@ JSClass *gpsee_getGlobalClass(void)
   static JSClass global_class = 
   {
     "Global", 					/* name */
-    JSCLASS_NEW_RESOLVE,			/* flags */
+    JSCLASS_NEW_RESOLVE | JSCLASS_HAS_PRIVATE,	/* flags */
     JS_PropertyStub,  				/* add property */
     JS_PropertyStub,				/* del property */
     JS_PropertyStub,				/* get property */
