@@ -463,22 +463,14 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
   {
     module->cname = JS_strdup(cx, cname);
   }
-  {
-    module->scope = newModuleScope(cx, parentObject, module);
-    module->object = acquireModuleObject(cx, module->scope);
 
-    if (!module->scope || !module->object)
-    {
-      markModuleUnused(cx, module);
-      return NULL;
-    }
-
-    if (!module->object)
-    {
-      markModuleUnused(cx, module);
-      return NULL;
-    }
-  }
+  module->scope = newModuleScope(cx, parentObject, module);
+  if (!module->scope)
+    goto fail;
+  
+  module->object = acquireModuleObject(cx, module->scope);
+  if (!module->object)
+    goto fail;
 
   /* Create 'module' property of module scope, unless it already exists. */
   if (!JS_GetProperty(cx, module->scope, "module", &jsv))
@@ -501,16 +493,20 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     /* Add 'id' property to 'module' property of module scope. */
     moduleIdDup = JS_strdup(cx, cname);
     if (!moduleIdDup)
-      return NULL;
+      goto fail;
     moduleId = JS_NewString(cx, moduleIdDup, strlen(cname));
     if (!moduleId)
-      return NULL;
+      goto fail;
     GPSEE_ASSERT(
         JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
         JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY));
   }
 
   return module;
+
+fail:
+  markModuleUnused(cx, module);
+  return NULL;
 }
 
 /** Marking a module unused makes it eligible for immediate garbage 
@@ -1331,7 +1327,7 @@ static moduleHandle_t *loadInternalModule(JSContext *cx, moduleHandle_t *parentM
 static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, const char **errorMessage_p)
 {
   JSObject		*moduleScope = module->scope;
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  //gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   dprintf("initializeModule(%s)\n", module->cname);
 
   if (module->init)
@@ -1348,6 +1344,7 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
   {
     JSScript    *script;
     jsval 	v = OBJECT_TO_JSVAL(module->object);
+    jsval       dummyval;
     JSBool	b;
 
     if (JS_SetProperty(cx, module->scope, "exports", &v) != JS_TRUE)
@@ -1363,57 +1360,11 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
      */
     script = module->script;
     module->script = NULL;
-    b = JS_ExecuteScript(cx, module->scope, script, &v); /* realloc hazard */
+    b = JS_ExecuteScript(cx, module->scope, script, &dummyval); /* realloc hazard */
     module = getModuleHandle_fromScope(cx, moduleScope);
     GPSEE_ASSERT(module == getModuleHandle_fromScope(cx, moduleScope));
 
     module->scrobj = NULL;	/* No longer needed */
-
-    if (b == JS_TRUE)
-    {
-      jsi->exitType |= et_finished;
-    }
-    else
-    {
-      if (JS_IsExceptionPending(cx))	/* uncaught exception */
-      {
-	jsval e;
-
-	if (JS_GetPendingException(cx, &e) == JS_TRUE)
-	{
-	  /* Throwing a number sets the exit code */
-	  if (JSVAL_IS_INT(e) || JSVAL_IS_DOUBLE(e))
-	  {
-	    jsi->exitType |= et_requested;
-	    if (JSVAL_IS_INT(e))
-	      jsi->exitCode = JSVAL_TO_INT(e);
-	    else
-	      jsi->exitCode = (int)*JSVAL_TO_DOUBLE(e);
-	  }
-	  else
-	  {
-	    /* Report uncaught exceptions */
-	    jsi->exitType |= et_exception;
-	    JS_ReportPendingException(jsi->cx);
-	    *errorMessage_p = moduleThrewErrorMessage;
-	    return NULL;
-	  }
-	}
-	else
-	{
-	  GPSEE_NOT_REACHED("unreportable uncaught exception");
-	  jsi->exitType |= et_exception;
-	  *errorMessage_p = "unreportable uncaught exception";
-	  return NULL;
-	}
-      }
-      else if (!(jsi->exitType & et_requested))
-      {
-	GPSEE_NOT_REACHED("interpreter stopped without reason");
-	gpsee_log(SLOG_ERR, "%s caused the interpreter to stop running, without indicating a valid reason for doing so", 
-		  module->cname);
-      }
-    }
 
     if (!module->id) /* Don't override id if JS is ~ DSO monkey-patch */
     {
@@ -1667,6 +1618,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     goto good;
   }
 
+  /* More serious errors get handled here in "fail:" but twe fall through to "good:" where
+   * additional and/or less serious error reporting facilities exist.
+   */
   fail:
   GPSEE_ASSERT(errorMessage);
   if (!errorMessage)
@@ -1676,11 +1630,27 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (errorMessage != moduleThrewErrorMessage)
     gpsee_log(gpsee_verbosity(0) ? SLOG_NOTICE : SLOG_EMERG, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
 
-  if (JS_IsExceptionPending(cx))
-    JS_ReportPendingException(cx);
-
   good:
-  GPSEE_ASSERT(!JS_IsExceptionPending(cx));
+
+  /* If there is a pending exception, we'll report it here */
+  if (JS_IsExceptionPending(cx))
+  {
+    int exitCode;
+    /* Is this a formal SystemExit? Assume all error reporting has been performed by the application. */
+    exitCode = gpsee_getExceptionExitCode(cx);
+    if (exitCode >= 0)
+    {
+      jsi->exitCode = exitCode;
+      jsi->exitType = et_finished;
+    }
+    /* Any other type of program exception will be reported here */
+    else
+    {
+      /* @todo where should we publish this stuff to? */
+      gpsee_reportUncaughtException(cx, JSVAL_NULL, stderr, NULL, 0);
+      jsi->exitType = et_exception;
+    }
+  }
 
   jsi->programModule_dir = NULL;
   if (module)
