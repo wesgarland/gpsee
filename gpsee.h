@@ -275,6 +275,8 @@ void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
+int                     gpsee_getExceptionExitCode(JSContext *cx);
+JSBool                  gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char **cstrout, size_t cstrlen);
 JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
 int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
