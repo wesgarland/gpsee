@@ -1053,6 +1053,9 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
   const char		*cname;
   const char *          currentModulePath;
   int                   currentModulePathNum;
+  JSObject *            requireDotPaths = NULL;
+  jsuint                requireDotPathsLen;
+  int                   requireDotPathsIndex = 0;
   static char *         modulePath = NULL;
   static int            modulePathNum = 0;
 
@@ -1238,19 +1241,64 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
 
     nextPath:
 
-    /* No more paths? */
-    if (--currentModulePathNum == 0)
+    /* Decrement currentModulePathNum. It stops being used elsewhere once it would become zero here */
+    if (currentModulePathNum > 1)
     {
-      /* If another error occurred, let them have it. If not, report that we didn't find any module by that name. */
-      if (*errorMessage_p == NULL)
-        *errorMessage_p = moduleNotFoundErrorMessage;
-      return NULL;
+      /* Advance to next element in search path */
+      currentModulePathNum--;
+      currentModulePath += strlen(currentModulePath) + 1;
     }
+    /* No more GPSEE_PATH paths? We must try require.paths now, a Javascript variable that may contain an array
+     * of search path strings. */
+    else
+    {
+      jsval v;
+      JSString *jsstr;
+      /* We haven't retrieved requireDotPaths yet */
+      if (requireDotPaths == NULL)
+      {
+        /* Retrieve values for requireDotPaths and requireDotPathsLen */
+        if (!JS_GetProperty(cx, parentModule->scope, "require", &v)
+        ||  JSVAL_IS_PRIMITIVE(v)
+        ||  !JS_GetProperty(cx, JSVAL_TO_OBJECT(v), "paths", &v)
+        ||  JSVAL_IS_PRIMITIVE(v)
+        ||  !JS_IsArrayObject(cx, JSVAL_TO_OBJECT(v))
+        ||  !JS_GetArrayLength(cx, JSVAL_TO_OBJECT(v), &requireDotPathsLen))
+          /* require.paths was our final recourse */
+          goto fail;
+        requireDotPaths = JSVAL_TO_OBJECT(v);
+      }
 
-    /* Advance to next element in search path */
-    currentModulePath += strlen(currentModulePath) + 1;
+      /* Try each element of requireDotPaths */
+      if (requireDotPathsIndex >= requireDotPathsLen)
+        /* require.paths was our final recourse */
+        goto fail;
+      
+      /* Get the value */
+      if (!JS_GetElement(cx, requireDotPaths, requireDotPathsIndex, &v))
+        /* An exception occurred. We should propagate this critical error. */
+        return NULL;
+
+      /* Stringify the value */
+      jsstr = JS_ValueToString(cx, v);
+      if (!jsstr)
+        goto nextPath;
+      currentModulePath = JS_GetStringBytesZ(cx, jsstr);
+      /* Check for OOM error */
+      if (!currentModulePath)
+        return NULL;
+      /* Check for an empty path (why not?) */
+      if (currentModulePath[0] == '\0')
+        goto nextPath;
+      /* Advance to the next index */
+      requireDotPathsIndex++;
+    }
   }
 
+fail:
+  /* If another error occurred, let them have it. If not, report that we didn't find any module by that name. */
+  if (*errorMessage_p == NULL)
+    *errorMessage_p = moduleNotFoundErrorMessage;
   return NULL;
 }
 
