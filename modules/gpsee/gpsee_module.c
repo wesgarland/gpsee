@@ -34,14 +34,14 @@
  */
 
 /**
- *  @file       system_module.c	General holding class for operating system-level stuff
+ *  @file       gpsee_module.c  General holding class for operating system-level stuff
  *				which isn't available from JavaScript.
  *  @author     Wes Garland
  *  @date       Oct 2007
- *  @version    $Id: system_module.c,v 1.7 2009/08/05 14:46:26 wes Exp $
+ *  @version    $Id:$
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.7 2009/08/05 14:46:26 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id:$";
  
 #include "gpsee.h"
 #include <prinit.h>
@@ -50,10 +50,10 @@ static __attribute__((unused)) const char rcsid[]="$Id: system_module.c,v 1.7 20
 #endif
 #include <math.h>
 
-#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.system"
+#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.gpsee"
 
 /** loadavg getter */
-static JSBool system_loadavg_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_loadavg_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   double 	loadavg[1];
 
@@ -64,35 +64,35 @@ static JSBool system_loadavg_getter(JSContext *cx, JSObject *obj, jsval id, jsva
 }
 
 /** ppid getter */
-static JSBool system_pid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_pid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   *vp = INT_TO_JSVAL(getpid());
   return JS_TRUE;
 }
 
 /** ppid getter */
-static JSBool system_ppid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_ppid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   *vp = INT_TO_JSVAL(getppid());
   return JS_TRUE;
 }
 
 /** pgrp getter */
-static JSBool system_pgrp_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_pgrp_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   *vp = INT_TO_JSVAL(getpgrp());
   return JS_TRUE;
 }
 
 /** pgid getter */
-static JSBool system_pgid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_pgid_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   *vp = INT_TO_JSVAL(getpgid(0));
   return JS_TRUE;
 }
 
 /** pgid setter */
-static JSBool system_pgid_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_pgid_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   pid_t		pgid;
   JSBool	res;
@@ -108,14 +108,14 @@ static JSBool system_pgid_setter(JSContext *cx, JSObject *obj, jsval id, jsval *
 }
 
 /** errno getter */
-static JSBool system_errno_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_errno_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   *vp = INT_TO_JSVAL(errno);
   return JS_TRUE;
 }
 
 /** errno setter */
-static JSBool system_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool gpsee_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   int		num;
   JSBool	res;
@@ -132,7 +132,7 @@ static JSBool system_errno_setter(JSContext *cx, JSObject *obj, jsval id, jsval 
 
 /** Translate a system error number into a string.
  */
-static JSBool system_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   char		buf[256];
   int		errnum = JSVAL_TO_INT(argv[0]);
@@ -163,7 +163,7 @@ static JSBool system_strerror(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 }
 
 /** XXX Supports fractional seconds only when built with APR */
-static JSBool system_sleep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_sleep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   jsdouble 		d;
   jsrefcount		saveDepth;
@@ -209,7 +209,7 @@ static size_t strcpylen(char *target, const char *source)
 }
 
 /** Load and interpreter a script in the caller's context */
-static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSScript 	*script;
   JSObject	*scrobj;
@@ -252,7 +252,7 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   if (access(scriptFilename, F_OK))
     return gpsee_throw(cx, MODULE_ID ".include.file: %s - %s", scriptFilename, strerror(errno));
 
-  JS_AddNamedRoot(cx, &scriptFilename_jsstr, "System.include.scriptFilename_jsstr");
+  JS_AddNamedRoot(cx, &scriptFilename_jsstr, "GpseeModule.include.scriptFilename_jsstr");
 
   errno = 0;
   failure = gpsee_compileScript(cx, scriptFilename, NULL, &script, thisObj, &scrobj, &errmsg);
@@ -276,7 +276,7 @@ static JSBool system_include(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 }
 
 /** Issue a shell command */
-static JSBool system_system(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_system(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   int		exitCode;
   int		i;
@@ -338,7 +338,7 @@ static JSBool system_system(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
  *  @see	PR_ProcessExit()
  *  @warning 	Experimental
  */
-static JSBool system_underscoreExit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_underscoreExit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   int exitCode;
 
@@ -352,13 +352,13 @@ static JSBool system_underscoreExit(JSContext *cx, JSObject *obj, uintN argc, js
   return JS_TRUE; /* not reached */
 }
 
-static JSBool system_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   if (jsi->primordialThread != PR_GetCurrentThread())
   {
-    return gpsee_throw(cx, MODULE_ID ".exit.thread: System.exit() may not be called by any other thread "
+    return gpsee_throw(cx, MODULE_ID ".exit.thread: gpsee.exit() may not be called by any other thread "
 		       "than the thread which created the run time!");
   }
 
@@ -379,45 +379,45 @@ static JSBool system_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  *		So you can pretty much bet it's not safe to use when you have an open
  *		SNPAF_Datagram, or at least, when one is open for write.
  */
-static JSBool system_fork(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+static JSBool gpsee_fork(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   *rval = INT_TO_JSVAL(fork());
 
   return JS_TRUE;
 }
 
-const char *system_InitModule(JSContext *cx, JSObject *moduleObject)
+const char *gpsee_InitModule(JSContext *cx, JSObject *moduleObject)
 {
-  static JSFunctionSpec system_static_methods[] = 
+  static JSFunctionSpec gpsee_static_methods[] = 
   {
-    { "include",		system_include,			0, 0, 0 },	/* char: filename */
-    { "system",			system_system,			0, 0, 0 },	/* char: cmd str returns int exit code */
-    { "exit",			system_exit,			0, 0, 0 },	/* int: exit code */
-    { "_exit",			system_underscoreExit,		0, 0, 0 },	/* int: exit code */
-    { "sleep",			system_sleep,			0, 0, 0 },	/* int: seconds */
-    { "fork",			system_fork,			0, 0, 0 },
-    { "strerror",		system_strerror,		0, 0, 0 },	/* string: error number */
+    { "include",		gpsee_include,			0, 0, 0 },	/* char: filename */
+    { "system",			gpsee_system,			0, 0, 0 },	/* char: cmd str returns int exit code */
+    { "exit",			gpsee_exit,			0, 0, 0 },	/* int: exit code */
+    { "_exit",			gpsee_underscoreExit,		0, 0, 0 },	/* int: exit code */
+    { "sleep",			gpsee_sleep,			0, 0, 0 },	/* int: seconds */
+    { "fork",			gpsee_fork,			0, 0, 0 },
+    { "strerror",		gpsee_strerror,		0, 0, 0 },	/* string: error number */
     { NULL,			NULL,				0, 0, 0 },
   };
 
-  static JSPropertySpec system_static_props[] = 
+  static JSPropertySpec gpsee_static_props[] = 
   {
-    { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			system_errno_getter, 	system_errno_setter },
-    { "loadavg", 	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	system_loadavg_getter, 	JS_PropertyStub },
-    { "pid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	system_pid_getter, 	JS_PropertyStub },
-    { "ppid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	system_ppid_getter, 	JS_PropertyStub },
-    { "pgrp",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	system_pgrp_getter, 	JS_PropertyStub },
-    { "pgid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			system_pgid_getter, 	system_pgid_setter },
+    { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			gpsee_errno_getter, 	gpsee_errno_setter },
+    { "loadavg", 	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	gpsee_loadavg_getter, 	JS_PropertyStub },
+    { "pid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	gpsee_pid_getter, 	JS_PropertyStub },
+    { "ppid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	gpsee_ppid_getter, 	JS_PropertyStub },
+    { "pgrp",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	gpsee_pgrp_getter, 	JS_PropertyStub },
+    { "pgid",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			gpsee_pgid_getter, 	gpsee_pgid_setter },
    { NULL, 0, 0, NULL, NULL }
   };
 
-  if (!JS_DefineFunctions(cx, moduleObject, system_static_methods) || !JS_DefineProperties(cx, moduleObject, system_static_props))
+  if (!JS_DefineFunctions(cx, moduleObject, gpsee_static_methods) || !JS_DefineProperties(cx, moduleObject, gpsee_static_props))
     return NULL;
 
   return MODULE_ID;
 }
 
-JSBool system_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool gpsee_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
   return JS_TRUE;
 }

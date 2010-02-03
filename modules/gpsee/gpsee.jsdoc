@@ -1,4 +1,4 @@
-/** @namespace 		gpsee.module.ca.page.system
+/** @namespace 		gpsee.module.ca.page.gpsee
  *  @description 	Interface to systems-level functions.
  *  @author		Wes Garland, PageMail, Inc., wes@page.ca
  */

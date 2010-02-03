@@ -70,7 +70,7 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
 IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base 
-INTERNAL_MODULES 	+= vm system 
+INTERNAL_MODULES 	+= vm gpsee
 
 include $(GPSEE_SRC_DIR)/ffi.mk
 
