@@ -415,14 +415,13 @@ haveint:
  *  @param    exval     Exception value to be used (typically from JS_GetPendingException()) or JSVAL_NULL
  *                      to grab the exception value for you from JS_GetPendingException().
  *  @param    fout      If non-NULL, this FILE handle will receive the error report.
- *  @param    cstrout   If non-NULL, a pointer to a JS_strdup()-allocated character string will
- *                      be assigned to this address.
+ *  @param    cstrout   If non-NULL, this must be the address of a buffer for receiving output.
  *  @param    cstrlen   Number of characters available in the buffer pointed to by 'cstrout.'
  *  @returns  JS_TRUE on success, JS_FALSE on failure
  * 
  *  @todo Should there be an option argument for publishing to gpsee_log()?
  */
-JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char **cstrout, size_t cstrlen)
+JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char *cstrout, size_t cstrlen)
 {
   //gpsee_interpreter_t *jsi;
   jsval                v;
