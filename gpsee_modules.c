@@ -733,9 +733,11 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
 {
   gpsee_interpreter_t *jsi;
   char cache_filename[PATH_MAX];
+  int haveCacheFilename = 0;
   int useCompilerCache;
   unsigned int fileHeaderOffset;
   struct stat source_st;
+  struct stat cache_st;
   FILE *cache_file = NULL;
 
   *script = NULL;
@@ -767,9 +769,10 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   if (useCompilerCache && make_jsc_filename(cx, scriptFilename, cache_filename, sizeof(cache_filename)) == 0)
   {
     /* We have acquired a filename */
-    struct stat cache_st;
     JSXDRState *xdr;
     unsigned int fho;
+
+    haveCacheFilename = 1;
 
     /* Let's compare the last-modification times of the Javascript source code and its precompiled counterpart */
     /* stat source code file */
@@ -792,6 +795,28 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     if (fstat(fileno(cache_file), &cache_st))
     {
       dprintf("could not stat() compiler cache \"%s\"\n", cache_filename);
+      goto cache_read_end;
+    }
+
+    /* Compare the owners and privileges of the source file and the cache file */
+    if (source_st.st_uid != cache_st.st_uid
+    ||  source_st.st_gid != cache_st.st_gid
+    ||  ((source_st.st_mode & 0666) != (cache_st.st_mode & 0777)))
+    {
+      /* This invalidates the cache file. Try to delete the cache file before moving on */
+      fclose(cache_file);
+      cache_file = NULL;
+      gpsee_log(SLOG_NOTICE,
+          "ownership/mode on cache file \"%s\" (%d:%d@0%o) does not match the expectation (%d:%d@0%o).",
+          cache_filename,
+          cache_st.st_uid,  cache_st.st_gid,  cache_st.st_mode & 0777,
+          source_st.st_uid, source_st.st_gid, source_st.st_mode & 0666);
+      if (unlink(cache_filename))
+      {
+        useCompilerCache = 0;
+        /* Report that we could not unlink the cache file */
+        gpsee_log(SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+      }
       goto cache_read_end;
     }
 
@@ -865,7 +890,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     }
 
     /* Should we freeze the compiled script for the compiler cache? */
-    if (useCompilerCache)
+    if (useCompilerCache && haveCacheFilename)
     {
       JSXDRState *xdr;
       int cache_fd;
@@ -873,20 +898,30 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       unlink(cache_filename);
       errno = 0;
       /* Open the cache file atomically; fails on collision with other process */
-      if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0)
+      if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, source_st.st_mode & 0666)) < 0)
       {
 	if (errno != EEXIST)
 	  gpsee_log(SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
         goto cache_write_end;
       }
+      /* Acquire write lock for file */
+      gpsee_flock(cache_fd, GPSEE_LOCK_EX);
+      /* Truncate file again now that we have the lock */
+      ftruncate(cache_fd, 0);
+      /* Ensure the owner of the cache file is the owner of the source file */
+      if (fchown(cache_fd, source_st.st_uid, -1))
+      {
+	if (errno != EEXIST)
+	  gpsee_log(SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
+        goto cache_write_bail;
+      }
+      /* Create a FILE* for XDR */
       if ((cache_file = fdopen(cache_fd, "w")) == NULL)
       {
         close(cache_fd);
         gpsee_log(SLOG_NOTICE, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
-        goto cache_write_end;
+        goto cache_write_bail;
       }
-      /* Acquire write lock for file */
-      gpsee_flock(cache_fd, GPSEE_LOCK_EX);
       /* Let's ask Spidermonkey's XDR API for a serialization context */
       if ((xdr = gpsee_XDRNewFile(cx, JSXDR_ENCODE, cache_filename, cache_file)))
       {
@@ -915,8 +950,15 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
         /* We are done with our serialization context */
         JS_XDRDestroy(xdr);
       }
+
       fclose(cache_file);
       close(cache_fd);
+      goto cache_write_end;
+
+      cache_write_bail:
+      fclose(cache_file);
+      close(cache_fd);
+      unlink(cache_filename);
     }
   }
 
