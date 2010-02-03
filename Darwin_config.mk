@@ -41,6 +41,8 @@ REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
 LD			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_LD)
 REAL_CC			 = gcc
 CC			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
+GFFI_LDFLAGS            += -ldb
+GPSEE_C_DEFINES         += HAVE_NDBM
 
 libgpsee.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
 binary_module.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
