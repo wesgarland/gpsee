@@ -197,12 +197,24 @@ typedef enum
   er_none	= er_noWarnings | 1 << 31
 } errorReport_t;
 
+/* exitType_t describes the lifecycle phase of a gpsee_interpreter_t */
 typedef enum
 {
   et_unknown	= 0,
 
-  et_finished 		= 1 << 0,			/**< Script simply finished running */
-  et_requested		= 1 << 1,			/**< e.g. System.exit(), Thread.exit() */
+  /* This should only be set by gpsee_runProgramModule, and indicates that the Javascript program is finished.
+   * (@todo refine?) */
+  et_finished           = 1 << 0,
+
+  /* Anywhere that a function can throw an exception, you can throw an uncatchable exception (ie. return JS_FALSE,
+   * or NULL) after setting gpsee_interpreter_t.exitType to et_requested. The meaning of this behavior is to unwind
+   * the stack and exit immediately. Javascript code cannot catch this type of exit, however for that exact reason,
+   * it is not the recommended way to exit your program, as a proper SystemExit exception (TODO unimplemented!) will
+   * get the job done as long as you don't catch it (and you only should if you have a valid reason for it) but also
+   * then a person can include your module and choose to belay the exit, making SystemExit more powerful and friendly.
+   * This is used in System.exit() and Thread.exit().
+   */
+  et_requested          = 1 << 1,
 
   et_compileFailure	= 1 << 16,			
   et_execFailure	= 1 << 17,
@@ -263,6 +275,8 @@ void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 /* core routines */
 gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
+int                     gpsee_getExceptionExitCode(JSContext *cx);
+JSBool                  gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char **cstrout, size_t cstrlen);
 JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
 int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);

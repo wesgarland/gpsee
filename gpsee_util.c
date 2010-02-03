@@ -344,3 +344,170 @@ int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pi
   return (status);
 }
 
+/** Returns a number >= 0 if there is a currently pending exception and that exception qualifies as
+ *  a "SystemExit". Currently, to exit a process using the exception throwing mechanism, one must
+ *  throw an system exit code. If uncaught, this should signify to the host application the
+ *  success or failure of the program (zero, of course, meaning success.) Of course any other
+ *  uncaught exception will result in the program exiting with failure as well, but often it is
+ *  important to indicate to the parent process that a failure has occurred but bypass any
+ *  noisy output that would normally occur.
+ *
+ *  As only the lowest 8 bits of exit status are used in POSIX, we don't consider any number for which
+ *  (n & 0377 != n) to constitute a SystemExit.
+ *
+ *  In the future, this facility may be more formalized. The fact that you *can* throw any value in
+ *  Javascript is only a coincidence that we took advantage of for providing the prototype of this
+ *  facility, but it there could possibly be someone else out there throwing numbers with a different
+ *  idea in mind as to the meaning of such an action.
+ *
+ *  @param    cx
+ *  @returns  Returns an int greater than 
+ *
+ */
+int gpsee_getExceptionExitCode(JSContext *cx)
+{
+  jsval v;
+  jsdouble d;
+  jsint i;
+
+  /* Retrieve exception; none has been thrown if this returns JS_FALSE */
+  if (!JS_GetPendingException(cx, &v))
+    return -1;
+
+  /* Try to coerce an object to a number */
+  if (!JSVAL_IS_PRIMITIVE(v))
+  {
+    if (!JS_ValueToNumber(cx, v, &d))
+      return -1;
+    goto havedouble;
+  }
+
+  /* Try to get a double, or use a double we got from the last step */
+  if (JSVAL_IS_DOUBLE(v))
+  {
+    d = *JSVAL_TO_DOUBLE(v);
+havedouble:
+    if (d != (jsdouble) (i = (jsint) d))
+      return -1;
+    goto haveint;
+  }
+
+  /* Evaluate an int */
+  if (JSVAL_IS_INT(v))
+  {
+    int n;
+    i = JSVAL_TO_INT(v);
+haveint:
+    n = (int) i; // not that this should ever matter...
+    if ((n & 255) == n)
+      return n;
+  }
+
+  return -1;
+}
+
+/** Report any pending exception as though it were uncaught.
+ *  Renders a nice-looking error report. The destination of this error report
+ *  may be a writable FILE handle, a writable file descriptor, or a pointer to
+ *  a JS_strdup()-allocated character string.
+ *
+ *  @param    cx
+ *  @param    exval     Exception value to be used (typically from JS_GetPendingException()) or JSVAL_NULL
+ *                      to grab the exception value for you from JS_GetPendingException().
+ *  @param    fout      If non-NULL, this FILE handle will receive the error report.
+ *  @param    cstrout   If non-NULL, a pointer to a JS_strdup()-allocated character string will
+ *                      be assigned to this address.
+ *  @param    cstrlen   Number of characters available in the buffer pointed to by 'cstrout.'
+ *  @returns  JS_TRUE on success, JS_FALSE on failure
+ * 
+ *  @todo Should there be an option argument for publishing to gpsee_log()?
+ */
+JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char **cstrout, size_t cstrlen)
+{
+  //gpsee_interpreter_t *jsi;
+  jsval                v;
+  const char *longerror = NULL;
+  JSString *jsstr;
+
+  /* Must we look up the exception value ourselves? */
+  if (exval == JSVAL_NULL)
+  {
+    if (!JS_GetPendingException(cx, &exval))
+      /* no exception pending! */
+      return JS_FALSE;
+  }
+
+  /* We'll be trying to output one of two sets of data. The first set is error.message, followed by error.stack.
+   * The second set is just an attempt to stringify the exception value to a string.
+   */
+
+  /* Is exval an Object? */
+  if (!JSVAL_IS_PRIMITIVE(exval))
+  {
+    /* Attempt to retrieve "message" property from exception object */
+    if (JS_GetProperty(cx, JSVAL_TO_OBJECT(exval), "message", &v))
+    {
+      const char *error;
+      if (JSVAL_IS_STRING(v))
+      {
+        /* Make char buffer from JSString* */
+        error = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(v));
+        /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
+        if (!error)
+          return JS_FALSE;
+        /* Output :) */
+        if (fout)
+        {
+          fprintf(fout, "error: %s\n\n", error);
+        }
+        if (cstrout)
+        {
+          int len = snprintf(cstrout, cstrlen, "error: %s\n\n", error);
+          cstrout += len;
+          cstrlen -= len;
+        }
+      }
+    }
+
+    /* Attempt to retrieve "stack" property from exception object */
+    if (JS_GetProperty(cx, JSVAL_TO_OBJECT(exval), "stack", &v))
+    {
+      if (JSVAL_IS_STRING(v))
+      {
+        /* Make char buffer from JSString* */
+        longerror = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(v));
+        /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
+        if (!longerror)
+          return JS_FALSE;
+      }
+    }
+  }
+
+  /* The 'stack' property of the exception wasn't a string, so let's try stringifying the exception value */
+  if (!longerror)
+  {
+    /* Convert exception value to string */
+    jsstr = JS_ValueToString(cx, exval);
+    /* Make char buffer from JSString* */
+    longerror = JS_GetStringBytesZ(cx, jsstr);
+    /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
+    if (!longerror)
+      return JS_FALSE;
+  }
+
+  /* Output the exception information :) There are two possible sinks */
+  if (fout)
+  {
+    fprintf(fout, "Uncaught exception:\n%s", longerror);
+    if (longerror[strlen(longerror)-1] != '\n')
+      fprintf(fout, "\n");
+  }
+  if (cstrout)
+  {
+    snprintf(cstrout, cstrlen, "Uncaught exception:\n%s", longerror);
+  }
+
+  /* Clear the exception */
+  JS_ClearPendingException(cx);
+  return JS_TRUE;
+}
