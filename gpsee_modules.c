@@ -1327,7 +1327,7 @@ static moduleHandle_t *loadInternalModule(JSContext *cx, moduleHandle_t *parentM
 static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, const char **errorMessage_p)
 {
   JSObject		*moduleScope = module->scope;
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  //gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   dprintf("initializeModule(%s)\n", module->cname);
 
   if (module->init)
@@ -1618,6 +1618,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     goto good;
   }
 
+  /* More serious errors get handled here in "fail:" but twe fall through to "good:" where
+   * additional and/or less serious error reporting facilities exist.
+   */
   fail:
   GPSEE_ASSERT(errorMessage);
   if (!errorMessage)
@@ -1627,11 +1630,27 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (errorMessage != moduleThrewErrorMessage)
     gpsee_log(gpsee_verbosity(0) ? SLOG_NOTICE : SLOG_EMERG, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
 
-  if (JS_IsExceptionPending(cx))
-    JS_ReportPendingException(cx);
-
   good:
-  GPSEE_ASSERT(!JS_IsExceptionPending(cx));
+
+  /* If there is a pending exception, we'll report it here */
+  if (JS_IsExceptionPending(cx))
+  {
+    int exitCode;
+    /* Is this a formal SystemExit? Assume all error reporting has been performed by the application. */
+    exitCode = gpsee_getExceptionExitCode(cx);
+    if (exitCode >= 0)
+    {
+      jsi->exitCode = exitCode;
+      jsi->exitType = et_finished;
+    }
+    /* Any other type of program exception will be reported here */
+    else
+    {
+      /* @todo where should we publish this stuff to? */
+      gpsee_reportUncaughtException(cx, JSVAL_NULL, stderr, NULL, 0);
+      jsi->exitType = et_exception;
+    }
+  }
 
   jsi->programModule_dir = NULL;
   if (module)
