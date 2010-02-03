@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.12 2010/02/03 21:50:35 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -81,7 +81,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.12 2010/02/03 21:50:35 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -1325,10 +1325,8 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       jsstr = JS_ValueToString(cx, v);
       if (!jsstr)
         goto nextPath;
-      currentModulePath = JS_GetStringBytesZ(cx, jsstr);
-      /* Check for OOM error */
-      if (!currentModulePath)
-        return NULL;
+      currentModulePath = JS_GetStringBytes(jsstr);
+
       /* Check for an empty path (why not?) */
       if (currentModulePath[0] == '\0')
         goto nextPath;

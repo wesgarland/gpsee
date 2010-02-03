@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.6 2010/01/25 22:05:27 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.7 2010/02/03 21:50:36 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.6 2010/01/25 22:05:27 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.7 2010/02/03 21:50:36 wes Exp $:";
 
 #include "gpsee.h"
 
@@ -450,10 +450,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
       if (JSVAL_IS_STRING(v))
       {
         /* Make char buffer from JSString* */
-        error = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(v));
-        /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
-        if (!error)
-          return JS_FALSE;
+        error = JS_GetStringBytes(JSVAL_TO_STRING(v));
         /* Output :) */
         if (fout)
         {
@@ -474,10 +471,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
       if (JSVAL_IS_STRING(v))
       {
         /* Make char buffer from JSString* */
-        longerror = JS_GetStringBytesZ(cx, JSVAL_TO_STRING(v));
-        /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
-        if (!longerror)
-          return JS_FALSE;
+        longerror = JS_GetStringBytes(JSVAL_TO_STRING(v));
       }
     }
   }
@@ -488,7 +482,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
     /* Convert exception value to string */
     jsstr = JS_ValueToString(cx, exval);
     /* Make char buffer from JSString* */
-    longerror = JS_GetStringBytesZ(cx, jsstr);
+    longerror = JS_GetStringBytes(jsstr);
     /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
     if (!longerror)
       return JS_FALSE;
