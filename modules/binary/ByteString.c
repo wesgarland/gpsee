@@ -71,6 +71,8 @@ inline byteString_handle_t * byteString_getHandle(JSContext *cx, JSObject *obj, 
   return bs;
 }
 
+GPSEE_STATIC_ASSERT(sizeof(int64) == sizeof(long long int));
+
 /** Tests an index to be sure it is within a byteString_handle_t's range, and throws
  *  @param      cx          Your JSContext
  *  @param      bs          Your byteString_handle_t
@@ -84,12 +86,12 @@ inline int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 
 {
   if (index < 0)
   {
-    gpsee_throw(cx, CLASS_ID ".%s.range.underflow: " GPSEE_INT64_FMT "<0", methodName, index);
+    gpsee_throw(cx, CLASS_ID ".%s.range.underflow: " GPSEE_INT64_FMT "<0", methodName, (long long int) index);
     return JS_FALSE;
   }
   if (index >= bs->length)
   {
-    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=" GPSEE_SIZET_FMT, methodName, index, bs->length);
+    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=" GPSEE_SIZET_FMT, methodName, (long long int) index, bs->length);
     return JS_FALSE;
   }
   return JS_TRUE;
@@ -473,7 +475,7 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
         return
         gpsee_throw(cx, CLASS_ID ".slice.arguments.range: 'start' argument ("
 		    GPSEE_INT64_FMT ") must be lesser than 'end' argument ("
-		    GPSEE_INT64_FMT ")", start, end);
+		    GPSEE_INT64_FMT ")", (long long int) start, (long long int) end);
       /* Validate range of operation */
       /* TODO fix inaccurate end-1 error reporting */
       if (!byteString_rangeCheck(cx, hnd, start, "slice") ||
