@@ -139,6 +139,7 @@
 /* Pull in ndbm, picking out the right implementatiuon
  * on Linux and resolving macro collisions with POSIX 
  */
+#if defined(HAVE_NDBM)
 #if defined(_GNU_SOURCE)
 #define FIND FIND_RENAMED
 #define ENTER ENTER_RENAMED
@@ -153,6 +154,7 @@
 #undef entry
 #else
 #include <ndbm.h>
+#endif
 #endif
 
 /* statvfs interfaces on SVR4 have hidden deps */

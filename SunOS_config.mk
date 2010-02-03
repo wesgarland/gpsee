@@ -50,3 +50,6 @@ endif
 NCURSES_LIB_NAME = curses
 ICONV_LIB_NAME = 
 LDFLAGS_SOLIB_DIRS = $(foreach SOLIB_DIR, $(SOLIB_DIRS), -L$(SOLIB_DIR) -R$(SOLIB_DIR))
+
+GFFI_LDFLAGS            += -ldb
+GPSEE_C_DEFINES         += HAVE_NDBM
