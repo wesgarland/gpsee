@@ -885,6 +885,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
 JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, uintN argn, size_t min, size_t max,
                           JSBool mayDefault, size_t defaultSize, JSClass *clasp, const char const *methodName)
 {
+  ssize_t temp;
   const char * errmsg;
   jsval * argv = JS_ARGV(cx, vp);
 
@@ -902,20 +903,21 @@ JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, 
   }
 
   /* Try to convert jsval to size_t */
-  if ((errmsg = byteThing_val2size(cx, argv[argn], retval, methodName)))
+  if ((errmsg = byteThing_val2ssize(cx, argv[argn], &temp, methodName)))
     return gpsee_throw(cx, "%s.%s.arguments.%d: %s", clasp->name, methodName, argn, errmsg);
 
   /* Check lower bound */
-  if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
-                       clasp->name, methodName, argn, min, *retval);
+  if (temp < 0 || temp < min)
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SSIZET_FMT,
+                       clasp->name, methodName, argn, min, temp);
 
   /* Check upper bound */
-  if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
-                       clasp->name, methodName, argn, max, *retval);
+  if (temp > max)
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_SSIZET_FMT,
+                       clasp->name, methodName, argn, max, temp);
 
   /* Success! */
+  *retval = (size_t) temp;
   return JS_TRUE;
 }
 
