@@ -791,7 +791,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   }
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
-  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX | JSOPTION_DONT_REPORT_UNCAUGHT);
+  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
   interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
