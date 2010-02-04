@@ -36,7 +36,7 @@
 #include <gpsee.h>
 #undef offsetOf
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.2 2009/07/23 19:00:40 wes Exp $";
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.3 2010/02/04 23:12:03 wes Exp $";
 static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
 
 #undef JS_GetContextPrivate
@@ -169,7 +169,7 @@ main(int argc, char **argv, char **envp)
 
     JS_EndRequest(cx);
 
-    JS_CommenceRuntimeShutDown(rt);
+    // JS_CommenceRuntimeShutDown(rt);
 
     KillWatchdog();
 
