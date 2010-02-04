@@ -39,7 +39,7 @@
 ## @date	May 2009
 ## @version	$Id: Makefile,v 1.3 2010/02/03 22:09:16 wes Exp $
 
-top: gpsee-js
+top build: gpsee-js
 
 GPSEE_CONFIG=../../gpsee-config
 include $(shell $(GPSEE_CONFIG) --outside.mk)
@@ -53,10 +53,11 @@ GPSEE_JS_LDFLAGS	= $(shell $(GPSEE_CONFIG) --ldflags)
 EXPORT_PROGS		= gpsee-js
 
 $(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
-	$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
-	echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
-	echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
-	echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
+	@echo " * Building $(SHELL_BUILD)/gpsee-js.mk"
+	@$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
+	@echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+	@echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
+	@echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
 
 $(SHELL_BUILD)/gpsee-js.cpp: gpsee-js.cpp
 	$(CP) gpsee-js.cpp $@
@@ -68,6 +69,9 @@ endif
 	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
 	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/gpsee-js.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
 	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
+ifeq "$(UNAME_SYSTEM)" "Darwin"
+	install_name_tool -change @executable_path/libmozjs.dylib $(JSAPI_LIB_DIR)/libmozjs.dylib gpsee-js
+endif
 
 clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
 	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk clean
