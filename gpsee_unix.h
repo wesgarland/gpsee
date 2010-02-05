@@ -53,7 +53,7 @@
 
 #define	gpsee_printf(a...)		printf(a)
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-void	gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
+JS_EXTERN_API(void) gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
 
 typedef void * rc_list;					/**< opaque dictionary */
 typedef void * rcFILE;					/**< opaque dictionary I/O handle */
