@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.13 2010/02/03 21:53:00 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -81,7 +81,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.11 2010/01/26 18:36:55 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.13 2010/02/03 21:53:00 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -809,8 +809,8 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
       gpsee_log(SLOG_NOTICE,
           "ownership/mode on cache file \"%s\" (%d:%d@0%o) does not match the expectation (%d:%d@0%o).",
           cache_filename,
-          cache_st.st_uid,  cache_st.st_gid,  cache_st.st_mode & 0777,
-          source_st.st_uid, source_st.st_gid, source_st.st_mode & 0666);
+          (int)cache_st.st_uid,  (int)cache_st.st_gid,  (unsigned int)cache_st.st_mode & 0777,
+          (int)source_st.st_uid, (int)source_st.st_gid, (unsigned int)source_st.st_mode & 0666);
       if (unlink(cache_filename))
       {
         useCompilerCache = 0;
@@ -1325,10 +1325,8 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       jsstr = JS_ValueToString(cx, v);
       if (!jsstr)
         goto nextPath;
-      currentModulePath = JS_GetStringBytesZ(cx, jsstr);
-      /* Check for OOM error */
-      if (!currentModulePath)
-        return NULL;
+      currentModulePath = JS_GetStringBytes(jsstr);
+
       /* Check for an empty path (why not?) */
       if (currentModulePath[0] == '\0')
         goto nextPath;

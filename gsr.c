@@ -561,6 +561,9 @@ PRIntn prmain(PRIntn argc, char **argv)
   processFlags(jsi, flags);
   free(flags);
 
+  /* We have our own error reporting system in gsr that does not use error reporter */
+  JS_SetOptions(jsi->cx, JS_GetOptions(jsi->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
+
   /* Run JavaScript specified with -c */
   if (scriptCode) 
   {
