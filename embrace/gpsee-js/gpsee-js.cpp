@@ -34,8 +34,9 @@
  */
 
 #include <gpsee.h>
+#undef offsetOf
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.2 2009/07/23 19:00:40 wes Exp $";
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.3 2010/02/04 23:12:03 wes Exp $";
 static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
 
 #undef JS_GetContextPrivate
@@ -49,44 +50,23 @@ static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the numb
 #define JS_SetContextCallback(rt, cb)	gpsee_getContextPrivate(cx ? cx : ((gpsee_interpreter_t *)JS_GetRuntimePrivate(rt))->cx, NULL, 0, cb)
 #endif 
 
-#undef JS_NewRuntime
-#undef JS_DestroyRuntime
+//#undef JS_DestroyRuntime
+//#define JS_DestroyRuntime gpseejs_DestroyRuntime
+//void gpseejs_DestroyRuntime(JSRuntime *rt)
+//{
+//  JS_SetContextCallback(rt, NULL);
+//  gpsee_destroyInterpreter((gpsee_interpreter_t *)JS_GetRuntimePrivate(rt));
+//}
 
-void gpseejs_DestroyRuntime(JSRuntime *rt)
-{
-  JS_SetContextCallback(rt, NULL);
-  gpsee_destroyInterpreter((gpsee_interpreter_t *)JS_GetRuntimePrivate(rt));
-}
+//#define JS_DestroyRuntime(rt) gpseejs_DestroyRuntime(rt)
 
-#define JS_DestroyRuntime(rt) gpseejs_DestroyRuntime(rt)
-
-#define JS_InitStandardClasses(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL)
-#define JS_SetGlobalObject(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL);
+//#define JS_InitStandardClasses(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL)
+//#define JS_SetGlobalObject(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL);
 
 #define PRODUCT_SHORTNAME	"gpsee-js"
 
-static void __attribute__((noreturn)) fatal(const char *message)
-{
-  if (!message)
-    message = "UNDEFINED MESSAGE - OUT OF MEMORY?";
-
-  if (isatty(STDERR_FILENO))
-  {
-    fprintf(stderr, "\007Fatal Error in " PRODUCT_SHORTNAME ": %s\n", message);
-  }
-  else
-    gpsee_log(SLOG_EMERG, "Fatal Error: %s", message);
-
-  exit(1);
-}
-
-/** GPSEE uses panic() to panic, expects embedder to provide */
-JS_FRIEND_API(void) __attribute__((noreturn)) panic(const char *message)
-{
-  fatal(message);
-}
-
-#define JS_NewRuntime(n) gpseejs_NewRuntime(n)
+//#undef JS_NewRuntime
+//#define JS_NewRuntime(n) gpseejs_NewRuntime(n)
 JSRuntime *gpseejs_NewRuntime(size_t n)
 {
   extern char ** environ;
@@ -105,7 +85,96 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 
   return JS_NewObject(cx, clasp, proto, parent);
 }
-#define JS_NewObject(cx, clasp, proto, parent)	gpseejs_NewObject(cx, clasp, proto, parent)
+//#define JS_NewObject(cx, clasp, proto, parent)	gpseejs_NewObject(cx, clasp, proto, parent)
 
+#undef main
+#define main(a,b,c) notMain(a,b,c)
 #include "shell/js.cpp"
+#undef main
 
+int
+main(int argc, char **argv, char **envp)
+{
+    int stackDummy;
+    JSRuntime *rt;
+    JSContext *cx;
+    JSObject *glob, *it, *envobj;
+    int result;
+    gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, envp);
+
+    global_class = *gpsee_getGlobalClass();
+    CheckHelpMessages();
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_ALL, "");
+#endif
+
+#ifdef JS_THREADSAFE
+    if (PR_FAILURE == PR_NewThreadPrivateIndex(&gStackBaseThreadIndex, NULL) ||
+        PR_FAILURE == PR_SetThreadPrivate(gStackBaseThreadIndex, &stackDummy)) {
+        return 1;
+    }
+#else
+    gStackBase = (jsuword) &stackDummy;
+#endif
+
+    gErrFile = stderr;
+    gOutFile = stdout;
+
+    argc--;
+    argv++;
+
+    rt = jsi->rt;
+    if (!rt)
+        return 1;
+    rt = jsi->rt;
+
+    if (!InitWatchdog(rt))
+        return 1;
+
+    JS_SetContextCallback(rt, ContextCallback);
+    cx = jsi->cx;
+    ContextCallback(cx, JSCONTEXT_NEW);
+
+    JS_SetGCParameterForThread(cx, JSGC_MAX_CODE_CACHE_BYTES, 16 * 1024 * 1024);
+
+    JS_BeginRequest(cx);
+
+    glob = jsi->globalObj;
+    if (!glob)
+        return 1;
+
+    if (!JS_DefineFunctions(cx, glob, shell_functions))
+        return 1;
+
+    it = JS_DefineObject(cx, glob, "it", &its_class, NULL, 0);
+    if (!it)
+        return 1;
+    if (!JS_DefineProperties(cx, it, its_props))
+        return 1;
+    if (!JS_DefineFunctions(cx, it, its_methods))
+        return 1;
+
+    if (!JS_DefineProperty(cx, glob, "custom", JSVAL_VOID, its_getter,
+                           its_setter, 0))
+        return 1;
+    if (!JS_DefineProperty(cx, glob, "customRdOnly", JSVAL_VOID, its_getter,
+                           its_setter, JSPROP_READONLY))
+        return 1;
+
+    envobj = JS_DefineObject(cx, glob, "environment", &env_class, NULL, 0);
+    if (!envobj || !JS_SetPrivate(cx, envobj, envp))
+        return 1;
+
+    result = ProcessArgs(cx, glob, argv, argc);
+
+    JS_EndRequest(cx);
+
+    // JS_CommenceRuntimeShutDown(rt);
+
+    KillWatchdog();
+
+    gpsee_destroyInterpreter(jsi);
+
+    JS_ShutDown();
+    return result;
+}

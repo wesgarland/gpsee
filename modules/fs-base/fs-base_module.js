@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.8 2010/01/22 16:41:59 wes Exp $
+ *  @version	$Id: fs-base_module.js,v 1.9 2010/02/03 21:07:18 wes Exp $
  */
 
 const binary = require("binary");
@@ -49,6 +49,7 @@ const _close		= new dl.CFunction(ffi.int,	"close",		ffi.int);
 const _fdopen 		= new dl.CFunction(ffi.pointer, "fdopen", 		ffi.int, ffi.pointer);
 const _fclose		= new dl.CFunction(ffi.int,	"fclose",		ffi.pointer);
 const _stat 		= new dl.CFunction(ffi.int, 	"stat", 		ffi.pointer, ffi.pointer);
+const _fstat 		= new dl.CFunction(ffi.int, 	"fstat", 		ffi.int, ffi.pointer);
 const _lstat 		= new dl.CFunction(ffi.int, 	"lstat", 		ffi.pointer, ffi.pointer);
 const _access		= new dl.CFunction(ffi.int,	"access",		ffi.pointer, ffi.int);
 const _chmod		= new dl.CFunction(ffi.int,	"chmod",		ffi.pointer, ffi.mode_t);
@@ -90,15 +91,26 @@ function syserr(force)
 }
 
 /**
- *  Return a mutable struct containing the stat buffer matching path.
+ *  Return a mutable struct containing the stat buffer matching thing.
+ *
+ *  @param	thing	Either a path or an open Stream.
+ *  @returns	A mutable struct stat object.
  */
-function stat(path)
+function stat(thing)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) != 0)
-    throw new Error("Cannot stat path '"+path+"'" + syserr());
-  
+  if (thing instanceof Stream)
+  {
+    if (_fstat.call(thing.fd, sb) != 0)
+      throw new Error("Cannot stat stream" + syserr());
+  }
+  else
+  {
+    if (_stat.call(thing, sb) != 0)
+      throw new Error("Cannot stat path '"+path+"'" + syserr());
+  }
+
   return sb;
 }
 
@@ -867,7 +879,7 @@ Stream.prototype.read = function Stream_read(howMuch)
   var pos;
   var buffer;
 
-  if ((pos = _ftello.call(this.stream)))
+  if ((pos = _ftello.call(this.stream)) == -1)
     throw new Error("Could not determine current stream offset!" + syserr());
 
   bytesLeft = sb.st_size - pos;
@@ -875,11 +887,13 @@ Stream.prototype.read = function Stream_read(howMuch)
   if (typeof howMuch === "undefined" || howMuch > bytesLeft)
     howMuch = bytesLeft;
 
-  buffer = new Memory(howMuch);
+  buffer = new ffi.Memory(howMuch);
 
   bytesRead = _fread.call(buffer, 1, howMuch, this.stream);
   if (bytesRead != buffer.size)
     throw new Error("Could not read enough to fill buffer; only read " + bytesRead + " of " + buffer.size + " bytes!" + syserr());
+
+  buffer.toString = buffer.asString;
 
   return buffer;
 }
