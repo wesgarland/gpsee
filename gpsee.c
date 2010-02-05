@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.18 2010/01/25 22:05:27 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.19 2010/02/05 21:32:40 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.19  2010/02/05 21:32:40  wes
+ *  Added C Stack overflow protection facility to GPSEE-core
+ *
  *  Revision 1.18  2010/01/25 22:05:27  wes
  *  Trivial code clean-up
  *
@@ -120,7 +123,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.18 2010/01/25 22:05:27 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.19 2010/02/05 21:32:40 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -746,6 +749,40 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
     return JS_FALSE;
 
   return JS_TRUE;
+}
+
+/**
+ *  Set the maximum (or minimum, depending on arch) address which JSAPI is allowed to use on the C stack.
+ *  Any attempted use beyond this address will cause an exception to be thrown, rather than risking a
+ *  segfault.
+ *
+ *  If rc.gpsee_thread_stack_limit is zero this check is disabled.
+ *
+ *  @param	cx		JS Context to set - must be set before any JS code runs
+ *  @param	stackBase	An address near the top (bottom) of the stack
+ *
+ *  @note	This routine should be called every time JS_NewContext() is called for this protection
+ *  		to extend universally.
+ */
+void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
+{
+  jsuword 	stackLimit;
+  jsuword	maxStackSize = strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0);
+
+  if (maxStackSize == 0)     /* Disable checking for stack overflow if limit is zero. */
+  {
+    stackLimit = 0;
+  } 
+  else 
+  {
+    GPSEE_ASSERT(stackBase != NULL);
+#if JS_STACK_GROWTH_DIRECTION > 0
+    stackLimit = (jsuword)stackBase + maxStackSize;
+#else
+    stackLimit = (jsuword)stackBase - maxStackSize;
+#endif
+  }
+  JS_SetThreadStackLimit(cx, stackLimit);
 }
 
 /** Instanciate a JavaScript interpreter -- i.e. a runtime,
