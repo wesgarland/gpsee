@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.13 2010/02/03 21:53:00 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.14 2010/02/08 20:24:54 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -81,7 +81,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.13 2010/02/03 21:53:00 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.14 2010/02/08 20:24:54 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -180,6 +180,54 @@ struct moduleHandle
 
   moduleHandle_t	*next;		/**< Used when treating as a linked list node, i.e. during DSO unload */
 };
+
+static void requireLock(JSContext *cx)
+{
+#if defined(JS_THREADSAFE)
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  PRThread		*thisThread = PR_GetCurrentThread();
+
+  if (jsi->requireLockThread == thisThread)
+    goto haveLock;
+
+  do
+  {
+    jsrefcount depth;
+
+    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, NULL, (jsval)thisThread) == JS_TRUE)
+      goto haveLock;
+
+    depth = JS_SuspendRequest(cx);
+    PR_Sleep(PR_INTERVAL_NO_WAIT);
+    JS_ResumeRequest(cx, depth);
+  } while(1);
+
+  haveLock:
+  jsi->requireLockDepth++;
+  return;
+#endif
+}
+
+static void requireUnlock(JSContext *cx)
+{
+#if defined(JS_THREADSAFE)
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  PRThread		*thisThread = PR_GetCurrentThread();
+
+  GPSEE_ASSERT(jsi->requireLockDepth);
+
+  jsi->requireLockDepth--;
+
+  if (jsi->requireLockDepth == 0)
+  {
+    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, NULL) != JS_TRUE)
+    {
+      GPSEE_NOT_REACHED("bug in require-locking code");
+    }
+ }
+#endif
+  return;
+}
 
 /** Retrieve the parent module based on the scopedObject of the current call.
  *  Safe to run inside a finalizer.
@@ -1518,8 +1566,8 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
  */
 JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval)
 {
-  JSObject 		*parentModuleScope = findModuleScope(cx, parentObject);
-  moduleHandle_t	*parentModule = parentModuleScope ? getModuleHandle_fromScope(cx, parentModuleScope) : NULL;
+  JSObject 		*parentModuleScope;
+  moduleHandle_t	*parentModule = NULL;
   const char		*moduleName;
   const char		*errorMessage = "unknown error";
   moduleHandle_t	*module, *m;
@@ -1533,15 +1581,25 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
 
   dprintf("loading module %s\n", moduleShortName(moduleName));
 
+  requireLock(cx);
+
+  if ((parentModuleScope = findModuleScope(cx, parentObject)))
+    parentModule = getModuleHandle_fromScope(cx, parentModuleScope);
+
   module = loadInternalModule(cx, parentModule, moduleName, &errorMessage);
   if (!module)
   {
     if (errorMessage != moduleNotFoundErrorMessage)
+    {
+      requireUnlock(cx);
       return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.internal.fatal: %s, loading module %s", errorMessage, moduleName);
+    }
 
     module = loadDiskModule(cx, parentModule, moduleName, &errorMessage);
     if (!module)
     {
+      requireUnlock(cx);
+
       if (JS_IsExceptionPending(cx))	/* Propogate throw from monkey-patch */
 	return JS_FALSE;
 
@@ -1552,6 +1610,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
   if (module->flags & mhf_loaded)
   {
     /* modules are singletons */
+    requireUnlock(cx);
     *rval = OBJECT_TO_JSVAL(module->object);
     dprintf("no reload singleton %s\n", moduleShortName(moduleName));
     return JS_TRUE;
@@ -1562,6 +1621,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
   if (!module->init && !module->script)
   {
     markModuleUnused(cx, module);
+    requireUnlock(cx);
 
     if (module->DSOHnd)
       return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.init.notFound: "
@@ -1579,6 +1639,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
   if (!m || !module->id)
   {
     markModuleUnused(cx, module);
+    requireUnlock(cx);
     if (JS_IsExceptionPending(cx))
       return JS_FALSE;
 
@@ -1590,10 +1651,12 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval
 				       JSPROP_READONLY | JSPROP_PERMANENT))
   {
     markModuleUnused(cx, module);
+    requireUnlock(cx);
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.init.moduleID: Unable to assign moduleID %s to module '%s'",
 		       module->id, moduleName);
   }
 
+  requireUnlock(cx);
   *rval = OBJECT_TO_JSVAL(module->object);
 
   return JS_TRUE;
