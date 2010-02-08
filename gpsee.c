@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.19 2010/02/05 21:32:40 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.20 2010/02/08 16:56:18 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.20  2010/02/08 16:56:18  wes
+ *  Added gpsee_assert() in all builds, to unify GPSEE-core API across release types
+ *
  *  Revision 1.19  2010/02/05 21:32:40  wes
  *  Added C Stack overflow protection facility to GPSEE-core
  *
@@ -123,7 +126,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.19 2010/02/05 21:32:40 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.20 2010/02/08 16:56:18 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -146,7 +149,6 @@ signed int gpsee_verbosity(signed int changeBy)
   return verbosity;
 }
 
-#if defined(GPSEE_DEBUG_BUILD)
 /** @see JS_Assert() in jsutil.c */
 void gpsee_assert(const char *s, const char *file, JSIntn ln)
 {
@@ -154,7 +156,6 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
   gpsee_log(SLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
   abort();
 }   
-#endif
 
 /** Handler for fatal GPSEE errors.
  *
