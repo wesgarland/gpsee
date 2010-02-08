@@ -53,3 +53,5 @@ include $(GPSEE_SRC_DIR)/build.mk
 ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
+
+$(PROGS): LDFLAGS	:= -L. $(LDFLAGS) -lgpsee $(JSAPI_LIBS)
