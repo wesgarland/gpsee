@@ -1300,7 +1300,7 @@ static moduleHandle_t *loadDiskModule(JSContext *cx, moduleHandle_t *parentModul
       if (requireDotPaths == NULL)
       {
         /* Retrieve values for requireDotPaths and requireDotPathsLen */
-        if (!JS_GetProperty(cx, parentModule->scope, "require", &v)
+        if (!JS_GetProperty(cx, parentModule ? parentModule->scope : jsi->globalObj, "require", &v)
         ||  JSVAL_IS_PRIMITIVE(v)
         ||  !JS_GetProperty(cx, JSVAL_TO_OBJECT(v), "paths", &v)
         ||  JSVAL_IS_PRIMITIVE(v)
