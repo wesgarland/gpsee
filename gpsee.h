@@ -1,4 +1,3 @@
-#define GPSEE_NO_ASYNC_CALLBACKS 1
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.22 2010/02/05 21:32:40 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.23 2010/02/08 18:28:40 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.23  2010/02/08 18:28:40  wes
+ *  Re-enabled GPSEE Async Callback facility & fixed test
+ *
  *  Revision 1.22  2010/02/05 21:32:40  wes
  *  Added C Stack overflow protection facility to GPSEE-core
  *
