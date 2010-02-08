@@ -37,9 +37,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.21 2010/01/24 04:46:54 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.22 2010/02/05 21:32:40 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.22  2010/02/05 21:32:40  wes
+ *  Added C Stack overflow protection facility to GPSEE-core
+ *
  *  Revision 1.21  2010/01/24 04:46:54  wes
  *  Deprecated mozfile, mozshell and associated libgpsee baggage
  *
@@ -277,6 +280,7 @@ JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter(char * const argv[],
 JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char *cstrout, size_t cstrlen);
+JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase);
 JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
 JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
