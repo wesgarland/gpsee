@@ -36,10 +36,10 @@
  * @file	minimal.c           A minimal GPSEE embedding: "Hello, world"
  * @author	Wes Garland, wes@page.ca
  * @date	Jan 2008
- * @version	$Id: minimal.c,v 1.1 2009/06/11 16:54:14 wes Exp $
+ * @version	$Id: minimal.c,v 1.2 2010/02/08 17:53:32 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: minimal.c,v 1.1 2009/06/11 16:54:14 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: minimal.c,v 1.2 2010/02/08 17:53:32 wes Exp $";
 
 #include <gpsee.h>
 
@@ -49,7 +49,11 @@ int main (int argc, char *argv[])
   gpsee_interpreter_t	*jsi;
   const char            *scriptCode;
 
-  openlog("minimal", LOG_ODELAY, LOG_USER);
+#if defined(__SURELYNX__) 
+  apr_initRuntime();		/* PageMail-proprietary requirement */
+#endif
+
+  gpsee_openlog("minimal");
 
   jsi = gpsee_createInterpreter(NULL, NULL);
 
@@ -57,18 +61,7 @@ int main (int argc, char *argv[])
   JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
 
   gpsee_destroyInterpreter(jsi);
-  closelog();
+  gpsee_closelog();
   return 0;
-}
-
-/** Handler for fatal GPSEE errors.
- *
- *  @param	message		Arbitrary text describing the
- *  @note	Exits with status 1
- */
-void __attribute__((noreturn)) panic(const char *message)
-{ 
-  fprintf(stderr, __FILE__" Fatal Error:  %s\n", message);
-  exit(1);
 }
 

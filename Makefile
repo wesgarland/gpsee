@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.29 2010/01/25 22:07:58 wes Exp $
+## @version	$Id: Makefile,v 1.30 2010/02/08 18:28:40 wes Exp $
 
 top: 	help
 
@@ -98,10 +98,6 @@ ALL_MODULE_DIRS			:= $(sort $(AR_MODULE_DIRS_ALL) $(LOADABLE_MODULE_DIRS_ALL) $(
 
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
 PROGS		 	?= gsr minimal
-
-ifeq ($(STREAM),surelynx)
-PROGS			:= $(filter-out minimal,$(PROGS))
-endif
 
 include build.mk
 -include depend.mk
