@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.19 2010/02/05 21:32:40 wes Exp $
+ * @version	$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.19 2010/02/05 21:32:40 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -268,6 +268,46 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
   sl_set_debugLevel(verbosity);
   enableTerminalLogs(permanent_pool, verbosity > 0, NULL);
 #endif
+}
+
+static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile)
+{
+  char	buf[256];
+  off_t	offset;
+
+  offset = ftello(scriptFile);
+
+  while(fgets(buf, sizeof(buf), scriptFile))
+  {
+    char *s, *e;
+
+    if ((buf[0] != '/') || (buf[1] != '/'))
+      break;
+
+    for (s = buf + 2; *s == ' ' || *s == '\t'; s++);
+    if (strncmp(s, "gpsee:", 6) != 0)
+      continue;
+
+    for (s = s + 6; *s == ' ' || *s == '\t'; s++);
+
+    for (e = s; *e; e++)
+    {
+      switch(*e)
+      {
+	case '\r':
+	case '\n':
+	case '\t':
+	case ' ':
+	  *e = (char)0;
+	  break;
+      }
+    }
+
+    if (s[0])
+      processFlags(jsi, s);
+  }
+
+  fseeko(scriptFile, offset, SEEK_SET);
 }
 
 static FILE *openScriptFile(gpsee_interpreter_t *jsi, const char *scriptFilename, int skipSheBang)
@@ -629,42 +669,44 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
   else
   {
-    FILE *scriptFile = openScriptFile(jsi, scriptFilename, skipSheBang || (fiArg != 0));
+    FILE 	*scriptFile = openScriptFile(jsi, scriptFilename, skipSheBang || (fiArg != 0));
+
     if (!scriptFile)
     {
       gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       exitCode = 1;
+      goto out;
     }
-    else
-    {
-      /* Just compile and exit? */
-      if (noRunScript)
-      {
-        const char      *errmsg;
-        JSScript        *script;
-        JSObject        *scrobj;
 
-        if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
-        {
-          gpsee_log(SLOG_NOTICE, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
-          GPSEE_ASSERT(errmsg);
-          exitCode = 1;
-        }
-	else
-	{
-	  exitCode = 0;
-	}
-      }
-      else /* noRunScript is false; run the program */
+    processInlineFlags(jsi, scriptFile);
+
+    /* Just compile and exit? */
+    if (noRunScript)
+    {
+      const char      *errmsg;
+      JSScript        *script;
+      JSObject        *scrobj;
+
+      if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
       {
-        gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
-        if ((jsi->exitType & et_successMask) == jsi->exitType)
-          exitCode = jsi->exitCode;
-        else
-          exitCode = 1;
+	gpsee_log(SLOG_NOTICE, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
+	GPSEE_ASSERT(errmsg);
+	exitCode = 1;
       }
-      fclose(scriptFile);
+      else
+      {
+	exitCode = 0;
+      }
     }
+    else /* noRunScript is false; run the program */
+    {
+      gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
+      if ((jsi->exitType & et_successMask) == jsi->exitType)
+	exitCode = jsi->exitCode;
+      else
+	exitCode = 1;
+    }
+      fclose(scriptFile);
     goto out;
   }
 
