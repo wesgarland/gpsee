@@ -1,4 +1,3 @@
-#define GPSEE_NO_ASYNC_CALLBACKS 1
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,9 +36,15 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.22 2010/02/05 21:32:40 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.24 2010/02/08 20:24:54 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.24  2010/02/08 20:24:54  wes
+ *  Forced singled-thread/spin-lock behaviour on module loading
+ *
+ *  Revision 1.23  2010/02/08 18:28:40  wes
+ *  Re-enabled GPSEE Async Callback facility & fixed test
+ *
  *  Revision 1.22  2010/02/05 21:32:40  wes
  *  Added C Stack overflow protection facility to GPSEE-core
  *
@@ -263,6 +268,8 @@ typedef struct
 
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
+  PRThread	*requireLockThread;		/**< Matches NULL or PR_GetCurrentThread if we are allowed to require; change must be atomic */
+  size_t	requireLockDepth;
 #endif
   /** Pointer to linked list of OPCB entries */
   GPSEEAsyncCallback    *asyncCallbacks;
