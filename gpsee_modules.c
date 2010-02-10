@@ -908,9 +908,20 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
         /* Now we attempt to deserialize a JSScript */
         if (!JS_XDRScript(xdr, script))
         {
+          const char *exception = "(exception missing!)";
+          jsval v;
+          /* We should have an exception waiting for us */
+          if (JS_GetPendingException(cx, &v))
+          {
+            JSString *exstr;
+            JS_ClearPendingException(cx);
+            exstr = JS_ValueToString(cx, v);
+            exception = exstr ? JS_GetStringBytes(exstr) : "(nothing from JS_ValueToString())";
+          }
+
           /* Failure */
-          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed deserializing \"%s\" from cache file \"%s\"", scriptFilename,
-                    cache_filename);
+          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed deserializing \"%s\" from cache file \"%s\": \"%s\"", scriptFilename,
+                    cache_filename, exception);
         } else {
           /* Success */
 	  if (gpsee_verbosity(0) > 2)
@@ -986,9 +997,20 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
         /* Now we attempt to serialize a JSScript to the compiler cache file */
         if (!JS_XDRScript(xdr, script))
         {
+          const char *exception = "(exception missing!)";
+          jsval v;
+          /* We should have an exception waiting for us */
+          if (JS_GetPendingException(cx, &v))
+          {
+            JSString *exstr;
+            JS_ClearPendingException(cx);
+            exstr = JS_ValueToString(cx, v);
+            exception = exstr ? JS_GetStringBytes(exstr) : "(nothing from JS_ValueToString())";
+          }
+
           /* Failure */
-          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed serializing \"%s\" to cache file \"%s\"", scriptFilename,
-                    cache_filename);
+          gpsee_log(SLOG_NOTICE, "JS_XDRScript() failed serializing \"%s\" to cache file \"%s\": \"%s\"", scriptFilename,
+                    cache_filename, exception);
         } else {
           /* Success */
 	  if (gpsee_verbosity(0) > 2)
