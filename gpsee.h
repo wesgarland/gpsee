@@ -265,6 +265,7 @@ typedef struct
   size_t		modules_len;		/**< Number of slots allocated in modules */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   const char		*programModule_dir;	/**< Directory JS program is in, based on its cname, used for absolute module names */
+  char * const *         script_argv;           /**< argv from main() */
 
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
@@ -317,6 +318,7 @@ JS_EXTERN_API(size_t)               gpsee_catstrn(char *dst, const char *src, si
 JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
+JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
 
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
