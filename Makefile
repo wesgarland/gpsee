@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.30 2010/02/08 18:28:40 wes Exp $
+## @version	$Id: Makefile,v 1.31 2010/02/12 21:37:25 wes Exp $
 
 top: 	help
 
@@ -102,7 +102,7 @@ PROGS		 	?= gsr minimal
 include build.mk
 -include depend.mk
 
-GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_context_private.c gpsee_xdrfile.c
+GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_compile.c gpsee_context_private.c gpsee_xdrfile.c
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
 
 ifneq ($(STREAM),surelynx)
