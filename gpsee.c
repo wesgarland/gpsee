@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.21 2010/02/10 18:55:37 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.22 2010/02/12 21:37:25 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.22  2010/02/12 21:37:25  wes
+ *  Module system refactor check-point
+ *
  *  Revision 1.21  2010/02/10 18:55:37  wes
  *  Make program modules JITable with modern tracemonkey
  *
@@ -129,7 +132,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.21 2010/02/10 18:55:37 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.22 2010/02/12 21:37:25 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -854,7 +857,8 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   interpreter->rt 	 	= rt;
 #endif
   
-  gpsee_initializeModuleSystem(cx);
+  if (!gpsee_initializeModuleSystem(cx))
+    panic("Unable to initialize module system");
 
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 

@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.24 2010/02/08 20:24:54 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.25 2010/02/12 21:37:25 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.25  2010/02/12 21:37:25  wes
+ *  Module system refactor check-point
+ *
  *  Revision 1.24  2010/02/08 20:24:54  wes
  *  Forced singled-thread/spin-lock behaviour on module loading
  *
@@ -234,6 +237,8 @@ typedef enum
 
 typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
 typedef struct moduleHandle moduleHandle_t; /**< Handle describing a loaded module */
+typedef struct modulePathEntry *modulePathEntry_t; /**< Pointer to a module path linked list element */
+
 
 /** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
@@ -265,6 +270,7 @@ typedef struct
   size_t		modules_len;		/**< Number of slots allocated in modules */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   const char		*programModule_dir;	/**< Directory JS program is in, based on its cname, used for absolute module names */
+  modulePathEntry_t	modulePath;		/**< GPSEE module path */
 
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
