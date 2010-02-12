@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.14 2010/02/08 20:24:54 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.15 2010/02/09 17:47:02 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -81,7 +81,7 @@
  - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.14 2010/02/08 20:24:54 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.15 2010/02/09 17:47:02 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -181,13 +181,25 @@ struct moduleHandle
   moduleHandle_t	*next;		/**< Used when treating as a linked list node, i.e. during DSO unload */
 };
 
+/**
+ *  requireLock / requireUnlock form a simple re-entrant lockless "mutex", optimized for 
+ *  the case where there are no collisions. These locks are per-runtime.
+ *
+ *  The requireLockThread holds the thread ID of the thread currrently holding this lock, or
+ *  NULL (which is an invalid value for PRThread).  
+ *
+ *  requireLockThread is only read/written via CAS operations, forcing a full memory barrier 
+ *  at the start of a locking operation. requireLockDepth may only be read or written by a 
+ *  thread which holds the lock.  When the lock is released, the cas memory barrier insures 
+ *  that the next lock-holder gets an initial depth of zero.
+ */
 static void requireLock(JSContext *cx)
 {
 #if defined(JS_THREADSAFE)
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread		*thisThread = PR_GetCurrentThread();
 
-  if (jsi->requireLockThread == thisThread)
+  if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, (jsval)thisThread) == JS_TRUE)  /* membar */
     goto haveLock;
 
   do
@@ -204,8 +216,8 @@ static void requireLock(JSContext *cx)
 
   haveLock:
   jsi->requireLockDepth++;
-  return;
 #endif
+  return;
 }
 
 static void requireUnlock(JSContext *cx)
@@ -215,12 +227,12 @@ static void requireUnlock(JSContext *cx)
   PRThread		*thisThread = PR_GetCurrentThread();
 
   GPSEE_ASSERT(jsi->requireLockDepth);
+  GPSEE_ASSERT(jsi->requireLockThread == thisThread);
 
   jsi->requireLockDepth--;
-
   if (jsi->requireLockDepth == 0)
   {
-    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, NULL) != JS_TRUE)
+    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, NULL) != JS_TRUE) /* membar */
     {
       GPSEE_NOT_REACHED("bug in require-locking code");
     }
