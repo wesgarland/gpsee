@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.20 2010/02/08 16:56:18 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.21 2010/02/10 18:55:37 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.21  2010/02/10 18:55:37  wes
+ *  Make program modules JITable with modern tracemonkey
+ *
  *  Revision 1.20  2010/02/08 16:56:18  wes
  *  Added gpsee_assert() in all builds, to unify GPSEE-core API across release types
  *
@@ -126,7 +129,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.20 2010/02/08 16:56:18 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.21 2010/02/10 18:55:37 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -698,7 +701,7 @@ JSClass *gpsee_getGlobalClass(void)
   static JSClass global_class = 
   {
     "Global", 					/* name */
-    JSCLASS_NEW_RESOLVE | JSCLASS_HAS_PRIVATE,	/* flags */
+    JSCLASS_NEW_RESOLVE | JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS,	/* flags */
     JS_PropertyStub,  				/* add property */
     JS_PropertyStub,				/* del property */
     JS_PropertyStub,				/* get property */
