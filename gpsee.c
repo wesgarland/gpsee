@@ -844,6 +844,8 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
 
+  /* Primarily to support the system module's "args" property */
+  interpreter->script_argv = script_argv;
 #if !defined(MAKEDEPEND) && !defined(DOXYGEN)
 # if defined(JS_THREADSAFE)
   interpreter->primordialThread	= PR_GetCurrentThread();
