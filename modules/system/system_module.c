@@ -62,7 +62,7 @@ static JSBool system_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *
   /* This implementation is a little funny in that it calls JS_EvaluateScript() on snprintf()d code.
    * It probably could be done another way, but this was the quickest, and I don't see any glaring
    * flaws with this course, other than a slightly bitter taste in my mouth. */
-  static const char codeTemplate[] = "file=require('fs-base');/*exports.%s=*/file.openDescriptor(%d,{'%s':true});";
+  static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))file=require('fs-base');exports.%s=file.openDescriptor(%d,{'%s':true})";
   char code[sizeof(codeTemplate)+9];
   const char *propName;
   int which;
@@ -97,8 +97,6 @@ static JSBool system_setProperty(JSContext *cx, JSObject *obj, jsval id, jsval *
 {
   int which;
   const char *propName;
-
-  return system_getProperty(cx, obj, id, vp);
 
   GPSEE_ASSERT(JSVAL_IS_INT(id));
   which = JSVAL_TO_INT(id);
