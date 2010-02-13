@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.7 2010/02/03 21:50:36 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.8 2010/02/13 20:32:29 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.7 2010/02/03 21:50:36 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.8 2010/02/13 20:32:29 wes Exp $:";
 
 #include "gpsee.h"
 
@@ -156,12 +156,15 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
  */
 int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 {
+  int   ret;
 #if defined(GPSEE_SUNOS_SYSTEM)
-  return resolvepath(path, buf, bufsiz);
+  ret = resolvepath(path, buf, bufsiz);
+  buf[min(ret, bufsiz - 1)] = (char)0;
+
+  return ret;
 #else
   char  *mBuf;
   char  *rp;
-  int   ret;
 
   errno = 0;
 
