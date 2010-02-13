@@ -8,6 +8,6 @@ try {
 }
 if (mod)
   throw new Error("require() should have failed! have you a module somewhere named \""+modname+"?\"");
-require.paths = ['directory'];
+require.paths.push('directory');
 mod = require(modname);
 mod.finishTest();
