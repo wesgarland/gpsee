@@ -41,5 +41,5 @@
  */
 
 #include "jsapi.h"
-int 			gpsee_initializeModuleSystem(JSContext *cx);
-void 			gpsee_shutdownModuleSystem(JSContext *cx);
+int 			gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
+void 			gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);

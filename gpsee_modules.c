@@ -63,7 +63,7 @@
  * Extra GC roots, provided by moduleGCCallback(), are available in each
  * module handle. They are:
  *  - scrobj:	Marked during module initialization, afterwards not needed
- *  - object:	Marked during module initialization, afterwards by assignment in JavaScript
+ *  - exports:	Marked during module initialization, afterwards by assignment in JavaScript
  *  - scope:	Marked when object is NULL; otherwise by virtue of object.parent
  * 
  ************
@@ -114,6 +114,20 @@ typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *);		/**< Module finisher
                           JSBool a ## _FiniModule(JSContext *, JSObject *);
 #include "modules.h"
 #undef InternalModule
+
+/** Entry in a module path linked list. Completes forward declaration
+ *  found in gpsee.h
+ */
+struct modulePathEntry
+{
+  const char			*dir;	/**< Directory to search for modules */
+  struct modulePathEntry	*next;	/**< Next element in the list, or NULL for the last */
+};
+
+/** Type describing a module loader function pointer. These functions can load and
+ *  initialize a module during loadDiskModule.
+ */
+typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
 static void finalizeModuleExports(JSContext *cx, JSObject *exports);
@@ -257,8 +271,7 @@ const char *gpsee_libexecDir(void)
 }
 
 /**
- *  Retrieve the existing module object (exports) for a given  
- *  scope, or create a new one. 
+ *  Create a new module object (exports)
  *
  *  This object is effectively a container for the  properties of the module,
  *  and is what loadModule() and require() return to the JS programmer.
@@ -268,78 +281,105 @@ const char *gpsee_libexecDir(void)
  *  the module's Init code puts there.
  *
  *  @param	cx 		The JS context to use
- *  @param	moduleScope	The module scope we need the module object for.
- *  @return	A new, valid, module object or NULL if an exception as been
+ *  @param	moduleScope	The scope for the module we are creating the exports object for. 
+ *
+ *  @return	A new, valid, module object or NULL if an exception has been
  *		thrown.
  *
  *  @note	Module object is unrooted, and thus should be assigned to a
  *		rooted address immediately. 
  *		
  */
-static JSObject *acquireModuleExports(JSContext *cx, JSObject *moduleScope)
+static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
 {
   JSObject 		*exports;
-  moduleHandle_t	*module;
 
-  /* XXX refactor target */
-  if ((JS_GetClass(cx, moduleScope) != &module_scope_class) &&
-      (JS_GetClass(cx, moduleScope) != gpsee_getGlobalClass()))
-  {
-    (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.acquireExports: module scope has invalid class");
-    return NULL;
-  }
-
-  if ((module = getModuleHandle_fromScope(cx, moduleScope)) && module->exports)
-  {
-    GPSEE_ASSERT(module->exports);
-    if (!module->exports)
-      (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.acquireExports: module exports are missing");
-    return module->exports;
-  }
-
-  if (JS_EnterLocalRootScope(cx) != JS_TRUE)
-    return NULL;
- 
   exports = JS_NewObject(cx, &module_exports_class, NULL, moduleScope);
   if (exports)
   {
-    jsval v = OBJECT_TO_JSVAL(exports);
-
-    if (JS_DefineProperty(cx, moduleScope, "exports", v, NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT) != JS_TRUE)
+    if (JS_DefineProperty(cx, moduleScope, "exports", OBJECT_TO_JSVAL(exports), NULL, NULL, 
+			  JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) != JS_TRUE)
       exports = NULL;
   }
-
-  JS_LeaveLocalRootScope(cx);
 
   return exports;
 }
 
 /**
- *  Initialize a "fresh" module global to have all the correct properties and
- *  methods. This includes a require function which "knows" its path information
+ *  Initialize a "fresh" module scope ("global") to have all the correct properties 
+ *  and methods. This includes a require function which "knows" its path information
  *  by virtue of the module handle stored in private slot 0.
  *
  *  If the module global is not the interpreter's global, we also copy through
  *  the standard classes.
  *
+ *  @param	cx			Current JavaScript context
+ *  @param	module			Module handle for the module whose scope we are initializing.
+ *					Handle must remain valid for the lifetime of this scope. Only
+ *					the cname member is used by this function.
+ *  @param	moduleScope		Scope object to initialize
+ *
+ *  @note	This function also sets module->exports
+ *
  *  @returns	JS_TRUE or JS_FALSE if an exception was thrown
  */
 static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObject *moduleScope)
 {
-  JSFunction *require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 0, 0);
+  JSFunction 		*require;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  JSObject      	*modDotModObj;
+  JSString      	*moduleId;
+
+  GPSEE_ASSERT(module->exports == NULL);
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || moduleScope == jsi->globalObj);
+
+  setModuleHandle_forScope(cx, moduleScope, module);
+
+  require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
   if (!require)
     return JS_FALSE;
+
+  if (JS_DefineProperty(cx, (JSObject *)require, "paths", 
+			OBJECT_TO_JSVAL(jsi->userModulePath), NULL, NULL,
+			JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
+  {	
+    return JS_FALSE;
+  }
 
   if (JS_SetReservedSlot(cx, (JSObject *)require, 0, PRIVATE_TO_JSVAL(module)) == JS_FALSE)
     return JS_FALSE;
 
-  if (JS_DefineProperty(cx, moduleScope, "moduleName", 
-			STRING_TO_JSVAL(JS_NewStringCopyZ(cx, module->cname)), NULL, NULL, 
-			JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
+  module->exports = newModuleExports(cx, moduleScope);
+  if (JS_DefineProperty(cx, moduleScope, "exports", 
+			OBJECT_TO_JSVAL(module->exports), NULL, NULL,
+			JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
   {
     return JS_FALSE;
   }
-  
+
+  modDotModObj = JS_NewObject(cx, NULL, NULL, moduleScope);
+  if (!modDotModObj)
+    return JS_FALSE;
+
+  if (JS_DefineProperty(cx, moduleScope, "module", OBJECT_TO_JSVAL(modDotModObj), NULL, NULL,
+			JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE)
+  {
+    return JS_FALSE;
+  }
+
+  /* Add 'id' property to 'module' property of module scope. */
+  moduleId = JS_NewStringCopyZ(cx, module->cname);
+  if (!moduleId)
+    return JS_FALSE;
+
+  if (JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
+		    JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE)
+  {
+    return JS_FALSE;
+  }
+
+  /** XXX copy through standard classes */
+
   return JS_TRUE;
 }
 
@@ -368,10 +408,8 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
   if (!moduleScope)
       goto errout;
   
-  if (initializeModuleScope(cx, module, moduleScope) != 0)
+  if (initializeModuleScope(cx, module, moduleScope) == JS_FALSE)
     goto errout;
-
-  setModuleHandle_forScope(cx, moduleScope, module);
 
   JS_LeaveLocalRootScopeWithResult(cx, OBJECT_TO_JSVAL(moduleScope));
 
@@ -397,16 +435,17 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
  *  @param cx			JavaScript context
  *  @param cname                Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
  *                              or name an internal module.
+ *  @param     	moduleScope	Scope object to be used instead of a brand-new one if we need to create a module handle.
  *  @returns 			A module handle, possibly one already initialized, or NULL if an exception has been thrown.
  */
-static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname)
+static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSObject *moduleScope)
 {
   moduleHandle_t	*module, **moduleSlot = NULL;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t		i;
-  jsval                 jsv;
 
   GPSEE_ASSERT(cname != NULL);
+  dprintf("Acquiring module handle for %s\n", cname);
 
   /* Scan for free slots and/or cname repetition (modules are singletons) */
   for (i=0; i < jsi->modules_len; i++)
@@ -414,7 +453,10 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname)
     module = jsi->modules[i];
 
     if (module && module->cname && (strcmp(module->cname, cname) == 0))
+    {
+      dprintf("Returning used module handled at %p\n", module);
       return module;	/* seen this one already */
+    }
 
     if (!moduleSlot && !module)
       moduleSlot = jsi->modules + i; /* don't break, singleton check still! */
@@ -452,7 +494,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname)
   module = *moduleSlot;
   module->slot = moduleSlot - jsi->modules;
 
-  dprintf("allocated new module slot for %s in slot %ld at 0x%p\n", 
+  dprintf("Allocated new module slot for %s in slot %ld at 0x%p\n", 
 	  cname ? moduleShortName(cname) : "program module", (long int)(moduleSlot - jsi->modules), module);
 
   if (cname)
@@ -460,44 +502,24 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname)
     module->cname = JS_strdup(cx, cname);
   }
 
-  module->scope = newModuleScope(cx, module);
-  if (!module->scope)
-    goto fail;
-  
-  module->exports = acquireModuleExports(cx, module->scope);
-  if (!module->exports)
-    goto fail;
-
-  /* Create 'module' property of module scope, unless it already exists. */
-  if (JS_GetProperty(cx, module->scope, "module", &jsv) == JS_FALSE)
-    return NULL;
-  /* Assume if it is not JSVAL_VOID, it was created here. This should be kept true by the property attributes. */
-  if (jsv == JSVAL_VOID)
+  if (!moduleScope)
   {
-    JSObject      *modDotModObj;
-    char          *moduleIdDup;
-    JSString      *moduleId;
-
-    modDotModObj = JS_NewObject(cx, NULL, NULL, module->scope);
-    if (!modDotModObj)
-      return NULL;
-
-    GPSEE_ASSERT(
-        JS_DefineProperty(cx, module->scope, "module", OBJECT_TO_JSVAL(modDotModObj), NULL, NULL,
-        JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_TRUE);
-
-    /* Add 'id' property to 'module' property of module scope. */
-    moduleIdDup = JS_strdup(cx, cname);
-    if (!moduleIdDup)
+    dprintf("Creating new module scope\n");
+    module->scope = newModuleScope(cx, module);
+    if (!module->scope)
+    {
+      dprintf("Could not create new module scope\n");
       goto fail;
-    moduleId = JS_NewString(cx, moduleIdDup, strlen(cname));
-    if (!moduleId)
-      goto fail;
-    GPSEE_ASSERT(
-        JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
-        JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY));
+    }
+  }
+  else
+  {
+    dprintf("Using module scope at %p\n", moduleScope);
+    module->scope = moduleScope;
+    GPSEE_ASSERT(module->scope);
   }
 
+  dprintf("Module handle is at %p\n", module);
   return module;
 
 fail:
@@ -515,10 +537,10 @@ static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
   if (module->flags & ~mhf_loaded && module->exports && module->fini)
     module->fini(cx, module->exports);
 
-  module->scope  = NULL;
-  module->scrobj = NULL;
+  module->scope   = NULL;
+  module->scrobj  = NULL;
   module->exports = NULL;
-  module->fini	 = NULL;
+  module->fini	  = NULL;
 
   module->flags	 &= ~mhf_loaded;
 }
@@ -763,14 +785,6 @@ static int isRelativePath(const char *path)
   return 0;
 }
 
-struct modulePathEntry
-{
-  const char			*dir;
-  struct modulePathEntry	*next;
-};
-
-typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
-
 /** 
  *  Turn a JavaScript array in a module path linked list.
  *
@@ -781,30 +795,27 @@ typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char
  *  
  *  @returns	JS_FALSE when a JS exception is thrown during processing
  */
-JSBool generateScriptedModulePath(JSContext *cx, JSObject *obj, const char *pathName, modulePathEntry_t *modulePath_p)
+JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *modulePath_p)
 {
-  jsval			arr, v;
+  jsval			v;
   JSString		*jsstr;
   jsuint		idx, arrlen;
   modulePathEntry_t	modulePath, pathEl;
 
-  if (JS_EvaluateScript(cx, obj, pathName, strlen(pathName), __FILE__, __LINE__, &arr) == JS_FALSE)
-    return JS_FALSE;
-
-  if (!JSVAL_IS_OBJECT(arr) || (JS_IsArrayObject(cx, JSVAL_TO_OBJECT(arr)) != JS_TRUE))
+  if (JS_IsArrayObject(cx, arrObj) != JS_TRUE)
   {
     *modulePath_p = NULL;
     return JS_TRUE;
   }
 
-  if (JS_GetArrayLength(cx, JSVAL_TO_OBJECT(arr), &arrlen) == FALSE)
+  if (JS_GetArrayLength(cx, arrObj, &arrlen) == FALSE)
     return JS_FALSE;
 
   pathEl = modulePath = JS_malloc(cx, sizeof(*modulePath) * arrlen);
 
   for (idx = 0; idx < arrlen; idx++)
   {
-    if (JS_GetElement(cx, JSVAL_TO_OBJECT(arr), idx, &v) == JS_FALSE)
+    if (JS_GetElement(cx, arrObj, idx, &v) == JS_FALSE)
     {
       JS_free(cx, modulePath);
       return JS_FALSE;
@@ -830,10 +841,10 @@ JSBool generateScriptedModulePath(JSContext *cx, JSObject *obj, const char *path
   return JS_TRUE;
 }
 
-/** Free the scripted module path. Takes into account malloc short cuts 
- *  used to create it in the first place.
+/** Free a module path generated from JSArray_toModulePath. 
+ *  Takes into account malloc short cuts used to create it in the first place.
  */
-void freeScriptedModulePath(JSContext *cx, modulePathEntry_t modulePath)
+void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePath)
 {
   modulePathEntry_t pathEl;
 
@@ -902,7 +913,7 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
 	if (!checkJail(cnBuf, jsi->moduleJail))
 	  break;
 
-	module = acquireModuleHandle(cx, cnBuf);
+	module = acquireModuleHandle(cx, cnBuf, NULL);
 	if (!module)
 	  return JS_FALSE;
 	if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
@@ -1004,10 +1015,10 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
     return JS_TRUE;
 
   /* Search require.paths */
-  if (generateScriptedModulePath(cx, jsi->globalObj, "require.paths", &requirePaths) == JS_FALSE)
+  if (JSArray_toModulePath(cx, jsi->userModulePath, &requirePaths) == JS_FALSE)
     return JS_FALSE;
   b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
-  freeScriptedModulePath(cx, requirePaths);
+  freeModulePath_fromJSArray(cx, requirePaths);
   if (b == JS_FALSE)
     return JS_FALSE;
   if (*module_p)
@@ -1054,7 +1065,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
   if (i == (sizeof internalModules/sizeof internalModules[0]))
     return JS_TRUE;	/* internal module not found */
 
-  module = acquireModuleHandle(cx, moduleName);
+  module = acquireModuleHandle(cx, moduleName, NULL);
   if (module->flags & mhf_loaded)
   {
     dprintf("no reload internal singleton %s\n", moduleShortName(moduleName));
@@ -1105,15 +1116,8 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
   if (module->script)
   {
     JSScript    *script;
-    jsval 	v = OBJECT_TO_JSVAL(module->exports);
     jsval       dummyval;
     JSBool	b;
-
-    if (JS_SetProperty(cx, module->scope, "exports", &v) != JS_TRUE)
-    {
-      *errorMessage_p = "could not set exports property";
-      return NULL;
-    }
 
     /* Once we begin evaluating module code, that module code must never begin evaluating again. Setting module->script
      * to NULL signifies that the module code has already begun (and possibly finished) evaluating its module code.
@@ -1124,7 +1128,6 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
     module->script = NULL;
     b = JS_ExecuteScript(cx, module->scope, script, &dummyval); /* realloc hazard */
     module = getModuleHandle_fromScope(cx, moduleScope);
-    GPSEE_ASSERT(module == getModuleHandle_fromScope(cx, moduleScope));
 
     module->scrobj = NULL;	/* No longer needed */
   }
@@ -1272,6 +1275,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
 
   if (scriptFile)
   {
+    /* Insure that the supplied script file stream matches the file name */
     int 	e = 0;
     struct stat sb1, sb2;
 
@@ -1298,10 +1302,17 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
       *s = (char)0;
   }
 
-  module = acquireModuleHandle(cx, cnBuf);
+  module = acquireModuleHandle(cx, cnBuf, jsi->globalObj);
   if (!module)
   {
+    dprintf("Could not acquire module handle for program module\n");
     errorMessage = "could not allocate module handle";
+    goto fail;
+  }
+
+  if (initializeModuleScope(cx, module, jsi->globalObj) == JS_FALSE)
+  {
+    dprintf("Could not initialize module scope for module at %p\n", module);
     goto fail;
   }
 
@@ -1320,7 +1331,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     goto fail;
 
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
-  module->flags |= mhf_loaded;
+  module->flags |= mhf_loaded;	
 
   if (initializeModule(cx, module, &errorMessage))
   {
@@ -1364,7 +1375,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   jsi->programModule_dir = NULL;
   if (module)
     markModuleUnused(cx, module);
-
+ 
   return errorMessage; /* NULL == no failures */
 }
 
@@ -1413,9 +1424,8 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
   return JS_TRUE;
 }
 
-int gpsee_initializeModuleSystem(JSContext *cx)
+JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   char			*envpath = getenv("GPSEE_PATH");
   char			*path;
   modulePathEntry_t	pathEl;
@@ -1426,7 +1436,7 @@ int gpsee_initializeModuleSystem(JSContext *cx)
 
   jsi->modulePath = JS_malloc(cx, sizeof(*jsi->modulePath));
   if (!jsi->modulePath)
-    return 1;
+    return JS_FALSE;
   memset(jsi->modulePath, 0, sizeof(*jsi->modulePath));
 
   /* Populate the GPSEE module path */
@@ -1435,7 +1445,7 @@ int gpsee_initializeModuleSystem(JSContext *cx)
   {
     envpath = strdup(envpath);
     if (!envpath)
-      return 1;
+      return JS_FALSE;
 
     for (pathEl = jsi->modulePath, path = strtok(envpath, ":"); path; pathEl = pathEl->next, path = strtok(NULL, ":"))
     {
@@ -1444,12 +1454,16 @@ int gpsee_initializeModuleSystem(JSContext *cx)
     }
   }
 
-  return 0;
+  JS_AddNamedRoot(cx, &jsi->userModulePath, "User Module Path");
+  jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
+  if (!jsi->userModulePath)
+    return JS_FALSE;
+
+  return JS_TRUE;
 }
 
-void gpsee_shutdownModuleSystem(JSContext *cx)
+void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t		i;
   modulePathEntry_t	node, nextNode;
 
@@ -1473,10 +1487,14 @@ void gpsee_shutdownModuleSystem(JSContext *cx)
     markModuleUnused(cx, module);
   }
 
-  for (node = jsi->modulePath; node; node = nextNode, nextNode = node->next)
+  for (node = jsi->modulePath; node; node = nextNode)
+  {
+    nextNode = node->next;
     free(node);
+  }
 
   JS_free(cx, jsi->modulePath);
+  JS_RemoveRoot(cx, &jsi->userModulePath);
 }
 
 

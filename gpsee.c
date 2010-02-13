@@ -685,7 +685,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   gpsee_removeAsyncCallbacks(interpreter);
 #endif
 
-  gpsee_shutdownModuleSystem(interpreter->cx);
+  gpsee_shutdownModuleSystem(interpreter, interpreter->cx);
 
   JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
   JS_EndRequest(interpreter->cx);
@@ -750,9 +750,6 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
     gpsee_createJSArray_fromVector(cx, obj, "environ", script_environ);
 
   if (JS_DefineFunction(cx, obj, "loadModule", gpsee_loadModule, 0, 0) == NULL)
-    return JS_FALSE;
-
-  if (JS_DefineFunction(cx, obj, "require", gpsee_loadModule, 0, 0) == NULL)
     return JS_FALSE;
 
   return JS_TRUE;
@@ -842,10 +839,13 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   if (!interpreter->globalObj)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create global object!");
 
-  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Technically, probably unnecessary but WTH */
-
+  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Usually unnecessary but JS_SetOptions can change that */
+  
   if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
+
+  if (gpsee_initializeModuleSystem(interpreter, cx) == JS_FALSE)
+    panic("Unable to initialize module system");
 
 #if !defined(MAKEDEPEND) && !defined(DOXYGEN)
 # if defined(JS_THREADSAFE)
@@ -857,9 +857,6 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   interpreter->rt 	 	= rt;
 #endif
   
-  if (!gpsee_initializeModuleSystem(cx))
-    panic("Unable to initialize module system");
-
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)

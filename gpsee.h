@@ -271,6 +271,7 @@ typedef struct
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   const char		*programModule_dir;	/**< Directory JS program is in, based on its cname, used for absolute module names */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
+  JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
 
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
