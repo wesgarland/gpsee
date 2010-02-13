@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.25 2010/02/12 21:37:25 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.26 2010/02/13 20:33:43 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.26  2010/02/13 20:33:43  wes
+ *  Module system refactor checkpoint
+ *
  *  Revision 1.25  2010/02/12 21:37:25  wes
  *  Module system refactor check-point
  *
@@ -269,7 +272,6 @@ typedef struct
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
   size_t		modules_len;		/**< Number of slots allocated in modules */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
-  const char		*programModule_dir;	/**< Directory JS program is in, based on its cname, used for absolute module names */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
 

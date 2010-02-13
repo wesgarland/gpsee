@@ -296,7 +296,7 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
   if (exports)
   {
     if (JS_DefineProperty(cx, moduleScope, "exports", OBJECT_TO_JSVAL(exports), NULL, NULL, 
-			  JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) != JS_TRUE)
+			  JSPROP_ENUMERATE | JSPROP_PERMANENT) != JS_TRUE)
       exports = NULL;
   }
 
@@ -799,6 +799,7 @@ JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *
   JSString		*jsstr;
   jsuint		idx, arrlen;
   modulePathEntry_t	modulePath, pathEl;
+  const char		*dir;
 
   if (JS_IsArrayObject(cx, arrObj) != JS_TRUE)
   {
@@ -815,7 +816,8 @@ JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *
     return JS_TRUE;
   }
 
-  pathEl = modulePath = JS_malloc(cx, sizeof(*modulePath) * arrlen);
+  modulePath = JS_malloc(cx, sizeof(*modulePath) * arrlen);
+  pathEl = NULL;
 
   for (idx = 0; idx < arrlen; idx++)
   {
@@ -833,15 +835,20 @@ JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *
     else
       jsstr = JS_ValueToString(cx, v);
 
-    pathEl->dir = JS_EncodeString(cx, jsstr);
-    if (!pathEl->dir)
+    dir = JS_EncodeString(cx, jsstr);
+    if (!dir || !dir[0])
       continue;
 
-    if (pathEl->dir[0])
+    if (!pathEl)
+      pathEl = modulePath;
+    else
       pathEl = pathEl->next = modulePath + idx + 1;
+
+    pathEl->dir = dir;
   }
   pathEl->next = NULL;
 
+  *modulePath_p = modulePath;
   return JS_TRUE;
 }
 
@@ -903,6 +910,7 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
     {
       const char 	*errmsg;
       char		cnBuf[PATH_MAX];
+      char		*s;
 
       if (!module)
       {
@@ -916,6 +924,10 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
 
 	if (!checkJail(cnBuf, jsi->moduleJail))
 	  break;
+
+	if ((s = strchr(cnBuf, '.')))
+	  if (strcmp(s + 1, *ext_p) == 0)
+	    *s = (char)0;
 
 	module = acquireModuleHandle(cx, cnBuf, NULL);
 	if (!module)
@@ -955,8 +967,8 @@ static JSBool loadDiskModule_onPath(gpsee_interpreter_t *jsi, JSContext *cx, con
 {
   modulePathEntry_t	pathEl;
 
-  for (pathEl = jsi->modulePath,	*module_p = NULL;
-       pathEl && 			*module_p == NULL; 
+  for (pathEl = modulePath,	*module_p = NULL;
+       pathEl && 		*module_p == NULL; 
        pathEl = pathEl->next)
   {
     if (loadDiskModule_inDir(jsi, cx, moduleName, pathEl->dir, module_p) == JS_FALSE)
