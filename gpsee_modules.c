@@ -1,4 +1,4 @@
- /* ***** BEGIN LICENSE BLOCK *****
+/* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -35,12 +35,10 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.16 2010/02/12 21:37:25 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.17 2010/02/13 20:33:43 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
- *
- *  @todo	programModule_dir should be eliminated in favour of smarter path inheritance.
  *
  * <b>Design Notes (warning, rather out of date)</b>
  *
@@ -82,7 +80,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.16 2010/02/12 21:37:25 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.17 2010/02/13 20:33:43 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -330,7 +328,7 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   JSObject      	*modDotModObj;
   JSString      	*moduleId;
 
-  GPSEE_ASSERT(module->exports == NULL);
+  GPSEE_ASSERT(module->exports == NULL || moduleScope == jsi->globalObj);
   GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || moduleScope == jsi->globalObj);
 
   setModuleHandle_forScope(cx, moduleScope, module);
@@ -791,7 +789,7 @@ static int isRelativePath(const char *path)
  *  @param	cx		Current JavaScript context
  *  @param	obj		Scope-Object containing the array (e.g. global)
  *  @param	pathName	Expression yielding the array (e.g. "require.paths")
- *  @param	modulePath_p	[out]	The list or NULL upon successful return
+ *  @param	modulePath_p	[out]	The list or NULL (for an empy list) upon successful return
  *  
  *  @returns	JS_FALSE when a JS exception is thrown during processing
  */
@@ -808,8 +806,14 @@ JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *
     return JS_TRUE;
   }
 
-  if (JS_GetArrayLength(cx, arrObj, &arrlen) == FALSE)
+  if (JS_GetArrayLength(cx, arrObj, &arrlen) == JS_FALSE)
     return JS_FALSE;
+
+  if (arrlen == 0)
+  {
+    *modulePath_p = NULL;
+    return JS_TRUE;
+  }
 
   pathEl = modulePath = JS_malloc(cx, sizeof(*modulePath) * arrlen);
 
@@ -975,7 +979,6 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
 { 
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   modulePathEntry_t	requirePaths;
-  JSBool		b;
 
   *module_p = NULL;
 
@@ -985,10 +988,7 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
     const char	*currentModulePath;
     char	pmBuf[PATH_MAX];
 
-    if (parentModule)
-      currentModulePath = gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf));
-    else
-      currentModulePath = jsi->programModule_dir ?: ".";
+    currentModulePath = gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf));
 
     if (loadDiskModule_inDir(jsi, cx, moduleName, currentModulePath, module_p) == JS_FALSE)
       return JS_FALSE;
@@ -1017,12 +1017,15 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
   /* Search require.paths */
   if (JSArray_toModulePath(cx, jsi->userModulePath, &requirePaths) == JS_FALSE)
     return JS_FALSE;
-  b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
-  freeModulePath_fromJSArray(cx, requirePaths);
-  if (b == JS_FALSE)
-    return JS_FALSE;
-  if (*module_p)
-    return JS_TRUE;
+  if (requirePaths)
+  {
+    JSBool b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
+    freeModulePath_fromJSArray(cx, requirePaths);
+    if (b == JS_FALSE)
+      return JS_FALSE;
+    if (*module_p)
+      return JS_TRUE;
+  }
 
   return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: Error loading top-level module '%s': module not found", 
 		     moduleName);
@@ -1316,14 +1319,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     goto fail;
   }
 
-  jsi->programModule_dir = cnBuf;
-  s = strrchr(cnBuf, '/');
-  if (!s || (s == cnBuf))
-    return "could not determine program module dir";
-  else
-    *s = (char)0;
-
-  dprintf("Program module root is %s\n", jsi->programModule_dir);
+  dprintf("Program module root is %s\n", module->cname);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
   if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
@@ -1372,7 +1368,6 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     }
   }
 
-  jsi->programModule_dir = NULL;
   if (module)
     markModuleUnused(cx, module);
  
@@ -1429,6 +1424,7 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   char			*envpath = getenv("GPSEE_PATH");
   char			*path;
   modulePathEntry_t	pathEl;
+  moduleHandle_t	*module;
 
   jsi->moduleJail = rc_value(rc, "gpsee_module_jail");
   dprintf("Initializing module system; jail starts at %s\n", jsi->moduleJail ?: "/");
@@ -1458,6 +1454,19 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
   if (!jsi->userModulePath)
     return JS_FALSE;
+
+  module = acquireModuleHandle(cx, "__preload__", jsi->globalObj);
+  if (!module)
+  {
+    dprintf("Could not acquire module handle for preload code\n");
+    return JS_FALSE;
+  }
+
+  if (initializeModuleScope(cx, module, jsi->globalObj) == JS_FALSE)
+  {
+    dprintf("Could not initialize module scope for module at %p\n", module);
+    return JS_FALSE;
+  }
 
   return JS_TRUE;
 }
