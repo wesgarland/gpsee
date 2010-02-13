@@ -156,7 +156,7 @@ install_js_components:
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
 $(TARGET_LIBEXEC_JSC):	install_js_components gsr $(TARGET_LIBEXEC_JS)
-	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//')
+	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
 
 show_modules:
 	@echo 
