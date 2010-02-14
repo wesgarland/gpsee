@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.19 2010/02/14 13:17:54 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.20 2010/02/14 14:12:42 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -80,7 +80,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.19 2010/02/14 13:17:54 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.20 2010/02/14 14:12:42 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -711,8 +711,12 @@ static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const cha
 
   if (gpsee_compileScript(cx, filename, NULL, &module->script,
       module->scope, &module->scrobj, &errorMessage))
+  {
+    dprintf("module %s returns compilation error: %s", moduleShortName(filename), errorMessage);
     return errorMessage;
+  }
 
+  dprintf("module %s compiled okay", moduleShortName(filename));
   return NULL;
 }
 
@@ -1113,7 +1117,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
  *  @note Returns module handle for a reason! This code can reallocate the backing module array. 
  *        Module on the way in may be at a different address on the way out.
  */
-static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, const char **errorMessage_p)
+static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /* XXX refactor */
 {
   JSObject		*moduleScope = module->scope;
 
@@ -1145,6 +1149,13 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
     module = getModuleHandle_fromScope(cx, moduleScope);
 
     module->scrobj = NULL;	/* No longer needed */
+
+    if (b == JS_FALSE)
+    {
+      /** @todo handle system-exit exceptions here */
+      dprintf("module %s at %p threw an exception during initialization", moduleShortName(module->cname), module);
+      return NULL;
+    }
   }
 
   return module;
@@ -1156,7 +1167,6 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module, c
 JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *argv, jsval *rval)
 {
   const char		*moduleName;
-  const char		*errorMessage = "unknown error";
   moduleHandle_t	*module, *m;
   moduleHandle_t        *parentModule;
   jsval			v;
@@ -1219,7 +1229,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   }
 
   dprintf("Initializing module at 0x%p\n", module);
-  if ((m = initializeModule(cx, module, &errorMessage)))
+  if ((m = initializeModule(cx, module)))
     module = m;
   dprintf("Initialized module now at 0x%p\n", m);
 
@@ -1335,13 +1345,17 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
   if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
-      module->scope, &module->scrobj, &errorMessage))
+      module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
+  {
+    if (!JS_IsExceptionPending(cx))
+      (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".runProgramModule.compile: %s", errorMessage);
     goto fail;
+  }
 
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
   module->flags |= mhf_loaded;	
 
-  if (initializeModule(cx, module, &errorMessage))
+  if (initializeModule(cx, module))
   {
     dprintf("done running program module %s\n", moduleShortName(module->cname));
     goto good;
@@ -1351,12 +1365,8 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
    * additional and/or less serious error reporting facilities exist.
    */
   fail:
-  GPSEE_ASSERT(errorMessage);
-  if (!errorMessage)
-    errorMessage = "unknown failure";
-
   dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-  gpsee_log(gpsee_verbosity(0) ? SLOG_NOTICE : SLOG_EMERG, "Failed loading program module '%s': %s", scriptFilename, errorMessage);
+  gpsee_log(SLOG_NOTICE, "Failed loading program module '%s'", scriptFilename);
 
   good:
 
