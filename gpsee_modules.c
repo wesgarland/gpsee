@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.17 2010/02/13 20:33:43 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.18 2010/02/14 01:24:46 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -80,7 +80,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.17 2010/02/13 20:33:43 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.18 2010/02/14 01:24:46 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -1508,14 +1508,15 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     markModuleUnused(cx, module);
   }
 
+  JS_RemoveRoot(cx, &jsi->userModulePath);
+
   for (node = jsi->modulePath; node; node = nextNode)
   {
     nextNode = node->next;
-    free(node);
+    free(node->dir);
   }
 
   JS_free(cx, jsi->modulePath);
-  JS_RemoveRoot(cx, &jsi->userModulePath);
 }
 
 
