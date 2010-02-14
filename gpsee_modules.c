@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.20 2010/02/14 14:12:42 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.21 2010/02/14 15:44:40 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -80,7 +80,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.20 2010/02/14 14:12:42 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.21 2010/02/14 15:44:40 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -377,6 +377,28 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   }
 
   /** XXX copy through standard classes */
+  if (moduleScope != jsi->globalObj)
+  {
+    const char	**sym_p, *globalSymbols[] = { "Object", "Array", "Date", "String", "Math", "print", NULL };
+
+    for (sym_p = globalSymbols; *sym_p; sym_p++)
+    {
+      jsval v;
+
+      if (JS_GetProperty(cx, jsi->globalObj, *sym_p, &v) == JS_FALSE)
+      {
+	dprintf("Could not retrieve symbol %s from global scope", *sym_p);
+	return JS_FALSE;
+      }
+
+      if (JS_DefineProperty(cx, moduleScope, *sym_p, v, NULL, NULL, 
+			    JSPROP_PERMANENT) != JS_TRUE)
+      {
+	dprintf("Could not define symbol %s on module scope", *sym_p);
+	return JS_FALSE;
+      }
+    }
+  }
 
   return JS_TRUE;
 }
@@ -405,7 +427,10 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
   moduleScope = JS_NewObject(cx, &module_scope_class, NULL, NULL);
   if (!moduleScope)
       goto errout;
-  
+
+  if (JS_SetParent(cx, moduleScope, NULL) == JS_FALSE)
+    goto errout;
+
   if (initializeModuleScope(cx, module, moduleScope) == JS_FALSE)
     goto errout;
 
@@ -1120,6 +1145,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
 static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /* XXX refactor */
 {
   JSObject		*moduleScope = module->scope;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   dprintf("initializeModule(%s)\n", module->cname);
 
@@ -1145,7 +1171,9 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /
      */
     script = module->script;
     module->script = NULL;
+    JS_SetGlobalObject(cx, module->scope);
     b = JS_ExecuteScript(cx, module->scope, script, &dummyval); /* realloc hazard */
+    JS_SetGlobalObject(cx, jsi->globalObj);
     module = getModuleHandle_fromScope(cx, moduleScope);
 
     module->scrobj = NULL;	/* No longer needed */
@@ -1344,6 +1372,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("Program module root is %s\n", module->cname);
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
+  JS_SetGlobalObject(cx, module->scope);
   if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
       module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
   {
@@ -1369,6 +1398,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   gpsee_log(SLOG_NOTICE, "Failed loading program module '%s'", scriptFilename);
 
   good:
+  JS_SetGlobalObject(cx, jsi->globalObj);
 
   /* If there is a pending exception, we'll report it here */
   if (JS_IsExceptionPending(cx))
