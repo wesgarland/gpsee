@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.18 2010/02/14 01:24:46 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.19 2010/02/14 13:17:54 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
  *					native, script, and blended modules.
@@ -80,7 +80,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.18 2010/02/14 01:24:46 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.19 2010/02/14 13:17:54 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -571,13 +571,13 @@ static void forgetModuleHandle(JSContext *cx, moduleHandle_t *module)
  *  is finalized, but there is no direct way to know that since 
  *  finalization order is random.
  */
-static moduleHandle_t *finalizeModuleHandle(moduleHandle_t *module)
+static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *module)
 {
   moduleHandle_t *next = module->next;
 
   dprintf("Finalizing module handle at 0x%p\n", module);
   if (module->cname)
-    free((char *)module->cname);
+    JS_free(cx, (char *)module->cname);
 
   if (module->DSOHnd)
   {
@@ -1398,7 +1398,7 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
   if (status == JSGC_FINALIZE_END)
   {
     while (jsi->unreachableModule_llist)
-      jsi->unreachableModule_llist = finalizeModuleHandle(jsi->unreachableModule_llist);
+      jsi->unreachableModule_llist = finalizeModuleHandle(cx, jsi->unreachableModule_llist);
   }
 
   if (status != JSGC_MARK_END)
@@ -1448,16 +1448,17 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   memset(jsi->modulePath, 0, sizeof(*jsi->modulePath));
 
   /* Populate the GPSEE module path */
-  jsi->modulePath->dir = gpsee_libexecDir();
+  jsi->modulePath->dir = JS_strdup(cx, gpsee_libexecDir());
   if (envpath)
   {
-    envpath = strdup(envpath);
+    envpath = JS_strdup(cx, envpath);
     if (!envpath)
       return JS_FALSE;
 
     for (pathEl = jsi->modulePath, path = strtok(envpath, ":"); path; pathEl = pathEl->next, path = strtok(NULL, ":"))
     {
-      pathEl->next = calloc(sizeof(*pathEl), 1);
+      pathEl->next = JS_malloc(cx, sizeof(*pathEl));
+      memset(pathEl->next, 0, sizeof(*pathEl->next));
       pathEl->next->dir = path;
     }
   }
@@ -1513,11 +1514,8 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   for (node = jsi->modulePath; node; node = nextNode)
   {
     nextNode = node->next;
-    free(node->dir);
+    JS_free(cx, (char *)node->dir);
   }
 
   JS_free(cx, jsi->modulePath);
 }
-
-
-
