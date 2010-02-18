@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.22 2010/02/12 21:37:25 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.24 2010/02/17 15:59:33 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.24  2010/02/17 15:59:33  wes
+ *  Module Refactor checkpoint: switched modules array to a splay tree
+ *
  *  Revision 1.22  2010/02/12 21:37:25  wes
  *  Module system refactor check-point
  *
@@ -132,7 +135,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.22 2010/02/12 21:37:25 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.24 2010/02/17 15:59:33 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -141,6 +144,12 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.22 201
 #define	GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY	0xfff
 
 extern rc_list rc;
+
+#if defined(GPSEE_DEBUG_BUILD)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+#else
+# define dprintf(a...) while(0) printf(a)
+#endif
 
 /** Increase, Decrease, or change application verbosity.
  *
@@ -424,7 +433,9 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
       return JS_FALSE;
 
     if (resolved)
+    {
       *objp = obj;
+    }
   }
 
   return JS_TRUE;
@@ -692,8 +703,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   JS_DestroyContext(interpreter->cx);
   JS_DestroyRuntime(interpreter->rt);
   
-  if (interpreter->modules)
-    free(interpreter->modules);
+  gpsee_moduleSystemCleanup(interpreter);
   free(interpreter);
   return 0;
 }

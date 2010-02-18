@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.26 2010/02/13 20:33:43 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.27 2010/02/17 15:59:33 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.27  2010/02/17 15:59:33  wes
+ *  Module Refactor checkpoint: switched modules array to a splay tree
+ *
  *  Revision 1.26  2010/02/13 20:33:43  wes
  *  Module system refactor checkpoint
  *
@@ -239,9 +242,9 @@ typedef enum
 } exitType_t;
 
 typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
-typedef struct moduleHandle moduleHandle_t; /**< Handle describing a loaded module */
-typedef struct modulePathEntry *modulePathEntry_t; /**< Pointer to a module path linked list element */
-
+typedef struct moduleHandle moduleHandle_t; 		/**< Handle describing a loaded module */
+typedef struct moduleMemo moduleMemo_t; 		/**< Handle to module system's interpreter-wide memo */
+typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
 
 /** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
@@ -268,9 +271,8 @@ typedef struct
   errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
   void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
 
-  moduleHandle_t *	*modules;		/**< List of loaded modules and their shutdown requirements etc */
+  moduleMemo_t 		*modules;		/**< List of loaded modules and their shutdown requirements etc */
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
-  size_t		modules_len;		/**< Number of slots allocated in modules */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */

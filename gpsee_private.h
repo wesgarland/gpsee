@@ -37,9 +37,10 @@
  *  @file	gpsee_private.h		Private interfaces for use within GPSEE.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: gpsee_private.h,v 1.5 2010/02/12 21:37:25 wes Exp $
+ *  @version	$Id: gpsee_private.h,v 1.7 2010/02/17 15:59:33 wes Exp $
  */
 
 #include "jsapi.h"
 int 			gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
 void 			gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
+void			gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi);

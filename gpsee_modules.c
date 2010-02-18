@@ -35,28 +35,17 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.21 2010/02/14 15:44:40 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.22 2010/02/17 15:59:33 wes Exp $
  *  @date	March 2009
- *  @file	gpsee_modules.c		GPSEE module load, unload, and management code for
- *					native, script, and blended modules.
+ *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
+ *					for native, script, and blended modules.
  *
  * <b>Design Notes (warning, rather out of date)</b>
  *
- * Module handles are stored in a dynamically-realloc()d array, jsi->modules.
- * This means you cannot store a reference to a module handle unless you can
- * guarantee that the address of the entire array will not change when you're
- * not looking.
- *
- * - Running ANY JavaScript code can move the modules array
- * - Running any function which can call acquireModuleHandle() can move the 
- *   modules array. 
- * - Corrolary: calling module->init() and module->script may move jsi->modules.
- *   Best way to get around that is to re-calculate module immediately after any
- *   calls like that.
- * - Module objects and scopes will not move, as their allocation is managed 
- *   by JavaScript garbage collector
- * - The module scope object stores an offset to the module handle from the start 
- *   of the modules array in its private data
+ * Module handles are stored in a splay tree, jsi->modules. Splay trees are
+ * automatically balanced binary search trees that slightly re-balance on 
+ * every read to improve to locality of reference, moving recent search results
+ * closer to the head.
  *
  * Extra GC roots, provided by moduleGCCallback(), are available in each
  * module handle. They are:
@@ -80,7 +69,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.21 2010/02/14 15:44:40 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.22 2010/02/17 15:59:33 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -89,15 +78,25 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.21 2
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
+#include "./freebsd_tree.h"
 
 #if defined(GPSEE_DEBUG_BUILD)
 # define RTLD_mode	RTLD_NOW
-# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+static int dpDepthSpaces=0;
+static const char *spaces(void)
+{
+  static char buf[1024];
+  memset(buf, 32, dpDepthSpaces * 2);
+  buf[dpDepthSpaces * 2] = (char)0;
+  return buf;
+}
+# define dpDepth(a) do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("modules\t> %s", spaces()), printf(a); } while(0)
+# define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 #else
 # define RTLD_mode	RTLD_LAZY
 # define dprintf(a...) while(0) printf(a)
+# define dpDepth(a) while(0)
 #endif
 
 GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
@@ -128,21 +127,62 @@ struct modulePathEntry
 typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
-static void finalizeModuleExports(JSContext *cx, JSObject *exports);
 static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module);
 static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *moduleScope);
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module);
 
+/** Lazy resolver for global classes.
+ *  Originally from js.c; cruft removed.
+ */
+static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
+{
+  if ((flags & JSRESOLVE_ASSIGNING) == 0) 
+  {
+    JSBool resolved;
+
+    if (!JS_ResolveStandardClass(cx, obj, id, &resolved))
+      return JS_FALSE;
+
+    if (resolved)
+      *objp = obj;
+  }
+
+  return JS_TRUE;
+}
+
+JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  return JS_GetPropertyById(cx, jsi->globalObj, id, vp);
+}
+
+JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
+{
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  jsval			v;
+
+  if (JS_GetPropertyById(cx, jsi->globalObj, id, &v) == JS_FALSE)
+    return JS_FALSE;
+
+  if (JS_DefinePropertyById(cx, obj, id, v, NULL, NULL, 0) == JS_FALSE)
+    return JS_FALSE;
+
+  *objp = JSVAL_TO_OBJECT(v);
+
+  return JS_TRUE;
+}
+
 static JSClass module_scope_class = 	/* private member is reserved by gpsee - holds module handle */
 {
   GPSEE_GLOBAL_NAMESPACE_NAME ".module.Scope",
-  JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS,
+  JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS | JSCLASS_NEW_RESOLVE,
   JS_PropertyStub,  
   JS_PropertyStub,  
-  JS_PropertyStub,  
+  getGlobalProperty,
   JS_PropertyStub,
   JS_EnumerateStub, 
-  JS_ResolveStub,   
+  JS_ResolveStub,   /* global_newresolve,*/
   JS_ConvertStub,   
   finalizeModuleScope,
   JSCLASS_NO_OPTIONAL_MEMBERS
@@ -159,7 +199,7 @@ static JSClass module_exports_class = 		/* private member - do not touch - for u
   JS_EnumerateStub, 
   JS_ResolveStub,   
   JS_ConvertStub,   
-  finalizeModuleExports,
+  JS_FinalizeStub,
   JSCLASS_NO_OPTIONAL_MEMBERS
 };  
 
@@ -183,10 +223,19 @@ struct moduleHandle
   JSObject		*scrobj;	/**< GC thing for script, used by GC callback */
 
   moduleHandle_flags_t	flags;		/**< Special attributes of module; bit-field */
-  size_t		slot;		/**< Index of this handle into jsi->modules */
 
   moduleHandle_t	*next;		/**< Used when treating as a linked list node, i.e. during DSO unload */
+  SPLAY_ENTRY(moduleHandle)	entry;	/**< Tree data */
 };
+
+/** Compare two module pointers to see if they have the same canonical name */
+static int moduleCName_strcmp(struct moduleHandle *module1, struct moduleHandle *module2)
+{
+  return strcmp(module1->cname, module2->cname);
+}
+SPLAY_HEAD(moduleMemo, moduleHandle);
+SPLAY_PROTOTYPE(moduleMemo, moduleHandle, entry, moduleCName_strcmp)
+SPLAY_GENERATE(moduleMemo, moduleHandle, entry, moduleCName_strcmp)
 
 /**
  *  requireLock / requireUnlock form a simple re-entrant lockless "mutex", optimized for 
@@ -202,6 +251,7 @@ struct moduleHandle
  */
 static void requireLock(JSContext *cx)
 {
+  dpDepth(+1);
 #if defined(JS_THREADSAFE)
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread		*thisThread = PR_GetCurrentThread();
@@ -248,24 +298,8 @@ static void requireUnlock(JSContext *cx)
     }
  }
 #endif
+  dpDepth(-1);
   return;
-}
-
-/** Determine the libexec directory, which is the default directory in which
- *  to find modules. Libexec  dir is generated first via the environment, if
- *  not found the rc file, and finally via the GPSEE_LIBEXEC_DIR define passed
- *  from the Makefile.
- *
- *  returns	A pointer to the libexec dir pathname
- */
-const char *gpsee_libexecDir(void)
-{
-  const char *s = getenv("GPSEE_LIBEXEC_DIR");
-
-  if (!s)
-    s = rc_default_value(rc, "gpsee_libexec_dir", DEFAULT_LIBEXEC_DIR);
-
-  return s;
 }
 
 /**
@@ -293,13 +327,7 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
   JSObject 		*exports;
 
   exports = JS_NewObject(cx, &module_exports_class, NULL, moduleScope);
-  if (exports)
-  {
-    if (JS_DefineProperty(cx, moduleScope, "exports", OBJECT_TO_JSVAL(exports), NULL, NULL, 
-			  JSPROP_ENUMERATE | JSPROP_PERMANENT) != JS_TRUE)
-      exports = NULL;
-  }
-
+  dprintf("Created new exports at %p for module at scope %p\n", exports, moduleScope);
   return exports;
 }
 
@@ -316,65 +344,81 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
  *					Handle must remain valid for the lifetime of this scope. Only
  *					the cname member is used by this function.
  *  @param	moduleScope		Scope object to initialize
+ *  @param	isVolatileScope		If isVolatileScope is JS_TRUE, this module scope will be created
+ *					with "volatile" objects; that is, properties like require, exports,
+ *					and so can be deleted or modified in ways they normally could not.
+ *					This mode allows us to declare a special module scope before the
+ *					program module loads that shares the global object with the program
+ *					module, but has had its module-special properties (like require and
+ *					exports) replaced by the time the program module runs.
  *
  *  @note	This function also sets module->exports
  *
  *  @returns	JS_TRUE or JS_FALSE if an exception was thrown
  */
-static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObject *moduleScope)
+static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObject *moduleScope, JSBool isVolatileScope)
 {
   JSFunction 		*require;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   JSObject      	*modDotModObj;
   JSString      	*moduleId;
+  int			jsProp_permanentReadOnly;
+  int			jsProp_permanent;
 
-  GPSEE_ASSERT(module->exports == NULL || moduleScope == jsi->globalObj);
+  if (isVolatileScope == JS_TRUE)
+  {
+    jsProp_permanent = 0;
+    jsProp_permanentReadOnly = 0;
+    return JS_TRUE;
+  }
+  else
+  {
+    jsProp_permanent = JSPROP_PERMANENT;
+    jsProp_permanentReadOnly = JSPROP_PERMANENT | JSPROP_READONLY;
+  }
+
+  dprintf("Initializing module scope for module %s at %p\n", moduleShortName(module->cname), module);
+  dpDepth(+1);
+
+  GPSEE_ASSERT(module->exports == NULL || isVolatileScope);
   GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || moduleScope == jsi->globalObj);
 
   setModuleHandle_forScope(cx, moduleScope, module);
 
-  require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+  require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | jsProp_permanentReadOnly);
   if (!require)
-    return JS_FALSE;
+    goto fail;
 
   if (JS_DefineProperty(cx, (JSObject *)require, "paths", 
 			OBJECT_TO_JSVAL(jsi->userModulePath), NULL, NULL,
-			JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
-  {	
-    return JS_FALSE;
-  }
+			JSPROP_ENUMERATE | jsProp_permanentReadOnly) != JS_TRUE)
+    goto fail;
 
   if (JS_SetReservedSlot(cx, (JSObject *)require, 0, PRIVATE_TO_JSVAL(module)) == JS_FALSE)
-    return JS_FALSE;
+    goto fail;
 
   module->exports = newModuleExports(cx, moduleScope);
   if (JS_DefineProperty(cx, moduleScope, "exports", 
 			OBJECT_TO_JSVAL(module->exports), NULL, NULL,
-			JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT) != JS_TRUE)
-  {
-    return JS_FALSE;
-  }
+			JSPROP_ENUMERATE | jsProp_permanentReadOnly) != JS_TRUE)
+    goto fail;
 
   modDotModObj = JS_NewObject(cx, NULL, NULL, moduleScope);
   if (!modDotModObj)
-    return JS_FALSE;
+    goto fail;
 
   if (JS_DefineProperty(cx, moduleScope, "module", OBJECT_TO_JSVAL(modDotModObj), NULL, NULL,
-			JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE)
-  {
-    return JS_FALSE;
-  }
+			JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
+    goto fail;
 
   /* Add 'id' property to 'module' property of module scope. */
   moduleId = JS_NewStringCopyZ(cx, module->cname);
   if (!moduleId)
-    return JS_FALSE;
+    goto fail;
 
   if (JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
-		    JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE)
-  {
-    return JS_FALSE;
-  }
+		    JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
+    goto fail;
 
   /** XXX copy through standard classes */
   if (moduleScope != jsi->globalObj)
@@ -387,20 +431,25 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 
       if (JS_GetProperty(cx, jsi->globalObj, *sym_p, &v) == JS_FALSE)
       {
-	dprintf("Could not retrieve symbol %s from global scope", *sym_p);
-	return JS_FALSE;
+	dprintf("Could not retrieve symbol %s from global scope\n", *sym_p);
+	goto fail;
       }
 
       if (JS_DefineProperty(cx, moduleScope, *sym_p, v, NULL, NULL, 
-			    JSPROP_PERMANENT) != JS_TRUE)
+			    jsProp_permanent) != JS_TRUE)
       {
-	dprintf("Could not define symbol %s on module scope", *sym_p);
-	return JS_FALSE;
+	dprintf("Could not define symbol %s on module scope\n", *sym_p);
+	goto fail;
       }
     }
   }
 
+  dpDepth(-1);
   return JS_TRUE;
+
+  fail:
+  dpDepth(-1);
+  return JS_FALSE;
 }
 
 /**
@@ -424,23 +473,36 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
   if (JS_EnterLocalRootScope(cx) != JS_TRUE)
     return NULL;
 
+  dpDepth(+1);
+
   moduleScope = JS_NewObject(cx, &module_scope_class, NULL, NULL);
   if (!moduleScope)
-      goto errout;
+      goto fail;
 
   if (JS_SetParent(cx, moduleScope, NULL) == JS_FALSE)
-    goto errout;
+    goto fail;
 
-  if (initializeModuleScope(cx, module, moduleScope) == JS_FALSE)
-    goto errout;
+  if (initializeModuleScope(cx, module, moduleScope, JS_FALSE) == JS_FALSE)
+    goto fail;
 
   JS_LeaveLocalRootScopeWithResult(cx, OBJECT_TO_JSVAL(moduleScope));
 
+  dpDepth(-1);
   return moduleScope;
 
-  errout:
+  fail:
   JS_LeaveLocalRootScope(cx);
+  dpDepth(-1);
   return NULL;
+}
+
+static moduleHandle_t *findModuleHandle(gpsee_interpreter_t *jsi, const char *cname)
+{
+  moduleHandle_t tmp;
+
+  tmp.cname = cname;
+
+  return SPLAY_FIND(moduleMemo, jsi->modules, &tmp);
 }
 
 /** Find existing or create new module handle.
@@ -448,9 +510,6 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
  *  Module handles are used to 
  *  - track shutdown requirements over the lifetime of  the interpreter
  *  - track module objects so they don't get garbage collected
- *
- *  Note that the module objects in here can't be made GC roots, as the
- *  whole structure is subject reallocation. Hence moduleGCCallback().
  *
  *  Any module handle returned from this routine is guaranteed to have a cname, so that it
  *  can be identified.
@@ -463,67 +522,32 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
  */
 static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSObject *moduleScope)
 {
-  moduleHandle_t	*module, **moduleSlot = NULL;
+  moduleHandle_t	*module;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t		i;
 
   GPSEE_ASSERT(cname != NULL);
+
   dprintf("Acquiring module handle for %s\n", cname);
+  dpDepth(+1);
 
-  /* Scan for free slots and/or cname repetition (modules are singletons) */
-  for (i=0; i < jsi->modules_len; i++)
+  module = findModuleHandle(jsi, cname);
+  if (module)
   {
-    module = jsi->modules[i];
-
-    if (module && module->cname && (strcmp(module->cname, cname) == 0))
-    {
-      dprintf("Returning used module handled at %p\n", module);
-      return module;	/* seen this one already */
-    }
-
-    if (!moduleSlot && !module)
-      moduleSlot = jsi->modules + i; /* don't break, singleton check still! */
-  }
-  
-  if (!moduleSlot)	/* No free slots, allocate some more */
-  {
-    moduleHandle_t **modulesRealloc;
-    size_t incr;
-
-    /* Grow the pointer array jsi->modules by a healthy increment */
-    incr = max(jsi->modules_len / 2, 64);
-
-    /* Reallocate pointer array */
-    modulesRealloc = JS_realloc(cx, jsi->modules, sizeof(jsi->modules[0]) * (jsi->modules_len + incr));
-    if (!modulesRealloc)
-      panic(GPSEE_GLOBAL_NAMESPACE_NAME ".modules.acquireHandle: Out of memory in " __FILE__);
-
-    /* Initialize new pointer array members to NULL */
-    memset(modulesRealloc + jsi->modules_len, 0, incr * sizeof(*modulesRealloc));
-
-    /* Implement the change in address caused by reallocation */
-    moduleSlot = modulesRealloc + jsi->modules_len;
-    jsi->modules = modulesRealloc;
-    jsi->modules_len += incr;
+    dprintf("Returning used module handle at %p with scope %p and exports %p\n", module, module->scope, module->exports);
+    goto success;	/* seen this one already */
   }
 
-  /* Allocate the new moduleHandle_t, inserting its pointer into jsi->modules */
-  *moduleSlot = calloc(1, sizeof(**moduleSlot));
-  if (!*moduleSlot)
+  module = calloc(sizeof *module, 1);
+  if (!module)
   {
     JS_ReportOutOfMemory(cx);
-    return NULL;
+    goto fail;
   }
-  module = *moduleSlot;
-  module->slot = moduleSlot - jsi->modules;
 
-  dprintf("Allocated new module slot for %s in slot %ld at 0x%p\n", 
-	  cname ? moduleShortName(cname) : "program module", (long int)(moduleSlot - jsi->modules), module);
+  dprintf("Allocated new module node for %s in memo tree at 0x%p\n", 
+	  cname ? moduleShortName(cname) : "program module", module);
 
-  if (cname)
-  {
-    module->cname = JS_strdup(cx, cname);
-  }
+  module->cname = JS_strdup(cx, cname);
 
   if (!moduleScope)
   {
@@ -541,12 +565,19 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     module->scope = moduleScope;
     GPSEE_ASSERT(module->scope);
   }
+  
+  SPLAY_INSERT(moduleMemo, jsi->modules, module);	/* module->scope becomes a root here */
+  dprintf("Memoized module at %p with scope %p\n", module, module->scope);
 
+  success:
+  dpDepth(-1);
   dprintf("Module handle is at %p\n", module);
   return module;
 
-fail:
-  markModuleUnused(cx, module);
+  fail:
+  dpDepth(-1);
+  if (module)
+    markModuleUnused(cx, module);
   return NULL;
 }
 
@@ -555,6 +586,7 @@ fail:
  */
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
 {
+  dpDepth(+1);
   dprintf("Marking module at %p (%s) as unused\n", module, module->cname?:"no name");
 
   if (module->flags & ~mhf_loaded && module->exports && module->fini)
@@ -566,21 +598,7 @@ static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
   module->fini	  = NULL;
 
   module->flags	 &= ~mhf_loaded;
-}
-
-/** Forget a module handle, as far as GPSEE is concerned, so that it is
- *  not reused, e.g. during module load etc.  This is an important
- *  precursor to module unloading.
- *
- *  Is safe to call in a finalizer.
- */
-static void forgetModuleHandle(JSContext *cx, moduleHandle_t *module)
-{
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-
-  dprintf("Forgetting module at 0x%p\n", module);
-  if (jsi->modules[module->slot] == module)
-    jsi->modules[module->slot] = NULL;
+  dpDepth(-1);
 }
 
 /**
@@ -588,13 +606,17 @@ static void forgetModuleHandle(JSContext *cx, moduleHandle_t *module)
  *  underlying allocator.  
  * 
  *  This routine is intended be called from the garbage collector
- *  callback afterall finalizable JS gcthings have been finalized.
+ *  callback after all finalizable JS gcthings have been finalized.
  *  This is because some of those gcthings might need C resources
  *  for finalization.  The canonical example is that finalizing a
  *  prototype object for a class which has its clasp in a DSO. It
  *  is imperative that the DSO stay around until AFTER the prototype
  *  is finalized, but there is no direct way to know that since 
  *  finalization order is random.
+ *
+ *  @param	cx	JavaScript context
+ *  @param	module	Module handle to finalize
+ *  @returns	module->next
  */
 static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *module)
 {
@@ -606,7 +628,9 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
 
   if (module->DSOHnd)
   {
+    dpDepth(+1);
     dprintf("unloading DSO at 0x%p for module 0x%p\n", module->DSOHnd, module);
+    dpDepth(-1);
     dlclose(module->DSOHnd);
   }
 
@@ -620,18 +644,25 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
 }
 
 /** 
- *  Release all memory allocated during the creation of the handle,
- *  with the exception of the array slot itself.  We allow this to 'leak'
- *  since it's small and will be reused soon - on next module load.
- *
- *  This routine does no clean-up of its slot in the module list.
+ *  Release all resources allocated during the creation of the handle, 
+ *  including the handle itself.
  *
  *  Note that "release" in this case means "schedule for finalization";
  *  the finalization actually returns the resources to the OS or other
- *  underlying resources allocators. Calling this routine twice on 
- *  the same module will cause problems. Specifically, it will cause
- *  the GC callback to double-free or free garbage.  As such it is
- *  recommended to ONLY call this routine from the scope finalizer.
+ *  underlying resources allocators. 
+ *
+ *  This routine should only be called from the scope finalizer. Once
+ *  a module has been 'released', it is removed from the jsi->modules
+ *  memo, meaning that reloading the same module will result in a new
+ *  instance even if the module handle has not yet been finalized.
+ *
+ *  Once the module is out of the jsi->modules memo, it is inserted
+ *  into the jsi->unreachableModules_llist linked list.  This list is
+ *  traversed at the very end of the garbaged collector cycle, 
+ *  finalizing all modules handles in the list as it prunes the list.
+ *  This two-phase garbage collection process is necessary because
+ *  the code to finalize the module scope may in fact get dlclose()d
+ *  during finalization of the module handle.
  *
  *  @param	cx	JavaScript context handle
  *  @param	jsi	Script interpreter handle
@@ -643,7 +674,7 @@ static void releaseModuleHandle(JSContext *cx, moduleHandle_t *module)
 
   dprintf("Releasing module at 0x%p\n", module);
 
-  forgetModuleHandle(cx, module);
+  SPLAY_REMOVE(moduleMemo, jsi->modules, module);
   markModuleUnused(cx, module);
 
   /* Actually release OS resources after everything on JS
@@ -678,39 +709,18 @@ static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, modul
 static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
 {
   moduleHandle_t	*module;
+
   dprintf("begin finalizing module scope\n");
+  dpDepth(+1);
 
   module = getModuleHandle_fromScope(cx, moduleScope);
   GPSEE_ASSERT(module != NULL);
   GPSEE_ASSERT(module->fini == NULL);
 
+  dprintf("module is %s, %p\n", moduleShortName(module->cname), module);
   releaseModuleHandle(cx, module);
 
-  dprintf("done finalizing module scope\n");
-}
-
-static void finalizeModuleExports(JSContext *cx, JSObject *exports)
-{
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t		i;
-
-  dprintf("begin finalizing module exports\n");
-
-  /** Module exports are finalized by "forgetting" them */
-  for (i=0; i < jsi->modules_len; i++)
-  {
-    if (!jsi->modules[i])
-      continue;
-
-    if (jsi->modules[i] && jsi->modules[i]->exports == exports)
-    {
-      jsi->modules[i]->exports = NULL;
-      break;
-    }
-  }
-
-  dprintf("done finalizing module exports\n");
-  return;
+  dpDepth(-1);
 }
 
 /**
@@ -732,16 +742,20 @@ static void finalizeModuleExports(JSContext *cx, JSObject *exports)
 static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
   const char *errorMessage;
+
   dprintf("loadJSModule(\"%s\")\n", filename);
+  dpDepth(+1);
 
   if (gpsee_compileScript(cx, filename, NULL, &module->script,
       module->scope, &module->scrobj, &errorMessage))
   {
-    dprintf("module %s returns compilation error: %s", moduleShortName(filename), errorMessage);
+    dprintf("module %s returns compilation error: %s\n", moduleShortName(filename), errorMessage);
+    dpDepth(-1);
     return errorMessage;
   }
 
-  dprintf("module %s compiled okay", moduleShortName(filename));
+  dprintf("module %s compiled okay\n", moduleShortName(filename));
+  dpDepth(-1);
   return NULL;
 }
 
@@ -919,7 +933,7 @@ void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePath)
  *  @returns	JS_TRUE on success, or JS_FALSE if an exception was thrown.
  */
 static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
-				    moduleHandle_t **module_p)
+				   moduleHandle_t **module_p)
 {
   const char		**ext_p, *extensions[] 	= { DSO_EXTENSION,	"js", 		NULL };
   moduleLoader_t	loaders[] 		= { loadDSOModule, 	loadJSModule};
@@ -996,14 +1010,20 @@ static JSBool loadDiskModule_onPath(gpsee_interpreter_t *jsi, JSContext *cx, con
 {
   modulePathEntry_t	pathEl;
 
+  dpDepth(+1);
+
   for (pathEl = modulePath,	*module_p = NULL;
        pathEl && 		*module_p == NULL; 
        pathEl = pathEl->next)
   {
     if (loadDiskModule_inDir(jsi, cx, moduleName, pathEl->dir, module_p) == JS_FALSE)
+    {
+      dpDepth(-1);
       return JS_FALSE;
+    }
   }
 
+  dpDepth(-1);
   return JS_TRUE;
 }
 
@@ -1137,14 +1157,10 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
 
 /** Run module initialization routines and add moduleID property to module scope.
  * 
- *  @returns module ptr on success, NULL on failure. Some failures may be the result of JavaScript exceptions.
- * 
- *  @note Returns module handle for a reason! This code can reallocate the backing module array. 
- *        Module on the way in may be at a different address on the way out.
+ *  @returns JS_TRUE  on success, JS_FALSE if an exception was thrown
  */
-static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /* XXX refactor */
+static JSBool initializeModule(JSContext *cx, moduleHandle_t *module)
 {
-  JSObject		*moduleScope = module->scope;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   dprintf("initializeModule(%s)\n", module->cname);
@@ -1153,9 +1169,9 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /
   {
     const char *id;
 
-    id = module->init(cx, module->exports); /* realloc hazard */
-    module = getModuleHandle_fromScope(cx, moduleScope);
-    GPSEE_ASSERT(module != NULL);
+    id = module->init(cx, module->exports);
+
+    printf("Initialized native module with internal id = %s\n", id);
   }
 
   if (module->script)
@@ -1172,21 +1188,20 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /
     script = module->script;
     module->script = NULL;
     JS_SetGlobalObject(cx, module->scope);
-    b = JS_ExecuteScript(cx, module->scope, script, &dummyval); /* realloc hazard */
+    b = JS_ExecuteScript(cx, module->scope, script, &dummyval);
     JS_SetGlobalObject(cx, jsi->globalObj);
-    module = getModuleHandle_fromScope(cx, moduleScope);
 
-    module->scrobj = NULL;	/* No longer needed */
+    module->scrobj	 = NULL;	/* No longer needed */
 
     if (b == JS_FALSE)
     {
-      /** @todo handle system-exit exceptions here */
-      dprintf("module %s at %p threw an exception during initialization", moduleShortName(module->cname), module);
-      return NULL;
+      /** @todo handle system-exit exceptions here? */
+      dprintf("module %s at %p threw an exception during initialization\n", moduleShortName(module->cname), module);
+      return JS_FALSE;
     }
   }
 
-  return module;
+  return JS_TRUE;
 }
 
 /** Implements the CommonJS require() function, allowing JS inclusive-or native module types.
@@ -1195,7 +1210,7 @@ static moduleHandle_t *initializeModule(JSContext *cx, moduleHandle_t *module) /
 JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *argv, jsval *rval)
 {
   const char		*moduleName;
-  moduleHandle_t	*module, *m;
+  moduleHandle_t	*module;
   moduleHandle_t        *parentModule;
   jsval			v;
   JSObject		*require_fn = JSVAL_TO_OBJECT(argv[-2]);
@@ -1235,9 +1250,9 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   if (module->flags & mhf_loaded)
   {
     /* modules are singletons */
+    dprintf("no reload singleton %s\n", moduleShortName(moduleName));
     requireUnlock(cx);
     *rval = OBJECT_TO_JSVAL(module->exports);
-    dprintf("no reload singleton %s\n", moduleShortName(moduleName));
     return JS_TRUE;
   }
 
@@ -1257,23 +1272,21 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   }
 
   dprintf("Initializing module at 0x%p\n", module);
-  if ((m = initializeModule(cx, module)))
-    module = m;
-  dprintf("Initialized module now at 0x%p\n", m);
+  dpDepth(+1);
 
-  if (!m)
+  if (initializeModule(cx, module) == JS_FALSE)
   {
     markModuleUnused(cx, module);
     requireUnlock(cx);
-    if (JS_IsExceptionPending(cx))
-      return JS_FALSE;
-
-    return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.init: Unable to initialize module '%s'", moduleName);
+    GPSEE_ASSERT(JS_IsExceptionPending(cx));
+    dpDepth(-1);
+    return JS_FALSE;
   }
 
   requireUnlock(cx);
   *rval = OBJECT_TO_JSVAL(module->exports);
 
+  dpDepth(-1);
   return JS_TRUE;
 }
 
@@ -1326,6 +1339,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   else
     cnBuf[i] = (char)0;
 
+  dprintf("Running program module %s\n", moduleShortName(scriptFilename ?: " from FILE*"));
+  dpDepth(+1);
+
   if (scriptFile)
   {
     /* Insure that the supplied script file stream matches the file name */
@@ -1363,7 +1379,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     goto fail;
   }
 
-  if (initializeModuleScope(cx, module, jsi->globalObj) == JS_FALSE)
+  if (initializeModuleScope(cx, module, jsi->globalObj, JS_FALSE) == JS_FALSE)
   {
     dprintf("Could not initialize module scope for module at %p\n", module);
     goto fail;
@@ -1384,18 +1400,17 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
   module->flags |= mhf_loaded;	
 
-  if (initializeModule(cx, module))
-  {
-    dprintf("done running program module %s\n", moduleShortName(module->cname));
+  if (initializeModule(cx, module) == JS_TRUE)
     goto good;
-  }
 
   /* More serious errors get handled here in "fail:" but twe fall through to "good:" where
    * additional and/or less serious error reporting facilities exist.
    */
   fail:
-  dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-  gpsee_log(SLOG_NOTICE, "Failed loading program module '%s'", scriptFilename);
+  {
+    dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
+    gpsee_log(SLOG_NOTICE, "Failed loading program module '%s'", scriptFilename);
+  }
 
   good:
   JS_SetGlobalObject(cx, jsi->globalObj);
@@ -1422,6 +1437,8 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
 
   if (module)
     markModuleUnused(cx, module);
+
+  dpDepth(-1);
  
   return errorMessage; /* NULL == no failures */
 }
@@ -1433,8 +1450,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
 static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
 {
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t		i;
+  moduleHandle_t	*module;
 
+  /* Finalize all modules on the unreachable list now that main GC has finished */
   if (status == JSGC_FINALIZE_END)
   {
     while (jsi->unreachableModule_llist)
@@ -1444,31 +1462,57 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
   if (status != JSGC_MARK_END)
     return JS_TRUE;
 
-  for (i=0; i < jsi->modules_len; i++)
-  {  
-    moduleHandle_t *module;
+  dprintf("Adding roots from GC Callback\n");
+  dpDepth(+1);
 
-    if ((module = jsi->modules[i]) == NULL)
-      continue;
-
+  SPLAY_FOREACH(module, moduleMemo, jsi->modules)
+  {
+    dprintf("GC Callback considering module %s at %p\n", moduleShortName(module->cname), module);
     /* Modules which have an un-run fini method, or are not loaded, 
      * should not have their exports object collected.
      */
-    if (!(module->flags & mhf_loaded) || module->fini)
+    if (module->exports && (!(module->flags & mhf_loaded) || module->fini))
+    {
+      dprintf("  keeping exports at %p alive\n", module->exports);
       JS_MarkGCThing(cx, module->exports, module->cname, NULL);
+    }
 
-    /* Modules which have exports should not have their scopes collected */
-    if (module->scope && (module->exports || !(module->flags & mhf_loaded)))
+    /* Modules which are not loaded should not have their scopes collected */
+    if (module->scope && !(module->flags & mhf_loaded))
+    {
+      dprintf("  keeping scope at %p alive\n", module->scope);
       JS_MarkGCThing(cx, module->scope, module->cname, NULL);
+    }
 
     /* Scrobj is a temporary place to root script modules between 
      * compilation and execution.
      */
     if (module->scrobj)
+    {
+      dprintf("  keeping scrobj at %p alive\n", module->scrobj);
       JS_MarkGCThing(cx, module->scrobj, module->cname, NULL);
+    }
   }
 
+  dpDepth(-1);
   return JS_TRUE;
+}
+
+/** Determine the libexec directory, which is the default directory in which
+ *  to find modules. Libexec dir is generated first via the environment, if
+ *  not found the rc file, and finally via the GPSEE_LIBEXEC_DIR define passed
+ *  from the Makefile.
+ *
+ *  returns	A pointer to the libexec dir pathname
+ */
+static const char *libexecDir(void)
+{
+  const char *s = getenv("GPSEE_LIBEXEC_DIR");
+
+  if (!s)
+    s = rc_default_value(rc, "gpsee_libexec_dir", DEFAULT_LIBEXEC_DIR);
+
+  return s;
 }
 
 JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
@@ -1478,22 +1522,28 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   modulePathEntry_t	pathEl;
   moduleHandle_t	*module;
 
+  /* Initialize basic module system data structures */
   jsi->moduleJail = rc_value(rc, "gpsee_module_jail");
   dprintf("Initializing module system; jail starts at %s\n", jsi->moduleJail ?: "/");
+  dpDepth(+1);
+
   JS_SetGCCallback(cx, moduleGCCallback);
 
   jsi->modulePath = JS_malloc(cx, sizeof(*jsi->modulePath));
   if (!jsi->modulePath)
-    return JS_FALSE;
+    goto fail;
   memset(jsi->modulePath, 0, sizeof(*jsi->modulePath));
 
+  jsi->modules = malloc(sizeof *jsi->modules);
+  SPLAY_INIT(jsi->modules);
+
   /* Populate the GPSEE module path */
-  jsi->modulePath->dir = JS_strdup(cx, gpsee_libexecDir());
+  jsi->modulePath->dir = JS_strdup(cx, libexecDir());
   if (envpath)
   {
     envpath = JS_strdup(cx, envpath);
     if (!envpath)
-      return JS_FALSE;
+      goto fail;
 
     for (pathEl = jsi->modulePath, path = strtok(envpath, ":"); path; pathEl = pathEl->next, path = strtok(NULL, ":"))
     {
@@ -1503,43 +1553,48 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     }
   }
 
+  /* Create stub for user module path (require.paths) */
   JS_AddNamedRoot(cx, &jsi->userModulePath, "User Module Path");
   jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
   if (!jsi->userModulePath)
-    return JS_FALSE;
+    goto fail;
 
-  module = acquireModuleHandle(cx, "__preload__", jsi->globalObj);
+  /* Prepare a module handle for preload, etc, environment where
+   *  program module has not run.
+   */
+  module = acquireModuleHandle(cx, "__internal__", jsi->globalObj);
   if (!module)
   {
     dprintf("Could not acquire module handle for preload code\n");
-    return JS_FALSE;
+    goto fail;
   }
 
-  if (initializeModuleScope(cx, module, jsi->globalObj) == JS_FALSE)
+  if (initializeModuleScope(cx, module, jsi->globalObj, JS_TRUE) == JS_FALSE)
   {
     dprintf("Could not initialize module scope for module at %p\n", module);
-    return JS_FALSE;
+    goto fail;
   }
 
+  dpDepth(-1);
   return JS_TRUE;
+
+  fail:
+  dpDepth(-1);
+  return JS_FALSE;
 }
 
 void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
 {
-  size_t		i;
   modulePathEntry_t	node, nextNode;
+  moduleHandle_t	*module;
 
   dprintf("Shutting down module system\n");
+  dpDepth(+1);
 
-  for (i=0; i < jsi->modules_len; i++)
-  {  
-    moduleHandle_t *module;
-
-    if ((module = jsi->modules[i]) == NULL)
-      continue;
-
+  /* Clean up modules by traversing the module memo tree */
+  SPLAY_FOREACH(module, moduleMemo, jsi->modules)
+  {
     dprintf("Fini'ing module at 0x%p\n", module);
-
     if (module->fini)
     {
       module->fini(cx, module->exports);
@@ -1549,6 +1604,7 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     markModuleUnused(cx, module);
   }
 
+  /* Clean up module paths */
   JS_RemoveRoot(cx, &jsi->userModulePath);
 
   for (node = jsi->modulePath; node; node = nextNode)
@@ -1558,4 +1614,30 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   }
 
   JS_free(cx, jsi->modulePath);
+  dpDepth(-1);
 }
+
+/** Perform final clean-up on module system which must be done
+ *  after all the JavaScript objects have been finalized and
+ *  the JavaScript runtime is destroyed. 
+ *
+ *  @note	This is why the module memo tree is allocated 
+ *		with malloc rather than JS_malloc.
+ */
+void  gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi)
+{
+  moduleHandle_t	*module, *nextModule;
+
+  for (module = SPLAY_MIN(moduleMemo, jsi->modules);
+       module != NULL;
+       module = nextModule)
+  {
+    nextModule = SPLAY_NEXT(moduleMemo, jsi->modules, module);
+    SPLAY_REMOVE(moduleMemo, jsi->modules, module);
+    free(module);
+  }
+  
+  free(jsi->modules);
+}
+
+
