@@ -35,12 +35,16 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.23 2010/02/18 20:36:29 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.24 2010/02/18 21:12:58 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
  *
- * <b>Design Notes (warning, rather out of date)</b>
+ * <b>Design Notes</b>
+ *
+ * Module handles are a private (to this file) data structure which describe everything
+ * worth knowing about a module -- it's scope (var object), init and fini functions,
+ * exports object, etc.
  *
  * Module handles are stored in a splay tree, jsi->modules. Splay trees are
  * automatically balanced binary search trees that slightly re-balance on 
@@ -49,10 +53,9 @@
  *
  * Extra GC roots, provided by moduleGCCallback(), are available in each
  * module handle. They are:
+ *  - exports:	Marked during module initialization, afterwards rooted by scope or calling script
  *  - scrobj:	Marked during module initialization, afterwards not needed
- *  - exports:	Marked during module initialization, afterwards by assignment in JavaScript
  *  - scope:	Marked when object is NULL; otherwise by virtue of object.parent
- * 
  ************
  *
  * Terminology
@@ -61,15 +64,9 @@
  *  parentModule: 	The module calling require(); usually this is the program module
  *  exports: 		An object which holds the return value of parentModule's require() call
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
- *
- ************
- * - exports stays rooted until no fini function
- * - scope stays rooted until no exports
- * - scope "owns" module handle, but cannot depend on exports
- * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.23 2010/02/18 20:36:29 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.24 2010/02/18 21:12:58 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -131,25 +128,33 @@ static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, modul
 static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *moduleScope);
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module);
 
-JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+/** Module-scope getter which retrieves properties from the true global */
+static JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-
-  return JS_TRUE;
-
-  printf("** getting %s on %p from jsi->globalObj\n", JS_GetStringBytes(JSVAL_TO_STRING(id)), obj);
 
   return JS_GetPropertyById(cx, jsi->globalObj, id, vp);
 }
 
-JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
+/** Module-scope setter which sets properties on the true global */
+static JSBool setGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  return JS_SetPropertyById(cx, jsi->globalObj, id, vp);
+}
+
+/** Module-scope resolver which resolves properties on the scope by looking them
+ *  up on the true global. Any properties which are found are defined on the module
+ *  scope with a setter and getter which look back to the true global.
+ */
+static JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
 {
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval			v;
 
   if (flags & JSRESOLVE_DECLARING)	/* Don't walk up scope to global when making new vars */
   {
-    printf("Declaring module-global property %s\n", JS_GetStringBytes(JSVAL_TO_STRING(id)));
     return JS_TRUE;
   }
 
@@ -159,7 +164,7 @@ JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags
   if (v == JSVAL_VOID)
     return JS_TRUE;
 
-  if (JS_DefinePropertyById(cx, obj, id, v, getGlobalProperty, NULL, 0) == JS_FALSE)
+  if (JS_DefinePropertyById(cx, obj, id, v, getGlobalProperty, setGlobalProperty, 0) == JS_FALSE)
     return JS_FALSE;
 
   if (JSVAL_IS_STRING(id))
@@ -245,6 +250,7 @@ static int moduleCName_strcmp(struct moduleHandle *module1, struct moduleHandle 
 {
   return strcmp(module1->cname, module2->cname);
 }
+/** Declare splay tree support functions for splay tree type moduleMemo */
 SPLAY_HEAD(moduleMemo, moduleHandle);
 SPLAY_PROTOTYPE(moduleMemo, moduleHandle, entry, moduleCName_strcmp)
 SPLAY_GENERATE(moduleMemo, moduleHandle, entry, moduleCName_strcmp)
@@ -317,10 +323,10 @@ static void requireUnlock(JSContext *cx)
 /**
  *  Create a new module object (exports)
  *
- *  This object is effectively a container for the  properties of the module,
- *  and is what loadModule() and require() return to the JS programmer.
+ *  This object is effectively a container for the properties of the module,
+ *  and is what require() returns to the JS programmer.
  *
- *  The module object will be created with an unused private slot.
+ *  The exports object will be created with an unused private slot.
  *  This slot is for use by the module's Fini code, based on data
  *  the module's Init code puts there.
  *
@@ -396,30 +402,8 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 
   setModuleHandle_forScope(cx, moduleScope, module);
 
-  /** Eagerly resolve standard classes from true-global */
   if (moduleScope != jsi->globalObj)
   {
-    const char	**sym_p, *globalSymbols[] = { /* "Object", "Array", "String", "print", */ NULL };
-    JSProtoKey	key;
-
-    for (sym_p = globalSymbols; *sym_p; sym_p++)
-    {
-      jsval v;
-
-      if (JS_GetProperty(cx, jsi->globalObj, *sym_p, &v) == JS_FALSE)
-      {
-	dprintf("Could not retrieve symbol %s from global scope\n", *sym_p);
-	goto fail;
-      }
-
-      if (JS_DefineProperty(cx, moduleScope, *sym_p, v, NULL, NULL, 
-			    jsProp_permanent) != JS_TRUE)
-      {
-	dprintf("Could not define symbol %s on module scope\n", *sym_p);
-	goto fail;
-      }
-    }
-
     /** Get the cached class prototypes sorted out in advance. Not guaranteed tracemonkey-future-proof. 
      *  Almost certainly requires eager standard class initialization on the true global.
      */
@@ -435,7 +419,12 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
     }
   }
 
-  /* Define the basic requirements for what constitutes a CommonJS module */
+  /* Define the basic requirements for what constitutes a CommonJS module:
+   *  - require
+   *  - require.paths
+   *  - exports
+   *  - module.id
+   */
   require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | jsProp_permanentReadOnly);
   if (!require)
     goto fail;
@@ -482,7 +471,7 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 /**
  *  Create an object to act as the global object for the module. The module's
  *  exports object will be a property of this object, along with
- *  module-global private variables.
+ *  module-scope variables.
  *
  *  The private slot for this object is reserved for (and contains) the module handle.
  *
@@ -1199,7 +1188,7 @@ static JSBool initializeModule(JSContext *cx, moduleHandle_t *module)
 
     id = module->init(cx, module->exports);
 
-    printf("Initialized native module with internal id = %s\n", id);
+    dprintf("Initialized native module with internal id = %s\n", id);
   }
 
   if (module->script)
