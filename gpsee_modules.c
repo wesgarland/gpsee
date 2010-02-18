@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.22 2010/02/17 15:59:33 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.23 2010/02/18 20:36:29 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -69,7 +69,7 @@
  * - exports cannot depend on scope
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.22 2010/02/17 15:59:33 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.23 2010/02/18 20:36:29 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -131,28 +131,13 @@ static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, modul
 static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *moduleScope);
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module);
 
-/** Lazy resolver for global classes.
- *  Originally from js.c; cruft removed.
- */
-static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
-{
-  if ((flags & JSRESOLVE_ASSIGNING) == 0) 
-  {
-    JSBool resolved;
-
-    if (!JS_ResolveStandardClass(cx, obj, id, &resolved))
-      return JS_FALSE;
-
-    if (resolved)
-      *objp = obj;
-  }
-
-  return JS_TRUE;
-}
-
 JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  return JS_TRUE;
+
+  printf("** getting %s on %p from jsi->globalObj\n", JS_GetStringBytes(JSVAL_TO_STRING(id)), obj);
 
   return JS_GetPropertyById(cx, jsi->globalObj, id, vp);
 }
@@ -162,13 +147,40 @@ JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval			v;
 
+  if (flags & JSRESOLVE_DECLARING)	/* Don't walk up scope to global when making new vars */
+  {
+    printf("Declaring module-global property %s\n", JS_GetStringBytes(JSVAL_TO_STRING(id)));
+    return JS_TRUE;
+  }
+
   if (JS_GetPropertyById(cx, jsi->globalObj, id, &v) == JS_FALSE)
     return JS_FALSE;
 
-  if (JS_DefinePropertyById(cx, obj, id, v, NULL, NULL, 0) == JS_FALSE)
+  if (v == JSVAL_VOID)
+    return JS_TRUE;
+
+  if (JS_DefinePropertyById(cx, obj, id, v, getGlobalProperty, NULL, 0) == JS_FALSE)
     return JS_FALSE;
 
-  *objp = JSVAL_TO_OBJECT(v);
+  if (JSVAL_IS_STRING(id))
+  {
+    char 	*s = JS_GetStringBytes(JSVAL_TO_STRING(id));
+    JSBool	found;
+    uintN	attrs;
+    
+    if (JS_GetPropertyAttributes(cx, obj, s, &attrs, &found) == JS_FALSE)
+      return JS_FALSE;
+
+    if (found)
+    {
+      if (JS_SetPropertyAttributes(cx, obj, s, attrs, &found) == JS_FALSE)
+	return JS_FALSE;
+
+      GPSEE_ASSERT(found);
+    }
+  }
+
+  *objp = obj;
 
   return JS_TRUE;
 }
@@ -179,10 +191,10 @@ static JSClass module_scope_class = 	/* private member is reserved by gpsee - ho
   JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS | JSCLASS_NEW_RESOLVE,
   JS_PropertyStub,  
   JS_PropertyStub,  
-  getGlobalProperty,
+  JS_PropertyStub,
   JS_PropertyStub,
   JS_EnumerateStub, 
-  JS_ResolveStub,   /* global_newresolve,*/
+  (JSResolveOp)resolveGlobalProperty,
   JS_ConvertStub,   
   finalizeModuleScope,
   JSCLASS_NO_OPTIONAL_MEMBERS
@@ -326,7 +338,7 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
 {
   JSObject 		*exports;
 
-  exports = JS_NewObject(cx, &module_exports_class, NULL, moduleScope);
+  exports = JS_NewObjectWithGivenProto(cx, &module_exports_class, NULL, moduleScope);
   dprintf("Created new exports at %p for module at scope %p\n", exports, moduleScope);
   return exports;
 }
@@ -369,7 +381,6 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   {
     jsProp_permanent = 0;
     jsProp_permanentReadOnly = 0;
-    return JS_TRUE;
   }
   else
   {
@@ -385,6 +396,46 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 
   setModuleHandle_forScope(cx, moduleScope, module);
 
+  /** Eagerly resolve standard classes from true-global */
+  if (moduleScope != jsi->globalObj)
+  {
+    const char	**sym_p, *globalSymbols[] = { /* "Object", "Array", "String", "print", */ NULL };
+    JSProtoKey	key;
+
+    for (sym_p = globalSymbols; *sym_p; sym_p++)
+    {
+      jsval v;
+
+      if (JS_GetProperty(cx, jsi->globalObj, *sym_p, &v) == JS_FALSE)
+      {
+	dprintf("Could not retrieve symbol %s from global scope\n", *sym_p);
+	goto fail;
+      }
+
+      if (JS_DefineProperty(cx, moduleScope, *sym_p, v, NULL, NULL, 
+			    jsProp_permanent) != JS_TRUE)
+      {
+	dprintf("Could not define symbol %s on module scope\n", *sym_p);
+	goto fail;
+      }
+    }
+
+    /** Get the cached class prototypes sorted out in advance. Not guaranteed tracemonkey-future-proof. 
+     *  Almost certainly requires eager standard class initialization on the true global.
+     */
+    for (key = 0; key < JSProto_LIMIT; key++)
+    {
+      jsval v;
+
+      if (JS_GetReservedSlot(cx, jsi->globalObj, key, &v) == JS_FALSE)
+	return JS_FALSE;
+
+      if (JS_SetReservedSlot(cx, moduleScope, key, v) == JS_FALSE)
+	return JS_FALSE;
+    }
+  }
+
+  /* Define the basic requirements for what constitutes a CommonJS module */
   require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | jsProp_permanentReadOnly);
   if (!require)
     goto fail;
@@ -420,30 +471,6 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 		    JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
     goto fail;
 
-  /** XXX copy through standard classes */
-  if (moduleScope != jsi->globalObj)
-  {
-    const char	**sym_p, *globalSymbols[] = { "Object", "Array", "Date", "String", "Math", "print", NULL };
-
-    for (sym_p = globalSymbols; *sym_p; sym_p++)
-    {
-      jsval v;
-
-      if (JS_GetProperty(cx, jsi->globalObj, *sym_p, &v) == JS_FALSE)
-      {
-	dprintf("Could not retrieve symbol %s from global scope\n", *sym_p);
-	goto fail;
-      }
-
-      if (JS_DefineProperty(cx, moduleScope, *sym_p, v, NULL, NULL, 
-			    jsProp_permanent) != JS_TRUE)
-      {
-	dprintf("Could not define symbol %s on module scope\n", *sym_p);
-	goto fail;
-      }
-    }
-  }
-
   dpDepth(-1);
   return JS_TRUE;
 
@@ -466,7 +493,8 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
  */
 static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
 {
-  JSObject 	*moduleScope;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  JSObject 		*moduleScope;
 
   GPSEE_ASSERT(module);
 
@@ -475,11 +503,11 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
 
   dpDepth(+1);
 
-  moduleScope = JS_NewObject(cx, &module_scope_class, NULL, NULL);
+  moduleScope = JS_NewObjectWithGivenProto(cx, &module_scope_class, JS_GetPrototype(cx, jsi->globalObj), NULL);
   if (!moduleScope)
       goto fail;
 
-  if (JS_SetParent(cx, moduleScope, NULL) == JS_FALSE)
+  if (JS_SetParent(cx, moduleScope, JS_GetParent(cx, jsi->globalObj)) == JS_FALSE)
     goto fail;
 
   if (initializeModuleScope(cx, module, moduleScope, JS_FALSE) == JS_FALSE)
