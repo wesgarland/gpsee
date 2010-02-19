@@ -43,7 +43,7 @@
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 /** Return a generic pointer back to JS for use in comparisons.
  *  Pointers in JavaScript are just hexadecimal numbers encoded with String.  

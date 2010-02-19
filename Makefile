@@ -90,10 +90,10 @@ AR_MODULE_DIRS_STREAM		:= $(wildcard $(foreach MODULE, $(AR_MODULES), $(STREAM)_
 LOADABLE_MODULE_DIRS_STREAM	:= $(wildcard $(foreach MODULE, $(LOADABLE_MODULES), $(STREAM)_modules/$(MODULE)))
 AR_MODULE_DIRS_ALL		:= $(AR_MODULE_DIRS_GLOBAL) $(AR_MODULE_DIRS_STREAM)
 LOADABLE_MODULE_DIRS_ALL	:= $(LOADABLE_MODULE_DIRS_GLOBAL) $(LOADABLE_MODULE_DIRS_STREAM)
-AR_MODULE_FILES			:= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR))_module.$(LIB_EXT))
-SO_MODULE_DSOS			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ -r "$(DIR)/$(notdir $(DIR))_module.c" ] || [ -r "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.$(SOLIB_EXT)";))
+AR_MODULE_FILES			:= $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(MODULE_DIR)/$(notdir $(MODULE_DIR)).$(LIB_EXT))
+SO_MODULE_DSOS			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ -r "$(DIR)/$(notdir $(DIR)).c" ] || [ -r "$(DIR)/$(notdir $(DIR)).cpp" ] && echo "$(DIR)/$(notdir $(DIR)).$(SOLIB_EXT)";))
 SO_MODULE_FILES			:= $(SO_MODULE_DSOS)
-JS_MODULE_FILES			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ ! -r "$(DIR)/$(notdir $(DIR))_module.c" ] && [ ! -r "$(DIR)/$(notdir $(DIR))_module.cpp" ] && echo "$(DIR)/$(notdir $(DIR))_module.js";))
+JS_MODULE_FILES			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ ! -r "$(DIR)/$(notdir $(DIR)).c" ] && [ ! -r "$(DIR)/$(notdir $(DIR)).cpp" ] && echo "$(DIR)/$(notdir $(DIR)).js";))
 ALL_MODULE_DIRS			:= $(sort $(AR_MODULE_DIRS_ALL) $(LOADABLE_MODULE_DIRS_ALL) $(dir $(JS_MODULE_FILES)))
 
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
@@ -156,7 +156,7 @@ install_js_components:
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
 $(TARGET_LIBEXEC_JSC):	install_js_components gsr $(TARGET_LIBEXEC_JS)
-	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
+#	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
 
 show_modules:
 	@echo 

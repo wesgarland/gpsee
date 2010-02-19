@@ -55,8 +55,8 @@ build_debug_module:
 	@echo "   - CFLAGS = $(CFLAGS)"
 	@echo "   - LDFLAGS = $(LDFLAGS)"
 
-gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
-gffi_module.o: aux_types.incl jsv_constants.decl
+gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
+gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS)

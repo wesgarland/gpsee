@@ -45,7 +45,7 @@
 
 static const char __attribute__((unused)) rcsid[]="$Id: Binary.c,v 1.1 2009/05/27 04:51:44 wes Exp $";
 #include "gpsee.h"
-#include "binary_module.h"
+#include "binary.h"
 
 #define CLASS_ID  MODULE_ID ".Binary"
 

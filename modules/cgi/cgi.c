@@ -45,7 +45,7 @@
 static const char __attribute__((unused)) rcsid[]="$Id: cgi_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
 
 #include "gpsee.h"
-#include "cgi_module.h"
+#include "cgi.h"
 
 const char *cgi_InitModule(JSContext *cx, JSObject *moduleObject)
 {

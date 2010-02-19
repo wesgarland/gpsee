@@ -42,7 +42,7 @@ ifeq "$(origin CXX)" "default"
 CXX		= g++
 endif
 ifeq "$(origin LD)" "default"
-LD		= gcc -shared
+LD		= $(CC) -shared
 endif
 LEX		?= lex
 YACC		?= yacc

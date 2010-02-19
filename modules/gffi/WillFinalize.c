@@ -46,7 +46,7 @@
 
 #include <gpsee.h>
 #include <ffi.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 #define CLASS_ID MODULE_ID ".WillFinalize"
 
