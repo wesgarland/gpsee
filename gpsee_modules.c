@@ -404,6 +404,8 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
 
   if (moduleScope != jsi->globalObj)
   {
+    JSProtoKey	key;
+
     /** Get the cached class prototypes sorted out in advance. Not guaranteed tracemonkey-future-proof. 
      *  Almost certainly requires eager standard class initialization on the true global.
      */
@@ -411,12 +413,20 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
     {
       jsval v;
 
+#if 1 //xxx
       if (JS_GetReservedSlot(cx, jsi->globalObj, key, &v) == JS_FALSE)
 	return JS_FALSE;
 
       if (JS_SetReservedSlot(cx, moduleScope, key, v) == JS_FALSE)
 	return JS_FALSE;
+#else
+      JS_InitStandardClasses(cx, moduleScope);
+#endif
     }
+
+    if (JS_DefineProperty(cx, moduleScope, "undefined", JSVAL_VOID, NULL, NULL,
+			  JSPROP_ENUMERATE | jsProp_permanent) == JS_FALSE)
+      goto fail;
   }
 
   /* Define the basic requirements for what constitutes a CommonJS module:
@@ -853,7 +863,7 @@ static int isRelativePath(const char *path)
  *  
  *  @returns	JS_FALSE when a JS exception is thrown during processing
  */
-JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *modulePath_p)
+static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *modulePath_p)
 {
   jsval			v;
   JSString		*jsstr;
@@ -915,7 +925,7 @@ JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEntry_t *
 /** Free a module path generated from JSArray_toModulePath. 
  *  Takes into account malloc short cuts used to create it in the first place.
  */
-void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePath)
+static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePath)
 {
   modulePathEntry_t pathEl;
 

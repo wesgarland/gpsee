@@ -44,6 +44,6 @@ CC			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/
 GPSEE_C_DEFINES         += HAVE_NDBM
 
 libgpsee.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
-binary_module.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
+binary.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
 
 clean: DEBUG_DUMP_DIRS += $(wildcard $(foreach PROG, $(notdir $(PROGS)), ./$(PROG).dSYM))

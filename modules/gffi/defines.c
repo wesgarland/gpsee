@@ -50,7 +50,7 @@
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 #include <math.h>
 
 #if !defined(GPSEE_MAX_TRANSITIVE_MACRO_RESOLUTION_DEPTH)

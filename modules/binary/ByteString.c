@@ -47,7 +47,7 @@
 
 static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.7 2009/10/29 18:35:05 wes Exp $";
 #include "gpsee.h"
-#include "binary_module.h"
+#include "binary.h"
 
 JSObject *byteString_proto;
 #define CLASS_ID MODULE_ID ".ByteString"

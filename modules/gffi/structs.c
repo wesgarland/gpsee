@@ -54,7 +54,7 @@
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 /** Generic number getter. Uses memberIdx to figure out which member. */
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)
