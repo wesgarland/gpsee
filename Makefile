@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.31 2010/02/12 21:37:25 wes Exp $
+## @version	$Id: Makefile,v 1.33 2010/02/25 15:39:12 wes Exp $
 
 top: 	help
 
@@ -251,6 +251,7 @@ invasive-bin-dist bin-dist:: install
 	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
 	@echo
 
+libgpsee.$(SOLIB_EXT): LDFLAGS += $(JSAPI_LIBS)
 libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
