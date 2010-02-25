@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.24 2010/02/17 15:59:33 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.25 2010/02/25 15:37:52 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.25  2010/02/25 15:37:52  wes
+ *  Added check to not set UTF8 twice even with multiple runtimes
+ *
  *  Revision 1.24  2010/02/17 15:59:33  wes
  *  Module Refactor checkpoint: switched modules array to a splay tree
  *
@@ -135,7 +138,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.24 2010/02/17 15:59:33 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.25 2010/02/25 15:37:52 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -811,9 +814,13 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   JSRuntime		*rt;
   JSContext 		*cx;
   gpsee_interpreter_t	*interpreter;
+  static jsval		setUTF8 = JSVAL_FALSE;
 
   if (!getenv("GPSEE_NO_UTF8_C_STRINGS"))
-    JS_SetCStringsAreUTF8();
+  {
+    if (jsval_CompareAndSwap(&setUTF8, JSVAL_FALSE, JSVAL_TRUE) == JS_TRUE)
+      JS_SetCStringsAreUTF8();
+  }
 
   interpreter = calloc(sizeof(*interpreter), 1);
 
