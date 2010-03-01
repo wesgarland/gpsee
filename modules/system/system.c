@@ -34,7 +34,7 @@
  */
 
 /**
- *  @file       system_module.c GPSEE implementation of the CommonJS "system"
+ *  @file       system.c	GPSEE implementation of the CommonJS "system"
  *                              module with lazily loaded module dependencies
  *                              for the stdio features.
  *  @author     Donny Viszneki
@@ -45,7 +45,7 @@
 static __attribute__((unused)) const char rcsid[]="$Id:$";
  
 #include "gpsee.h"
-#include "system_module.h"
+#include "system.h"
 
 extern char **environ;
 static struct {
