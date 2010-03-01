@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -31,14 +31,23 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK ***** 
-#
-ICONV_LDFLAGS		 =
-GPSEE_C_DEFINES		+= HAVE_MEMRCHR
-GPSEE_C_DEFINES		+= HAVE_IDENTITY_TRANSCODING_ICONV
-EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
-GFFI_CPPFLAGS		?= -D_GNU_SOURCE -DDB_DBM_HSEARCH=1
 
-# Some GNU/Linux distributions require extra packages to be installed for the SUSv3 NDBM API
-# Include this in your local_config.mk if you have them:
-#GFFI_LDFLAGS += -ldb
-#GPSEE_C_DEFINES += HAVE_NDBM
+# Include this makefile from any makefile which requires the resultant
+# lib/application linked with iconv.
+#
+# C code compiled with this Makefile can find iconv.h at ICONV_HEADER
+#
+
+EXTRA_LDFLAGS		+= $(ICONV_LDFLAGS)
+EXTRA_CPPFLAGS		+= $(ICONV_CPPFLAGS)
+
+ifneq (X$(strip $(ICONV_HEADER)),X)
+ICONV_CPPFLAGS		+= -include $(ICONV_HEADER) -DICONV_HEADER=$(ICONV_HEADER)
+endif
+
+build_debug_iconv:
+	@echo	"LDFLAGS	= $(EXTRA_LDFLAGS)"
+	@echo	"ICONV_HEADER	= $(ICONV_HEADER)"
+ifeq (X$(strip $(ICONV_LDFLAGS)),X)
+	@echo   "ICONV_LDFLAGS not specified; assuming iconv is present in libc"
+endif

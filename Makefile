@@ -40,7 +40,8 @@
 ## @date	August 2007
 ## @version	$Id: Makefile,v 1.33 2010/02/25 15:39:12 wes Exp $
 
-top: 	help
+top: 	
+	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
 
 PWD = $(shell pwd)
 GPSEE_SRC_DIR ?= $(shell pwd)
