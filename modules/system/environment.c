@@ -45,7 +45,7 @@
  */
 
 #include "gpsee.h"
-#include "system_module.h"
+#include "system.h"
 
 extern char **environ;
 
