@@ -1,5 +1,7 @@
 ifneq ($(NO_BUILD_RULES),TRUE)
 # Standard targets
+ifneq ($(MAKECMDGOALS),)
+ifneq ($(MAKECMDGOALS),top)
 ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),install-nodeps)
 ifneq ($(MAKECMDGOALS),clean)
@@ -17,6 +19,8 @@ endif # goal = dist-clean
 endif # goal = clean
 endif # goal = install-nodeps
 endif # goal = help
+endif # goal = top
+endif # goal = none
 
 clean:
 	-$(if $(strip $(OBJS)), $(RM) $(OBJS))
@@ -45,7 +49,9 @@ build_debug:
 	@echo "LD:              $(LD)"
 	@echo "LDFLAGS:         $(LDFLAGS)"
 	@echo "LOADLIBES:       $(LOADLIBES)"
-	@echo "ICONV_LIB_NAME:  $(ICONV_LIB_NAME)"
+	@echo "ICONV_LDFLAGS:   $(ICONV_LDFLAGS)"
+	@echo "ICONV_CPPFLAGS:  $(ICONV_CPPFLAGS)"
+	@echo "ICONV_HEADER:    $(ICONV_HEADER)"
 	@echo
 
 # Install shared libraries

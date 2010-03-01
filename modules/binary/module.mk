@@ -32,15 +32,6 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o Binary.o
+EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o BinaryStub.o
 
-ifneq (X$(ICONV_LIB_NAME),X)
-EXTRA_LDFLAGS		+= -l$(ICONV_LIB_NAME)
-endif
-
-build_debug_module:
-ifneq (X($ICONV_LIB_NAME),X)
-	@echo " - iconv library is named $(ICONV_LIB_NAME)"
-else
-	@echo " - iconv library is not specified; assuming it is present in libc"
-endif
+include $(GPSEE_SRC_DIR)/iconv.mk

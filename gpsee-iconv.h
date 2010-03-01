@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -39,22 +39,31 @@
  * @version	$Id: gpsee-iconv.h,v 1.1 2009/11/13 19:34:48 wes Exp $
  */
 
+#include <dlfcn.h>
+
 #ifdef HAVE_ICONV
-# if defined GPSEE_SUNOS_SYSTEM && !defined(GPSEE_DONT_PREFER_SUN_ICONV)
 /*
- * /usr/sfw gcc can find sunfreeware gnu libiconv header,
- * then explode at runtime when solaris iconv lib gets used
+ * This file is required because of
+ *  - changing prototype of SUSv2 / SUSv3 iconv
+ *  - Macports vs. Apple iconv
+ *  - SFW vs. Sun iconv
+ *  - etc
+ *
+ * This file works in tandem with ./iconv.mk
  */
-#  define _LIBICONV_H
-#  include "/usr/include/iconv.h"
-# else
-#  include <iconv.h>
- 
-static __attribute__((unused)) size_t gpsee_non_susv3_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
+
+#if !defined(ICONV_HEADER)
+# include <iconv.h>
+#endif
+
+static __attribute__((unused)) size_t gpsee_iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft)
 {
-  return iconv(cd, (char **)inbuf, inbytesleft, outbuf, outbytesleft);
+  size_t (*iconvSym)(iconv_t cd, const char **, size_t *, char **, size_t *) = (void *)iconv;
+
+  return iconvSym(cd, inbuf, inbytesleft, outbuf, outbytesleft);
 }
-# define iconv(a,b,c,d,e)       gpsee_non_susv3_iconv(a,b,c,d,e)
+
+#undef iconv
+#define iconv(a,b,c,d,e)       gpsee_iconv(a,b,c,d,e)
  
-# endif
 #endif
