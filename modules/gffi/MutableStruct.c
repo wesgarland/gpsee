@@ -47,7 +47,7 @@
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 #define CLASS_ID MODULE_ID ".MutableStruct"
 

@@ -44,7 +44,7 @@
 static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.9 2009/10/29 18:35:05 wes Exp $";
 
 #include "gpsee.h"
-#include "binary_module.h"
+#include "binary.h"
 
 /** BE and LE flavours of UTF-16 do not emit the BOM. JS Strings are BOM-less and in machine order. */
 #if defined(_BIG_ENDIAN) || (defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDAN)

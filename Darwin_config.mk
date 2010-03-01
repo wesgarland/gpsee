@@ -42,8 +42,10 @@ LD			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/
 REAL_CC			 = gcc
 CC			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
 GPSEE_C_DEFINES         += HAVE_NDBM
-
 libgpsee.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
-binary_module.dylib: JSAPI_LIBS=-L/usr/lib #iconv conflict, mac ports
 
 clean: DEBUG_DUMP_DIRS += $(wildcard $(foreach PROG, $(notdir $(PROGS)), ./$(PROG).dSYM))
+
+# Prefer Apple iconv over Macports/Fink
+ICONV_LDFLAGS   	=	/usr/lib/libiconv.dylib
+ICONV_HEADER    	=       /usr/include/iconv.h

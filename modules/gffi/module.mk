@@ -34,6 +34,7 @@
 #
 
 include $(GPSEE_SRC_DIR)/ffi.mk
+include $(GPSEE_SRC_DIR)/iconv.mk
 include sanity.mk
 
 DEFS	 	 	= gpsee std
@@ -52,15 +53,16 @@ build:	$(DEF_FILES)
 
 build_debug_module:
 	@echo " - In gffi"
-	@echo "   - CFLAGS = $(CFLAGS)"
-	@echo "   - LDFLAGS = $(LDFLAGS)"
+	@echo "   - CFLAGS   = $(CFLAGS)"
+	@echo "   - LDFLAGS  = $(LDFLAGS)"
+	@echo "   - CPPFLAGS = $(CPPFLAGS)"
 
-gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
-gffi_module.o: aux_types.incl jsv_constants.decl
+gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
+gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS)
-std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(ICONV_CPPFLAGS)
+std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
 std_gpsee_no.h: std_functions.h
@@ -75,7 +77,9 @@ std_gpsee_no.h: std_functions.h
 %.dmp defines.incl: sort=LC_COLLATE=C sort
 
 compiler.dmp:
-	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u > $@
+	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u \
+	| sed -e 's/[[]/[[]/g' -e 's/[]]/[]]/g' \
+	> $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
 %.dmp: compiler.dmp #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
@@ -89,10 +93,6 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 		> $@ || [ X = X ]
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
-
-ifneq (X$(ICONV_LIB_NAME),X)
-std_defs gpsee_defs:	EXTRA_LDFLAGS           += -l$(ICONV_LIB_NAME)
-endif
 
 std_defs:	EXTRA_CPPFLAGS += -I.
 std_defs.%:	HEADERS  = std_functions.h stdint.h

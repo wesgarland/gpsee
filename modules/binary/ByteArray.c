@@ -43,7 +43,7 @@
 
 static const char __attribute__((unused)) rcsid[]="$Id: ByteArray.c,v 1.6 2009/10/29 18:35:05 wes Exp $";
 #include "gpsee.h"
-#include "binary_module.h"
+#include "binary.h"
 
 static void	ByteArray_Finalize(JSContext *cx, JSObject *obj);
 static JSBool	ByteArray_getProperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);

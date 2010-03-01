@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base_module.js,v 1.9 2010/02/03 21:07:18 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.10 2010/02/23 18:36:28 wes Exp $
  */
 
 const binary = require("binary");
@@ -221,7 +221,7 @@ exports.openRaw = function(path, mode, permissions)
 exports.move = function move(source, target)
 {
   if (_rename.call(source, target) != 0)
-    throw new Error("Cannot rename '" + source + "' to '" + target + "'" + syserror());
+    throw new Error("Cannot rename '" + source + "' to '" + target + "'" + syserr());
 }
 
 /** 
@@ -232,13 +232,13 @@ exports.remove = function remove(path)
   var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) != 0)
-    throw new Error("Cannot remove '" + path + "'" + syserror());
+    throw new Error("Cannot remove '" + path + "'" + syserr());
 
   if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLINK)) == 0)
     throw new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
 
   if (_unlink.call(path) != 0)
-    throw new Error("Cannot remove '" + path + "'" + syserror());
+    throw new Error("Cannot remove '" + path + "'" + syserr());
 }
 
 /** 
@@ -257,7 +257,7 @@ exports.touch = function touch(path, when)
   if (_stat.call(path, sb) != 0)
   {
     if (ffi.errno != dh.ENONET)
-      throw new Error("Cannot touch '" + path + "'" + syserror());
+      throw new Error("Cannot touch '" + path + "'" + syserr());
     exports.openRaw(path, { write: true, create: true, exclusive: true }).close();
   }
 
@@ -274,7 +274,7 @@ exports.touch = function touch(path, when)
   }
 
   if (_utime.call(path, tb) != 0)
-    throw new Error("Cannot touch '" + path + "'" + syserror());
+    throw new Error("Cannot touch '" + path + "'" + syserr());
 }
 
 /**
@@ -295,7 +295,7 @@ exports.makeDirectory = function makeDirectory(path, permissions)
   var p = new Permissions(permissions);
   
   if (_mkdir.call(path, p.toUnix()) != 0)
-    throw new Error("Cannot create directory '" + path + "'" + syserror());
+    throw new Error("Cannot create directory '" + path + "'" + syserr());
 }
 
 /**
@@ -312,7 +312,7 @@ exports.removeDirectory = function removeDirectory(path)
     if (exports.isLink(path) && exports.isDirectory(exports.canonical(path)))
       if (_unlink.call(path) == 0)
 	return;
-    throw new Error("Cannot remove directory '" + path + "'" + syserror());
+    throw new Error("Cannot remove directory '" + path + "'" + syserr());
   }
 }
 

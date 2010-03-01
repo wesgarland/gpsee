@@ -16,7 +16,7 @@
  * Portions created by the Initial Developer are 
  * Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
  *
- * Contributor(s):
+ * Contributor(s): 
  * 
  * Alternatively, the contents of this file may be used under the terms of
  * either of the GNU General Public License Version 2 or later (the "GPL"),
@@ -30,48 +30,22 @@
  * the provisions above, a recipient may use your version of this file under
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
- * ***** END LICENSE BLOCK ***** */
-
-/**
- *  @file	binary_module.c		GPSEE implementation of the ServerJS binary module. This
- *					module provides ByteString and ByteArray, which are both
- *					instances of Binary.
- *  @author	Wes Garland
- *              PageMail, Inc.
- *		wes@page.ca
- *  @date	Jan 2008
- *  @version	$Id: binary_module.c,v 1.2 2009/10/29 18:35:05 wes Exp $
+ * ***** END LICENSE BLOCK ***** 
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: binary_module.c,v 1.2 2009/10/29 18:35:05 wes Exp $";
+/**
+ *  @file       shellalike_module.c   Although most of the shellalike module
+ *                                    is implemented in Javascript, there are
+ *                                    probably going to be things that aren't.
+ *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
+ *  @date       November 2009
+ *  @version    $Id:$
+ */
 
 #include "gpsee.h"
-#define _BINARY_MODULE_C
-#include "binary_module.h"
+#include "shellalike.h"
 
-JSClass *byteString_clasp;
-JSClass *byteArray_clasp;
-
-/** Initialize the module */
-const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
-{
-  JSObject *proto;
-
-  proto = Binary_InitClass(cx, moduleObject);
-  if (proto == NULL)
-    return NULL;
-
-  if (ByteString_InitClass(cx, moduleObject, proto) == NULL)
-    return NULL;
-
-  if (ByteArray_InitClass(cx, moduleObject, proto) == NULL)
-    return NULL;
-
+/* Nothing happens here, yet */
+const char *shellalike_InitModule(JSContext *cx, JSObject *moduleObject) {
   return MODULE_ID;
 }
-
-JSBool binary_FiniModule(JSContext *cx, JSObject *moduleObject)
-{
-  return JS_TRUE;
-}
-

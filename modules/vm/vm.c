@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm_module.c,v 1.3 2010/01/26 22:37:30 wes Exp $
+ *  @version    $Id: vm_module.c,v 1.4 2010/02/17 15:57:18 wes Exp $
  *
  *  $Log: vm_module.c,v $
+ *  Revision 1.4  2010/02/17 15:57:18  wes
+ *  vm module: Added jsval, dumpHeap, dumpValue, dumpObject
+ *
  *  Revision 1.3  2010/01/26 22:37:30  wes
  *  Test for JITable program modules
  *
@@ -52,14 +55,13 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.3 2010/01/26 22:37:30 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.4 2010/02/17 15:57:18 wes Exp $";
  
 #include "gpsee.h"
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.vm"
 
 /*
-JS_GC
 JS_GetImplementationVersion
 JS_DumpNamedRoots
 JS_SetThreadStackLimit
@@ -67,7 +69,6 @@ JS_SetScriptStackQuota
 JS_SealObject
 JS_SetBranchCallback
 JS_MakeStructImmutabl
-JS_EncodeString
 JS_DecodeBytes
 JS_SetLocaleCallbacks
 */
@@ -80,6 +81,79 @@ static JSBool vm_version_getter(JSContext *cx, JSObject *obj, jsval id, jsval *v
   *vp = STRING_TO_JSVAL(JS_InternString(cx, s));
 
   return JS_TRUE;
+}
+
+static JSBool vm_jsval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  char buf[32];
+
+  snprintf(buf, sizeof(buf), "0x%x", (size_t)argv[0]);
+
+  *rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf));
+  return JS_TRUE;
+}
+
+static JSBool vm_dumpValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+#if defined(DEBUG)
+  JS_FRIEND_API(void) js_DumpValue(jsval val);
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".dumpValue.arguments.count");
+
+ js_DumpValue(argv[0]);
+ return JS_TRUE;
+#else
+  return gpsee_throw(cx, MODULE_ID ".dumpObject.undefined: requires a debug JSAPI build");
+#endif  
+}
+
+static JSBool vm_dumpObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+#if defined(DEBUG)
+  JS_FRIEND_API(void) js_DumpObject(jsval val);
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".dumpObject.arguments.count");
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return gpsee_throw(cx, MODULE_ID ".dumpObject.arguments.0.type: must be an object");
+
+ js_DumpObject(argv[0]);
+ return JS_TRUE;
+#else
+  return gpsee_throw(cx, MODULE_ID ".dumpObject.undefined: requires a debug JSAPI build");
+#endif  
+}
+
+/**
+ *  Dump the JS heap.
+ *
+ *  arguments:	start, find, maxDepth, ignore, filename
+ *  default:	all,  null, 1000,	null, /dev/stdout
+ */
+static JSBool vm_dumpHeap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+#if defined(DEBUG)
+  JSObject 	*start = NULL, *find = NULL, *ignore = NULL;
+  int32		maxDepth = 1000;
+  char		*filename = (char *)"/dev/stdout";
+  FILE		*file;
+  JSBool	b;
+
+  if (JS_ConvertArguments(cx, argc, argv, "ooios", &start, &find, &maxDepth, &ignore, &filename) == JS_FALSE)
+    return JS_FALSE;
+
+  file = fopen(filename, "r");
+  if (!file)
+    return gpsee_throw(cx, MODULE_ID ".dumpHeap.fopen: %m");
+
+  b = JS_DumpHeap(cx, file, start, 0, find, maxDepth, ignore);
+  fclose(file);
+  return b;
+#else
+  return gpsee_throw(cx, MODULE_ID ".dumpHeap.undefined: requires a debug JSAPI build");
+#endif
 }
 
 /** Garbage Collector method for Javascript. 
@@ -217,6 +291,10 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
 #endif
     { "GC",			vm_gc,				0, 0, 0 },	
     { "isCompilableUnit",	vm_isCompilableUnit,		0, 0, 0 },
+    { "jsval",			vm_jsval,			0, 0, 0 },
+    { "dumpHeap",		vm_dumpHeap,			0, 0, 0 },
+    { "dumpValue",		vm_dumpValue,			0, 0, 0 },
+    { "dumpObject",		vm_dumpObject,			0, 0, 0 },
     { NULL,			NULL,				0, 0, 0 },
   };
 
