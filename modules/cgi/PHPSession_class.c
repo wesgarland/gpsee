@@ -42,7 +42,7 @@
 static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.2 2009/03/31 15:12:13 wes Exp $";
 
 #include "gpsee.h"
-#include "cgi_module.h"
+#include "cgi.h"
 
 #if defined(HAVE_APR)
 #include <phpsess.h>

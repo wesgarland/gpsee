@@ -46,7 +46,7 @@
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 #include <math.h>
 
 #define CLASS_ID MODULE_ID ".Memory"

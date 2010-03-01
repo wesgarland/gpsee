@@ -42,7 +42,7 @@ ifeq "$(origin CXX)" "default"
 CXX		= g++
 endif
 ifeq "$(origin LD)" "default"
-LD		= gcc -shared
+LD		= $(CC) -shared
 endif
 LEX		?= lex
 YACC		?= yacc
@@ -73,7 +73,7 @@ EXE_EXT		?=
 LIB_EXT		?=a
 SOLIB_EXT	?=so
 
-ICONV_LIB_NAME	?= iconv
+ICONV_LDFLAGS	?= -liconv
 GPSEE_C_DEFINES	+= HAVE_ICONV GPSEE_STD_SUSV3 GPSEE_STD_XSI
 DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
 
