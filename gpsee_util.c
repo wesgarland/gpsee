@@ -45,6 +45,10 @@ static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.8 2010/
 
 #include "gpsee.h"
 
+/* ctype.h provides isspace() used by gpsee_reportErrorSourceCode()
+ */
+#include <ctype.h>
+
 /** String copy function which insures NUL-terminated
  *  dst string and does not zero-pad. Works only on
  *  ASCIZ strings.
@@ -409,6 +413,36 @@ haveint:
   return -1;
 }
 
+/** An error reporter used by gpsee_reportUncaughtException() because only an "error reporter" (see JS_SetErrorReporter()
+ *  gets access to the script source that generated the error.
+ */
+static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
+{
+  printf("file: %s:%d\n", report->filename, report->lineno);
+  if (report->linebuf)
+  {
+    char linebuf[strlen(report->linebuf)+1];
+    char *d = linebuf;
+    const char *c = report->linebuf;
+    int i;
+
+    /* Copy report->linebuf without any trailing whitespace */
+    while (*c && !isspace(*c))
+      *(d++) = *(c++);
+    *d = '\0';
+
+    printf("code: %s\n", linebuf);
+    printf("      ");
+    for (i = report->tokenptr - report->linebuf; i; i--)
+      putchar(' ');
+    puts("^");
+  }
+  else
+  {
+    printf("code: unavailable\n");
+  }
+}
+
 /** Report any pending exception as though it were uncaught.
  *  Renders a nice-looking error report. The destination of this error report
  *  may be a writable FILE handle, a writable file descriptor, or a pointer to
@@ -426,10 +460,10 @@ haveint:
  */
 JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char *cstrout, size_t cstrlen)
 {
-  //gpsee_interpreter_t *jsi;
   jsval                v;
   const char *longerror = NULL;
   JSString *jsstr;
+  JSErrorReporter reporter;
 
   /* Must we look up the exception value ourselves? */
   if (exval == JSVAL_NULL)
@@ -457,11 +491,11 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
         /* Output :) */
         if (fout)
         {
-          fprintf(fout, "error: %s\n\n", error);
+          fprintf(fout, "error: %s\n", error);
         }
         if (cstrout)
         {
-          int len = snprintf(cstrout, cstrlen, "error: %s\n\n", error);
+          int len = snprintf(cstrout, cstrlen, "error: %s\n", error);
           cstrout += len;
           cstrlen -= len;
         }
@@ -491,10 +525,17 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
       return JS_FALSE;
   }
 
+  /* Some information is only available to an "error reporter" (see JS_SetErrorReporter()) so we report that part here
+   * using an error reporter. Note that JS_ReportPendingException() also calls JS_ClearPendingException().
+   */
+  reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
+  JS_ReportPendingException(cx);
+  JS_SetErrorReporter(cx, reporter);
+
   /* Output the exception information :) There are two possible sinks */
   if (fout)
   {
-    fprintf(fout, "Uncaught exception:\n%s", longerror);
+    fprintf(fout, "stack trace:\n%s", longerror);
     if (longerror[strlen(longerror)-1] != '\n')
       fprintf(fout, "\n");
   }
@@ -503,7 +544,5 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
     snprintf(cstrout, cstrlen, "Uncaught exception:\n%s", longerror);
   }
 
-  /* Clear the exception */
-  JS_ClearPendingException(cx);
   return JS_TRUE;
 }
