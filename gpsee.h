@@ -288,6 +288,7 @@ typedef struct
   PRLock                *asyncCallbacks_lock;
   PRThread              *asyncCallbackTriggerThread;
   unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
+  const char            *pendingErrorMessage;   /**< This provides a way to provide an extra message for gpsee_reportErrorSourceCode() */
 } gpsee_interpreter_t;
 
 JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
@@ -298,7 +299,7 @@ JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPS
 JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
 JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
-JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char *cstrout, size_t cstrlen);
+JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval);
 JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase);
 JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
 JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);

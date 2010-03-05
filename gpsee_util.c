@@ -418,48 +418,67 @@ haveint:
  */
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
-  printf("file: %s:%d\n", report->filename, report->lineno);
+  char prefix[strlen(report->filename) + 21]; /* Allocate enough room for "filename:lineno" */
+  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  size_t sz;
+  
+  sz = snprintf(prefix, sizeof(prefix), "%s:%d", report->filename, report->lineno);
+  GPSEE_ASSERT(sz < sizeof(prefix));
+
+  if (jsi->pendingErrorMessage)
+  {
+    fprintf(stderr, "%s: %s\n", prefix, jsi->pendingErrorMessage);
+  }
+
   if (report->linebuf)
   {
-    char linebuf[strlen(report->linebuf)+1];
-    char *d = linebuf;
+    size_t start, len;
     const char *c = report->linebuf;
-    int i;
 
-    /* Copy report->linebuf without any trailing whitespace */
-    while (*c && !isspace(*c))
-      *(d++) = *(c++);
-    *d = '\0';
+    start = 0;
+    while (isspace(*(c++)))
+      start++;
 
-    printf("code: %s\n", linebuf);
-    printf("      ");
-    for (i = report->tokenptr - report->linebuf; i; i--)
-      putchar(' ');
-    puts("^");
-  }
-  else
-  {
-    printf("code: unavailable\n");
+    len = 0;
+    while (*(c))
+    {
+      if (!isspace(*c))
+        len = (c - report->linebuf) - start;
+      c++;
+    }
+
+    if (len > 0)
+    {
+      char linebuf[len+1];
+      char *d = linebuf;
+      int i;
+
+      strncpy(linebuf, report->linebuf + start, len+1);
+      fprintf(stderr, "%s: %s\n", prefix, linebuf);
+      fprintf(stderr, "%s: ", prefix);
+      for (i = report->tokenptr - report->linebuf - start; i; i--)
+        fputc('.', stderr);
+      fputs("^\n", stderr);
+    }
+    else
+    {
+      fprintf(stderr, "%s: %s\n", prefix, report->linebuf);
+    }
   }
 }
 
 /** Report any pending exception as though it were uncaught.
- *  Renders a nice-looking error report. The destination of this error report
- *  may be a writable FILE handle, a writable file descriptor, or a pointer to
- *  a JS_strdup()-allocated character string.
+ *  Renders a nice-looking error report to stderr.
  *
  *  @param    cx
  *  @param    exval     Exception value to be used (typically from JS_GetPendingException()) or JSVAL_NULL
  *                      to grab the exception value for you from JS_GetPendingException().
- *  @param    fout      If non-NULL, this FILE handle will receive the error report.
- *  @param    cstrout   If non-NULL, this must be the address of a buffer for receiving output.
- *  @param    cstrlen   Number of characters available in the buffer pointed to by 'cstrout.'
- *  @returns  JS_TRUE on success, JS_FALSE on failure
  * 
  *  @todo Should there be an option argument for publishing to gpsee_log()?
  */
-JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, char *cstrout, size_t cstrlen)
+JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
 {
+  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval                v;
   const char *longerror = NULL;
   JSString *jsstr;
@@ -488,17 +507,9 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
       {
         /* Make char buffer from JSString* */
         error = JS_GetStringBytes(JSVAL_TO_STRING(v));
-        /* Output :) */
-        if (fout)
-        {
-          fprintf(fout, "error: %s\n", error);
-        }
-        if (cstrout)
-        {
-          int len = snprintf(cstrout, cstrlen, "error: %s\n", error);
-          cstrout += len;
-          cstrlen -= len;
-        }
+
+        /* This makes the message available to gpsee_reportErrorSourceCode() */
+        jsi->pendingErrorMessage = error;
       }
     }
 
@@ -531,17 +542,14 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, FILE *fout, cha
   reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
   JS_ReportPendingException(cx);
   JS_SetErrorReporter(cx, reporter);
+  jsi->pendingErrorMessage = NULL;
 
   /* Output the exception information :) There are two possible sinks */
-  if (fout)
+  if (longerror && *longerror)
   {
-    fprintf(fout, "stack trace:\n%s", longerror);
+    fprintf(stderr, "stack trace:\n%s", longerror);
     if (longerror[strlen(longerror)-1] != '\n')
-      fprintf(fout, "\n");
-  }
-  if (cstrout)
-  {
-    snprintf(cstrout, cstrlen, "Uncaught exception:\n%s", longerror);
+      fprintf(stderr, "\n");
   }
 
   return JS_TRUE;

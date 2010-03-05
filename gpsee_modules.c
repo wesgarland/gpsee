@@ -1437,7 +1437,6 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   fail:
   {
     dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-    gpsee_log(SLOG_NOTICE, "Failed loading program module '%s'", scriptFilename);
   }
 
   good:
@@ -1458,7 +1457,7 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     else
     {
       /* @todo where should we publish this stuff to? */
-      gpsee_reportUncaughtException(cx, JSVAL_NULL, stderr, NULL, 0);
+      gpsee_reportUncaughtException(cx, JSVAL_NULL);
       jsi->exitType = et_exception;
     }
   }
