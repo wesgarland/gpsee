@@ -450,7 +450,6 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
     if (len > 0)
     {
       char linebuf[len+1];
-      char *d = linebuf;
       int i;
 
       strncpy(linebuf, report->linebuf + start, len+1);
@@ -480,8 +479,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
 {
   gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval                v;
-  const char *longerror = NULL;
-  JSString *jsstr;
+  char *longerror = NULL;
   JSErrorReporter reporter;
 
   /* Must we look up the exception value ourselves? */
@@ -518,22 +516,41 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
     {
       if (JSVAL_IS_STRING(v))
       {
+        int lines;
+        char *c, *d, *stack;
         /* Make char buffer from JSString* */
-        longerror = JS_GetStringBytes(JSVAL_TO_STRING(v));
+        stack = JS_GetStringBytes(JSVAL_TO_STRING(v));
+        if (!stack) // OOM
+          return JS_FALSE;
+        if (*stack) // empty string
+        {
+          /* Count lines */
+          lines = 0;
+          c = stack;
+          while (*c)
+          {
+            if (*c == '\n')
+              lines++;
+            c++;
+          }
+          /* Allocate space for indentation-padded string */
+          longerror = JS_malloc(cx, strlen(stack) + lines + 1);
+          /* Copy the string, adding indentation */
+          d = stack;
+          c = longerror;
+          *(c++) = '\t';
+          while (*d)
+          {
+            *c = *d;
+            if (*d == '\n')
+              *(++c) = '\t';
+            c++;
+            d++;
+          }
+          *c = '\0';
+        }
       }
     }
-  }
-
-  /* The 'stack' property of the exception wasn't a string, so let's try stringifying the exception value */
-  if (!longerror)
-  {
-    /* Convert exception value to string */
-    jsstr = JS_ValueToString(cx, exval);
-    /* Make char buffer from JSString* */
-    longerror = JS_GetStringBytes(jsstr);
-    /* Check for OOM error @todo report OOM here? that sort of error better get reported SOMEWHERE */
-    if (!longerror)
-      return JS_FALSE;
   }
 
   /* Some information is only available to an "error reporter" (see JS_SetErrorReporter()) so we report that part here
@@ -547,9 +564,10 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
   /* Output the exception information :) There are two possible sinks */
   if (longerror && *longerror)
   {
-    fprintf(stderr, "stack trace:\n%s", longerror);
+    fprintf(stderr, "\n\tSTACK TRACE\n\t-----------\n%s", longerror);
     if (longerror[strlen(longerror)-1] != '\n')
       fprintf(stderr, "\n");
+    JS_free(cx, longerror);
   }
 
   return JS_TRUE;
