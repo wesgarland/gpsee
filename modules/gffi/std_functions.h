@@ -1,68 +1,4 @@
 #include "gpsee_config.h"
-
-#if defined(GPSEE_STD_SUSV3)
-# define _XOPEN_SOURCE 600
-# if !defined(_POSIX_SOURCE)
-#  define _POSIX_SOURCE
-#  define _POSIX_C_SOURCE 200112L
-# endif
-#endif
-
-#if defined(GPSEE_STD_SUSV2)
-# define _XOPEN_SOURCE 500
-# if !defined(_POSIX_SOURCE)
-#  define _POSIX_SOURCE
-#  define _POSIX_C_SOURCE 200112L
-# endif
-#endif
-
-#if defined(GPSEE_STD_P92)
-# define _POSIX_SOURCE
-# define _POSIX_C_SOURCE 2
-#endif
-
-#if defined(GPSEE_STD_U95)
-# define _POSIX_SOURCE
-# define _POSIX_C_SOURCE 199506L
-#endif
-
-#if defined(GPSEE_STD_SUSV3)
-# define GPSEE_STD_C99
-#endif
-#if defined(GPSEE_STD_C99)
-# define _ISOC99_SOURCE
-# define _ISOC9X_SOURCE
-#endif
-
-#if defined(GPSEE_STD_SVID)
-# define _SVID_SOURCE
-#endif
-
-#if defined(GPSEE_STD_BSD)
-# define _BSD_SOURCE
-#endif
-
-/* Pull feature-detection code in with unistd / stdlib */
-#include <unistd.h>
-#include <stdlib.h>
-
-/* Enable POSIX realtime and thread extensions if OS standard supports them */
-#if defined(_POSIX_SOURCE) && (_POSIX_C_SOURCE >= 199309L)
-# define GPSEE_STDEXT_POSIX_REALTIME
-#endif
-#if defined(_POSIX_SOURCE) && (_POSIX_C_SOURCE >= 199506L)
-# define GPSEE_STDEXT_POSIX_THREADS
-# if !defined(_REENTRANT)
-#  define _REENTRANT
-# endif
-#endif
-
-/* Sanity checking */
-#if !defined(GPSEE_STD_P92) && !defined(GPSEE_STD_U95) && !defined(GPSEE_STD_SUSV3) && !defined(GPSEE_STD_C99) && !defined(GPSEE_STD_SVID) && !defined(GPSEE_STD_BSD)
-# warning "Could not figure out what kind of C standard your platform supports"
-#endif
-
-/* Make sure we get right iconv.h */
 #include "gpsee-iconv.h"
 
 #include <stdio.h>
@@ -168,3 +104,7 @@
 #endif
 #include <sys/statvfs.h>
 
+/* Solaris 10 is missing these definitions */
+#if defined(GPSEE_SUNOS_SYSTEM)
+extern size_t confstr(int, char *, size_t);
+#endif

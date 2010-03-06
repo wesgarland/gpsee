@@ -53,6 +53,6 @@ LDFLAGS_SOLIB_DIRS = $(foreach SOLIB_DIR, $(SOLIB_DIRS), -L$(SOLIB_DIR) -R$(SOLI
 GPSEE_C_DEFINES         += HAVE_NDBM
 
 # Prefer Solaris iconv over SFW or CSW
-ICONV_LDFLAGS 	= 	/usr/lib/libiconv.so
-ICONV_HEADER  	= 	/usr/include/iconv.h
-
+ICONV_LDFLAGS 		 = 
+ICONV_HEADER  		 = /usr/include/iconv.h
+ICONV_CPPFLAGS		+= -Wno-unknown-pragmas
