@@ -39,7 +39,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Sep 2009
- *  @version	$Id: util.c,v 1.1 2009/09/15 19:38:16 wes Exp $
+ *  @version	$Id: util.c,v 1.2 2010/03/06 18:17:14 wes Exp $
  */
 
 #include <gpsee.h>
