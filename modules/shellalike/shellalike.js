@@ -41,7 +41,7 @@
  *  @author     Donny Viszneki
  *              hdon@page.ca
  *  @date       Nov 2009
- *  @version    $Id$
+ *  @version    $Id: shellalike.js,v 1.1 2010/03/06 18:37:28 wes Exp $
  */
 
 /* Module requirements */

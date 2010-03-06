@@ -40,7 +40,7 @@
  *  @author	Donny Viszneki
  *		donny.viszneki@gmail.com
  *  @date	Aug 2009
- *  @version	$Id: gffi_module.js,v 1.1 2009/09/17 21:04:36 wes Exp $
+ *  @version	$Id: gffi.js,v 1.2 2010/03/06 18:17:14 wes Exp $
  */
 
 /* We now box up return values with private instances of WillFinalize, a native class that has a finalizer, so that

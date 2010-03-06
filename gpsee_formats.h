@@ -37,7 +37,7 @@
  *  @file 	gpsee_formats.h		Portable printf-style formats
  *  @author	Wes Garland
  *  @date	Jul 2009
- *  @version	$Id: gpsee_formats.h,v 1.1 2009/09/14 21:01:44 wes Exp $
+ *  @version	$Id: gpsee_formats.h,v 1.2 2010/03/06 18:17:13 wes Exp $
  */
 
 #define GPSEE_SIZET_FMT       "%zu"

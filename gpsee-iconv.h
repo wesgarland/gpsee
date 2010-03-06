@@ -36,7 +36,7 @@
  *				that matches the iconv library GPSEE links against.
  * @author	Wes Garland, wes@page.ca
  * @date	Nov 2009
- * @version	$Id: gpsee-iconv.h,v 1.1 2009/11/13 19:34:48 wes Exp $
+ * @version	$Id: gpsee-iconv.h,v 1.2 2010/03/06 18:17:13 wes Exp $
  */
 
 #include <dlfcn.h>

@@ -41,10 +41,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: pairodice_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $
+ *  @version	$Id: pairodice.c,v 1.2 2010/03/06 18:17:14 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: pairodice_module.c,v 1.1 2009/03/30 23:55:44 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: pairodice.c,v 1.2 2010/03/06 18:17:14 wes Exp $";
 #include "gpsee.h"
 #include <stdlib.h>
 #include <unistd.h>

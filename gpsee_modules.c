@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.24 2010/02/18 21:12:58 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.26 2010/03/06 18:39:51 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.24 2010/02/18 21:12:58 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.26 2010/03/06 18:39:51 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -87,13 +87,14 @@ static const char *spaces(void)
   buf[dpDepthSpaces * 2] = (char)0;
   return buf;
 }
-# define dpDepth(a) do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
-# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("modules\t> %s", spaces()), printf(a); } while(0)
+# define dpDepth(a) 		do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
+# define dprintf(a...) 		do { if (gpsee_verbosity(0) > 2) printf("modules\t> %s", spaces()), printf(a); } while(0)
 # define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 #else
 # define RTLD_mode	RTLD_LAZY
-# define dprintf(a...) while(0) printf(a)
-# define dpDepth(a) while(0)
+# define dprintf(a...) 		while(0) printf(a)
+# define dpDepth(a) 		while(0)
+# define moduleShortName(a) 	a
 #endif
 
 GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
@@ -260,7 +261,7 @@ SPLAY_GENERATE(moduleMemo, moduleHandle, entry, moduleCName_strcmp)
  *  the case where there are no collisions. These locks are per-runtime.
  *
  *  The requireLockThread holds the thread ID of the thread currrently holding this lock, or
- *  NULL (which is an invalid value for PRThread).  
+ *  JSVAL_NULL (which is an invalid value for PRThread).  
  *
  *  requireLockThread is only read/written via CAS operations, forcing a full memory barrier 
  *  at the start of a locking operation. requireLockDepth may only be read or written by a 
@@ -281,7 +282,7 @@ static void requireLock(JSContext *cx)
   {
     jsrefcount depth;
 
-    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, NULL, (jsval)thisThread) == JS_TRUE)
+    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, JSVAL_NULL, (jsval)thisThread) == JS_TRUE)
       goto haveLock;
 
     depth = JS_SuspendRequest(cx);
@@ -310,7 +311,7 @@ static void requireUnlock(JSContext *cx)
   jsi->requireLockDepth--;
   if (jsi->requireLockDepth == 0)
   {
-    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, NULL) != JS_TRUE) /* membar */
+    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, JSVAL_NULL) != JS_TRUE) /* membar */
     {
       GPSEE_NOT_REACHED("bug in require-locking code");
     }
