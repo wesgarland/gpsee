@@ -38,10 +38,10 @@
  *				which isn't available from JavaScript.
  *  @author     Wes Garland
  *  @date       Oct 2007
- *  @version    $Id:$
+ *  @version    $Id: gpsee.c,v 1.8 2010/03/06 18:17:14 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id:$";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee.c,v 1.8 2010/03/06 18:17:14 wes Exp $";
  
 #include "gpsee.h"
 #include <prinit.h>

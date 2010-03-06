@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.27 2010/02/17 15:59:33 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.28 2010/03/06 18:17:13 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.28  2010/03/06 18:17:13  wes
+ *  Synchronize Mercurial and CVS Repositories
+ *
  *  Revision 1.27  2010/02/17 15:59:33  wes
  *  Module Refactor checkpoint: switched modules array to a splay tree
  *

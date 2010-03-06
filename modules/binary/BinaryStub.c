@@ -38,12 +38,12 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: Binary.c,v 1.1 2009/05/27 04:51:44 wes Exp $
+ *  @version	$Id: BinaryStub.c,v 1.2 2010/03/06 18:17:13 wes Exp $
  *
  *  Based on https://wiki.mozilla.org/ServerJS/Binary/B
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: Binary.c,v 1.1 2009/05/27 04:51:44 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: BinaryStub.c,v 1.2 2010/03/06 18:17:13 wes Exp $";
 #include "gpsee.h"
 #include "binary.h"
 

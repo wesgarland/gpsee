@@ -38,14 +38,14 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: ByteString.c,v 1.7 2009/10/29 18:35:05 wes Exp $
+ *  @version	$Id: ByteString.c,v 1.8 2010/03/06 18:17:13 wes Exp $
  *
  *  Based on https://wiki.mozilla.org/ServerJS/Binary/B
  *  Extensions:
  *  - Missing or falsy charset in constructor means to inflate/deflate
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.7 2009/10/29 18:35:05 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: ByteString.c,v 1.8 2010/03/06 18:17:13 wes Exp $";
 #include "gpsee.h"
 #include "binary.h"
 

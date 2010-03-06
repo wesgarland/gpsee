@@ -1,4 +1,4 @@
-Version: $Id: README,v 1.1 2009/05/27 04:16:59 wes Exp $
+Version: $Id: README,v 1.2 2010/03/06 18:17:13 wes Exp $
 
 This directory contains a collection of build rules and source code patches
 for 3rd-party applications that use SpiderMonkey. These applications, which 

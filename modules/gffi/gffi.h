@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi_module.h,v 1.10 2009/11/10 20:20:51 wes Exp $
+ *  @version	$Id: gffi.h,v 1.11 2010/03/06 18:17:14 wes Exp $
  */
 
 #include <dlfcn.h>
