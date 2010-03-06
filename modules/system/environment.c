@@ -41,7 +41,7 @@
  *                              of the CommonJS system module spec.)
  *  @author     Donny Viszneki
  *  @date       Feb 2010
- *  @version    $Id:$
+ *  @version    $Id: environment.c,v 1.1 2010/03/06 18:37:28 wes Exp $
  */
 
 #include "gpsee.h"

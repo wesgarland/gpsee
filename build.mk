@@ -74,7 +74,7 @@ CFLAGS                  += $(EXTRA_CFLAGS)
 export GPSEE_SRC_DIR BUILD STREAM
 export SPIDERMONKEY_BUILD SPIDERMONKEY_SRC
 
-ifneq ($(NO_BUILD_RULES),True)
+ifneq ($(NO_BUILD_RULES),TRUE)
 -include $(GPSEE_SRC_DIR)/$(STREAM)_rules.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_rules.mk
 endif

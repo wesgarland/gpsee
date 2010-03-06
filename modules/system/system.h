@@ -37,7 +37,7 @@
  *  @file       system_module.h         
  *  @author     Donny Viszneki, PageMail, Inc., hdon@page.ca
  *  @date       Feb 2010
- *  @version    $Id:$
+ *  @version    $Id: system.h,v 1.1 2010/03/06 18:37:28 wes Exp $
  */
 
 #ifndef GPSEE_SYSTEM_MODULE_H

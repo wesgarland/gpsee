@@ -39,7 +39,7 @@
  *                                    probably going to be things that aren't.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       November 2009
- *  @version    $Id:$
+ *  @version    $Id: shellalike.h,v 1.1 2010/03/06 18:37:28 wes Exp $
  */
 #ifndef GPSEE_SHELLALIKE_MODULE_H
 #define GPSEE_SHELLALIKE_MODULE_H

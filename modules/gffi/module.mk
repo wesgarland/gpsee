@@ -38,10 +38,10 @@ include $(GPSEE_SRC_DIR)/iconv.mk
 include sanity.mk
 
 DEFS	 	 	= gpsee std
-AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
+AUTOGEN_HEADERS		+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
-PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types
+PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
@@ -49,7 +49,7 @@ MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
 .PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
 
-build:	$(DEF_FILES)
+build:	mk_std_cppflags $(DEF_FILES)
 
 build_debug_module:
 	@echo " - In gffi"
@@ -57,11 +57,14 @@ build_debug_module:
 	@echo "   - LDFLAGS  = $(LDFLAGS)"
 	@echo "   - CPPFLAGS = $(CPPFLAGS)"
 
+clean:	OBJS += aux_types.o
+
 gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
 gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(ICONV_CPPFLAGS)
+mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(shell ./mk_std_cppflags)
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
@@ -76,19 +79,24 @@ std_gpsee_no.h: std_functions.h
 
 %.dmp defines.incl: sort=LC_COLLATE=C sort
 
-compiler.dmp:
+compiler_dmp.re:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u \
-	| sed -e 's/[[]/[[]/g' -e 's/[]]/[]]/g' \
+	| sed \
+		-e 's/[[]/[[]/g' -e 's/[]]/[]]/g' \
+		-e 's/[*]/[*]/g' -e 's/[?]/[?]/g' \
+		-e 's/[(]/[(]/g' -e 's/[)]/[)]/g' \
+		-e 's/[.]/[.]/g' \
+		-e 's/[|]/[|]/g' \
 	> $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
-%.dmp: compiler.dmp #Makefile
+%.dmp: compiler_dmp.re #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
 	@echo $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER))))
 	$(CPP) $(CPPFLAGS) -dM \
 	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
 		| sed 's/[ 	][ 	]*/ /g' \
 		| $(sort) -u \
-		| $(EGREP) -vf compiler.dmp \
+		| $(EGREP) -vf compiler_dmp.re \
 		| $(EGREP) -v '^#define *NULL '\
 		> $@ || [ X = X ]
 	[ -s $@ ] || rm $@
@@ -243,3 +251,4 @@ structs.incl: structs.decl module.mk
 
 
 defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
+

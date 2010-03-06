@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm_module.c,v 1.4 2010/02/17 15:57:18 wes Exp $
+ *  @version    $Id: vm.c,v 1.5 2010/03/06 18:17:14 wes Exp $
  *
- *  $Log: vm_module.c,v $
+ *  $Log: vm.c,v $
+ *  Revision 1.5  2010/03/06 18:17:14  wes
+ *  Synchronize Mercurial and CVS Repositories
+ *
  *  Revision 1.4  2010/02/17 15:57:18  wes
  *  vm module: Added jsval, dumpHeap, dumpValue, dumpObject
  *
@@ -55,7 +58,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm_module.c,v 1.4 2010/02/17 15:57:18 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.5 2010/03/06 18:17:14 wes Exp $";
  
 #include "gpsee.h"
 
