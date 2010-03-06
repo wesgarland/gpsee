@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.33 2010/02/25 15:39:12 wes Exp $
+## @version	$Id: Makefile,v 1.34 2010/03/06 03:25:24 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
@@ -75,7 +75,7 @@ INTERNAL_MODULES 	+= vm gpsee system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
 
-ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean))
+ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean build_debug))
 include $(GPSEE_SRC_DIR)/sanity.mk
 endif
 
@@ -202,7 +202,7 @@ modules/% $(STREAM)_modules/%:: gpsee_config.h
 build_debug_modules:
 	@echo
 	@echo " * Module debug info: "
-	@$(foreach DIR, $(ALL_MODULE_DIRS), cd "$(DIR)" && $(MAKE) --quiet -f "$(GPSEE_SRC_DIR)/modules.mk" build_debug_module && cd "$(GPSEE_SRC_DIR)";)
+	@$(foreach DIR, $(ALL_MODULE_DIRS), cd "$(GPSEE_SRC_DIR)/$(DIR)" && $(MAKE) --quiet -f "$(GPSEE_SRC_DIR)/modules.mk" build_debug_module;)
 	@echo
 
 build_debug: build_debug_modules
