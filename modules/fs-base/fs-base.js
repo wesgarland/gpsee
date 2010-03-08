@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base.js,v 1.10 2010/02/23 18:36:28 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.11 2010/03/08 22:17:55 wes Exp $
  */
 
 const binary = require("binary");
@@ -759,7 +759,7 @@ Permissions.fromUnix = function Permissions_static_fromUnix(u)
  */
 Permissions.fromUnixUmask = function Permissions_static_fromUnixMask(uu)
 {
-  return Permissions.fromUnix(0777 - (uu & 0777));
+  return Permissions.fromUnix(511 - (uu & 511)); /* 511 == 0777 */
 }
 
 /* Pull the current umask inline during module load, use to 
