@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.26 2010/03/06 18:39:51 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.27 2010/03/08 22:21:09 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.26 2010/03/06 18:39:51 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.27 2010/03/08 22:21:09 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -345,7 +345,7 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
 {
   JSObject 		*exports;
 
-  exports = JS_NewObjectWithGivenProto(cx, &module_exports_class, NULL, moduleScope);
+  exports = JS_NewObject(cx, &module_exports_class, NULL, moduleScope);
   dprintf("Created new exports at %p for module at scope %p\n", exports, moduleScope);
   return exports;
 }
@@ -1543,6 +1543,10 @@ static const char *libexecDir(void)
   return s;
 }
 
+/**
+ *  Module system bootstapping code.  Modules are singletons and memoized
+ *  per gpsee interpreter (~ JS Runtime), but may span contexts when multithreaded.
+ */
 JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
 {
   char			*envpath = getenv("GPSEE_PATH");
