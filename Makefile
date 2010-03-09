@@ -62,6 +62,7 @@ $(GPSEE_SRC_DIR)/local_config.mk:
 	@echo
 	@[ X = Y ]
 
+GPSEE_BUILD = TRUE
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
@@ -339,3 +340,4 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
+
