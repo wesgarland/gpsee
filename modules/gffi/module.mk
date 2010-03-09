@@ -68,7 +68,9 @@ std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(G
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
-std_gpsee_no.h: std_functions.h
+# While std_gpsee_no.h does not depend on mk_std_cppflags, stuff that depends on it does, and specifying 
+# this dep at that level would have annoying consequences for implicit rules
+std_gpsee_no.h: std_functions.h mk_std_cppflags
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 	$(EGREP) '^function[(]' function_aliases.incl | sed -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
@@ -77,7 +79,7 @@ std_gpsee_no.h: std_functions.h
 	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | sed 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
 		sed -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 
-%.dmp defines.incl: sort=LC_COLLATE=C sort
+compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
 
 compiler_dmp.re:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u \
@@ -160,7 +162,7 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 		@echo " - Integer Expression"
-	@$(foreach HEADER, $(HEADERS), echo "#include <$(HEADER)>" >> $@;)
+	@$(foreach HEADER, $(HEADERS), echo "#include \"$(HEADER)\"" >> $@;)
 	@echo "#include <stdio.h>" >> $@
 	@echo "#include \"../../gpsee_formats.h\"" >> $@
 	@echo "#undef main" >> $@

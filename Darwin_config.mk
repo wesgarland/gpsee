@@ -37,10 +37,17 @@ DEFAULT_GPSEE_PREFIX_DIR = /opt/local/gpsee
 EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
 SOLIB_EXT	 	 = dylib
 LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
-REAL_LD			 = gcc -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
-LD			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_LD)
-REAL_CC			 = gcc
+REAL_LINKER		 = $(GCC) -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
+REAL_CC			 = $(GCC)
+
+ifdef GPSEE_BUILD
+LINKER			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_LINKER)
 CC			 = @echo "@executable_path/libmozjs.dylib $(LIB_MOZJS)" | $(GPSEE_SRC_DIR)/darwin-ccld.sh $(REAL_CC)
+else
+LINKER			= $(REAL_LINKER)
+CC			= $(REAL_CC)
+endif
+
 GPSEE_C_DEFINES         += HAVE_NDBM
 libgpsee.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
 
