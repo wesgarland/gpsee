@@ -36,10 +36,16 @@
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
 include sanity.mk
+-include std_cppflags.mk
+
+std_cppflags.mk:
+	@echo " * Building $@"
+	$(CC) $(CFLAGS) $(CPPFLAGS) mk_std_cppflags.c -o mk_std_cppflags
+	./mk_std_cppflags STD_CPPFLAGS= > $@
 
 DEFS	 	 	= gpsee std
 AUTOGEN_HEADERS		+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
-AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
+AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl mk_std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
 OBJS			+= $(EXTRA_MODULE_OBJS)
@@ -49,7 +55,7 @@ MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
 .PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
 
-build:	mk_std_cppflags $(DEF_FILES)
+build:
 
 build_debug_module:
 	@echo " - In gffi"
@@ -64,13 +70,11 @@ gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(shell ./mk_std_cppflags)
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
-# While std_gpsee_no.h does not depend on mk_std_cppflags, stuff that depends on it does, and specifying 
-# this dep at that level would have annoying consequences for implicit rules
-std_gpsee_no.h: std_functions.h mk_std_cppflags
+std_gpsee_no.h: std_functions.h
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 	$(EGREP) '^function[(]' function_aliases.incl | sed -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
