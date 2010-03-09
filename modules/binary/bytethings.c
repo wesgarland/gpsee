@@ -467,7 +467,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 	default:
 	  JS_free(cx, outbufStart);
 	  iconv_close(cd);
-	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte " GPSEE_SIZET_FMT " (%m)", 
+	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte " GPSEE_PTRDIFF_FMT " (%m)", 
 			     throwPrefix, ((unsigned char *)inbuf - inputBuffer));
       }
     }
