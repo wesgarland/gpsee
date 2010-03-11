@@ -41,7 +41,7 @@
 
 top build: gpsee-js
 
-GPSEE_CONFIG=../../gpsee-config
+GPSEE_CONFIG	?= ../../gpsee-config
 include $(shell $(GPSEE_CONFIG) --outside.mk)
 
 GPSEE_INCLUDE_DIR	?= $(shell $(GPSEE_CONFIG) --includedir)
@@ -69,9 +69,6 @@ endif
 	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
 	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/gpsee-js.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
 	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
-ifeq "$(UNAME_SYSTEM)" "Darwin"
-	install_name_tool -change @executable_path/libmozjs.dylib $(JSAPI_LIB_DIR)/libmozjs.dylib gpsee-js
-endif
 
 clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
 	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk clean
