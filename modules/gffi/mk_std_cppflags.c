@@ -117,6 +117,9 @@
 
 int main(int argc, const char *argv[])
 {
+  while(++argv,--argc)
+    printf("%s ", *argv);
+
   puts(
 #ifdef _REENTRANT
 	" -D_REENTRANT"

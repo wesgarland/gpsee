@@ -153,6 +153,10 @@ reconfigure::
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 
+ifeq ($(UNAME_SYSTEM),Darwin)
+export EXTRA_LIBS
+build: EXTRA_LIBS += -Wl,-install_name,$(LIB_DIR)/libmozjs.dylib
+endif
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
 ifneq ($(QUIET),True)
@@ -173,7 +177,7 @@ endif
 
 ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
 JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
-ifeq ($(shell uname -s),Darwin)
+ifeq ($(UNAME_SYSTEM),Darwin)
 # Work around a long-standing bug in js-config for Darwin
 JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
