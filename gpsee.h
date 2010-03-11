@@ -337,6 +337,7 @@ JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
+JS_EXTERN_API(void)                 gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix);
 
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
