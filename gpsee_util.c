@@ -423,13 +423,14 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   char prefix[strlen(report->filename) + 21]; /* Allocate enough room for "filename:lineno" */
   gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t sz;
+  int tty = isatty(STDOUT_FILENO);
   
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", report->filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
   if (jsi->pendingErrorMessage)
   {
-    fprintf(stderr, VT_BOLD "%s: %s" VT_UNBOLD "\n", prefix, jsi->pendingErrorMessage);
+    fprintf(stderr, "%s%s: %s%s\n", tty?VT_BOLD:"", prefix, jsi->pendingErrorMessage, tty?VT_UNBOLD:"");
   }
 
   if (report->linebuf)
