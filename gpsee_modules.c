@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.27 2010/03/08 22:21:09 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.28 2010/03/10 18:48:36 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.27 2010/03/08 22:21:09 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.28 2010/03/10 18:48:36 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -168,6 +168,10 @@ static JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uint
   if (JS_DefinePropertyById(cx, obj, id, v, getGlobalProperty, setGlobalProperty, 0) == JS_FALSE)
     return JS_FALSE;
 
+  /** @todo	Add JS_GetPropertyAttributesById() and JS_SetPropertyAttributesById() to JSAPI,
+   *            re-write this block to use them, and eliminate the JSVAL_IS_STRING(id) condition,
+   *            which is actually semantically incorrect but reasonable in practice.
+   */
   if (JSVAL_IS_STRING(id))
   {
     char 	*s = JS_GetStringBytes(JSVAL_TO_STRING(id));
@@ -414,15 +418,11 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
     {
       jsval v;
 
-#if 1 //xxx
       if (JS_GetReservedSlot(cx, jsi->globalObj, key, &v) == JS_FALSE)
 	return JS_FALSE;
 
       if (JS_SetReservedSlot(cx, moduleScope, key, v) == JS_FALSE)
 	return JS_FALSE;
-#else
-      JS_InitStandardClasses(cx, moduleScope);
-#endif
     }
 
     if (JS_DefineProperty(cx, moduleScope, "undefined", JSVAL_VOID, NULL, NULL,
