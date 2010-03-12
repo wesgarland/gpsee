@@ -413,6 +413,8 @@ haveint:
   return -1;
 }
 
+#define VT_BOLD "\33[1m"
+#define VT_UNBOLD "\33[22m"
 /** An error reporter used by gpsee_reportUncaughtException() because only an "error reporter" (see JS_SetErrorReporter()
  *  gets access to the script source that generated the error.
  */
@@ -427,7 +429,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
 
   if (jsi->pendingErrorMessage)
   {
-    fprintf(stderr, "%s: %s\n", prefix, jsi->pendingErrorMessage);
+    fprintf(stderr, VT_BOLD "%s: %s" VT_UNBOLD "\n", prefix, jsi->pendingErrorMessage);
   }
 
   if (report->linebuf)
@@ -465,7 +467,6 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
     }
   }
 }
-
 /** Report any pending exception as though it were uncaught.
  *  Renders a nice-looking error report to stderr.
  *
@@ -522,33 +523,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
         stack = JS_GetStringBytes(JSVAL_TO_STRING(v));
         if (!stack) // OOM
           return JS_FALSE;
-        if (*stack) // empty string
-        {
-          /* Count lines */
-          lines = 0;
-          c = stack;
-          while (*c)
-          {
-            if (*c == '\n')
-              lines++;
-            c++;
-          }
-          /* Allocate space for indentation-padded string */
-          longerror = JS_malloc(cx, strlen(stack) + lines + 1);
-          /* Copy the string, adding indentation */
-          d = stack;
-          c = longerror;
-          *(c++) = '\t';
-          while (*d)
-          {
-            *c = *d;
-            if (*d == '\n')
-              *(++c) = '\t';
-            c++;
-            d++;
-          }
-          *c = '\0';
-        }
+        longerror = JS_strdup(cx, stack);
       }
     }
   }
@@ -564,11 +539,130 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
   /* Output the exception information :) There are two possible sinks */
   if (longerror && *longerror)
   {
-    fprintf(stderr, "\n\tSTACK TRACE\n\t-----------\n%s", longerror);
+    static const char *columnPrefixes[3] = {"   ","in ","at "};
+    char *c;
+    int phase;
     if (longerror[strlen(longerror)-1] != '\n')
       fprintf(stderr, "\n");
+
+    c = longerror;
+    phase = 0;
+    while (*c)
+    {
+      if (phase == 0)
+      {
+        if (*c == '@')
+        {
+          *c = '\t';
+          phase = 1;
+        }
+      }
+      else if (phase == 1)
+      {
+        if (*c == ':')
+        {
+          *c = '\t';
+          phase = 2;
+        }
+      }
+      else if (phase == 2)
+      {
+        if (*c == '\n')
+          phase = 0;
+      }
+      c++;
+    }
+    gpsee_printTable(stderr, longerror, 3, columnPrefixes);
     JS_free(cx, longerror);
   }
 
   return JS_TRUE;
+}
+
+/** A convenient function for rendering fixed-width font tables. Like this one:
+ *  @param  out   The place to print the table to.
+ *  @param  s     The text to print.
+ *  @param  ncols The number of columns there are.
+ *  @param  pfix  A pointer to ncols-many strings that will be used to prefix each column (NULLs allowed.)
+ *  @notes  The buffer may be modified
+ */
+void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix)
+{
+  int screencols;
+  size_t cols[ncols];
+  size_t cols1[ncols];
+  size_t widecol;
+  int i;
+  char *c;
+  char *tok;
+  
+  /* How many characters wide is the terminal? */
+  if (getenv("COLUMNS"))
+    screencols = atoi(getenv("COLUMNS"));
+  else
+    screencols = 80;
+
+  /* Measure the width of each column */
+  for (i=0; i<ncols; i++)
+  {
+    cols[i] =
+    cols1[i] = strlen(pfix[i])+1;
+  }
+
+  i = 0;
+  c = s;
+  widecol = 1; // widest column
+  do
+  {
+    if (*c == '\t')
+      i++;
+    else if (*c == '\n' || *c == '\0')
+    {
+      for (i=0; i<ncols; i++)
+      {
+        if (cols1[i] > cols[i])
+        {
+          cols[i] = cols1[i];
+          if (cols[i] > widecol)
+            widecol = cols[i];
+        }
+        cols1[i] = strlen(pfix[i])+1;
+      }
+      i = 0;
+    }
+    else
+      cols1[i]++;
+  } while (*(++c));
+
+  if (widecol)
+  {
+    int done = 0;
+    char space[widecol+1];
+    char *d;
+    memset(space, ' ', widecol);
+    space[widecol] = '\0';
+
+    /* Begin tokenizing and printing */
+    i = 0;
+    c = s;
+    do
+    {
+      d = c;
+      while (*d != '\0' && *d != '\t' && *d != '\n')
+        d++;
+      if (*d == '\0')
+        done = 1;
+      else
+        *d = '\0';
+      fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) + strlen(pfix[i]));
+      c = d+1;
+      if (++i >= ncols)
+      {
+        fprintf(out, "\n");
+        i = 0;
+      }
+    }
+    while (!done && *c);
+  }
+  fprintf(out, "\n");
 }
