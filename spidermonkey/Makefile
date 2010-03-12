@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -154,8 +154,9 @@ reconfigure::
 	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 
 ifeq ($(UNAME_SYSTEM),Darwin)
+MOZJS_INSTALL_NAME_OPT=-Wl,-install_name,$(LIB_DIR)/libmozjs.dylib
 export EXTRA_LIBS
-build: EXTRA_LIBS += -Wl,-install_name,$(LIB_DIR)/libmozjs.dylib
+build: EXTRA_LIBS += $(MOZJS_INSTALL_NAME_OPT)
 endif
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
@@ -182,6 +183,7 @@ ifeq ($(UNAME_SYSTEM),Darwin)
 JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
+JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
 endif
 endif
 
