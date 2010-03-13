@@ -909,7 +909,11 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
 
     dir = JS_EncodeString(cx, jsstr);
     if (!dir || !dir[0])
+    {
+      if (dir)
+	JS_free(cx, (void *)dir);
       continue;
+    }
 
     if (!pathEl)
       pathEl = modulePath;
@@ -1581,8 +1585,10 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     {
       pathEl->next = JS_malloc(cx, sizeof(*pathEl));
       memset(pathEl->next, 0, sizeof(*pathEl->next));
-      pathEl->next->dir = path;
+      pathEl->next->dir = JS_strdup(cx, path);
     }
+
+    JS_free(cx, envpath);
   }
 
   /* Create stub for user module path (require.paths) */
