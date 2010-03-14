@@ -77,299 +77,6 @@ static JSBool cFunction_jsapiCall_setter(JSContext *cx, JSObject *obj, jsval id,
   return JS_TRUE;
 }
 
-size_t ffi_type_size(ffi_type *type)
-{
-#define ffi_type(ftype, ctype) if (type == &ffi_type_ ##ftype) return sizeof(ctype); else
-#define FFI_TYPES_SIZED_ONLY
-#include "ffi_types.decl"
-#undef  FFI_TYPES_SIZED_ONLY
-#undef ffi_type
-    panic("corrupted FFI information");
-}
-
-/**
- *  By default, we assume that returned pointers are pointers to memory which does not
- *  need to be freed.  If that assumption is wrong the JS programmer can touch up the
- *  object.
- */
-static JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, cFunction_handle_t *hnd)
-{
-  if (rtype_abi == &ffi_type_pointer) 
-  {
-    void 		*ptr = *(void **)abi_rvalp;
-    jsval 		argv[] = { INT_TO_JSVAL(0), JSVAL_FALSE };
-    memory_handle_t	*memHnd;
-    JSObject		*robj;
-
-    if (!ptr)
-    {
-      *rval = JSVAL_NULL;
-      return JS_TRUE;
-    }
-
-    robj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
-    if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, rval) == JS_FALSE)
-      return JS_FALSE;
-
-    memHnd = JS_GetPrivate(cx, robj);
-    GPSEE_ASSERT(memHnd);
-    if (!memHnd)
-      return gpsee_throw(cx, CLASS_ID ".call: impossible error processing returned Memory object");
-
-    memHnd->buffer = ptr;
-    memHnd->memoryOwner = NULL;	/* By default we mark that we don't own the memory, as we don't know how it's managed */
-
-    return JS_TRUE;
-  }
-
-#define ffi_type(ftype, ctype) 					\
-  if (rtype_abi == &ffi_type_ ##ftype)				\
-  {								\
-    ctype	native = *(ctype *)abi_rvalp;			\
-    jsdouble 	d;						\
-    								\
-    if (INT_FITS_IN_JSVAL(native) && (jsint)native == native)	\
-    {								\
-      *rval = INT_TO_JSVAL((jsint)native);			\
-      return JS_TRUE;						\
-    }								\
-    								\
-    d = native;							\
-    if (native != d)						\
-      return gpsee_throw(cx, CLASS_ID ".call.return.overflow");	\
-    								\
-    return JS_NewNumberValue(cx, d, rval);			\
-  }
-#define FFI_TYPES_NUMBERS_ONLY
-#include "ffi_types.decl"
-#undef ffi_type
-#undef FFI_TYPES_NUMBERS_ONLY
-
-  if (rtype_abi == &ffi_type_void)
-  {
-    *rval = JSVAL_VOID;
-    return JS_TRUE;
-  }
-
-  return gpsee_throw(cx, CLASS_ID ".call.returnType.unhandled: unhandled return type");
-}
-
-static JSBool valueTo_jsint(JSContext *cx, jsval v, jsint *ip, int argn)
-{
-  jsdouble d;
-
-  if (JSVAL_IS_INT(v))
-  {
-    *ip = JSVAL_TO_INT(v);
-    return JS_TRUE;
-  }
-
-  if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
-    return JS_FALSE;
-
-  *ip = d;
-
-  if ((jsint)d != *ip)
-    return gpsee_throw(cx, CLASS_ID ".arguments.%i.range: value %g cannot be converted to an integer type", argn, d);
-
-  return JS_TRUE;
-}
-
-/*  Arg Converter Notes
- ************************************
- *  *storagep is a pointer to temporary memory which will be freed
- *  *avaluep is a pointer to the thing we want to pass as an argument
- *  IFF *storagep points to the the thing, *avaluep = *storagep
- */
-
-static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{
-  jsint i;
-
-  *storagep = JS_malloc(cx, sizeof(char));
-  if (!*storagep)
-    return JS_FALSE;
-
-  *avaluep = storagep;
-
-  if (!JSVAL_IS_INT(v))
-  {
-    const char *s;
-    JSString		*str = JS_ValueToString(cx, v);
-
-    if (!str && JS_IsExceptionPending(cx))
-      return JS_FALSE;
-
-    s = JS_GetStringBytes(str);
-    if (s)
-    {
-      if (s[0] && !s[1])
-	i = s[0];
-    }
-  }
-  else
-  {
-    if (valueTo_jsint(cx, v, &i, argn) == JS_FALSE)
-      return JS_FALSE;
-  }
-
-  ((char *)*storagep)[0] = i;
-  if (i != ((char *)*storagep)[0])
-    return gpsee_throw(cx, CLASS_ID ".arguments.%i.valueTo_char.range: %i does not fit in a char", argn, i);
-
-  return JS_TRUE;
-}
-
-static JSBool valueTo_schar(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{
-  return valueTo_char(cx, v, avaluep, storagep, argn);
-}
-
-static JSBool valueTo_uchar(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{
-  return valueTo_char(cx, v, avaluep, storagep, argn);
-}
-
-#define ffi_type(ftype, ctype)\
-static JSBool valueTo_ ##ftype(JSContext *cx, jsval v, 				\
-			       void **avaluep, void **storagep, int argn)	\
-{ 										\
-  jsint i;									\
-  ctype tgt;									\
-    								                \
-  if (valueTo_jsint(cx, v, &i, argn) == JS_FALSE)				\
-    return JS_FALSE;								\
-    								                \
-  tgt = i;									\
-  if (i != tgt)									\
-    return gpsee_throw(cx, CLASS_ID ".arguments.%i.valueTo_" #ftype ".range"	\
-		       ": %i does not fit in a%s " #ctype, argn, i, 		\
-		       (#ctype[0] == 'u' ? "n" : ""));				\
-    								                \
-  *storagep = JS_malloc(cx, sizeof(tgt));					\
-  if (!*storagep)								\
-    return JS_FALSE;								\
-    								                \
-  *avaluep = *storagep;								\
-  *(ctype *)*storagep = tgt;							\
-    								                \
-  return JS_TRUE; 								\
-}
-
-#define FFI_TYPES_INTEGERS_ONLY
-#include "ffi_types.decl"
-#undef FFI_TYPES_INTEGERS_ONLY
-#undef ffi_type
-
-static JSBool valueTo_void(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{ 
-  return gpsee_throw(cx, CLASS_ID ".call.valueTo_void: cannot convert argument %i to void", argn);
-}
-
-static JSBool valueTo_float(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{ 
-  jsdouble d;
-
-  if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
-    return JS_FALSE;
-
-  *storagep = JS_malloc(cx, sizeof(float));
-  if (!*storagep)
-  {
-    JS_ReportOutOfMemory(cx);
-    return JS_FALSE;
-  }
-
-  *avaluep = *storagep;
-  *(float *)*storagep = (float)d;
-
-  return JS_TRUE; 
-}
-
-static JSBool valueTo_double(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{ 
-  *storagep = JS_malloc(cx, sizeof(jsdouble));
-
-  if (!*storagep)
-    return JS_FALSE;
-
-  *avaluep = *storagep;
-
-  return JS_ValueToNumber(cx, v, (jsdouble *)*storagep);
-}
-
-static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{ 
-  JSString 		*str;
-
-  if (JSVAL_IS_STRING(v))
-  {
-    str = JSVAL_TO_STRING(v);
-    goto stringPointer;
-  }
-
-  if (JSVAL_IS_NULL(v))
-  {
-    *storagep = NULL;
-    *avaluep = storagep;
-    return JS_TRUE;
-  }
-
-  if (JSVAL_IS_OBJECT(v))
-  {
-    JSObject *obj = JSVAL_TO_OBJECT(v);
-    if (gpsee_isByteThing(cx, obj))
-    {
-      memory_handle_t *hnd = JS_GetPrivate(cx, obj);
-      if (hnd) {
-        *avaluep = &hnd->buffer;
-        return JS_TRUE;
-      }
-    }
-  }
-
-  if (JSVAL_IS_VOID(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert undefined argument to a pointer", argn);
-
-  if (v == JSVAL_TRUE || v == JSVAL_FALSE)
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a bool argument to a pointer", argn);
-
-  if (JSVAL_IS_NUMBER(v))
-    return gpsee_throw(cx, CLASS_ID ".call.argument.%i.invalid: cannot convert a numeric argument to a pointer", argn);
-
-  str = JS_ValueToString(cx , v);
-  if (!str)
-    return JS_FALSE;
-  v = STRING_TO_JSVAL(str);
-
-  stringPointer:
-  *storagep = JS_strdup(cx, JS_GetStringBytes(str));
-  if (!*storagep)
-    return JS_FALSE;
-
-  *avaluep = storagep;
-
-  return JS_TRUE; 
-}
-
-static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn) 
-{ 
-  jsdouble d;
-
-  *storagep = JS_malloc(cx, sizeof(long double));
-
-  if (!*storagep)
-    return JS_FALSE;
-
-  if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
-    return JS_FALSE;
-
-  *(long double *)storagep = d;
-  *avaluep = storagep;
-
-  return JS_TRUE; 
-}
-
 /* cFunction_closure_free() frees a cFunction_closure_t instance and any members that might have been allocated during
  * a call to cFunction_prepare(). The first member of that struct, a pointer to a cFunction_handle_t, is not freed.
  *
@@ -452,8 +159,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   /* Convert jsval argv to C ABI values */
   for (i = 0 ; i < hnd->nargs; i++)
   {
-    /* TODO propagate throwPrefix down to argConverters? */
-    if (hnd->argConverters[i](cx, argv[i], clos->avalues + i, clos->storage + i, i + 1) == JS_FALSE)
+    if (hnd->argConverters[i](cx, argv[i], clos->avalues + i, clos->storage + i, i + 1, throwPrefix) == JS_FALSE)
       goto fail;
   }
 
@@ -493,7 +199,7 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
   if (!clos->hnd->noSuspend)
     JS_ResumeRequest(cx, depth);
-  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, &JS_RVAL(cx, vp), clos->hnd);
+  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, &JS_RVAL(cx, vp), CLASS_ID ".call");
 
   /* Clean up */
   cFunction_closure_free(cx, clos);
@@ -535,7 +241,6 @@ static JSBool CFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
 {
   cFunction_handle_t	*hnd;
   ffi_status		status;
-  int			i;
   library_handle_t      *libhnd = NULL;
   JSObject              *libobj;
 
@@ -670,19 +375,8 @@ dlsymOver:
   return gpsee_throw(cx, CLASS_ID ".constructor.argument.1: Invalid value specified for return value; should be FFI type indicator");
 
   /* Sort out argument types */
-  for (i=0; i < hnd->nargs;  i++)
-  {
-#define ffi_type(type, junk) 			\
-    if (argv[2 + i] == jsve_ ## type) 		\
-    {						\
-      hnd->argTypes[i] = &ffi_type_ ## type; 	\
-      hnd->argConverters[i] = valueTo_ ## type;	\
-      continue; 				\
-    }
-#include "ffi_types.decl"
-#undef ffi_type
-    return gpsee_throw(cx, CLASS_ID ".constructor.argument.%i: Invalid value specified: should be FFI type indicator", 3 + i);
-  }
+  if (setupCFunctionArgumentConverters(cx, argv + 2, hnd, CLASS_ID) == JS_FALSE)
+    return JS_FALSE;
 
   status = ffi_prep_cif(hnd->cif, FFI_DEFAULT_ABI, hnd->nargs, hnd->rtype_abi, hnd->argTypes);
 
