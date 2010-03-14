@@ -573,7 +573,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
       }
       c++;
     }
-    gpsee_printTable(stderr, longerror, 3, columnPrefixes);
+    gpsee_printTable(stderr, longerror, 3, columnPrefixes, 1, 9);
     JS_free(cx, longerror);
   }
 
@@ -585,31 +585,39 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
  *  @param  s     The text to print.
  *  @param  ncols The number of columns there are.
  *  @param  pfix  A pointer to ncols-many strings that will be used to prefix each column (NULLs allowed.)
- *  @notes  The buffer may be modified
+ *  @param  shrnk >=0 to identify a shrinkable column (vs COLUMNS) or -1 to disable.
+ *  @param  maxshrnk is the SMALLEST the shrnk column will shrink to.
+ *  @notes  The buffer may be modified.
  */
-void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix)
+void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
 {
+  size_t shrinkamount;
   int screencols;
   size_t cols[ncols];
   size_t cols1[ncols];
   size_t widecol;
+  size_t tablewidth;
   int i;
-  char *c;
-  char *tok;
+  char *c, *d;
   
   /* How many characters wide is the terminal? */
   if (getenv("COLUMNS"))
     screencols = atoi(getenv("COLUMNS"));
   else
-    screencols = 80;
+    screencols = 70;
 
   /* Measure the width of each column */
+
+  /* Initialize column width values with length of column prefix texts */
   for (i=0; i<ncols; i++)
   {
     cols[i] =
-    cols1[i] = strlen(pfix[i])+1;
+    cols1[i] = 0;//strlen(pfix[i])+1;
   }
 
+  /* Iterate over entire table, incrementing the column length as necessary.
+   * cols1[] is used for measurement results on each line, whereas cols[]
+   * holds the final result of column width measurement. */
   i = 0;
   c = s;
   widecol = 1; // widest column
@@ -627,13 +635,30 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix)
           if (cols[i] > widecol)
             widecol = cols[i];
         }
-        cols1[i] = strlen(pfix[i])+1;
+        cols1[i] = 0;//strlen(pfix[i])+1;
       }
       i = 0;
     }
     else
       cols1[i]++;
   } while (*(++c));
+
+  /* Determine the width of the entire table */
+  tablewidth = 0;
+  for (i=0; i<ncols; i++)
+    tablewidth += cols[i] + strlen(pfix[i]) + 1;
+
+  /* Several conditions must be checked to activate column abbreviation */
+  if (tablewidth > screencols                           // table overflows COLUMNS
+  &&  shrnk > -1                                        // shrink enabled by caller
+  &&  cols[shrnk] > maxshrnk                            // shrink column has room to shrink
+  &&  tablewidth - screencols < cols[shrnk] - maxshrnk) // shrink would get us inside COLUMNS
+  {
+    shrinkamount = cols[shrnk] - max(maxshrnk, cols[shrnk] - (tablewidth - screencols));
+    cols[shrnk] -= shrinkamount;
+  }
+  else
+    shrnk = -1; // disable shrink
 
   if (widecol)
   {
@@ -655,7 +680,9 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix)
         done = 1;
       else
         *d = '\0';
-      fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) + strlen(pfix[i]));
+      if (shrnk == i && strlen(c) > cols[i])
+        c += shrinkamount;
+      fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) - 1);
       c = d+1;
       if (++i >= ncols)
       {
