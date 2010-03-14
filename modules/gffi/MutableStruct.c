@@ -40,14 +40,14 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.6 2009/09/14 21:20:48 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.7 2010/03/06 18:17:14 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 #define CLASS_ID MODULE_ID ".MutableStruct"
 

@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.6 2009/09/17 20:57:11 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.7 2010/02/08 16:57:15 wes Exp $
  */
 
 #define SLOG_EMERG	LOG_EMERG
@@ -53,7 +53,8 @@
 
 #define	gpsee_printf(a...)		printf(a)
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-void	gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
+JS_EXTERN_API(void) gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
+#define gpsee_closelog()		closelog()
 
 typedef void * rc_list;					/**< opaque dictionary */
 typedef void * rcFILE;					/**< opaque dictionary I/O handle */
@@ -77,3 +78,4 @@ rc_list 	rc_readfile(rcFILE *rcFile);							/**< Read what we opened */
 #if defined(__SURELYNX__)
 # error "SureLynx environment not compatible with UNIX<>SureLynx shim!"
 #endif
+

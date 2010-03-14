@@ -44,7 +44,7 @@ MODULE := $(MODULE)
 
 # MODULE_OBJ is the object file containing the module. Additional
 # objects can be specified with EXTRA_MODULE_OBJS
-MODULE_OBJ ?= $(MODULE)_module.o
+MODULE_OBJ ?= $(MODULE).o
 
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
@@ -60,6 +60,8 @@ ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
 
+CPPFLAGS	:= -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
+
 DEPEND_FILES += $(GPSEE_SRC_DIR)/modules.mk module.mk 
 DEPEND_FILES += $(wildcard $(MODULE_OBJ:.o=.c) $(MODULE_OBJ:.o=.cpp))
 DEPEND_FILES += $(wildcard $(EXTRA_MODULE_OBJS:.o=.c) $(EXTRA_MODULE_OBJS:.o=.cpp))
@@ -72,7 +74,7 @@ VERSION_O :=
 endif
 endif
 
-$(MODULE)_module.$(LIB_EXT) $(MODULE)_module.$(SOLIB_EXT): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
+$(MODULE).$(LIB_EXT) $(MODULE).$(SOLIB_EXT): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
 
 .PHONY: build_debug_module
 

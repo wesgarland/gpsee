@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.26 2010/03/06 18:17:13 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,33 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.26  2010/03/06 18:17:13  wes
+ *  Synchronize Mercurial and CVS Repositories
+ *
+ *  Revision 1.25  2010/02/25 15:37:52  wes
+ *  Added check to not set UTF8 twice even with multiple runtimes
+ *
+ *  Revision 1.24  2010/02/17 15:59:33  wes
+ *  Module Refactor checkpoint: switched modules array to a splay tree
+ *
+ *  Revision 1.22  2010/02/12 21:37:25  wes
+ *  Module system refactor check-point
+ *
+ *  Revision 1.21  2010/02/10 18:55:37  wes
+ *  Make program modules JITable with modern tracemonkey
+ *
+ *  Revision 1.20  2010/02/08 16:56:18  wes
+ *  Added gpsee_assert() in all builds, to unify GPSEE-core API across release types
+ *
+ *  Revision 1.19  2010/02/05 21:32:40  wes
+ *  Added C Stack overflow protection facility to GPSEE-core
+ *
+ *  Revision 1.18  2010/01/25 22:05:27  wes
+ *  Trivial code clean-up
+ *
+ *  Revision 1.17  2010/01/24 04:46:53  wes
+ *  Deprecated mozfile, mozshell and associated libgpsee baggage
+ *
  *  Revision 1.16  2009/10/20 20:32:46  wes
  *  gpsee_getInstancePrivateNTN no longer crashes on null object
  *
@@ -114,7 +141,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.16 2009/10/20 20:32:46 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.26 2010/03/06 18:17:13 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -122,11 +149,13 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.16 200
 
 #define	GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY	0xfff
 
-#ifdef GPSEE_DEBUG_BUILD
-int *gpsee_stackBase;		/**< Hook for debug module, populated by main-intercept macro in gpsee.h */
-#endif
-
 extern rc_list rc;
+
+#if defined(GPSEE_DEBUG_BUILD)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+#else
+# define dprintf(a...) while(0) printf(a)
+#endif
 
 /** Increase, Decrease, or change application verbosity.
  *
@@ -141,7 +170,6 @@ signed int gpsee_verbosity(signed int changeBy)
   return verbosity;
 }
 
-#if defined(GPSEE_DEBUG_BUILD)
 /** @see JS_Assert() in jsutil.c */
 void gpsee_assert(const char *s, const char *file, JSIntn ln)
 {
@@ -149,7 +177,17 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
   gpsee_log(SLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
   abort();
 }   
-#endif
+
+/** Handler for fatal GPSEE errors.
+ *
+ *  @param      message         Arbitrary text describing the
+ *  @note       Exits with status 1
+ */
+void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
+{
+  fprintf(stderr, "GPSEE Fatal Error: %s\n", message);
+  exit(1);
+}
 
 /** Error Reporter for Spidermonkey. Used to report warnings and
  *  uncaught exceptions.
@@ -328,7 +366,6 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
 {
   char 		*message;
-  JSString	*messageStr;
   va_list	ap;
   size_t	length;
   char		fmtNew[GPSEE_MAX_LOG_MESSAGE_SIZE];
@@ -351,6 +388,7 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
     gpsee_log(SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
   else
     JS_ReportError(cx, "%s", message);
+
   return JS_FALSE;
 }
 
@@ -401,7 +439,9 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
       return JS_FALSE;
 
     if (resolved)
+    {
       *objp = obj;
+    }
   }
 
   return JS_TRUE;
@@ -662,15 +702,14 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   gpsee_removeAsyncCallbacks(interpreter);
 #endif
 
-  gpsee_shutdownModuleSystem(interpreter->cx);
+  gpsee_shutdownModuleSystem(interpreter, interpreter->cx);
 
   JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
   JS_EndRequest(interpreter->cx);
   JS_DestroyContext(interpreter->cx);
   JS_DestroyRuntime(interpreter->rt);
   
-  if (interpreter->modules)
-    free(interpreter->modules);
+  gpsee_moduleSystemCleanup(interpreter);
   free(interpreter);
   return 0;
 }
@@ -681,7 +720,7 @@ JSClass *gpsee_getGlobalClass(void)
   static JSClass global_class = 
   {
     "Global", 					/* name */
-    JSCLASS_NEW_RESOLVE,			/* flags */
+    JSCLASS_NEW_RESOLVE | JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS,	/* flags */
     JS_PropertyStub,  				/* add property */
     JS_PropertyStub,				/* del property */
     JS_PropertyStub,				/* get property */
@@ -729,10 +768,41 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
   if (JS_DefineFunction(cx, obj, "loadModule", gpsee_loadModule, 0, 0) == NULL)
     return JS_FALSE;
 
-  if (JS_DefineFunction(cx, obj, "require", gpsee_loadModule, 0, 0) == NULL)
-    return JS_FALSE;
-
   return JS_TRUE;
+}
+
+/**
+ *  Set the maximum (or minimum, depending on arch) address which JSAPI is allowed to use on the C stack.
+ *  Any attempted use beyond this address will cause an exception to be thrown, rather than risking a
+ *  segfault.
+ *
+ *  If rc.gpsee_thread_stack_limit is zero this check is disabled.
+ *
+ *  @param	cx		JS Context to set - must be set before any JS code runs
+ *  @param	stackBase	An address near the top (bottom) of the stack
+ *
+ *  @note	This routine should be called every time JS_NewContext() is called for this protection
+ *  		to extend universally.
+ */
+void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
+{
+  jsuword 	stackLimit;
+  jsuword	maxStackSize = strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0);
+
+  if (maxStackSize == 0)     /* Disable checking for stack overflow if limit is zero. */
+  {
+    stackLimit = 0;
+  } 
+  else 
+  {
+    GPSEE_ASSERT(stackBase != NULL);
+#if JS_STACK_GROWTH_DIRECTION > 0
+    stackLimit = (jsuword)stackBase + maxStackSize;
+#else
+    stackLimit = (jsuword)stackBase - maxStackSize;
+#endif
+  }
+  JS_SetThreadStackLimit(cx, stackLimit);
 }
 
 /** Instanciate a JavaScript interpreter -- i.e. a runtime,
@@ -747,9 +817,13 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   JSRuntime		*rt;
   JSContext 		*cx;
   gpsee_interpreter_t	*interpreter;
+  static jsval		setUTF8 = JSVAL_FALSE;
 
   if (!getenv("GPSEE_NO_UTF8_C_STRINGS"))
-    JS_SetCStringsAreUTF8();
+  {
+    if (jsval_CompareAndSwap(&setUTF8, JSVAL_FALSE, JSVAL_TRUE) == JS_TRUE)
+      JS_SetCStringsAreUTF8();
+  }
 
   interpreter = calloc(sizeof(*interpreter), 1);
 
@@ -778,17 +852,23 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   }
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
-  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX | JSOPTION_DONT_REPORT_UNCAUGHT);
+  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
   interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
   if (!interpreter->globalObj)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create global object!");
 
-  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Technically, probably unnecessary but WTH */
-
+  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Usually unnecessary but JS_SetOptions can change that */
+  
   if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
+
+  if (gpsee_initializeModuleSystem(interpreter, cx) == JS_FALSE)
+    panic("Unable to initialize module system");
+
+  /* Primarily to support the system module's "args" property */
+  interpreter->script_argv = script_argv;
 
 #if !defined(MAKEDEPEND) && !defined(DOXYGEN)
 # if defined(JS_THREADSAFE)
@@ -800,8 +880,6 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   interpreter->rt 	 	= rt;
 #endif
   
-  gpsee_initializeModuleSystem(cx);
-
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)
@@ -911,5 +989,7 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
   if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
     JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
 }
+
+
 
 

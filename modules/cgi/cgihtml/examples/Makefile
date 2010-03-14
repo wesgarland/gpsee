@@ -1,5 +1,5 @@
 # Makefile for cgihtml.a
-# $Id: Makefile,v 1.1 2009/03/31 12:04:38 wes Exp $
+# $Id: Makefile,v 1.2 2010/03/06 18:17:14 wes Exp $
 
 # macros and variables
 CC= gcc
@@ -26,7 +26,7 @@ test.cgi: $(LIB) test.cgi.o
 	$(CC) -o $@ test.cgi.o $(LIB)
 
 $(LIB):
-	cd ..; make cgihtml.a
+	cd ..; $(MAKE) cgihtml.a
 
 all: $(TARGETS)
 

@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.7 2009/08/07 19:54:33 wes Exp $ 
+## @version	$Id: Makefile,v 1.8 2010/03/06 03:28:27 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -54,23 +54,23 @@ GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+NO_BUILD_RULES = TRUE
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include local_config.mk
 
-ifneq ($(MAKECMDGOALS)X, X)
-ifneq ($(MAKECMDGOALS), help)
+ifneq ($(MAKECMDGOALS),help)
 JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
 LIB_DIR			?= $(JSAPI_PREFIX)/lib
 INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
 include sanity.mk
 SPIDERMONKEY_BUILD	?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
 endif
-endif
 
 CONFIGURE_OPTIONS	+= --enable-threadsafe
 
 top: 
 	$(MAKE) help
+	$(MAKE) build
 
 CONFIGURE_OPTIONS	+= --prefix=$(JSAPI_PREFIX)
 
@@ -145,7 +145,7 @@ $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
 
 $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
 	[ -d $(SPIDERMONKEY_BUILD) ] || mkdir -p $(SPIDERMONKEY_BUILD)
-	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
+	cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
 reconfigure::
@@ -153,6 +153,11 @@ reconfigure::
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 
+ifeq ($(UNAME_SYSTEM),Darwin)
+MOZJS_INSTALL_NAME_OPT=-Wl,-install_name,$(LIB_DIR)/libmozjs.dylib
+export EXTRA_LIBS
+build: EXTRA_LIBS += $(MOZJS_INSTALL_NAME_OPT)
+endif
 build: $(SPIDERMONKEY_BUILD)/Makefile
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE)
 ifneq ($(QUIET),True)
@@ -173,11 +178,12 @@ endif
 
 ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
 JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
-ifeq ($(shell uname -s),Darwin)
+ifeq ($(UNAME_SYSTEM),Darwin)
 # Work around a long-standing bug in js-config for Darwin
 JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
+JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
 endif
 endif
 

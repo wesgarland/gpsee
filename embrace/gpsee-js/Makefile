@@ -37,11 +37,11 @@
 ##				Requires that GPSEE already be built and installed.
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.2 2009/08/05 19:46:19 wes Exp $
+## @version	$Id: Makefile,v 1.4 2010/03/06 18:17:13 wes Exp $
 
-top: gpsee-js
+top build: gpsee-js
 
-GPSEE_CONFIG=../../gpsee-config
+GPSEE_CONFIG	?= ../../gpsee-config
 include $(shell $(GPSEE_CONFIG) --outside.mk)
 
 GPSEE_INCLUDE_DIR	?= $(shell $(GPSEE_CONFIG) --includedir)
@@ -53,15 +53,21 @@ GPSEE_JS_LDFLAGS	= $(shell $(GPSEE_CONFIG) --ldflags)
 EXPORT_PROGS		= gpsee-js
 
 $(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
-	$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
-	echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+	@echo " * Building $(SHELL_BUILD)/gpsee-js.mk"
+	@$(SED) -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
+	@echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+	@echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
+	@echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
 
 $(SHELL_BUILD)/gpsee-js.cpp: gpsee-js.cpp
 	$(CP) gpsee-js.cpp $@
 
-gpsee-js: $(SHELL_BUILD)/gpsee-js.mk
+gpsee-js: $(SHELL_BUILD)/gpsee-js.mk $(SHELL_BUILD)/gpsee-js.cpp
+ifeq "$(STREAM)" "surelynx"
+	cd $(SHELL_BUILD) && $(MAKE) -f $(SURELYNX_SRC)/vars.mk surelynx_build_platform.h
+endif
 	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
-	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk "CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
+	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/gpsee-js.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
 	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
 
 clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk

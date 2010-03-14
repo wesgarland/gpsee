@@ -35,23 +35,32 @@
 HOSTNAME		?= $(shell hostname)
 
 # Compilation tools
-ifeq "$(origin CC)" "default"
-CC		= gcc
+
+ifdef COMPILER_IS_NON_GNU
+$(error Sorry, your compiler is not yet supported)
+else
+ifdef GCC_PREFIX
+GCC_BIN_DIR_SLASH ?= $(GCC_PREFIX)/bin/
 endif
-ifeq "$(origin CXX)" "default"
-CXX		= g++
+GCC		?= $(GCC_BIN_DIR_SLASH)gcc
+GXX		?= $(GCC_BIN_DIR_SLASH)g++
+CC		?= $(GCC)
+
+CXX		?= $(GXX)
+LINKER		?= $(GCC) -shared
+CC		:= $(GCC_BIN_DIR_SLASH)$(CC)
+CXX		:= $(GCC_BIN_DIR_SLASH)$(CXX)
+
+CPP		?= $(GCC) -E
+MAKEDEPEND	?= gcc -E -MM -MG
 endif
-ifeq "$(origin LD)" "default"
-LD		= gcc -shared
-endif
+
 LEX		?= lex
 YACC		?= yacc
-CPP		?= $(CC) -E
 AR		?= ar
 AR_RU		?= $(AR) -ru
-SO_AR		?= $(LD) $(LDFLAGS) -o
+SO_AR		?= $(LINKER) $(LDFLAGS) -o
 RANLIB		?= ranlib
-MAKEDEPEND	?= gcc -E -MM -MG
 
 # Shell tools
 CP		?= cp -f
@@ -73,11 +82,12 @@ EXE_EXT		?=
 LIB_EXT		?=a
 SOLIB_EXT	?=so
 
-ICONV_LIB_NAME	?= iconv
+ICONV_LDFLAGS	?= -liconv
 GPSEE_C_DEFINES	+= HAVE_ICONV GPSEE_STD_SUSV3 GPSEE_STD_XSI
 DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
 
 # Build a timestamp object, requires $(VERSION_H) [version.h]
+ifndef NO_VERSION_O_RULES
 ifdef VERSION_O
 VERSION_C 	?= $(VERSION_O:.$(OBJ_EXT)=.c)
 VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
@@ -90,5 +100,6 @@ $(VERSION_C):           $(VERSION_C_IN) $(VERSION_H)
 else
 VERSION_C=
 VERSION_H=
-endif
+endif # VERSION_O
+endif # NO_VERSION_O_RULES
 

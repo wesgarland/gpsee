@@ -36,9 +36,36 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.20 2009/10/29 18:35:05 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.29 2010/03/06 18:39:51 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.29  2010/03/06 18:39:51  wes
+ *  Merged with upstream
+ *
+ *  Revision 1.28  2010/03/06 18:17:13  wes
+ *  Synchronize Mercurial and CVS Repositories
+ *
+ *  Revision 1.27  2010/02/17 15:59:33  wes
+ *  Module Refactor checkpoint: switched modules array to a splay tree
+ *
+ *  Revision 1.26  2010/02/13 20:33:43  wes
+ *  Module system refactor checkpoint
+ *
+ *  Revision 1.25  2010/02/12 21:37:25  wes
+ *  Module system refactor check-point
+ *
+ *  Revision 1.24  2010/02/08 20:24:54  wes
+ *  Forced singled-thread/spin-lock behaviour on module loading
+ *
+ *  Revision 1.23  2010/02/08 18:28:40  wes
+ *  Re-enabled GPSEE Async Callback facility & fixed test
+ *
+ *  Revision 1.22  2010/02/05 21:32:40  wes
+ *  Added C Stack overflow protection facility to GPSEE-core
+ *
+ *  Revision 1.21  2010/01/24 04:46:54  wes
+ *  Deprecated mozfile, mozshell and associated libgpsee baggage
+ *
  *  Revision 1.20  2009/10/29 18:35:05  wes
  *  ByteThing casting, apply(), call() mutability fixes
  *
@@ -193,12 +220,24 @@ typedef enum
   er_none	= er_noWarnings | 1 << 31
 } errorReport_t;
 
+/* exitType_t describes the lifecycle phase of a gpsee_interpreter_t */
 typedef enum
 {
   et_unknown	= 0,
 
-  et_finished 		= 1 << 0,			/**< Script simply finished running */
-  et_requested		= 1 << 1,			/**< e.g. System.exit(), Thread.exit() */
+  /* This should only be set by gpsee_runProgramModule, and indicates that the Javascript program is finished.
+   * (@todo refine?) */
+  et_finished           = 1 << 0,
+
+  /* Anywhere that a function can throw an exception, you can throw an uncatchable exception (ie. return JS_FALSE,
+   * or NULL) after setting gpsee_interpreter_t.exitType to et_requested. The meaning of this behavior is to unwind
+   * the stack and exit immediately. Javascript code cannot catch this type of exit, however for that exact reason,
+   * it is not the recommended way to exit your program, as a proper SystemExit exception (TODO unimplemented!) will
+   * get the job done as long as you don't catch it (and you only should if you have a valid reason for it) but also
+   * then a person can include your module and choose to belay the exit, making SystemExit more powerful and friendly.
+   * This is used in System.exit() and Thread.exit().
+   */
+  et_requested          = 1 << 1,
 
   et_compileFailure	= 1 << 16,			
   et_execFailure	= 1 << 17,
@@ -209,7 +248,9 @@ typedef enum
 } exitType_t;
 
 typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
-typedef struct moduleHandle moduleHandle_t; /**< Handle describing a loaded module */
+typedef struct moduleHandle moduleHandle_t; 		/**< Handle describing a loaded module */
+typedef struct moduleMemo moduleMemo_t; 		/**< Handle to module system's interpreter-wide memo */
+typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
 
 /** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
@@ -236,63 +277,72 @@ typedef struct
   errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
   void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
 
-  moduleHandle_t *	*modules;		/**< List of loaded modules and their shutdown requirements etc */
+  moduleMemo_t 		*modules;		/**< List of loaded modules and their shutdown requirements etc */
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
-  size_t		modules_len;		/**< Number of slots allocated in modules */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
-  const char		*programModule_dir;	/**< Directory JS program is in, based on its cname, used for absolute module names */
+  modulePathEntry_t	modulePath;		/**< GPSEE module path */
+  JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
+  char * const *         script_argv;           /**< argv from main() */
 
 #if defined(JS_THREADSAFE)
   PRThread	*primordialThread;
+  PRThread	*requireLockThread;		/**< Matches NULL or PR_GetCurrentThread if we are allowed to require; change must be atomic */
+  size_t	requireLockDepth;
 #endif
   /** Pointer to linked list of OPCB entries */
   GPSEEAsyncCallback    *asyncCallbacks;
   PRLock                *asyncCallbacks_lock;
   PRThread              *asyncCallbackTriggerThread;
   unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
+  const char            *pendingErrorMessage;   /**< This provides a way to provide an extra message for gpsee_reportErrorSourceCode() */
 } gpsee_interpreter_t;
 
-GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
-void gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi);
-void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
+JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
+JS_EXTERN_API(void)                 gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi);
+JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 
 /* core routines */
-gpsee_interpreter_t *	gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
-int 			gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
-JSBool 			gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));;
-int			gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
-JSBool 			gpsee_branchCallback(JSContext *cx, JSScript *script);
-void 			gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
-void *			gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
-JSContextCallback       gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
-int                     gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
-                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage);
-JSBool 			gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
-JSObject *		gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
-					JSClass *clasp, JSNative constructor, uintN nargs,
-					JSPropertySpec *ps, JSFunctionSpec *fs,
-					JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
-					const char *moduleID);
-JSObject *              gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
-const char *		gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
-JSBool 			gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
-JSClass	*		gpsee_getGlobalClass(void);
+JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
+JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
+JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
+JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval);
+JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase);
+JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
+JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
+JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
+JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
+JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
+JS_EXTERN_API(int)                  gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, JSScript **script,
+                                                        JSObject *scope, JSObject **scriptObject, const char **errorMessage);
+JS_EXTERN_API(JSBool)               gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
+JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
+                                                    JSClass *clasp, JSNative constructor, uintN nargs,
+                                                    JSPropertySpec *ps, JSFunctionSpec *fs,
+                                                    JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
+                                                    const char *moduleID);
+JS_EXTERN_API(JSObject*)            gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
+JS_EXTERN_API(const char*)          gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
+JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
+JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 
 /* support routines */
-signed int		gpsee_verbosity(signed int changeBy);
-void			gpsee_assert(const char *s, const char *file, JSIntn ln);
-int 			gpsee_printf(const char *format, /* args */ ...) __attribute__((format(printf,1,2)));
-JSBool 			gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
-char *			gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
-size_t 			gpsee_catstrn(char *dst, const char *src, size_t dst_size);
-const char *		gpsee_basename(const char *filename);
-const char *		gpsee_dirname(const char *filename, char *buf, size_t bufLen);
-int			gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
+JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
+JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
+JS_EXTERN_API(int)                  gpsee_printf(const char *format, /* args */ ...) __attribute__((format(printf,1,2)));
+JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
+JS_EXTERN_API(char*)                gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
+JS_EXTERN_API(size_t)               gpsee_catstrn(char *dst, const char *src, size_t dst_size);
+JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
+JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
+JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
+JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
+JS_EXTERN_API(void)                 gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
 
 /* GPSEE JSAPI idiom extensions */
-void			*gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
-#define 		gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
-void 			gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
+JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
+#define                             gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
+JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
 
 static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
 {
@@ -391,11 +441,6 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 #endif
 
 #if defined(GPSEE_DEBUG_BUILD)
-extern int *gpsee_stackBase;
-# define main(c,v)	gpsee_main(c,v); int main(int argc, char *argv[]) { int i; gpsee_stackBase = &i; return gpsee_main(argc,argv); }; int gpsee_main(c,v)
-#endif
-
-#if defined(GPSEE_DEBUG_BUILD)
 /* Convenience enums, for use in debugger only */
 typedef enum
 {
@@ -417,7 +462,7 @@ static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 
 typedef enum 
 { 
-  bt_immutable	= 1 << 0,	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
+  bt_immutable	= 1 << 0 	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
 } byteThing_flags_e;
 
 /** Generic structure for representing pointer-like-things which we store in 

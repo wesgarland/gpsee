@@ -50,11 +50,11 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: structs.c,v 1.6 2009/11/10 19:57:59 wes Exp $
+ *  @version	$Id: structs.c,v 1.7 2010/03/06 18:17:14 wes Exp $
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 /** Generic number getter. Uses memberIdx to figure out which member. */
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel)

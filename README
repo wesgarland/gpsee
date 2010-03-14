@@ -1,273 +1,155 @@
-GPSEE is moving to Google Code at http://code.google.com/p/gpsee
-
-The new Mercurial Repository is at http://gpsee.googlecome.com/hg/
-
-The wiki has not yet been moved, but its build system is out of date,
-as is the documentation below.
-
-To build GPSEE most easily:
- - put tracemonkey and libffi source code under your home directory
- - copy local_config.mk.sample to local_config.mk and edit to suit
- - insure that any directories you reference (like /opt/gpsee) exist
-   and are owned by you
- - repeat the same for libffi and spidermonkey subdirs
- - In spidermonkey, make build, make install
- - In libffi, make build, make install
- - In gpsee root, make build, make install
-
-"make help" and "make build_debug" are intended to help you troubleshoot
-build system issues.
-
-Warning: If you're upgrading from a previous version of GPSEE, you might 
-need to make clean and/or re-create your local-config.mk files from the 
-new samples provided.
-
-Wes
-
------------------------------------------
 Thanks for downloading GPSEE!
 
-Please visit the wiki at http://kenai.com/projects/gpsee/pages/Home for the
-most recent documentation and build instructions.
+Please visit us on the web at http://code.google.com/p/gpsee/
+for the most recent documentation and build instructions.
 
-GPSEE - ("gypsy") - the General Purpose SpiderMonkey Embedding Ecosystem.
+What is GPSEE?
+=========================================================================
 
-   GPSEE augments Mozilla's SpiderMonkey JavaScript interpreter.
-   Designed to allow modular addition of custom objects and classes
-   without imposing unnecessary interdepencies, GPSEE "knows" how to
-   startup / shutdown a JS interpreter, initialize objects and classes,
-   load and collect modules, multiplex callbacks and single-use private
-   regions, run the garbage collector, and so on.
+     * a platform for developing and running CommonJS programs
+     * a general-purpose C API for embedding SpiderMonkey + CommonJS
+     * a general-purpose C API for adding interoperability between JSAPI
+       projects
+     * licensed under the exact same terms as SpiderMonkey
+     * pronounced "gypsy"
 
-   GPSEE is intended first and foremost as a general-purpose, thread-safe
-   C API, which can be embedded into existing C or C++ projects to allow
-   those projects to take advantage of not only the GPSEE ecosystem, but
-   also the flexibility of expression and speed of development afforded
-   by the JavaScript (ECMAScript-3) programming language.
+   GPSEE is written and maintained by PageMail, Inc. The primary
+   developers are Wes Garland and Donny Viszneki, however, we are actively
+   looking for contributions from the community! GPSEE is an offshoot of
+   earlier, proprietary research and development at PageMail. That
+   project's primary goal was to create an easy-to-embed JavaScript
+   language interpreter which can be used as glue and configuration logic
+   in large software systems, with interest in the ability to write batch
+   jobs and serve web content.
 
-   GPSEE supports JavaScript modules consistent with the preliminary work
-   of the serverjs pseudo-wg, and intends to support additional proposals
-   coming out of this group. GPSEE modules may be implemented in any
-   "native" language (such as C or C++), pure JavaScript, or a
-   script/native blend.
+   GPSEE is delivered as one unit, but compromises three main facets:
+    1. gsr, the GPSEE Script Runner, which executes CommonJS programs,
+       including via shell-script "shebang" facilities. GPSEE also ships
+       with some sample REPLs (shells), including a CommonJS-enabled
+       version of Mozilla's JS Shell.
+    2. GPSEE-core is a group of facilities which allow embedders to load
+       modules, and to use SpiderMonkey's limited-use facilities (e.g.
+       context private storage) without worrying about stepping on other
+       modules' toes. GPSEE-core is designed to be call-compatible with
+       SpiderMonkey, so that it may be turned on and off with a simple
+       header file change.
+    3. modules is a directory with "stock" modules, adding functionality
+       to the JavaScript language such as ByteString, ByteArray, POSIX
+       signals, CGI, and FFI (foreign-function interface). The FFI module
+       allows painless wrapping of C functions and datatypes for use in
+       creating new JavaScript modules.
 
-   GPSEE has a strong focus on general purpose application/daemon and
-   systems batch programming, with server-side web work as a secondary
-   (future) goal.
 
-   Out-of-the box, GPSEE includes modules for
-     * POSIX Signals
-     * Native OS Threads
-     * CGI Queries
-     * PHP Session
-     * Curses
-     * Mozilla File Object
-     * Mozilla JS Shell methods
 
-   The GPSEE distribution ships with gsr, a script runner which allows
-   GPSEE programs to run like shell scripts, and jsie.js, a full-screen
-   curses JavaScript interactive environment (REPL) written in gsr-hosted
-   JavaScript.
+Support
+=========================================================================
 
-   GPSEE is which is licensed to the general public under a disjunctive
-   tri-license giving you the choice of one of the three following sets
-   of free software/open source licensing terms:
-     * Mozilla Public License, version 1.1 or later
-     * GNU General Public License, version 2.0 or later
-     * GNU Lesser General Public License, version 2.1 or later
+GPSEE is provided as-is, without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, or fitness
+for any purpose. We do not guarantee that GPSEE does not infringe upon any
+patents or copyrights, although we try very hard to insure that it does not.
 
-   GPSEE supports SpiderMonkey JSAPI 1.8.1 or better ("TraceMonkey"),
-   including Mozilla's JIT, on UNIX and work-alike platforms. Windows
-   support is possible, however would require the assistance of an
-   interested and experienced developer.
+There is no support for GPSEE. However, you can often find the GPSEE
+developers on irc://irc.freenode.org/#gpsee, and we're friendly.
 
-**************************************************************************
+
+
+How to build GPSEE
+=========================================================================
+
+*************************************************************************
 ****
 **** The most recent version of these build instructions is 
-**** available at http://kenai.com/projects/gpsee/pages/BuildingGPSEE
+**** available at http://code.google.com/p/gpsee/wiki/Building
 ****
-**************************************************************************
+*************************************************************************
 
-Building GPSEE
+   Building GPSEE is very straightforward. GPSEE's build system knows how
+   to build SpiderMonkey, LibFFI, GPSEE, the included modules, and how to
+   install it all. There is no autoconf magic, you just need to edit three
+   files named local_config.mk (one for GPSEE, one for SpiderMonkey, one
+   for LibFFI) to let GPSEE know where you keep things and you're off to
+   the races.
 
-     * These directions assume a certain level of familiarity with your
-       development toolchain and operating system. If these directions
-       don't make sense to you, find somebody locally (e.g. your sysadmin)
-       who can help.
-     __________________________________________________________________
+General Prerequisites
+---------------------
+     * Solaris 10+, Recent Linux, or MacOS/X 10.5+
+     * Any UNIX(tm) conforming to SUSv3 should work
+     * BSD UNIX is also expected to work
+     * GCC 3.4
+     * GNU Make 3.81
 
-   Contents
-     * 1 Release Notes
-     * 2 System Requirements
-     * 3 Getting GPSEE
+     * Tracemonkey prerequisites for multi-threaded build (we've listed the
+       current ones below, but Mozilla could change them on us)
+     * autoconf-2.13 (exactly 2.13)
+     * NSPR 4.7
+     * https://developer.mozilla.org/en/Mozilla_Build_FAQ for more info
 
-     * 3.1 Summary
+Suggested Distro Packages
+-------------------------
+Solaris 10
+     * ftp://ftp.sunfreeware.com/pub/freeware/sparc/8/autoconf-2.13-sol8-s
+       parc-local.gz
+     * NSPR in SUNWpr, SUNWprd packages which ship with Solaris 10
 
-     4 Getting SpiderMonkey
-     * 4.1 Summary
+Mac Ports
+     * sudo port install autoconf213
+     * sudo port install nspr
+     * Note: Using Mac Ports GCC is not supported; use Apple's compiler
+       for a pain-free build
 
-     5 Building SpiderMonkey
-     * 5.1 Summary
+Fedora Core 10
+     * sudo yum install -y autoconf213
 
-     6 Building GPSEE
-     * 6.1 Summary
+Ubuntu 9.10
+     * sudo apt-get install mercurial autoconf2.13 libnspr4-dev
+       libncurses5-dev libdb-dev
 
-     7 I don't have root
+Basic Steps
+-----------
 
-     8 What Now?
+What follows is a point-form list of typical steps required to build and
+install GPSEE. If you're unable to build it for some reason, you can look for
+help in #gpsee on irc.freenode.org. We're often online at wierd hours of the
+day, and almost always available during EST (GMT-0500) business hours.
 
-                                 Release Notes
+Get the sources into your homedir
+     * cd
+     * wget ftp://sources.redhat.com/pub/libffi/libffi-3.0.8.tar.gz
+     * tar -zxvf libffi-3.0.8.tar.gz
+     * mkdir hg
+     * cd hg
+     * hg clone https://gpsee.googlecode.com/hg/ gpsee
+     * hg clone http://hg.mozilla.org/tracemonkey
 
-   The current release (0.2-pre1, March 2009) of GPSEE could best be
-   described as "extreme alpha". Our development and deployment platform
-   is Solaris 10 running SPARC architecture. Very little testing is done
-   on other platforms, if any. The current release also represents
-   significant architectural changes, code improvements, and increased
-   functionality since the last Open JSEng release (version 0.1, Jan
-   2008).
+Note: libffi-3.0.9 is now available and is expected to work (but not yet
+tested)
 
-   Additionally, our last round of testing on Mac OS/X Leopard (December
-   2007) had problems with dylib paths. This was not a problem then, as we
-   simply linked all our libraries statically on Mac. Now that we have DSO
-   native modules, this may no longer be a reasonable solution. If you are
-   trying to build on Mac, you may need to do some Makefile tweaking. Mac
-   Developer/Build-System Feedback Sought.
+Configure GPSEE, LibFFI, and SpiderMonkey
+     * cd gpsee
+     * cp local_config.mk.sample local_config.mk
+     * cp spidermonkey/local_config.mk.sample spidermonkey/local_config.mk
+     * cp libffi/local_config.mk.sample libffi/local_config.mk
+     * vi local_config.mk #edit suitably, then quit
+     * vi spidermonkey/local_config.mk #edit suitably, then quit
+     * vi libffi/local_config.mk #edit suitably, then quit
 
-                              System Requirements
+Build SpiderMonkey
+     * cd spidermonkey
+     * make build
+     * sudo make install
+     * cd ..
 
-     * UNIX or work-alike operation system
-          + Mac OS/X 10.5 and Cygwin should work, but are untested
-     * gcc 3.4 or better
-     * GNU make 3.8 or better
-     * GNU autoconf-2.13 (exactly 2.13), named autoconf-2.13
-     * NSPR (Netscape Portable Runtime) 4.7 or better
-     * SpiderMonkey 1.8.1 (or better) souce code
-     * NCurses or Solaris Curses (if you want to use the curses module
-       or jsie.js)
-     * Typical shell tools: awk, sed, grep, tr, mv, cp...
-     * Any dependencies of above requirements.
+Build Libffi
+     * cd libffi
+     * make build
+     * sudo make install
+     * cd ..
 
-If building on Solaris
+Build GPSEE
+     * make build
+     * sudo make install
 
-   Until Mozilla lands bug 475654, you will need to apply this patch to
-   allow SpiderMonkey to build with the Sun-supplied NSPR. From your
-   tracemonkey directory, invoke /usr/sfw/bin/gpatch -p1 <
-   /path/to/downloaded_file. You will also need NSPR 4.7 or better, which
-   is supplied with Sun package SUNWpr, patch level -17 or better, of
-   patch 119213 (or 119214 for Solaris x86).
+Test
+     * /usr/bin/gsr -c 'print("Hello, World");'
 
-                                 Getting GPSEE
-
-   Download the latest tar ball from our distribution page and untar it,
-   or clone the GPSEE hg repository.
-
-Summary
-
-     * Don't copy: think
-
- [~]$ mkdir hg
- [~]$ cd hg
- [~/hg/gpsee]$ hg clone http://kenai.com/hg/gpsee~src
- [~/hg/gpsee]$ cd
-
-                              Getting SpiderMonkey
-
-   If your operating system shipped with a version of SpiderMonkey, it is
-   almost certainly unsuitable for use with GPSEE. GPSEE builds use JSAPI
-   1.8.1 (unreleased), and require specific information about SpiderMonkey
-   which is only provided by the SpiderMonkey build system. That's okay:
-   GPSEE will install its own JSAPI libraries and headers, where they
-   shouldn't interfere with anything else.
-
-   You can follow Mozilla's directions for getting the latestest
-   SpiderMonkey code, or you can download the jsapi-gpsee tar ball from
-   our Kenai downloads page. Since Mozilla's mercurial repository is
-   always in a state of flux, it is possible that recent changes will
-   break GPSEE. The jsapi-gpsee tar ball is "known to work", however we do
-   encourage people to try the latest, bleeding-edge code from Mozilla's
-   tracemonkey tree -- their quality control is excellent. The most likely
-   candidate for breakage is the MozShell module, which can be disabled in
-   the GPSEE Makefile.
-
-   If you downloaded a tar ball rather than cloning an hg repository, you
-   will need to untar it before building SpiderMonkey.
-
-Summary
-
-     * Don't copy: think
-
- [~]$ mkdir hg
- [~]$ cd hg
- [~/hg/tracemonkey]$ hg clone http://hg.mozilla.org/tracemonkey
- [~/hg/tracemonkey]$ cd
-
-                             Building SpiderMonkey
-
-   In the GPSEE distribution tree, you will find a spidermonkey directory,
-   with a local_config.mk.sample file. Copy that to local_config.mk and
-   edit it to suit your system. The most important variable to change is
-   SPIDERMONKEY_SRC -- this is the fully-qualified path to the js/src
-   directory in your SpiderMonkey source code tree.
-
-   When you are satisfied this file is correct, make build from the GPSEE
-   spidermonkey directory. This will configure, and build SpiderMonkey
-   based on the spidermonkey/local_config.mk file you just customized.
-
-   Once you have built SpiderMonkey, you will need to create its
-   installation directory, give that directory appropriate permissions,
-   then install SpiderMonkey in it by running make install from the
-   spidermonkey directory.
-
-   If you have problems building SpiderMonkey as described, you can query
-   the build system with make build_debug; that may offer clues.
-
-Summary
-
-     * Don't copy: think
-
- [~/hg/gpsee/spidermonkey]$ su
- # mkdir -p /usr/local/gpsee/jsapi
- # chown wes:coders /usr/local/gpsee/jsapi
- # chmod 775 /usr/local/gpsee/jsapi
- # ^D
- [~/hg/gpsee/spidermonkey]$ make install
-
-                                 Building GPSEE
-
-     * edit local_config.mk if you want to change your GPSEE install
-       location. Default is /usr/local/gpsee, except for Darwin
-       (/opt/local/gpsee) and Solaris (/opt/gpsee).
-     * Insure installation directory exists and has suitable permissions
-     * Create a symbolic link between /your/path/to/gpsee/bin/gsr and
-       /usr/bin/gsr
-     * make install
-     * If a particular module gives you grief building (MozShell, I'm
-       looking at you), you can disable it by adding it to the
-       IGNORE_MODULES list in the GPSEE Makefile.
-
-Summary
-
-     * Don't copy: think
-
- [~/hg/gpsee/spidermonkey]$ su
- # mkdir -p /usr/local/gpsee/bin
- # mkdir -p /usr/local/gpsee/libexec
- # chown -R wes:coders /usr/local/gpsee
- # chmod 775 /usr/local/gpsee
- # chmod 775 /usr/local/gpsee/bin
- # chmod 775 /usr/local/gpsee/libexec
- # ln -s /usr/local/gpsee/bin/gsr /usr/bin/gsr
- # ^D
- [~/hg/gpsee]$ make install
-
-                               I don't have root
-
-   That's unfortunate. You can install GPSEE in your home directory by
-   editing local_config.mk appropriately, however you will have to edit
-   any externally-sourced GPSEE scripts which run gsr in file interpreter
-   mode so that the shebang (#! line) correctly identifies your build.
-
-                                   What Now?
-
-   If you want to write some programs in JavaScript, try using the gsr
-   script runner, or maybe sample_programs/jsie.js.

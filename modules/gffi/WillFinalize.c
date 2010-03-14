@@ -41,12 +41,12 @@
  *              PageMail, Inc.
  *              hdon@page.ca
  *  @date       Sep 2009
- *  @version    $Id$
+ *  @version    $Id: WillFinalize.c,v 1.1 2010/03/06 18:37:28 wes Exp $
  */
 
 #include <gpsee.h>
 #include <ffi.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 #define CLASS_ID MODULE_ID ".WillFinalize"
 

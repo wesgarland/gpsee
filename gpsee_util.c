@@ -37,13 +37,17 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.5 2009/05/27 04:51:44 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.9 2010/03/06 18:39:51 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.5 2009/05/27 04:51:44 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.9 2010/03/06 18:39:51 wes Exp $:";
 
 #include "gpsee.h"
+
+/* ctype.h provides isspace() used by gpsee_reportErrorSourceCode()
+ */
+#include <ctype.h>
 
 /** String copy function which insures NUL-terminated
  *  dst string and does not zero-pad. Works only on
@@ -156,12 +160,15 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
  */
 int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 {
+  int   ret;
 #if defined(GPSEE_SUNOS_SYSTEM)
-  return resolvepath(path, buf, bufsiz);
+  ret = resolvepath(path, buf, bufsiz);
+  buf[min(ret, bufsiz - 1)] = (char)0;
+
+  return ret;
 #else
   char  *mBuf;
   char  *rp;
-  int   ret;
 
   errno = 0;
 
@@ -303,7 +310,6 @@ int gpsee_p2open(const char *cmd, int *FDs, pid_t *pid)
 
 int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pid)
 {
-  int             fds[2];
   int             status;
   void            (*hstat)(int), (*istat)(int), (*qstat)(int);
   pid_t r;
@@ -345,3 +351,382 @@ int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pi
   return (status);
 }
 
+/** Returns a number >= 0 if there is a currently pending exception and that exception qualifies as
+ *  a "SystemExit". Currently, to exit a process using the exception throwing mechanism, one must
+ *  throw an system exit code. If uncaught, this should signify to the host application the
+ *  success or failure of the program (zero, of course, meaning success.) Of course any other
+ *  uncaught exception will result in the program exiting with failure as well, but often it is
+ *  important to indicate to the parent process that a failure has occurred but bypass any
+ *  noisy output that would normally occur.
+ *
+ *  As only the lowest 8 bits of exit status are used in POSIX, we don't consider any number for which
+ *  (n & 0377 != n) to constitute a SystemExit.
+ *
+ *  In the future, this facility may be more formalized. The fact that you *can* throw any value in
+ *  Javascript is only a coincidence that we took advantage of for providing the prototype of this
+ *  facility, but it there could possibly be someone else out there throwing numbers with a different
+ *  idea in mind as to the meaning of such an action.
+ *
+ *  @param    cx
+ *  @returns  Returns an int greater than 
+ *
+ */
+int gpsee_getExceptionExitCode(JSContext *cx)
+{
+  jsval v;
+  jsdouble d;
+  jsint i;
+
+  /* Retrieve exception; none has been thrown if this returns JS_FALSE */
+  if (!JS_GetPendingException(cx, &v))
+    return -1;
+
+  /* Try to coerce an object to a number */
+  if (!JSVAL_IS_PRIMITIVE(v))
+  {
+    if (!JS_ValueToNumber(cx, v, &d))
+      return -1;
+    goto havedouble;
+  }
+
+  /* Try to get a double, or use a double we got from the last step */
+  if (JSVAL_IS_DOUBLE(v))
+  {
+    d = *JSVAL_TO_DOUBLE(v);
+havedouble:
+    if (d != (jsdouble) (i = (jsint) d))
+      return -1;
+    goto haveint;
+  }
+
+  /* Evaluate an int */
+  if (JSVAL_IS_INT(v))
+  {
+    int n;
+    i = JSVAL_TO_INT(v);
+haveint:
+    n = (int) i; // not that this should ever matter...
+    if ((n & 255) == n)
+      return n;
+  }
+
+  return -1;
+}
+
+#define VT_BOLD "\33[1m"
+#define VT_UNBOLD "\33[22m"
+/** An error reporter used by gpsee_reportUncaughtException() because only an "error reporter" (see JS_SetErrorReporter()
+ *  gets access to the script source that generated the error.
+ */
+static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
+{
+  char prefix[strlen(report->filename) + 21]; /* Allocate enough room for "filename:lineno" */
+  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  size_t sz;
+  int tty = isatty(STDOUT_FILENO);
+  
+  sz = snprintf(prefix, sizeof(prefix), "%s:%d", report->filename, report->lineno);
+  GPSEE_ASSERT(sz < sizeof(prefix));
+
+  if (jsi->pendingErrorMessage)
+  {
+    fprintf(stderr, "%s%s: %s%s\n", tty?VT_BOLD:"", prefix, jsi->pendingErrorMessage, tty?VT_UNBOLD:"");
+  }
+
+  if (report->linebuf)
+  {
+    size_t start, len;
+    const char *c = report->linebuf;
+
+    start = 0;
+    while (isspace(*(c++)))
+      start++;
+
+    len = 0;
+    while (*(c))
+    {
+      if (!isspace(*c))
+        len = (c - report->linebuf) - start;
+      c++;
+    }
+
+    if (len > 0)
+    {
+      char linebuf[len+1];
+      int i;
+
+      strncpy(linebuf, report->linebuf + start, len+1);
+      fprintf(stderr, "%s: %s\n", prefix, linebuf);
+      fprintf(stderr, "%s: ", prefix);
+      for (i = report->tokenptr - report->linebuf - start; i; i--)
+        fputc('.', stderr);
+      fputs("^\n", stderr);
+    }
+    else
+    {
+      fprintf(stderr, "%s: %s\n", prefix, report->linebuf);
+    }
+  }
+}
+/** Report any pending exception as though it were uncaught.
+ *  Renders a nice-looking error report to stderr.
+ *
+ *  @param    cx
+ *  @param    exval     Exception value to be used (typically from JS_GetPendingException()) or JSVAL_NULL
+ *                      to grab the exception value for you from JS_GetPendingException().
+ * 
+ *  @todo Should there be an option argument for publishing to gpsee_log()?
+ */
+JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
+{
+  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  jsval                v;
+  char *longerror = NULL;
+  JSErrorReporter reporter;
+
+  /* Must we look up the exception value ourselves? */
+  if (exval == JSVAL_NULL)
+  {
+    if (!JS_GetPendingException(cx, &exval))
+      /* no exception pending! */
+      return JS_FALSE;
+  }
+
+  /* We'll be trying to output one of two sets of data. The first set is error.message, followed by error.stack.
+   * The second set is just an attempt to stringify the exception value to a string.
+   */
+
+  /* Is exval an Object? */
+  if (!JSVAL_IS_PRIMITIVE(exval))
+  {
+    /* Attempt to retrieve "message" property from exception object */
+    if (JS_GetProperty(cx, JSVAL_TO_OBJECT(exval), "message", &v))
+    {
+      const char *error;
+      if (JSVAL_IS_STRING(v))
+      {
+        /* Make char buffer from JSString* */
+        error = JS_GetStringBytes(JSVAL_TO_STRING(v));
+
+        /* This makes the message available to gpsee_reportErrorSourceCode() */
+        jsi->pendingErrorMessage = error;
+      }
+    }
+
+    /* Attempt to retrieve "stack" property from exception object */
+    if (JS_GetProperty(cx, JSVAL_TO_OBJECT(exval), "stack", &v))
+    {
+      if (JSVAL_IS_STRING(v))
+      {
+        int lines;
+        char *c, *d, *stack;
+        /* Make char buffer from JSString* */
+        stack = JS_GetStringBytes(JSVAL_TO_STRING(v));
+        if (!stack) // OOM
+          return JS_FALSE;
+        longerror = JS_strdup(cx, stack);
+      }
+    }
+  }
+
+  /* Some information is only available to an "error reporter" (see JS_SetErrorReporter()) so we report that part here
+   * using an error reporter. Note that JS_ReportPendingException() also calls JS_ClearPendingException().
+   */
+  reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
+  JS_ReportPendingException(cx);
+  JS_SetErrorReporter(cx, reporter);
+  jsi->pendingErrorMessage = NULL;
+
+  /* Output the exception information :) There are two possible sinks */
+  if (longerror && *longerror)
+  {
+    static const char *columnPrefixes[3] = {"   ","in ","at "};
+    char *c;
+    int phase;
+    if (longerror[strlen(longerror)-1] != '\n')
+      fprintf(stderr, "\n");
+
+    c = longerror;
+    phase = 0;
+    while (*c)
+    {
+      if (phase == 0)
+      {
+        if (*c == '@')
+        {
+          *c = '\t';
+          phase = 1;
+        }
+      }
+      else if (phase == 1)
+      {
+        if (*c == ':')
+        {
+          *c = '\t';
+          phase = 2;
+        }
+      }
+      else if (phase == 2)
+      {
+        if (*c == '\n')
+          phase = 0;
+      }
+      c++;
+    }
+    gpsee_printTable(stderr, longerror, 3, columnPrefixes, 1, 9);
+    JS_free(cx, longerror);
+  }
+
+  return JS_TRUE;
+}
+
+/** A convenient function for rendering fixed-width font tables. Like this one:
+ *  @param  out   The place to print the table to.
+ *  @param  s     The text to print.
+ *  @param  ncols The number of columns there are.
+ *  @param  pfix  A pointer to ncols-many strings that will be used to prefix each column (NULLs allowed.)
+ *  @param  shrnk >=0 to identify a shrinkable column (vs COLUMNS) or -1 to disable.
+ *  @param  maxshrnk is the SMALLEST the shrnk column will shrink to.
+ *  @notes  The buffer may be modified. Repeated lines will be absorbed and a message like "repeats 99 times"
+ *          will be printed in their place.
+ */
+void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
+{
+  size_t shrinkamount;
+  int screencols;
+  size_t cols[ncols];
+  size_t cols1[ncols];
+  size_t widecol;
+  size_t tablewidth;
+  int i;
+  char *c, *d;
+  
+  /* How many characters wide is the terminal? */
+  if (getenv("COLUMNS"))
+    screencols = atoi(getenv("COLUMNS"));
+  else
+    screencols = 70;
+
+  /* Measure the width of each column */
+
+  /* Initialize column width values with length of column prefix texts */
+  for (i=0; i<ncols; i++)
+  {
+    cols[i] =
+    cols1[i] = 0;//strlen(pfix[i])+1;
+  }
+
+  /* Iterate over entire table, incrementing the column length as necessary.
+   * cols1[] is used for measurement results on each line, whereas cols[]
+   * holds the final result of column width measurement. */
+  i = 0;
+  c = s;
+  widecol = 1; // widest column
+  do
+  {
+    if (*c == '\t')
+      i++;
+    else if (*c == '\n' || *c == '\0')
+    {
+      for (i=0; i<ncols; i++)
+      {
+        if (cols1[i] > cols[i])
+        {
+          cols[i] = cols1[i];
+          if (cols[i] > widecol)
+            widecol = cols[i];
+        }
+        cols1[i] = 0;//strlen(pfix[i])+1;
+      }
+      i = 0;
+    }
+    else
+      cols1[i]++;
+  } while (*(++c));
+
+  /* Determine the width of the entire table */
+  tablewidth = 0;
+  for (i=0; i<ncols; i++)
+    tablewidth += cols[i] + strlen(pfix[i]) + 1;
+
+  /* Several conditions must be checked to activate column abbreviation */
+  if (tablewidth > screencols                           // table overflows COLUMNS
+  &&  shrnk > -1                                        // shrink enabled by caller
+  &&  cols[shrnk] > maxshrnk                            // shrink column has room to shrink
+  &&  tablewidth - screencols < cols[shrnk] - maxshrnk) // shrink would get us inside COLUMNS
+  {
+    shrinkamount = cols[shrnk] - max(maxshrnk, cols[shrnk] - (tablewidth - screencols));
+    cols[shrnk] -= shrinkamount;
+  }
+  else
+    shrnk = -1; // disable shrink
+
+  if (widecol)
+  {
+    int repeats = 0;
+    int done = 0;
+    char space[widecol+1];
+    char *d, *e;
+    memset(space, ' ', widecol);
+    space[widecol] = '\0';
+
+    /* Begin tokenizing and printing */
+    i = 0;
+    c = s;
+    do
+    {
+      d = c;
+      while (*d != '\0' && *d != '\t' && *d != '\n')
+        d++;
+      if (*d == '\0') /* End of table */
+        done = 1;
+      else
+      {
+        /* Look for repeated lines if we're at the beginning of the line */
+        if (i == 0)
+        {
+          e = strchr(d, '\n');
+          size_t walk = e-c;
+          repeats = 0;
+          /* First, null-terminate this line, saving the old char */
+          while (*e && strncmp(c, e+1, walk) == 0)
+          {
+            repeats++;
+            e += walk + 1;
+          }
+        }
+        /* Null-terminate this column. */
+        *d = '\0';
+      }
+      
+      /* Shrink this column if necessary */
+      if (shrnk == i && strlen(c) > cols[i])
+        c += shrinkamount;
+
+      /* Output column prefix, column content, and whitespace padding */
+      fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) - 1);
+
+      /* Advance the column counter */
+      if (++i >= ncols)
+      {
+        /* End of a line */
+        fprintf(out, "\n");
+        /* Reset column counter */
+        i = 0;
+        /* Were there repeats? */
+        if (repeats > 1)
+        {
+          fprintf(out, "   ^ repeats %d times\n", repeats);
+          /* Adjust the cursor to absorb the repeated lines */
+          d = e;
+        }
+        repeats = 0;
+      }
+
+      /* Advance the cursor */
+      c = d+1;
+    }
+    while (!done && *c);
+  }
+  fprintf(out, "\n");
+}

@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.5 2009/09/14 20:26:49 wes Exp $ 
+## @version	$Id: Makefile,v 1.6 2010/03/06 03:28:27 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build libffi in a way that
@@ -53,20 +53,17 @@ GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+NO_BUILD_RULES=TRUE
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
-
-NO_BUILD_RULES=True
 include $(GPSEE_SRC_DIR)/build.mk
 
 include local_config.mk
 
-ifneq ($(MAKECMDGOALS)X, X)
 ifneq ($(MAKECMDGOALS), help)
 LIBFFI_LIB_DIR		?= $(SOLIB_DIR)
 LIBFFI_INCLUDE_DIR	?= $(GPSEE_PREFIX_DIR)/include/libffi
 include sanity.mk
 LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
-endif
 endif
 
 CONFIGURE_OPTIONS	+= --prefix=$(LIBFFI_PREFIX)
@@ -110,6 +107,7 @@ endif
 
 top:
 	$(MAKE) help
+	$(MAKE) build
 
 .PHONY: top help all build install clean dist-clean distclean build_debug
 
@@ -136,7 +134,7 @@ $(LIBFFI_SRC)/configure:
 
 $(LIBFFI_BUILD)/Makefile: $(LIBFFI_SRC)/configure #Makefile local_config.mk 
 	[ -d $(LIBFFI_BUILD) ] || mkdir -p $(LIBFFI_BUILD)
-	cd $(LIBFFI_BUILD) && $(LIBFFI_SRC)/configure $(CONFIGURE_OPTIONS)
+	cd $(LIBFFI_BUILD) && CC="$(CC)" $(LIBFFI_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
 build: $(LIBFFI_BUILD)/Makefile
@@ -231,5 +229,6 @@ local_config.mk:
 	@[ X = Y ]
 
 test:
-	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)"
-
+	echo $(CC)
+	echo $(GCC_PREFIX)
+	echo $(GCC_BIN_DIR_SLASH)
