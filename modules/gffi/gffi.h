@@ -101,10 +101,11 @@ typedef struct
 structShape *struct_findShape(const char *name);
 int struct_findMemberIndex(structShape *shape, const char *name);
 
+/** Handle describing a shared object / Library instance */
 typedef struct 
 {
-  void                  *dlHandle;
-  char                  *name;
+  void                  *dlHandle;    /**< Handle returned by dlopen() */
+  char                  *name;        /**< Name of the library */
   int                   flags;
 } library_handle_t;
 
@@ -132,10 +133,10 @@ typedef enum gffi_jsv
 #undef jsv
 } gffi_jsv_e;
 
-/* Argument signature for return value converters */
-typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn);
+/** Argument signature for return value converters */
+typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn, const char *throwPrefix);
 
-/* Private data struct for CFunction instances */
+/** Private data struct for CFunction instances */
 typedef struct
 {
   const char	*functionName;		/**< Name of the function */
@@ -148,12 +149,12 @@ typedef struct
   int		noSuspend:1;		/**< Whether or not to suspend the current request during CFunction::call */
 } cFunction_handle_t;
 
-/* A struct to represent all the intermediate preparation that goes into making a CFunction call */
+/** A struct to represent all the intermediate preparation that goes into making a CFunction call */
 typedef struct 
 {
-  cFunction_handle_t    *hnd;
-  void                  *rvaluep;
-  void                  **avalues;
+  cFunction_handle_t    *hnd;          /**< Private data for the CFunction instance */
+  void                  *rvaluep;      /**< Pointer to the return value */
+  void                  **avalues;     /**< Array of rgument values */
   void                  **storage;
 } cFunction_closure_t;
 /* The function that produces a cFunction_closure_t */
@@ -174,8 +175,6 @@ JSBool struct_setPointer(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
 JSBool struct_getArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 
-GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, length) == offsetOf(memory_handle_t, length));
-GPSEE_STATIC_ASSERT(offsetOf(byteThing_handle_t, buffer) == offsetOf(memory_handle_t, buffer));
-
-GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, length) == offsetOf(memory_handle_t, length));
-GPSEE_STATIC_ASSERT(offsetOf(struct_handle_t, buffer) == offsetOf(memory_handle_t, buffer));
+JSBool setupCFunctionArgumentConverters(JSContext *cx, jsval *typeIndicators, cFunction_handle_t *hnd, const char *throwPrefix);
+size_t ffi_type_size(ffi_type *type);
+JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, const char *throwPrefix);
