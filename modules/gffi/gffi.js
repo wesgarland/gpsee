@@ -67,7 +67,7 @@ exports.BoxedPrimitive.prototype.destroy = function() {
     this.finalizer.runFinalizer();
 }
 exports.BoxedPrimitive.prototype.toString = function() {
-  return '[gpsee.module.ca.page.gffi.BoxedPrimitive ' + typeof this + ' ' + this + ']';
+  return '[gpsee.module.ca.page.gffi.BoxedPrimitive ' + typeof this + ' ' + this.value + ']';
 }
 
 exports.CFunction.prototype.call = function() {
