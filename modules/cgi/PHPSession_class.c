@@ -37,12 +37,12 @@
  *  @file	PHPSession_class.c	A Spidermonkey class for reading PHP session files with libphpsess.so
  *  @author	Wes Garland
  *  @date	Dec 2007
- *  @version	$Id: PHPSession_class.c,v 1.2 2009/03/31 15:12:13 wes Exp $
+ *  @version	$Id: PHPSession_class.c,v 1.3 2010/03/06 18:17:14 wes Exp $
  */
-static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.2 2009/03/31 15:12:13 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.3 2010/03/06 18:17:14 wes Exp $";
 
 #include "gpsee.h"
-#include "cgi_module.h"
+#include "cgi.h"
 
 #if defined(HAVE_APR)
 #include <phpsess.h>

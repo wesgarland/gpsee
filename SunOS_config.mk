@@ -48,5 +48,11 @@ GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
 endif
 
 NCURSES_LIB_NAME = curses
-ICONV_LIB_NAME = 
 LDFLAGS_SOLIB_DIRS = $(foreach SOLIB_DIR, $(SOLIB_DIRS), -L$(SOLIB_DIR) -R$(SOLIB_DIR))
+
+GPSEE_C_DEFINES         += HAVE_NDBM
+
+# Prefer Solaris iconv over SFW or CSW
+ICONV_LDFLAGS 		 = 
+ICONV_HEADER  		 = /usr/include/iconv.h
+ICONV_CPPFLAGS		+= -Wno-unknown-pragmas

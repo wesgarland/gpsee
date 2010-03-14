@@ -47,9 +47,14 @@ STREAM		?= $(shell $(GPSEE_CONFIG) --stream)
 
 include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
 -include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 include $(GPSEE_SRC_DIR)/build.mk
 ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
+
+$(PROGS): LDFLAGS	:= -L. $(LDFLAGS) -lgpsee $(JSAPI_LIBS)
+
+.PHONY: depend clean install srcmaint build_debug install-nodeps install-solibs

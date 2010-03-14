@@ -41,7 +41,7 @@
  *				This is just SpiderMonkey's js/src/jslock.c, stripped
  *				down and bent into the API we want.
  *
- *  @version	$Id: gpsee_lock.c,v 1.3 2009/06/12 17:01:20 wes Exp $
+ *  @version	$Id: gpsee_lock.c,v 1.4 2010/02/09 17:47:02 wes Exp $
  *  @author	Wes Garland
  *  @date	Jan 2008
  *
@@ -51,7 +51,7 @@
 
 /*#ifdef JS_THREADSAFE*/
 
-static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,v 1.3 2009/06/12 17:01:20 wes Exp $";
+static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,v 1.4 2010/02/09 17:47:02 wes Exp $";
 
 /*
  * JS locking stubs.
@@ -66,7 +66,7 @@ static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,
 static JS_INLINE int __attribute__((unused))
 js_CompareAndSwap(volatile jsword *w, jsword ov, jsword nv)
 {
-  return atomic_cas_32((int *)w, ov, nv) == ov;
+  return atomic_cas_ptr(w, (void *)ov, (void *)nv) == (void *)ov;
 }
 
 #else

@@ -46,12 +46,16 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: defines.c,v 1.2 2009/07/28 16:43:48 wes Exp $
+ *  @version	$Id: defines.c,v 1.4 2010/03/06 18:17:14 wes Exp $
  */
 
 #include <gpsee.h>
-#include "gffi_module.h"
+#include "gffi.h"
 #include <math.h>
+
+#if !defined(GPSEE_MAX_TRANSITIVE_MACRO_RESOLUTION_DEPTH)
+# define GPSEE_MAX_TRANSITIVE_MACRO_RESOLUTION_DEPTH 100
+#endif
 
 #if !defined(nan)
 # if defined(NAN)
@@ -61,7 +65,7 @@
 # endif
 #endif
 
-typedef enum { cdeft_signedInt, cdeft_unsignedInt, cdeft_floatingPoint, cdeft_string } type_e;
+typedef enum { cdeft_signedInt, cdeft_unsignedInt, cdeft_floatingPoint, cdeft_string, cdeft_alias, cdeft_expr } type_e;
 typedef union 
 {
   uint64	unsignedInt;
@@ -72,22 +76,36 @@ typedef union
 
 struct define
 { 
-  const char	*name;
-  size_t	size;
-  type_e	type;
-  value_u	value;
+  const char	*name;		/**< Name of the define */
+  size_t	size;		/**< Size of the value */ 
+  type_e	type;		/**< Type of the value */
+  value_u	value;		/**< The value (union) */
 };
 
 typedef struct define define_s;
 
+/* Declare a series of arrays containing defines.
+ * Each array is from a different header group.  Different
+ * header groups allow not only conflicting symbols, but 
+ * conflicting standards.  For example, one header group might
+ * use "platform-default" I/O whereas another one might force
+ * long files -- which has affects all over the API, in particular,
+ * on constants.
+ */
 #define startDefines(a)		static struct define a ## _defines[]={
 #define	haveInt(a,b,c,d)	{ #a, d, c ? cdeft_signedInt : cdeft_unsignedInt, { .unsignedInt = b } },
 #define haveFloat(a,b,c)	{ #a, c, cdeft_floatingPoint, { .floatingPoint = b } },
 #define haveString(a,b)		{ #a, sizeof(b), cdeft_string, { .string = b } },
 #define endDefines(a)		};
+#define haveExpr(a,b)		{ #a, 0, cdeft_expr,  { .string = #b } },
+#define haveAlias(a,b)		{ #a, 0, cdeft_alias, { .string = #b } },
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define haveDef(a)		/**/
 #include "defines.incl"
+#undef haveExpr
+#undef haveArgMacro
+#undef haveAlias
 #undef startDefines
 #undef haveInt
 #undef haveFloat
@@ -96,16 +114,22 @@ typedef struct define define_s;
 #undef haveDef
 #undef endDefines
 
-struct 
-{  
-  const char 		*name;
-  struct define		*defines;
-  size_t 		length;
-} cdefGroupList[] = {
+/* Groups of defines, declared above, indexed by name */
+typedef struct 
+{  	
+  const char 		*name;		/**< Name of define group */
+  struct define		*defines;	/**< Array of defines */
+  size_t 		length;		/**< Size of the defines array */
+} defineGroup_s;
+
+defineGroup_s cdefGroupList[] = {
 #define startDefines(a)		/**/
 #define haveInt(a, ...) 	/**/
 #define haveFloat(a, ...) 	/**/
 #define haveString(a, ...) 	/**/
+#define haveExpr(a,b)		/**/
+#define haveAlias(a,b)		/**/
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define endDefines(a)		/**/
 #define haveDef(a)		{ #a, a ## _defines, sizeof(a ## _defines) / sizeof(a ## _defines[0]) },
@@ -114,29 +138,21 @@ struct
 #undef haveInt
 #undef haveFloat
 #undef haveString
+#undef haveArgMacro
+#undef haveExpr
+#undef haveAlias
 #undef haveDefs
 #undef haveDef
 #undef endDefines
 };
 
-/** Find the number of rows in a defines list based on a pointer to said list.
- *  @param	cdefGroup	A pointer to the list
- *  @returns	The number of rows in the list, or zero if not found.
+/** Compare the name of a define against a string.  Used as 
+ *  bsearch comparison function.
+ *
+ *  @param	vKey	String containing name of define we want
+ *  @param	vDefine	Define structure we want to check
+ *  @returns	-1 when smaller, 0 when same, 1 when bigger
  */
-static size_t cdefGroupLength(const define_s *cdefGroup)
-{
-  int i;
-
-  i = sizeof(cdefGroupList) / sizeof(cdefGroupList[0]);
-  while(i--)
-  {
-    if (cdefGroupList[i].defines == cdefGroup)
-      return cdefGroupList[i].length;
-  }
-
-  return 0;
-}
-
 static int strcmpDefineName(const void *vKey, const void *vDefine)
 {
   const char 		*key = vKey;
@@ -149,85 +165,118 @@ static int strcmpDefineName(const void *vKey, const void *vDefine)
  *  Relies on the array being sorted in stcmp order by name. Upon successful
  *  return, type_p and value_p are populated.
  *
- *  @param	defs	Which array to search
- *  @param	name	Which constant to search for (case-sensitive)
- *  @param	type_p	[out]	What data type the constant represents
- *  @param	value_p	[out]	The value of the constant
- *  @returns	JS_TRUE if the constant was found, JS_FALSE otherwise.
+ *  @param	defs		Which array to search
+ *  @param	name		Which constant to search for (case-sensitive)
+ *  @param	transDepth	Current transitive macro resolution depth (to prevent recursion loops)
+ *  @returns	A struct define pointer describing the constant if it was found, NULL otherwise.
  */
-JSBool getDefine(const define_s *cdefGroup, const char *name, type_e *type_p, value_u *value_p, size_t *size_p)
+static const struct define *getDefine(const defineGroup_s *cdefGroup, const char *name, size_t transDepth)
 {
   struct define *found;
 
-  found = (struct define *)bsearch(name, cdefGroup, cdefGroupLength(cdefGroup), sizeof(cdefGroup[0]), strcmpDefineName);
+  found = (struct define *)bsearch(name, cdefGroup->defines, cdefGroup->length, sizeof(cdefGroup->defines[0]), strcmpDefineName);
 
-  if (!found)
-    return JS_FALSE;
+  if (found && found->type == cdeft_alias)
+  {
+    if (transDepth >= GPSEE_MAX_TRANSITIVE_MACRO_RESOLUTION_DEPTH)
+      return NULL;
 
-  *type_p  = found->type;
-  *value_p = found->value;
-  *size_p  = found->size;
+    return getDefine(
+	cdefGroup, 
+	(const char *)(found->value.string), 
+	++transDepth);
+  }
 
-  return JS_TRUE;
+  return found;
 }
 
-JSBool getDefineValue(JSContext *cx, const define_s *cdefGroup, const char *name, jsval *vp)
+/** Get the value of a define, coerced into an appropriate JavaScript type.
+ *
+ *  @param	cx		JSAPI Context
+ *  @param	cdefGroup	Which c #define group to search
+ *  @param	cdefGroupObject	JavaScript object representing the define group
+ *  @param	define		Name of the value
+ *  @param	vp [out]	Value pointer
+ *
+ *  @returns	JS_TRUE unless we throw
+ */
+static JSBool getDefineValue(JSContext *cx, const defineGroup_s *cdefGroup, JSObject *cdefGroupObj, const char *name, jsval *vp)
 {
-  type_e	type;
-  value_u	value;
-  size_t	size;
+  const struct define *def = getDefine(cdefGroup, name, 0);
 
-  if (getDefine(cdefGroup, name, &type, &value, &size) == JS_FALSE)
+  if (def == NULL)
   {
     *vp = JSVAL_VOID;
     return JS_TRUE;
   }
 
-  switch(type)
+  switch(def->type)
   {
     case cdeft_signedInt:
-      if ((jsint)value.signedInt == value.signedInt && INT_FITS_IN_JSVAL(value.signedInt))
+      if ((jsint)def->value.signedInt == def->value.signedInt && INT_FITS_IN_JSVAL(def->value.signedInt))
       {
-	*vp = INT_TO_JSVAL((jsint)value.signedInt);
+	*vp = INT_TO_JSVAL((jsint)def->value.signedInt);
 	return JS_TRUE;
       }
-      return JS_NewNumberValue(cx, (jsdouble)value.signedInt, vp);
+      return JS_NewNumberValue(cx, (jsdouble)def->value.signedInt, vp);
 
     case cdeft_unsignedInt:
-      if ((jsint)value.unsignedInt == value.unsignedInt && INT_FITS_IN_JSVAL(value.unsignedInt))
+      if ((jsint)def->value.unsignedInt == def->value.unsignedInt && INT_FITS_IN_JSVAL(def->value.unsignedInt))
       {
-	*vp = INT_TO_JSVAL((jsint)value.unsignedInt);
+	*vp = INT_TO_JSVAL((jsint)def->value.unsignedInt);
 	return JS_TRUE;
       }
-      return JS_NewNumberValue(cx, (jsdouble)value.unsignedInt, vp);
+      return JS_NewNumberValue(cx, (jsdouble)def->value.unsignedInt, vp);
 
     case cdeft_floatingPoint:
-      return JS_NewNumberValue(cx, (jsdouble)value.floatingPoint, vp);
+      return JS_NewNumberValue(cx, (jsdouble)def->value.floatingPoint, vp);
 
     case cdeft_string:
     {
-      /* xxx which is better for this? -wg JSString *s = JS_NewStringCopyN(cx, value.string, size); */
       JSString *s;
 
-      if (!value.string)
+      if (!def->value.string)
       {
 	*vp = JSVAL_NULL;
 	return JS_TRUE;
       }
 
-      if ((s = JS_InternString(cx, value.string)))
+      if ((s = JS_InternString(cx, def->value.string)))
 	return STRING_TO_JSVAL(s);
 
       JS_ReportOutOfMemory(cx);
       return JS_FALSE;
     }
+
+    case cdeft_expr:
+    {
+      static char 	buf[1024];
+      int		i;
+
+      i = snprintf(buf, sizeof(buf),
+		   "(function _gffi_def_expr_%s() { with(%s) { return (%s); } })()",
+		   name, cdefGroup->name, def->value.string);
+
+      if (i <= 0 || i == sizeof(buf))
+	return gpsee_throw(cx, MODULE_ID "defines.%s.%s: cannot evaluate define (buffer size too small)",
+			   cdefGroup->name, name);
+
+      return JS_EvaluateScript(cx, cdefGroupObj, buf, i, __FILE__, __LINE__, vp);
+    }
+
+    case cdeft_alias:
+      GPSEE_NOT_REACHED("impossible");
   }
 
   GPSEE_NOT_REACHED("impossible");
   return JS_TRUE;
 }
 
-const define_s *cdefGroup(const char *name)
+/** Locate a specific group of defines
+ *  @param	name	Name of the group 
+ *  @returns	The group, if found, or NULL
+ */
+static const defineGroup_s *find_cdefGroup(const char *name)
 {
   int i;
 
@@ -235,15 +284,18 @@ const define_s *cdefGroup(const char *name)
   while(i--)
   {
     if (strcmp(cdefGroupList[i].name, name) == 0)
-      return cdefGroupList[i].defines;
+      return cdefGroupList + i;
   }
 
   return NULL;
 }
 
-JSBool cdefGroup_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
+/** JSAPI resolve operator which operates on instances of define groups. Lazily resolves
+ *  specific defines within the groups.
+ */
+static JSBool cdefGroup_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
 {
-  const define_s *group = JS_GetPrivate(cx, obj);
+  const defineGroup_s *group = JS_GetPrivate(cx, obj);
   JSString *s;
 
   *objp = NULL;
@@ -261,7 +313,7 @@ JSBool cdefGroup_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags, JS
     {
       jsval v;
 
-      if ((getDefineValue(cx, group, name, &v) == JS_TRUE) && (v != JSVAL_VOID))
+      if ((getDefineValue(cx, group, obj, name, &v) == JS_TRUE) && (v != JSVAL_VOID))
       {
 	JS_DefineProperty(cx, obj, name, v, NULL, NULL, 0);
 	*objp = obj;
@@ -294,13 +346,16 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject)
   JSObject *obj;
 
 #define startDefines(a) \
-  if (!(obj = JS_NewObject(cx, &cdefGroup_class, NULL, moduleObject))) return JS_FALSE; JS_SetPrivate(cx, obj, cdefGroup(#a));
+  if (!(obj = JS_NewObject(cx, &cdefGroup_class, NULL, moduleObject))) return JS_FALSE; JS_SetPrivate(cx, obj, find_cdefGroup(#a));
 #define endDefines(a) \
   if (JS_TRUE != JS_DefineProperty(cx, moduleObject, #a, OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE)) return JS_FALSE;
 
 #define	haveInt(a,b,c,d)	/**/
 #define haveFloat(a,b,c)	/**/
 #define haveString(a,b)		/**/
+#define haveExpr(a,b)		/**/
+#define haveAlias(a,b)		/**/
+#define haveArgMacro(a,b,c)	/**/
 #define haveDefs(a, ...) 	/**/
 #define haveDef(a)		/**/
 #include "defines.incl"
@@ -308,6 +363,9 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject)
 #undef haveInt
 #undef haveFloat
 #undef haveString
+#undef haveExpr
+#undef haveAlias
+#undef haveArgMacro
 #undef haveDefs
 #undef haveDef
 #undef endDefines
@@ -315,35 +373,3 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject)
   return JS_TRUE;
 }
 
-#ifdef TEST_DRIVER
-int main(int argc, const char *argv[])
-{
-  const char	*name = argv[1];
-  type_e	type;
-  value_u	value;
-  size_t	size;
-
-  if (getDefine(posix_defines, name, &type, &value, &size) == JS_TRUE)
-  {
-    switch(type)
-    {
-      case cdeft_signedInt:
-	printf("The value for %s is %i, it is a signed integer\n", name, (signed int)value.signedInt);
-	break;
-      case cdeft_unsignedInt:
-	printf("The value for %s is %i, it is an unsigned integer\n", name, (unsigned int)value.unsignedInt);
-	break;
-      case cdeft_floatingPoint:
-	printf("The value for %s is %f, it is a floating point number\n", name, (double)value.floatingPoint);
-	break;
-      case cdeft_string:
-	printf("The value for %s is %s, it is a string\n", name, value.string);
-	break;
-    }
-  }
-  else
-    printf("Couldn't find a value for %s in posix defines\n", name);
-
-  return 0;
-}
-#endif

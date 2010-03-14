@@ -1,5 +1,7 @@
 ifneq ($(NO_BUILD_RULES),TRUE)
 # Standard targets
+ifneq ($(MAKECMDGOALS),)
+ifneq ($(MAKECMDGOALS),top)
 ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),install-nodeps)
 ifneq ($(MAKECMDGOALS),clean)
@@ -17,6 +19,8 @@ endif # goal = dist-clean
 endif # goal = clean
 endif # goal = install-nodeps
 endif # goal = help
+endif # goal = top
+endif # goal = none
 
 clean:
 	-$(if $(strip $(OBJS)), $(RM) $(OBJS))
@@ -42,10 +46,12 @@ build_debug:
 	@echo "CPPFLAGS:        $(CPPFLAGS)"
 	@echo "CXX:             $(CXX)"
 	@echo "CXXFLAGS:        $(CXXFLAGS)"      
-	@echo "LD:              $(LD)"
+	@echo "LINKER:          $(LINKER)"
 	@echo "LDFLAGS:         $(LDFLAGS)"
 	@echo "LOADLIBES:       $(LOADLIBES)"
-	@echo "ICONV_LIB_NAME:  $(ICONV_LIB_NAME)"
+	@echo "ICONV_LDFLAGS:   $(ICONV_LDFLAGS)"
+	@echo "ICONV_CPPFLAGS:  $(ICONV_CPPFLAGS)"
+	@echo "ICONV_HEADER:    $(ICONV_HEADER)"
 	@echo
 
 # Install shared libraries
@@ -61,10 +67,10 @@ install-nodeps install:	XPROGS =$(strip $(EXPORT_PROGS))
 install-nodeps install:	XCGIS =$(strip $(CGI_PROGS))
 install:	$(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_PROGS) $(CGI_PROGS)
 ifneq (X$(EXPORT_LIBS)$(EXPORT_LIBEXEC_OBJS),X)
-		@make install-solibs
+		@$(MAKE) install-solibs
 endif
-		@make install-nodeps
-		@make srcmaint
+		@$(MAKE) install-nodeps
+		@$(MAKE) srcmaint
 
 install-nodeps:
 		@$(if $(XPROGS),[ -d $(BIN_DIR) ] || mkdir -p $(BIN_DIR))

@@ -38,7 +38,7 @@
  *                            that wish to compile with gpsee-core facilities.
  *  @author  Wes Garland, wes@page.ca
  *  @date    Oct 2009
- *  @version $Id:$
+ *  @version $Id: gpsee-jsapi.h,v 1.1 2010/03/06 18:37:27 wes Exp $
  */
 
 #include <gpsee.h>

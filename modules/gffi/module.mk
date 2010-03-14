@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2009-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -34,13 +34,20 @@
 #
 
 include $(GPSEE_SRC_DIR)/ffi.mk
+include $(GPSEE_SRC_DIR)/iconv.mk
 include sanity.mk
+-include std_cppflags.mk
+
+std_cppflags.mk:
+	@echo " * Building $@"
+	$(CC) $(CFLAGS) $(CPPFLAGS) mk_std_cppflags.c -o mk_std_cppflags
+	./mk_std_cppflags STD_CPPFLAGS= > $@
 
 DEFS	 	 	= gpsee std
-AUTOGEN_HEADERS		+= compiler.dmp $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
-AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl
+AUTOGEN_HEADERS		+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
+AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl mk_std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
-PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines aux_types
+PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
@@ -48,19 +55,23 @@ MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
 .PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
 
-build:	$(DEF_FILES)
+build:
 
 build_debug_module:
 	@echo " - In gffi"
-	@echo "   - CFLAGS = $(CFLAGS)"
-	@echo "   - LDFLAGS = $(LDFLAGS)"
+	@echo "   - CFLAGS   = $(CFLAGS)"
+	@echo "   - LDFLAGS  = $(LDFLAGS)"
+	@echo "   - CPPFLAGS = $(CPPFLAGS)"
 
-gffi_module.$(SOLIB_EXT):   LDFLAGS += -lffi
-gffi_module.o: aux_types.incl jsv_constants.decl
+clean:	OBJS += aux_types.o
+
+gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
+gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS)
-std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
+mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
+std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
 std_gpsee_no.h: std_functions.h
@@ -72,27 +83,30 @@ std_gpsee_no.h: std_functions.h
 	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | sed 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
 		sed -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 
-%.dmp defines.incl: sort=LC_COLLATE=C sort
+compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
 
-compiler.dmp:
-	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u > $@
+compiler_dmp.re:
+	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u \
+	| sed \
+		-e 's/[[]/[[]/g' -e 's/[]]/[]]/g' \
+		-e 's/[*]/[*]/g' -e 's/[?]/[?]/g' \
+		-e 's/[(]/[(]/g' -e 's/[)]/[)]/g' \
+		-e 's/[.]/[.]/g' \
+		-e 's/[|]/[|]/g' \
+	> $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
-%.dmp: compiler.dmp #Makefile
+%.dmp: compiler_dmp.re #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
 	@echo $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER))))
 	$(CPP) $(CPPFLAGS) -dM \
 	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
 		| sed 's/[ 	][ 	]*/ /g' \
 		| $(sort) -u \
-		| $(EGREP) -vf compiler.dmp \
+		| $(EGREP) -vf compiler_dmp.re \
 		| $(EGREP) -v '^#define *NULL '\
 		> $@ || [ X = X ]
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
-
-ifneq (X$(ICONV_LIB_NAME),X)
-std_defs gpsee_defs:	EXTRA_LDFLAGS           += -l$(ICONV_LIB_NAME)
-endif
 
 std_defs:	EXTRA_CPPFLAGS += -I.
 std_defs.%:	HEADERS  = std_functions.h stdint.h
@@ -104,6 +118,7 @@ gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.
 DEFINE=^ *\# *define
 NAME=[^ ][^ ]*
 START=$(DEFINE) $(NAME)[ ][ ]*
+ARGMACRO_START=$(DEFINE) $(NAME)[ ]*[(][^)]*[)]
 
 # for egrep; each expression must be parenthesized
 OWS=([ ]*)
@@ -141,25 +156,33 @@ FLOAT_EXPR:=($(FLOAT_EXPR)|($(LPAR)$(FLOAT_EXPR)$(RPAR)))
 FLOAT_EXPR:=($(FLOAT_EXPR)|$(FLOAT_EXPR)($(OPER)$(FLOAT_EXPR)))+
 FLOAT_EXPR:=($(FLOAT_EXPR)|($(LPAR)$(FLOAT_EXPR)$(RPAR))+)
 
+# This isn't bad
 STRING_EXPR="([^\\"]|\\\\|\\")*"
+
+# But this is
+TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 
 %_defs.c: %_defs.dmp
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-	@echo " - Integer Expression"
-	@$(foreach HEADER, $(HEADERS), echo "#include <$(HEADER)>" >> $@;)
+		@echo " - Integer Expression"
+	@$(foreach HEADER, $(HEADERS), echo "#include \"$(HEADER)\"" >> $@;)
 	@echo "#include <stdio.h>" >> $@
 	@echo "#include \"../../gpsee_formats.h\"" >> $@
 	@echo "#undef main" >> $@
 	@echo "int main(int argc, char **argv) {" >> $@
 	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp \
-	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveInt(\2,");\
-		printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));/' \
+	| sed \
+		-e 's/  */ /g' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+		printf("haveInt(\2,"); \
+	        printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Floating-point Expression"
 	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
-		| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+		| sed \
+		-e 's/  */ /g' \
+		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveFloat(\2,%100e," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Strings"
@@ -167,6 +190,22 @@ STRING_EXPR="([^\\"]|\\\\|\\")*"
 	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveString(\2,\\\"%s\\\")\\n",(\2));/' \
 	>> $@
+
+	@echo " - Transitive Macros & Simple Expressions"
+	@$(EGREP) '$(START)$(TMS_EXPR)$$' $*_defs.dmp\
+	| $(EGREP) -v '($(ARGMACRO_START))|($(START)$(STRING_EXPR))' \
+	| $(EGREP) -v '($(START)$(STRING_EXPR))' \
+	| $(EGREP) -v '($(START)$(INT_EXPR))' \
+	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' \
+	| sed -f tmse_parse.sed \
+		>>$@
+#	@echo " - Argument Macro Expressions"
+#	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
+#	| sed \
+#		-e 's/^#define  *//' \
+#		-e 's/\"/\\\\\\\"/g'\
+#		-e 's/^\([^(]*\)\( *\)\([(][^)]*[)]\)\( *\)\(.*\)$$/puts("haveArgMacro(\1, \\"\3\\",\\"\5\\")");/' \
+#		>>$@
 	@echo "return 0; }" >> $@
 
 check:
@@ -200,8 +239,6 @@ aux_types.incl: aux_types aux_types.decl
 structs.incl: structs.decl module.mk
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-# Warning: regexps lack precision, and sed really does need literal newlines in the insert command
-
 	sed \
 		-e '/beginStruct/h' \
 		-e 's/\(beginStruct[(]\)\([^)]*\)\([)].*\)/#define member_offset(X) offsetOf(\2,X)/' \
@@ -216,8 +253,8 @@ structs.incl: structs.decl module.mk
 		-e 's/\(endStruct[(]\)\([^)]*\)\([)].*\)/#undef member_offset/' \
 		-e '/^#undef member_offset/p' \
 		-e 's/member_offset/member_size/' \
-	< structs.decl > $@
+	< structs.decl >> $@
 
-parseMan:
-	man $$MANPAGE \
-	| grep '^       .*\*/ *$$' | sed -e 's;*/;XXX;' -e 's/^  */member(/' -e 's/;/,    )/' -e 's/  *\*/*,/' -e 's/  */,  /' -e 's/*,/ *, /' -e 's/XXX/*\//' -e 's;, */\*;,       /*;'  -e 's; */\*;	/*;' -e 's/^/  /' -e 's/, *, *)/,	)/'
+
+defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
+

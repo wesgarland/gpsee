@@ -38,13 +38,13 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.9 2009/10/29 18:35:05 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.10 2010/03/06 18:17:13 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.9 2009/10/29 18:35:05 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.10 2010/03/06 18:17:13 wes Exp $";
 
 #include "gpsee.h"
-#include "binary_module.h"
+#include "binary.h"
 
 /** BE and LE flavours of UTF-16 do not emit the BOM. JS Strings are BOM-less and in machine order. */
 #if defined(_BIG_ENDIAN) || (defined(BYTE_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDAN)
@@ -382,6 +382,7 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
     iconv_t	cd1;
     iconv_t	cd2; 
 
+    /* Here we'll iconv_open() just as a feature test */
     depth = JS_SuspendRequest(cx);
     if ((cd1 = iconv_open(targetCharset, NEUTRAL_CHARSET)) != (iconv_t)-1)
       iconv_close(cd1);
@@ -466,12 +467,13 @@ JSBool transcodeBuf_toBuf(JSContext *cx, const char *targetCharset, const char *
 	default:
 	  JS_free(cx, outbufStart);
 	  iconv_close(cd);
-	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte %i (%m)", 
+	  return gpsee_throw(cx, "%s.transcode: Transcoding error at source byte " GPSEE_PTRDIFF_FMT " (%m)", 
 			     throwPrefix, ((unsigned char *)inbuf - inputBuffer));
       }
     }
   } while (result == -1);
 
+  iconv_close(cd);
   *outputBufferLength_p = outbuf - outbufStart;
   if (*outputBufferLength_p != allocBytes)
   {
@@ -539,7 +541,7 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
   return gpsee_throw(cx, "%s.transcode.iconv.missing: Could not transcode UTF-16 String to %s charset; GPSEE was compiled without iconv "
 		     "support.", throwPrefix, charset ?: "(null)");
 #else
-   if (string_length >=  1 << ((sizeof(size_t) * 8) - 1))   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
+   if (string_length >=  1L << ((sizeof(size_t) * 8) - 1))   /* JSAPI limit is currently lower than this; may 2009 wg from shaver */
      return gpsee_throw(cx, "%s.transcode.length: String length exceeds maximum characters, cannot convert", throwPrefix);
   else
     return transcodeBuf_toBuf(cx, charset, DEFAULT_UTF_16_FLAVOUR, bufp, lenp, (const unsigned char *)string_chars, string_length * 2, throwPrefix);
@@ -883,6 +885,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
 JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, uintN argn, size_t min, size_t max,
                           JSBool mayDefault, size_t defaultSize, JSClass *clasp, const char const *methodName)
 {
+  ssize_t temp;
   const char * errmsg;
   jsval * argv = JS_ARGV(cx, vp);
 
@@ -900,20 +903,21 @@ JSBool byteThing_arg2size(JSContext *cx, uintN argc, jsval *vp, size_t *retval, 
   }
 
   /* Try to convert jsval to size_t */
-  if ((errmsg = byteThing_val2size(cx, argv[argn], retval, methodName)))
+  if ((errmsg = byteThing_val2ssize(cx, argv[argn], &temp, methodName)))
     return gpsee_throw(cx, "%s.%s.arguments.%d: %s", clasp->name, methodName, argn, errmsg);
 
   /* Check lower bound */
-  if (*retval < min)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
-                       clasp->name, methodName, argn, min, *retval);
+  if (temp < 0 || temp < min)
+    return gpsee_throw(cx, "%s.%s.arguments.%d.underflow: expected value not less than " GPSEE_SIZET_FMT ", got " GPSEE_SSIZET_FMT,
+                       clasp->name, methodName, argn, min, temp);
 
   /* Check upper bound */
-  if (*retval > max)
-    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_SIZET_FMT,
-                       clasp->name, methodName, argn, max, *retval);
+  if (temp > max)
+    return gpsee_throw(cx, "%s.%s.arguments.%d.overflow: expected value not greater than " GPSEE_SIZET_FMT ", got " GPSEE_SSIZET_FMT,
+                       clasp->name, methodName, argn, max, temp);
 
   /* Success! */
+  *retval = (size_t) temp;
   return JS_TRUE;
 }
 
@@ -1078,7 +1082,7 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
   JSObject              *self = JSVAL_TO_OBJECT(JS_THIS(cx, vp));
   byteThing_handle_t    *hnd;
   int                   mustBeNew = 0; // in some cases we don't need to return a new object, we can return a reference ourself
-  const char *          className;
+  const char *          className = NULL;
   const char *          methodName;
 
   /* Deduce our method name as well as an appropriate prototype object from the JSClass we're given */

@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $
+ * @version	$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.17 2009/10/20 16:02:35 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre1"
@@ -270,6 +270,46 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 #endif
 }
 
+static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile)
+{
+  char	buf[256];
+  off_t	offset;
+
+  offset = ftello(scriptFile);
+
+  while(fgets(buf, sizeof(buf), scriptFile))
+  {
+    char *s, *e;
+
+    if ((buf[0] != '/') || (buf[1] != '/'))
+      break;
+
+    for (s = buf + 2; *s == ' ' || *s == '\t'; s++);
+    if (strncmp(s, "gpsee:", 6) != 0)
+      continue;
+
+    for (s = s + 6; *s == ' ' || *s == '\t'; s++);
+
+    for (e = s; *e; e++)
+    {
+      switch(*e)
+      {
+	case '\r':
+	case '\n':
+	case '\t':
+	case ' ':
+	  *e = (char)0;
+	  break;
+      }
+    }
+
+    if (s[0])
+      processFlags(jsi, s);
+  }
+
+  fseeko(scriptFile, offset, SEEK_SET);
+}
+
 static FILE *openScriptFile(gpsee_interpreter_t *jsi, const char *scriptFilename, int skipSheBang)
 {
   FILE 	*file = fopen(scriptFilename, "r");
@@ -473,7 +513,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	case 'x':
 	case 'z':
 	{
-	  char *flags_storage = realloc(flags, (flag_p - flags) + 1 /* NUL */);
+	  char *flags_storage = realloc(flags, (flag_p - flags) + 1 + 1);
 	    
 	  if (flags_storage != flags)
 	  {
@@ -482,6 +522,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	  }
 
 	  *flag_p++ = c;
+	  *flag_p = '\0';
 	}
 	break;
 
@@ -557,8 +598,12 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   jsi = gpsee_createInterpreter(script_argv, script_environ);
+  gpsee_setThreadStackLimit(jsi->cx, &jsi);
   processFlags(jsi, flags);
   free(flags);
+
+  /* We have our own error reporting system in gsr that does not use error reporter */
+  JS_SetOptions(jsi->cx, JS_GetOptions(jsi->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
 
   /* Run JavaScript specified with -c */
   if (scriptCode) 
@@ -569,6 +614,9 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
   }
 
+#if !defined(SYSTEM_GSR)
+#define	SYSTEM_GSR	"/usr/bin/gsr"
+#endif
   if ((argv[0][0] == '/') && (strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
   {
     char preloadScriptFilename[FILENAME_MAX];
@@ -598,14 +646,17 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!script || !scrobj)
 	goto out;
 
-      JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
-      JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
-      if (JS_IsExceptionPending(jsi->cx))
+      if (!noRunScript)
       {
-	jsi->exitType = et_exception;
-	JS_ReportPendingException(jsi->cx);
+        JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
+        JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
+        if (JS_IsExceptionPending(jsi->cx))
+        {
+          jsi->exitType = et_exception;
+          JS_ReportPendingException(jsi->cx);
+        }
+        JS_RemoveRoot(jsi->cx, &scrobj);
       }
-      JS_RemoveRoot(jsi->cx, &scrobj);
     }
 
     if (jsi->exitType & et_exception)
@@ -618,21 +669,45 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
   else
   {
-    FILE *scriptFile = openScriptFile(jsi, scriptFilename, skipSheBang || (fiArg != 0));
+    FILE 	*scriptFile = openScriptFile(jsi, scriptFilename, skipSheBang || (fiArg != 0));
+
     if (!scriptFile)
     {
       gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       exitCode = 1;
+      goto out;
     }
-    else
+
+    processInlineFlags(jsi, scriptFile);
+
+    /* Just compile and exit? */
+    if (noRunScript)
+    {
+      const char      *errmsg;
+      JSScript        *script;
+      JSObject        *scrobj;
+
+      if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
+      {
+	gpsee_log(SLOG_NOTICE, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
+	GPSEE_ASSERT(errmsg);
+	exitCode = 1;
+      }
+      else
+      {
+	exitCode = 0;
+      }
+    }
+    else /* noRunScript is false; run the program */
     {
       gpsee_runProgramModule(jsi->cx, scriptFilename, scriptFile);
-      fclose(scriptFile);
       if ((jsi->exitType & et_successMask) == jsi->exitType)
 	exitCode = jsi->exitCode;
       else
 	exitCode = 1;
     }
+      fclose(scriptFile);
+    goto out;
   }
 
   out:

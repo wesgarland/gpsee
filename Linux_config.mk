@@ -32,9 +32,13 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-ICONV_LIB_NAME		 =
+ICONV_LDFLAGS		 =
 GPSEE_C_DEFINES		+= HAVE_MEMRCHR
 GPSEE_C_DEFINES		+= HAVE_IDENTITY_TRANSCODING_ICONV
 EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
-GFFI_LDFLAGS		?= -ldb
 GFFI_CPPFLAGS		?= -D_GNU_SOURCE -DDB_DBM_HSEARCH=1
+
+# Some GNU/Linux distributions require extra packages to be installed for the SUSv3 NDBM API
+# Include this in your local_config.mk if you have them:
+#GFFI_LDFLAGS += -ldb
+#GPSEE_C_DEFINES += HAVE_NDBM

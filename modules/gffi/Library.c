@@ -40,12 +40,12 @@
  *              PageMail, Inc.
  *		donny.viszneki@gmail.com
  *  @date	Jul 2009
- *  @version	$Id: Library.c,v 1.2 2009/09/14 21:22:50 wes Exp $
+ *  @version	$Id: Library.c,v 1.3 2010/03/06 18:17:14 wes Exp $
  */
 
 #include <gpsee.h>
 #include <ffi.h>
-#include "gffi_module.h"
+#include "gffi.h"
 
 #define CLASS_ID MODULE_ID ".Library"
 
