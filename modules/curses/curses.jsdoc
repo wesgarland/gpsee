@@ -1,0 +1,172 @@
+/**
+ * @namespace       gpsee.module.ca.page.curses - Curses module
+ * @author          Wes Garland, PageMail, Inc., wes@page.ca
+ * @description     curses module provides wrapper to C API for aiding in the development of text-mode applications.
+ */
+var curses = {};
+
+/** @name           curses.keyboard
+    @description    Provides access to keyboard input (and one mouse event)
+ */
+var curses.keyboard = {
+/**
+ *  @name           curses.keyboard.getChar
+ *  @description    Reads a single key from the stdin input stream and returns a string representing the key.
+ *  <p>
+ *  This function returns a string representing a single key. Many keys map to their ascii characters. Keys which don't
+ *  have a printable character associated with them may be represented by one of the strings on the following table:
+ *  <ul>
+ *    <li>"break"</li>
+ *    <li>"down arrow"</li>
+ *    <li>"up arrow"</li>
+ *    <li>"left arrow"</li>
+ *    <li>"right arrow"</li>
+ *    <li>"home "</li>
+ *    <li>"backspace"</li>
+ *    <li>"delete line"</li>
+ *    <li>"insert line"</li>
+ *    <li>"delete character"</li>
+ *    <li>"ins char/enter mode"</li>
+ *    <li>"rmir or smir in ins mode"</li>
+ *    <li>"clear screen or erase"</li>
+ *    <li>"clear-to-end-of-screen"</li>
+ *    <li>"clear-to-end-of-line"</li>
+ *    <li>"scroll-forward/down"</li>
+ *    <li>"scroll-backward/up"</li>
+ *    <li>"next-page"</li>
+ *    <li>"previous-page"</li>
+ *    <li>"set-tab"</li>
+ *    <li>"clear-tab"</li>
+ *    <li>"clear-all-tabs"</li>
+ *    <li>"enter"</li>
+ *    <li>"soft reset"</li>
+ *    <li>"reset"</li>
+ *    <li>"print"</li>
+ *    <li>"home-down"</li>
+ *    <li>"keypad upper left"</li>
+ *    <li>"keypad upper right"</li>
+ *    <li>"keypad center"</li>
+ *    <li>"keypad lower left"</li>
+ *    <li>"keypad lower right"</li>
+ *    <li>"Back tab"</li>
+ *    <li>"beginning"</li>
+ *    <li>"cancel"</li>
+ *    <li>"close"</li>
+ *    <li>"command"</li>
+ *    <li>"copy"</li>
+ *    <li>"create"</li>
+ *    <li>"end"</li>
+ *    <li>"exit"</li>
+ *    <li>"find"</li>
+ *    <li>"help"</li>
+ *    <li>"mark"</li>
+ *    <li>"message"</li>
+ *    <li>"move"</li>
+ *    <li>"next"</li>
+ *    <li>"open"</li>
+ *    <li>"options"</li>
+ *    <li>"previous"</li>
+ *    <li>"redo"</li>
+ *    <li>"reference"</li>
+ *    <li>"refresh"</li>
+ *    <li>"replace"</li>
+ *    <li>"restart"</li>
+ *    <li>"resume"</li>
+ *    <li>"save"</li>
+ *    <li>"shift+beginning"</li>
+ *    <li>"shift+cancel"</li>
+ *    <li>"shift+command"</li>
+ *    <li>"shift+copy"</li>
+ *    <li>"shift+create"</li>
+ *    <li>"shift+delete char"</li>
+ *    <li>"shift+delete line"</li>
+ *    <li>"select"</li>
+ *    <li>"shift+end"</li>
+ *    <li>"shift+clear line"</li>
+ *    <li>"shift+exit"</li>
+ *    <li>"shift+find"</li>
+ *    <li>"shift+help"</li>
+ *    <li>"shift+home"</li>
+ *    <li>"shift+input"</li>
+ *    <li>"shift+left arrow"</li>
+ *    <li>"shift+message"</li>
+ *    <li>"shift+move"</li>
+ *    <li>"shift+next"</li>
+ *    <li>"shift+options"</li>
+ *    <li>"shift+prev"</li>
+ *    <li>"shift+print"</li>
+ *    <li>"shift+redo"</li>
+ *    <li>"shift+replace"</li>
+ *    <li>"shift+right arrow"</li>
+ *    <li>"shift+resume"</li>
+ *    <li>"shift+save"</li>
+ *    <li>"shift+suspend"</li>
+ *    <li>"shift+undo"</li>
+ *    <li>"suspend"</li>
+ *    <li>"undo"</li>
+ *    <li>"Mouse event has occured"</li>
+ *  </ul>
+ *  </p>
+ */
+var getChar = function(key){};
+};
+
+/**
+ * @class
+ * @name            curses.Window
+ * @description     Represents a rectangular region of cropped/scrollable content.
+ */
+var curses.Window = function() {
+
+/** TODO document
+ *  @property   x
+ *  @property   y
+ */
+var cursorPosition = {};
+
+/** boolean
+ */
+var scrolling = false;
+
+/** boolean
+ */
+var scrollRegion = {};
+
+/** Clears the contents of the window.
+ */
+function clear(){};
+/** Draws a border.
+ */
+function drawBorder(){};
+/** Draws a horizontal line.
+ */
+function drawHorizontalLine(){};
+/** Draws a vertical line.
+ */
+function drawVerticalLine(){};
+/** TODO document
+ */
+function getKey(){};
+/** TODO document
+ */
+function getKeys(){};
+/** Gets the window content at a given position.
+ */
+function getXY(){};
+/** Reposition the cursor.
+ */
+function gotoXY(){};
+/** Commit the windows' changes to the client.
+ */
+function refresh(){};
+/** Repositions the window's contents within the window.
+ */
+function scroll(){};
+/** Writes to the window starting at the cursor position.
+ */
+function write(){};
+/** Adjusts the cursor position, and then writes to the window.
+ */
+function writeXY(){};
+
+};
