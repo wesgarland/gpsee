@@ -587,7 +587,8 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
  *  @param  pfix  A pointer to ncols-many strings that will be used to prefix each column (NULLs allowed.)
  *  @param  shrnk >=0 to identify a shrinkable column (vs COLUMNS) or -1 to disable.
  *  @param  maxshrnk is the SMALLEST the shrnk column will shrink to.
- *  @notes  The buffer may be modified.
+ *  @notes  The buffer may be modified. Repeated lines will be absorbed and a message like "repeats 99 times"
+ *          will be printed in their place.
  */
 void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
 {
@@ -662,9 +663,10 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
 
   if (widecol)
   {
+    int repeats = 0;
     int done = 0;
     char space[widecol+1];
-    char *d;
+    char *d, *e;
     memset(space, ' ', widecol);
     space[widecol] = '\0';
 
@@ -676,19 +678,53 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
       d = c;
       while (*d != '\0' && *d != '\t' && *d != '\n')
         d++;
-      if (*d == '\0')
+      if (*d == '\0') /* End of table */
         done = 1;
       else
+      {
+        /* Look for repeated lines if we're at the beginning of the line */
+        if (i == 0)
+        {
+          e = strchr(d, '\n');
+          size_t walk = e-c;
+          repeats = 0;
+          /* First, null-terminate this line, saving the old char */
+          while (*e && strncmp(c, e+1, walk) == 0)
+          {
+            repeats++;
+            e += walk + 1;
+          }
+        }
+        /* Null-terminate this column. */
         *d = '\0';
+      }
+      
+      /* Shrink this column if necessary */
       if (shrnk == i && strlen(c) > cols[i])
         c += shrinkamount;
+
+      /* Output column prefix, column content, and whitespace padding */
       fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) - 1);
-      c = d+1;
+
+      /* Advance the column counter */
       if (++i >= ncols)
       {
+        /* End of a line */
         fprintf(out, "\n");
+        /* Reset column counter */
         i = 0;
+        /* Were there repeats? */
+        if (repeats > 1)
+        {
+          fprintf(out, "   ^ repeats %d times\n", repeats);
+          /* Adjust the cursor to absorb the repeated lines */
+          d = e;
+        }
+        repeats = 0;
       }
+
+      /* Advance the cursor */
+      c = d+1;
     }
     while (!done && *c);
   }
