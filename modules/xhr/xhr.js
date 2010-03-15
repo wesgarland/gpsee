@@ -2,7 +2,9 @@
 // http://www.w3.org/TR/XMLHttpRequest/
 
 const curlmod = require('curl');
-const ByteString = require('binary').ByteString;
+
+// Allowing it so I can change ByteArray or ByteString as needed
+const Binary = require('binary').ByteArray;
 
 // Only two items exported.
 var easycurl = curlmod.easycurl;
@@ -11,7 +13,7 @@ var easycurl_slist = curlmod.easycurl_slist;
 /**
  * @class
  */
-XMLHttpRequest = function() {
+var XMLHttpRequest = function() {
     this._readyState = this.UNSENT;
     this._send_flag = false;
     this._error_flag = false;
@@ -28,7 +30,7 @@ XMLHttpRequest = function() {
     z.setopt(z.CURLOPT_COOKIEFILE, '');
 
     // 0 or 1 for debuggig output
-    z.setopt(z.CURLOPT_VERBOSE, 0);
+    z.setopt(z.CURLOPT_VERBOSE, 1);
 
     // on redirect, follow it
     z.setopt(z.CURLOPT_FOLLOWLOCATION, 1);
@@ -45,8 +47,8 @@ XMLHttpRequest = function() {
     // CALLBACKS FOR READS AND HEADERS
     z.blobs = [];
     z.header_list = [];
-    z.write  = function(s) { this.blobs.push(ByteArray(s)); };
-    z.header = function(s) { this.header_list.push(s); }
+    z.write  = function(s) { print("BLOB: " + s.size); z.blobs.push(s); };
+    z.header = function(s) { z.header_list.push(s); }
 
 };
 
@@ -59,6 +61,8 @@ XMLHttpRequest.prototype = {
     LOADING           : 3,
     DONE              : 4,
 
+    _status_re : /^HTTP.[0-9.]+ +([0-9]+) +(.*)/,
+    _charset_re : /charset=(\S*)/,
 
     // You'll want to define something like this to be called
     // at the start of each request.
@@ -72,7 +76,43 @@ XMLHttpRequest.prototype = {
 	this.extraheaders = new easycurl_slist();
     },
 
+    _charsetSniffer: function(header, raw) {
 
+	if (header !== null) {
+	    var parts = this._charset_re.exec(header);
+	    if (parts && parts[1]) {
+		return parts[1].toLowerCase();
+	    }
+	}
+
+	// if mimetype is html-list
+	// take a slice of the first 1024 bytes
+	// look for charset=
+	// the exact spec is much more complicates but this 
+	// will do
+	/*
+	var idx = indexOf('charset=');
+	if (idx != 0) {
+
+
+	}
+	*/
+	// Still nothing?  Look at byte order marks
+	
+	// http://www.w3.org/TR/xml/#sec-guessing
+	if (raw.size >= 2 && raw[0] == 0xfe && raw[1] == 0xff) {
+	    return "UTF-16BE";
+	}
+	if (raw.size >= 2 && raw[0] == 0xff && raw[1] == 0xfe) {
+	    return "UTF-16LE";
+	}
+	if (raw.size >=3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xbf) {
+	    return "UTF-8";
+	}
+	// when in doubt try this
+	return 'utf-8';
+    },
+    
     /**
      * Getter
      */
@@ -176,6 +216,7 @@ XMLHttpRequest.prototype = {
 
 	// step 6 -- resolve relative url
 	//  Does not apply for server-side XHR
+	this.curl.setopt(this.curl.CURLOPT_URL, url);
 
 	if (false) {
 	    throw new Error("DOMException.SYNTAX_ERR");
@@ -219,7 +260,7 @@ XMLHttpRequest.prototype = {
 	// password
 
 	// step 19
-	this.reset()
+	this._reset()
 
 	// step 20
 	// cancel any existing network activity
@@ -299,7 +340,7 @@ XMLHttpRequest.prototype = {
 	}
 
 	// lots of steps here skipped
-	this.headers_in = this.curl.response_headers;
+	this.headers_in = this.curl.header_list;
 	this._status_line = this.headers_in.shift();
 	this._readyState = this.HEADERS_RECEIVED;
 	this.onreadystatechange();
@@ -362,17 +403,17 @@ XMLHttpRequest.prototype = {
 	var body = null;
         var parts = this.curl.blobs.length;
         if (parts > 0) {
-            body =this.curl.blobs[0];
+            body = Binary(this.curl.blobs[0]);
             for (var i=1; i< parts; ++i) {
-                body.concat(this.curl.blobs[i]);
+                body.concat(Binary(this.curl.blobs[i]));
             }
         }
 	if (body === null) {
-	    return null
+	    return null;
 	} else {
-	    return ByteString(body);
+	    return body;
 	}
-    }
+    },
 
     /**
      * Return Javascript UTF8, properly decoded
@@ -382,11 +423,14 @@ XMLHttpRequest.prototype = {
 	if (this._readyState != this.DONE) {
 	    return null;
 	}
-	var raw = this.responseRaw();
+	var raw = this.responseRaw;
 	if (raw === null) {
 	    return '';
 	}
-	return raw.decodeToString('utf8');
+
+	var header = this.getResponseHeader('content-type');
+	var charset = this._charsetSniffer(header, raw);
+	return raw.decodeToString(charset);
     },
 
     get responseXML() {
@@ -394,11 +438,13 @@ XMLHttpRequest.prototype = {
 	    return null;
 	}
 
-	var raw = this.responseRaw();
+	var raw = this.responseRaw;
 	if (raw === null) {
 	    return '';
 	}
-	return raw.decodeToString('utf8');
+	var header = this.getResponseHeader('content-type');
+	var charset = this._charsetSniffer(header, raw);
+	return raw.decodeToString(charset);
 
 	// ACTUALLY DO NOT return a DOCUMENT
 	// find content-type
@@ -413,16 +459,17 @@ XMLHttpRequest.prototype = {
 	if (this._status_line === null) {
 	    throw new Error("DomException.INVALID_STATE_ERR");
 	}
-	var parts = /^HTTP\/[0-9.]+ +([0-9]+) +(.*)/(this._status_line);
-	return parseInt(parts[0]);
+
+	var parts = this._status_re.exec(this._status_line);
+	return parseInt(parts[1]);
     },
 
     get statusText() {
 	if (this._status_line === null) {
 	    throw new Error("DOMException.INVALID_STATE_ERR");
 	}
-	var parts = /^HTTP\/[0-9.]+ +[0-9]+ +(.*)/(this._status_line);
-	return parseInt(parts[1]);
+	var parts = this._status_re.exec(this._status_line);
+	return parts[2];
     },
 
     /**
@@ -432,3 +479,5 @@ XMLHttpRequest.prototype = {
 	// user defines and overwrite with own function
     },
 };
+
+exports.XMLHttpRequest = XMLHttpRequest;
