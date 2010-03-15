@@ -39,10 +39,10 @@
  *                              for the stdio features.
  *  @author     Donny Viszneki
  *  @date       Feb 2010
- *  @version    $Id: system.c,v 1.1 2010/03/06 18:37:28 wes Exp $
+ *  @version    $Id: system.c,v 1.2 2010/03/10 16:26:42 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.1 2010/03/06 18:37:28 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.2 2010/03/10 16:26:42 wes Exp $";
  
 #include "gpsee.h"
 #include "system.h"
@@ -57,7 +57,8 @@ static struct {
   {"stderr", "write"}
 };
 
-static JSBool system_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+/** Getter system.stdin, .stdout, .stderr; id is actually the file descriptor */
+static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   /* This implementation is a little funny in that it calls JS_EvaluateScript() on snprintf()d code.
    * It probably could be done another way, but this was the quickest, and I don't see any glaring
@@ -93,7 +94,8 @@ static JSBool system_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *
   return JS_TRUE;
 }
 
-static JSBool system_setProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+/** Setter system.stdin, .stdout, .stderr; id is actually the file descriptor */
+static JSBool system_stdioSetProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   int which;
   const char *propName;
@@ -112,17 +114,56 @@ static JSBool system_setProperty(JSContext *cx, JSObject *obj, jsval id, jsval *
   return JS_TRUE;
 }
 
+static JSBool system_platform_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  *vp = STRING_TO_JSVAL(JS_InternString(cx, GPSEE_GLOBAL_NAMESPACE_NAME " " GPSEE_CURRENT_VERSION_STRING));
+
+  return JS_TRUE;
+}
+
+static JSBool system_global_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  *vp = OBJECT_TO_JSVAL(jsi->globalObj);
+
+  return JS_TRUE;
+}
+
+static JSBool system_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  static const char 	js[]="require('system').stdout.writeln";
+  jsval			v;
+
+  if (JS_EvaluateScript(cx, obj, js, sizeof(js) - 1, __FILE__, __LINE__, &v) == JS_FALSE)
+    return JS_FALSE;
+
+  return JS_CallFunctionValue(cx, obj, v, argc, argv, rval);
+}
+
 const char *system_InitModule(JSContext *cx, JSObject *module)
 {
-  gpsee_interpreter_t *jsi;
-  static JSPropertySpec properties[] = {
-    {"stdin",  0, JSPROP_ENUMERATE, system_getProperty, system_setProperty},
-    {"stdout", 1, JSPROP_ENUMERATE, system_getProperty, system_setProperty},
-    {"stderr", 2, JSPROP_ENUMERATE, system_getProperty, system_setProperty},
-    {NULL, 0, 0, NULL, NULL}
+  gpsee_interpreter_t 	*jsi;
+  static JSPropertySpec properties[] = 
+  {
+    { "stdin",  	0, JSPROP_ENUMERATE, system_stdioGetProperty, 	system_stdioSetProperty },
+    { "stdout", 	1, JSPROP_ENUMERATE, system_stdioGetProperty, 	system_stdioSetProperty },
+    { "stderr", 	2, JSPROP_ENUMERATE, system_stdioGetProperty, 	system_stdioSetProperty },
+    { "platform",	0, JSPROP_ENUMERATE, system_platform_getter,  	JS_PropertyStub },
+    { "global",		0, JSPROP_ENUMERATE, system_global_getter,	JS_PropertyStub },
+    { NULL, 0, 0, NULL, NULL }
+  };
+
+  static JSFunctionSpec	methods[] = 
+  {
+    { "print",			system_print,			0, 0, 0 },
+    { NULL,			NULL,				0, 0, 0 },
   };
 
   if (!JS_DefineProperties(cx, module, properties))
+    return NULL;
+
+  if (JS_DefineFunctions(cx, module, methods) != JS_TRUE)
     return NULL;
 
   jsi = (gpsee_interpreter_t*)JS_GetRuntimePrivate(JS_GetRuntime(cx));
@@ -140,3 +181,4 @@ JSBool system_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
   return JS_TRUE;
 }
+
