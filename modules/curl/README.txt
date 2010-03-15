@@ -12,7 +12,7 @@ TODO:
  * I've add "// TBD:" near code that needs help
  * add GPSEE's error reporting if there is a problem in module load
  * Figure out minimum libcurl supported, may it's just a matter of adding
-   around everything
+   are the few places that need it in the code
     #ifdef OPTION_NAME
        code using OPTION_NAME
     #endif
@@ -23,6 +23,20 @@ EXAMPLE CODE:
 
 DESIGN NOTES:
 
+The code is to be designed to minimal and as close the C API as
+possible.  This means the resulting js API is not particularly
+ javascripty, but provides:
+   * the full power of libcurl
+   * the entire libcurl documentation can be (re)used as is with 
+      out mental translation.
+   * keeps jsapi / gpsee code small
+   * flexible in which libcurl version can be used.  With rare
+     exception, it means a quick recompile on the newer
+     libcurls and all new features are exposed.
+
+The idea is that this module can be used to make more high level
+APIs such as XMLHttpRequest.
+
 SETOPT
 http://curl.haxx.se/libcurl/c/curl_easy_setopt.html
 
@@ -31,7 +45,7 @@ CURLcode curl_easy_setopt(CURL *handle, CURLoption option, parameter);
 "CURLoption option" is an integer, to select which option is used. The
 valid values are defied by preprocessor #defines, and the value are
 not consquetive and create by bit-or-ing other #defines: it's not easy
-by inspect to get the list of valid options.
+by inspection to get the list of valid options.
 
 The third parameter is the value for the option -- it's just a blind
 void* pointer.  It could be a integer, a function, a char* string, or
