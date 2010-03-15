@@ -208,7 +208,7 @@ build_debug_modules:
 
 build_debug: build_debug_modules
 
-GPSEE_RELEASE=0.2-pre1
+GPSEE_RELEASE=0.2-pre2
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
 	@$(RM) $(TMPFILE) || [ X = X ]

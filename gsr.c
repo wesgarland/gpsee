@@ -57,7 +57,7 @@
 static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
-#define PRODUCT_VERSION		"1.0-pre1"
+#define PRODUCT_VERSION		"1.0-pre2"
 
 #include <prinit.h>
 #include "gpsee.h"
