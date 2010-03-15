@@ -90,7 +90,7 @@ static JSBool vm_jsval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 {
   char buf[32];
 
-  snprintf(buf, sizeof(buf), "0x%x", (size_t)argv[0]);
+  snprintf(buf, sizeof(buf), GPSEE_PTR_FMT, (void *)argv[0]);
 
   *rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf));
   return JS_TRUE;

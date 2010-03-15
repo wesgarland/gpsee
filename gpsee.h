@@ -196,7 +196,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 
 #define GPSEE_MAX_THROW_MESSAGE_SIZE		256
 #define GPSEE_GLOBAL_NAMESPACE_NAME 		"gpsee"
-#define GPSEE_CURRENT_VERSION_STRING		"0.2-pre1"
+#define GPSEE_CURRENT_VERSION_STRING		"0.2-pre2"
 #define GPSEE_MAJOR_VERSION_NUMBER	        0
 #define GPSEE_MINOR_VERSION_NUMBER		2
 #define GPSEE_MICRO_VERSION_NUMBER		0
@@ -337,6 +337,7 @@ JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
+JS_EXTERN_API(void)                 gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
 
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 

@@ -62,6 +62,7 @@ $(GPSEE_SRC_DIR)/local_config.mk:
 	@echo
 	@[ X = Y ]
 
+GPSEE_BUILD = TRUE
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
@@ -207,7 +208,7 @@ build_debug_modules:
 
 build_debug: build_debug_modules
 
-GPSEE_RELEASE=0.2-pre1
+GPSEE_RELEASE=0.2-pre2
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
 	@$(RM) $(TMPFILE) || [ X = X ]
@@ -339,3 +340,4 @@ help:
 	@echo
 	@echo   "To customize your build, edit ./local_config.mk"
 	@echo
+

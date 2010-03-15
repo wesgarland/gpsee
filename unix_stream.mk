@@ -39,13 +39,15 @@ HOSTNAME		?= $(shell hostname)
 ifdef COMPILER_IS_NON_GNU
 $(error Sorry, your compiler is not yet supported)
 else
+ifdef GCC_PREFIX
 GCC_BIN_DIR_SLASH ?= $(GCC_PREFIX)/bin/
+endif
 GCC		?= $(GCC_BIN_DIR_SLASH)gcc
 GXX		?= $(GCC_BIN_DIR_SLASH)g++
 CC		?= $(GCC)
 
 CXX		?= $(GXX)
-LD		= $(GCC) -shared
+LINKER		?= $(GCC) -shared
 CC		:= $(GCC_BIN_DIR_SLASH)$(CC)
 CXX		:= $(GCC_BIN_DIR_SLASH)$(CXX)
 
@@ -57,7 +59,7 @@ LEX		?= lex
 YACC		?= yacc
 AR		?= ar
 AR_RU		?= $(AR) -ru
-SO_AR		?= $(LD) $(LDFLAGS) -o
+SO_AR		?= $(LINKER) $(LDFLAGS) -o
 RANLIB		?= ranlib
 
 # Shell tools
