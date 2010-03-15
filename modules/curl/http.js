@@ -39,13 +39,15 @@ http = function()
     z.setopt(z.CURLOPT_SSL_VERIFYPEER, 0);
 
     // CALLBACKS FOR READS AND HEADERS
-    z.blobs = [];
-    z.header_list = [];
+    z._blobs = [];
+    z._header_list = [];
     z.write  = function(s) {
-        this.blobs.push(ByteArray(s));
+	print("GOT CHUNK: ");
+        z.blobs.push(ByteArray(s));
     }
     z.header = function(s) {
-	this.header_list.push(s);
+	print("GOT : " + s);
+	z.header_list.push(s);
     }
 
     // You'll want to define
