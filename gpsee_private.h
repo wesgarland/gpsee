@@ -40,7 +40,15 @@
  *  @version	$Id: gpsee_private.h,v 1.7 2010/02/17 15:59:33 wes Exp $
  */
 
+#ifndef GPSEE_PRIVATE_H
+#define GPSEE_PRIVATE_H
+
 #include "jsapi.h"
 int 			gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
 void 			gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
 void			gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi);
+#define AT_STRINGIFY_HELPER_1(s) #s
+#define AT_STRINGIFY_HELPER_2(s) AT_STRINGIFY_HELPER_1(s)
+#define AT __FILE__ ":" AT_STRINGIFY_HELPER_2(__LINE__) ": "
+
+#endif/*GPSEE_PRIVATE_H*/

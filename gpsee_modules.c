@@ -775,7 +775,7 @@ static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const cha
   dprintf("loadJSModule(\"%s\")\n", filename);
   dpDepth(+1);
 
-  if (gpsee_compileScript(cx, filename, NULL, &module->script,
+  if (gpsee_compileScript(cx, filename, NULL, NULL, &module->script,
       module->scope, &module->scrobj, &errorMessage))
   {
     dprintf("module %s returns compilation error: %s\n", moduleShortName(filename), errorMessage);
@@ -1323,6 +1323,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   return JS_TRUE;
 }
 
+#define RUNPROERR "error in gpsee_runProgramModule(\"%s\"): "
 /** Run a program as if it were a module. Interface differs from gpsee_loadModule()
  *  to reflect things like that the source of the program module may be stdin rather
  *  than a module file, may not be in the libexec dir, etc.
@@ -1332,13 +1333,16 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
  *
  *  Note that only JavaScript modules can be program modules.
  *
- *  @param 	cx		JavaScript context for execution
- *  @param	scriptFilename	Filename where we can find the script
- *  @param	scriptFile	Stream positioned where we can start reading the script, or NULL
+ *  @param      cx              JavaScript context for execution
+ *  @param      scriptFilename  This specifies the file to open if neither scriptCode nor ScriptFile are non-null. If
+ *                              either of those are non-null, this filename is still handed off to Spidermonkey and is
+ *                              useful in qualifying warnings, error messages, or for identifying code via debugger.
+ *  @param      scriptCode      If non-null, points to actual Javascript source code.
+ *  @param      scriptFile      Stream positioned where we can start reading the script, or NULL
  *
- *  @returns	NULL on success, error string on failure
+ *  @returns    JS_TRUE on success, otherwise JS_FALSE
  */
-const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile)
+JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile)
 {
   moduleHandle_t 	*module;
   char			cnBuf[PATH_MAX];
@@ -1357,45 +1361,62 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     char	tmpBuf[PATH_MAX];
     
     if (getcwd(tmpBuf, sizeof(tmpBuf)) == NULL)
-      return "getcwd failure";
+      return gpsee_throw(cx, RUNPROERR "getcwd() error: %m", scriptFilename);
 
     if (gpsee_catstrn(tmpBuf, "/", sizeof(tmpBuf)) == 0)
-      return "buffer overrun";
+      return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
 
     if (gpsee_catstrn(tmpBuf, scriptFilename, sizeof(tmpBuf)) == 0)
-      return "buffer overrun";
+      return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
 
     i = gpsee_resolvepath(tmpBuf, cnBuf, sizeof(cnBuf));
   }
   if ((i >= sizeof(cnBuf)) || (i == -1))
-    return "buffer overrun";
+    return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
   else
     cnBuf[i] = (char)0;
 
-  dprintf("Running program module %s\n", moduleShortName(scriptFilename ?: " from FILE*"));
+  // Is this change ok?
+  dprintf("Running program module \"%s\"\n", scriptFilename);
   dpDepth(+1);
-
-  if (scriptFile)
-  {
-    /* Insure that the supplied script file stream matches the file name */
-    int 	e = 0;
-    struct stat sb1, sb2;
-
-    e = stat(cnBuf, &sb1);
-    if (!e)
-      e = fstat(fileno(scriptFile), &sb2);
-
-    if (e)
-      gpsee_log(SLOG_ERR, "Unable to stat program module %s: %m", cnBuf);
-    else
-    {
-      if ((sb1.st_ino != sb2.st_ino) || (sb1.st_dev != sb2.st_dev))
-	gpsee_log(SLOG_ERR, "Program module does not have a valid canonical name");
-    }
-  }
 
   /* Before mangling cnBuf, let's copy it to fnBuf to be used in gpsee_compileScript() */
   strcpy(fnBuf, cnBuf);
+
+  /* If we were supplied a FILE* from which to get our source code, we want to ensure that the scriptFilename
+   * still refers to this file. This check may be unnecessary or redundant, but it will help keep knots out of our
+   * hair. TODO we should fix this check if we ever support symbolic filenames like "stdin" or URIs like
+   * "http://what/ever.js" (in fact we should probably use something like "sym://" for symbolic filenames to simplify
+   * things, should this ever be added.
+   */
+  if (scriptFile)
+  {
+    /* Ensure that the supplied script file stream matches the file name */
+    struct stat sb1, sb2;
+
+    if (stat(fnBuf, &sb1))
+      return gpsee_throw(cx, RUNPROERR "stat(\"%s\") error: %m", scriptFilename, fnBuf);
+
+    if (fstat(fileno(scriptFile), &sb2))
+      return gpsee_throw(cx, RUNPROERR "fstat(file descriptor %d, allegedly \"%s\") error: %m", scriptFilename,
+                             fileno(scriptFile), fnBuf);
+
+    if ((sb1.st_ino != sb2.st_ino) || (sb1.st_dev != sb2.st_dev))
+      return gpsee_throw(cx, RUNPROERR "file moved? \"%s\" stat inode/dev %d/%d doesn't match file descriptor"
+                             " %d inode/dev %d/%d", scriptFilename,
+                             fnBuf, (int)sb1.st_ino, (int)sb1.st_dev,
+                             fileno(scriptFile), (int)sb2.st_ino, (int)sb2.st_dev);
+  }
+
+  /* If we are no supplied an open FILE* ('scriptFile') or literal script code ('scriptCode') then we should try to
+   * open the file from 'scriptFilename'
+   */
+  if (!scriptFile && !scriptCode)
+  {
+    scriptFile = fopen(scriptFilename, "r");
+    if (!scriptFile)
+      return gpsee_throw(cx, RUNPROERR "fopen() error %m", scriptFilename);
+  }
 
   /* The "cname" argument to acquireModuleHandle() names a module, not a file, so let's remove the .js extension */
   if ((s = strrchr(cnBuf, '.')))
@@ -1422,11 +1443,11 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
   JS_SetGlobalObject(cx, module->scope);
-  if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
+  if (gpsee_compileScript(cx, fnBuf, scriptFile, NULL, &module->script,
       module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
   {
     if (!JS_IsExceptionPending(cx))
-      (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".runProgramModule.compile: %s", errorMessage);
+      (void)gpsee_throw(cx, RUNPROERR "gpsee_compileScript() error: %s", scriptFilename, errorMessage);
     goto fail;
   }
 
@@ -1436,43 +1457,21 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (initializeModule(cx, module) == JS_TRUE)
     goto good;
 
-  /* More serious errors get handled here in "fail:" but twe fall through to "good:" where
-   * additional and/or less serious error reporting facilities exist.
-   */
-  fail:
-  {
-    dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-  }
-
   good:
-  JS_SetGlobalObject(cx, jsi->globalObj);
 
-  /* If there is a pending exception, we'll report it here */
-  if (JS_IsExceptionPending(cx))
-  {
-    int exitCode;
-    /* Is this a formal SystemExit? Assume all error reporting has been performed by the application. */
-    exitCode = gpsee_getExceptionExitCode(cx);
-    if (exitCode >= 0)
-    {
-      jsi->exitCode = exitCode;
-      jsi->exitType = et_finished;
-    }
-    /* Any other type of program exception will be reported here */
-    else
-    {
-      /* @todo where should we publish this stuff to? */
-      gpsee_reportUncaughtException(cx, JSVAL_NULL);
-      jsi->exitType = et_exception;
-    }
-  }
+  JS_SetGlobalObject(cx, jsi->globalObj);
+  return JS_TRUE;
+
+  fail:
+
+  dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
 
   if (module)
     markModuleUnused(cx, module);
 
   dpDepth(-1);
  
-  return errorMessage; /* NULL == no failures */
+  return JS_FALSE;;
 }
 
 /** Callback from the garbage collector, which marks all

@@ -1,4 +1,4 @@
-#!/usr/bin/gsr -zzdd
+#!/usr/bin/gsr -zz
 const system = require('system')
 const {cay} = require('shellalike');
 /* What way were we run? */
