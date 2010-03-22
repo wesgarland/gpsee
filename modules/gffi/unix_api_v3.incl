@@ -1,0 +1,3327 @@
+/* Generated on Tue Nov 10 14:46:36 EST 2009 by wes@wes -- please do not hand-edit this file */
+
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Initial Developer of the Original Code is PageMail, Inc.
+ *
+ * Portions created by the Initial Developer are 
+ * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ *
+ * Contributor(s): 
+ * 
+ * Alternatively, the contents of this file may be used under the terms of
+ * either of the GNU General Public License Version 2 or later (the "GPL"),
+ * or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** 
+ */
+#if !defined(GPSEE_NO_a64l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(a64l)
+#endif
+#if !defined(GPSEE_NO_abort) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(abort)
+#endif
+#if !defined(GPSEE_NO_abs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(abs)
+#endif
+#if !defined(GPSEE_NO_accept) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(accept)
+#endif
+#if !defined(GPSEE_NO_access) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(access)
+#endif
+#if !defined(GPSEE_NO_acos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(acos)
+#endif
+#if !defined(GPSEE_NO_acosf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(acosf)
+#endif
+#if !defined(GPSEE_NO_acosh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(acosh)
+#endif
+#if !defined(GPSEE_NO_acoshf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(acoshf)
+#endif
+#if !defined(GPSEE_NO_acoshl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(acoshl)
+#endif
+#if !defined(GPSEE_NO_acosl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(acosl)
+#endif
+#if !defined(GPSEE_NO_aio_cancel) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_cancel)
+#endif
+#if !defined(GPSEE_NO_aio_error) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_error)
+#endif
+#if !defined(GPSEE_NO_aio_fsync) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_fsync)
+#endif
+#if !defined(GPSEE_NO_aio_read) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_read)
+#endif
+#if !defined(GPSEE_NO_aio_return) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_return)
+#endif
+#if !defined(GPSEE_NO_aio_suspend) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_suspend)
+#endif
+#if !defined(GPSEE_NO_aio_write) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(aio_write)
+#endif
+#if !defined(GPSEE_NO_alarm) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(alarm)
+#endif
+#if !defined(GPSEE_NO_asctime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(asctime)
+#endif
+#if !defined(GPSEE_NO_asctime_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(asctime_r)
+#endif
+#if !defined(GPSEE_NO_asin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(asin)
+#endif
+#if !defined(GPSEE_NO_asinf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(asinf)
+#endif
+#if !defined(GPSEE_NO_asinh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(asinh)
+#endif
+#if !defined(GPSEE_NO_asinhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(asinhf)
+#endif
+#if !defined(GPSEE_NO_asinhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(asinhl)
+#endif
+#if !defined(GPSEE_NO_asinl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(asinl)
+#endif
+#if !defined(GPSEE_NO_atan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atan)
+#endif
+#if !defined(GPSEE_NO_atan2) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atan2)
+#endif
+#if !defined(GPSEE_NO_atan2f) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atan2f)
+#endif
+#if !defined(GPSEE_NO_atan2l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atan2l)
+#endif
+#if !defined(GPSEE_NO_atanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atanf)
+#endif
+#if !defined(GPSEE_NO_atanh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atanh)
+#endif
+#if !defined(GPSEE_NO_atanhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atanhf)
+#endif
+#if !defined(GPSEE_NO_atanhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atanhl)
+#endif
+#if !defined(GPSEE_NO_atanl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atanl)
+#endif
+#if !defined(GPSEE_NO_atexit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(atexit)
+#endif
+#if !defined(GPSEE_NO_atof) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atof)
+#endif
+#if !defined(GPSEE_NO_atoi) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atoi)
+#endif
+#if !defined(GPSEE_NO_atol) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(atol)
+#endif
+#if !defined(GPSEE_NO_atoll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(atoll)
+#endif
+#if !defined(GPSEE_NO_basename) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(basename)
+#endif
+#if !defined(GPSEE_NO_bcmp) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(bcmp)
+#endif
+#if !defined(GPSEE_NO_bcopy) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(bcopy)
+#endif
+#if !defined(GPSEE_NO_bind) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(bind)
+#endif
+#if !defined(GPSEE_NO_bsd_signal) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(bsd_signal)
+#endif
+#if !defined(GPSEE_NO_bsearch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(bsearch)
+#endif
+#if !defined(GPSEE_NO_btowc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(btowc)
+#endif
+#if !defined(GPSEE_NO_bzero) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(bzero)
+#endif
+#if !defined(GPSEE_NO_cabs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cabs)
+#endif
+#if !defined(GPSEE_NO_cabsf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cabsf)
+#endif
+#if !defined(GPSEE_NO_cabsl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cabsl)
+#endif
+#if !defined(GPSEE_NO_cacos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacos)
+#endif
+#if !defined(GPSEE_NO_cacosf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacosf)
+#endif
+#if !defined(GPSEE_NO_cacosh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacosh)
+#endif
+#if !defined(GPSEE_NO_cacoshf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacoshf)
+#endif
+#if !defined(GPSEE_NO_cacoshl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacoshl)
+#endif
+#if !defined(GPSEE_NO_cacosl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cacosl)
+#endif
+#if !defined(GPSEE_NO_calloc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(calloc)
+#endif
+#if !defined(GPSEE_NO_carg) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(carg)
+#endif
+#if !defined(GPSEE_NO_cargf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cargf)
+#endif
+#if !defined(GPSEE_NO_cargl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cargl)
+#endif
+#if !defined(GPSEE_NO_casin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casin)
+#endif
+#if !defined(GPSEE_NO_casinf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casinf)
+#endif
+#if !defined(GPSEE_NO_casinh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casinh)
+#endif
+#if !defined(GPSEE_NO_casinhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casinhf)
+#endif
+#if !defined(GPSEE_NO_casinhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casinhl)
+#endif
+#if !defined(GPSEE_NO_casinl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(casinl)
+#endif
+#if !defined(GPSEE_NO_catan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catan)
+#endif
+#if !defined(GPSEE_NO_catanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catanf)
+#endif
+#if !defined(GPSEE_NO_catanh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catanh)
+#endif
+#if !defined(GPSEE_NO_catanhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catanhf)
+#endif
+#if !defined(GPSEE_NO_catanhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catanhl)
+#endif
+#if !defined(GPSEE_NO_catanl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(catanl)
+#endif
+#if !defined(GPSEE_NO_catclose) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(catclose)
+#endif
+#if !defined(GPSEE_NO_catgets) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(catgets)
+#endif
+#if !defined(GPSEE_NO_catopen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(catopen)
+#endif
+#if !defined(GPSEE_NO_cbrt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(cbrt)
+#endif
+#if !defined(GPSEE_NO_cbrtf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cbrtf)
+#endif
+#if !defined(GPSEE_NO_cbrtl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cbrtl)
+#endif
+#if !defined(GPSEE_NO_ccos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccos)
+#endif
+#if !defined(GPSEE_NO_ccosf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccosf)
+#endif
+#if !defined(GPSEE_NO_ccosh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccosh)
+#endif
+#if !defined(GPSEE_NO_ccoshf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccoshf)
+#endif
+#if !defined(GPSEE_NO_ccoshl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccoshl)
+#endif
+#if !defined(GPSEE_NO_ccosl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ccosl)
+#endif
+#if !defined(GPSEE_NO_ceil) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ceil)
+#endif
+#if !defined(GPSEE_NO_ceilf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ceilf)
+#endif
+#if !defined(GPSEE_NO_ceill) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ceill)
+#endif
+#if !defined(GPSEE_NO_cexp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cexp)
+#endif
+#if !defined(GPSEE_NO_cexpf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cexpf)
+#endif
+#if !defined(GPSEE_NO_cexpl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cexpl)
+#endif
+#if !defined(GPSEE_NO_cfgetispeed) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(cfgetispeed)
+#endif
+#if !defined(GPSEE_NO_cfgetospeed) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(cfgetospeed)
+#endif
+#if !defined(GPSEE_NO_cfsetispeed) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(cfsetispeed)
+#endif
+#if !defined(GPSEE_NO_cfsetospeed) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(cfsetospeed)
+#endif
+#if !defined(GPSEE_NO_chdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(chdir)
+#endif
+#if !defined(GPSEE_NO_chmod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(chmod)
+#endif
+#if !defined(GPSEE_NO_chown) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(chown)
+#endif
+#if !defined(GPSEE_NO_cimag) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cimag)
+#endif
+#if !defined(GPSEE_NO_cimagf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cimagf)
+#endif
+#if !defined(GPSEE_NO_cimagl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cimagl)
+#endif
+#if !defined(GPSEE_NO_clearerr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(clearerr)
+#endif
+#if !defined(GPSEE_NO_clock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(clock)
+#endif
+#if !defined(GPSEE_NO_clock_getcpuclockid) && (0)
+defineFunction(clock_getcpuclockid)
+#endif
+#if !defined(GPSEE_NO_clock_getres) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(clock_getres)
+#endif
+#if !defined(GPSEE_NO_clock_gettime) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(clock_gettime)
+#endif
+#if !defined(GPSEE_NO_clock_nanosleep) && (0)
+defineFunction(clock_nanosleep)
+#endif
+#if !defined(GPSEE_NO_clock_settime) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(clock_settime)
+#endif
+#if !defined(GPSEE_NO_clog) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(clog)
+#endif
+#if !defined(GPSEE_NO_clogf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(clogf)
+#endif
+#if !defined(GPSEE_NO_clogl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(clogl)
+#endif
+#if !defined(GPSEE_NO_close) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(close)
+#endif
+#if !defined(GPSEE_NO_closedir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(closedir)
+#endif
+#if !defined(GPSEE_NO_closelog) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(closelog)
+#endif
+#if !defined(GPSEE_NO_confstr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96))
+defineFunction(confstr)
+#endif
+#if !defined(GPSEE_NO_conj) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(conj)
+#endif
+#if !defined(GPSEE_NO_conjf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(conjf)
+#endif
+#if !defined(GPSEE_NO_conjl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(conjl)
+#endif
+#if !defined(GPSEE_NO_connect) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(connect)
+#endif
+#if !defined(GPSEE_NO_copysign) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(copysign)
+#endif
+#if !defined(GPSEE_NO_copysignf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(copysignf)
+#endif
+#if !defined(GPSEE_NO_copysignl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(copysignl)
+#endif
+#if !defined(GPSEE_NO_cos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(cos)
+#endif
+#if !defined(GPSEE_NO_cosf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cosf)
+#endif
+#if !defined(GPSEE_NO_cosh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(cosh)
+#endif
+#if !defined(GPSEE_NO_coshf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(coshf)
+#endif
+#if !defined(GPSEE_NO_coshl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(coshl)
+#endif
+#if !defined(GPSEE_NO_cosl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cosl)
+#endif
+#if !defined(GPSEE_NO_cpow) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cpow)
+#endif
+#if !defined(GPSEE_NO_cpowf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cpowf)
+#endif
+#if !defined(GPSEE_NO_cpowl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cpowl)
+#endif
+#if !defined(GPSEE_NO_cproj) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cproj)
+#endif
+#if !defined(GPSEE_NO_cprojf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cprojf)
+#endif
+#if !defined(GPSEE_NO_cprojl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(cprojl)
+#endif
+#if !defined(GPSEE_NO_creal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(creal)
+#endif
+#if !defined(GPSEE_NO_crealf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(crealf)
+#endif
+#if !defined(GPSEE_NO_creall) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(creall)
+#endif
+#if !defined(GPSEE_NO_creat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(creat)
+#endif
+#if !defined(GPSEE_NO_crypt) && (0 || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(crypt)
+#endif
+#if !defined(GPSEE_NO_csin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csin)
+#endif
+#if !defined(GPSEE_NO_csinf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csinf)
+#endif
+#if !defined(GPSEE_NO_csinh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csinh)
+#endif
+#if !defined(GPSEE_NO_csinhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csinhf)
+#endif
+#if !defined(GPSEE_NO_csinhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csinhl)
+#endif
+#if !defined(GPSEE_NO_csinl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csinl)
+#endif
+#if !defined(GPSEE_NO_csqrt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csqrt)
+#endif
+#if !defined(GPSEE_NO_csqrtf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csqrtf)
+#endif
+#if !defined(GPSEE_NO_csqrtl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(csqrtl)
+#endif
+#if !defined(GPSEE_NO_ctan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctan)
+#endif
+#if !defined(GPSEE_NO_ctanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctanf)
+#endif
+#if !defined(GPSEE_NO_ctanh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctanh)
+#endif
+#if !defined(GPSEE_NO_ctanhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctanhf)
+#endif
+#if !defined(GPSEE_NO_ctanhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctanhl)
+#endif
+#if !defined(GPSEE_NO_ctanl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ctanl)
+#endif
+#if !defined(GPSEE_NO_ctermid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(ctermid)
+#endif
+#if !defined(GPSEE_NO_ctime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ctime)
+#endif
+#if !defined(GPSEE_NO_ctime_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(ctime_r)
+#endif
+#if !defined(GPSEE_NO_dbm_clearerr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_clearerr)
+#endif
+#if !defined(GPSEE_NO_dbm_close) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_close)
+#endif
+#if !defined(GPSEE_NO_dbm_delete) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_delete)
+#endif
+#if !defined(GPSEE_NO_dbm_error) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_error)
+#endif
+#if !defined(GPSEE_NO_dbm_fetch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_fetch)
+#endif
+#if !defined(GPSEE_NO_dbm_firstkey) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_firstkey)
+#endif
+#if !defined(GPSEE_NO_dbm_nextkey) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_nextkey)
+#endif
+#if !defined(GPSEE_NO_dbm_open) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_open)
+#endif
+#if !defined(GPSEE_NO_dbm_store) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dbm_store)
+#endif
+#if !defined(GPSEE_NO_difftime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(difftime)
+#endif
+#if !defined(GPSEE_NO_dirname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(dirname)
+#endif
+#if !defined(GPSEE_NO_div) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(div)
+#endif
+#if !defined(GPSEE_NO_dlclose) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(dlclose)
+#endif
+#if !defined(GPSEE_NO_dlerror) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(dlerror)
+#endif
+#if !defined(GPSEE_NO_dlopen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(dlopen)
+#endif
+#if !defined(GPSEE_NO_dlsym) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(dlsym)
+#endif
+#if !defined(GPSEE_NO_drand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(drand48)
+#endif
+#if !defined(GPSEE_NO_dup) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(dup)
+#endif
+#if !defined(GPSEE_NO_dup2) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(dup2)
+#endif
+#if !defined(GPSEE_NO_ecvt) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ecvt)
+#endif
+#if !defined(GPSEE_NO_encrypt) && (0 || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(encrypt)
+#endif
+#if !defined(GPSEE_NO_endgrent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(endgrent)
+#endif
+#if !defined(GPSEE_NO_endhostent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(endhostent)
+#endif
+#if !defined(GPSEE_NO_endnetent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(endnetent)
+#endif
+#if !defined(GPSEE_NO_endprotoent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(endprotoent)
+#endif
+#if !defined(GPSEE_NO_endpwent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(endpwent)
+#endif
+#if !defined(GPSEE_NO_endservent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(endservent)
+#endif
+#if !defined(GPSEE_NO_endutxent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(endutxent)
+#endif
+#if !defined(GPSEE_NO_erand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(erand48)
+#endif
+#if !defined(GPSEE_NO_erf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(erf)
+#endif
+#if !defined(GPSEE_NO_erfc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(erfc)
+#endif
+#if !defined(GPSEE_NO_erfcf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(erfcf)
+#endif
+#if !defined(GPSEE_NO_erfcl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(erfcl)
+#endif
+#if !defined(GPSEE_NO_erff) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(erff)
+#endif
+#if !defined(GPSEE_NO_erfl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(erfl)
+#endif
+#if !defined(GPSEE_NO_execl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execl)
+#endif
+#if !defined(GPSEE_NO_execle) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execle)
+#endif
+#if !defined(GPSEE_NO_execlp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execlp)
+#endif
+#if !defined(GPSEE_NO_execv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execv)
+#endif
+#if !defined(GPSEE_NO_execve) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execve)
+#endif
+#if !defined(GPSEE_NO_execvp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(execvp)
+#endif
+#if !defined(GPSEE_NO_exit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(exit)
+#endif
+#if !defined(GPSEE_NO_exp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(exp)
+#endif
+#if !defined(GPSEE_NO_exp2) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(exp2)
+#endif
+#if !defined(GPSEE_NO_exp2f) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(exp2f)
+#endif
+#if !defined(GPSEE_NO_exp2l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(exp2l)
+#endif
+#if !defined(GPSEE_NO_expf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(expf)
+#endif
+#if !defined(GPSEE_NO_expl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(expl)
+#endif
+#if !defined(GPSEE_NO_expm1) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_BSD))
+defineFunction(expm1)
+#endif
+#if !defined(GPSEE_NO_expm1f) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(expm1f)
+#endif
+#if !defined(GPSEE_NO_expm1l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(expm1l)
+#endif
+#if !defined(GPSEE_NO_fabs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fabs)
+#endif
+#if !defined(GPSEE_NO_fabsf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fabsf)
+#endif
+#if !defined(GPSEE_NO_fabsl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fabsl)
+#endif
+#if !defined(GPSEE_NO_fattach) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(fattach)
+#endif
+#if !defined(GPSEE_NO_fchdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(fchdir)
+#endif
+#if !defined(GPSEE_NO_fchmod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fchmod)
+#endif
+#if !defined(GPSEE_NO_fchown) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fchown)
+#endif
+#if !defined(GPSEE_NO_fclose) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fclose)
+#endif
+#if !defined(GPSEE_NO_fcntl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fcntl)
+#endif
+#if !defined(GPSEE_NO_fcvt) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(fcvt)
+#endif
+#if !defined(GPSEE_NO_fdatasync) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(fdatasync)
+#endif
+#if !defined(GPSEE_NO_fdetach) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(fdetach)
+#endif
+#if !defined(GPSEE_NO_fdim) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fdim)
+#endif
+#if !defined(GPSEE_NO_fdimf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fdimf)
+#endif
+#if !defined(GPSEE_NO_fdiml) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fdiml)
+#endif
+#if !defined(GPSEE_NO_fdopen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fdopen)
+#endif
+#if !defined(GPSEE_NO_feclearexcept) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(feclearexcept)
+#endif
+#if !defined(GPSEE_NO_fegetenv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fegetenv)
+#endif
+#if !defined(GPSEE_NO_fegetexceptflag) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fegetexceptflag)
+#endif
+#if !defined(GPSEE_NO_fegetround) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fegetround)
+#endif
+#if !defined(GPSEE_NO_feholdexcept) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(feholdexcept)
+#endif
+#if !defined(GPSEE_NO_feof) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(feof)
+#endif
+#if !defined(GPSEE_NO_feraiseexcept) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(feraiseexcept)
+#endif
+#if !defined(GPSEE_NO_ferror) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ferror)
+#endif
+#if !defined(GPSEE_NO_fesetenv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fesetenv)
+#endif
+#if !defined(GPSEE_NO_fesetexceptflag) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fesetexceptflag)
+#endif
+#if !defined(GPSEE_NO_fesetround) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fesetround)
+#endif
+#if !defined(GPSEE_NO_fetestexcept) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fetestexcept)
+#endif
+#if !defined(GPSEE_NO_feupdateenv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(feupdateenv)
+#endif
+#if !defined(GPSEE_NO_fflush) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fflush)
+#endif
+#if !defined(GPSEE_NO_ffs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ffs)
+#endif
+#if !defined(GPSEE_NO_fgetc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fgetc)
+#endif
+#if !defined(GPSEE_NO_fgetpos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(fgetpos)
+#endif
+#if !defined(GPSEE_NO_fgets) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fgets)
+#endif
+#if !defined(GPSEE_NO_fgetwc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fgetwc)
+#endif
+#if !defined(GPSEE_NO_fgetws) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fgetws)
+#endif
+#if !defined(GPSEE_NO_fileno) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fileno)
+#endif
+#if !defined(GPSEE_NO_flockfile) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(flockfile)
+#endif
+#if !defined(GPSEE_NO_floor) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(floor)
+#endif
+#if !defined(GPSEE_NO_floorf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(floorf)
+#endif
+#if !defined(GPSEE_NO_floorl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(floorl)
+#endif
+#if !defined(GPSEE_NO_fma) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fma)
+#endif
+#if !defined(GPSEE_NO_fmaf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmaf)
+#endif
+#if !defined(GPSEE_NO_fmal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmal)
+#endif
+#if !defined(GPSEE_NO_fmax) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmax)
+#endif
+#if !defined(GPSEE_NO_fmaxf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmaxf)
+#endif
+#if !defined(GPSEE_NO_fmaxl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmaxl)
+#endif
+#if !defined(GPSEE_NO_fmin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmin)
+#endif
+#if !defined(GPSEE_NO_fminf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fminf)
+#endif
+#if !defined(GPSEE_NO_fminl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fminl)
+#endif
+#if !defined(GPSEE_NO_fmod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(fmod)
+#endif
+#if !defined(GPSEE_NO_fmodf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmodf)
+#endif
+#if !defined(GPSEE_NO_fmodl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fmodl)
+#endif
+#if !defined(GPSEE_NO_fmtmsg) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(fmtmsg)
+#endif
+#if !defined(GPSEE_NO_fnmatch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96))
+defineFunction(fnmatch)
+#endif
+#if !defined(GPSEE_NO_fopen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fopen)
+#endif
+#if !defined(GPSEE_NO_fork) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fork)
+#endif
+#if !defined(GPSEE_NO_fpathconf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(fpathconf)
+#endif
+#if !defined(GPSEE_NO_fpclassify) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(fpclassify)
+#endif
+#if !defined(GPSEE_NO_fprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fprintf)
+#endif
+#if !defined(GPSEE_NO_fputc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fputc)
+#endif
+#if !defined(GPSEE_NO_fputs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fputs)
+#endif
+#if !defined(GPSEE_NO_fputwc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fputwc)
+#endif
+#if !defined(GPSEE_NO_fputws) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fputws)
+#endif
+#if !defined(GPSEE_NO_fread) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fread)
+#endif
+#if !defined(GPSEE_NO_free) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(free)
+#endif
+#if !defined(GPSEE_NO_freeaddrinfo) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(freeaddrinfo)
+#endif
+#if !defined(GPSEE_NO_freopen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(freopen)
+#endif
+#if !defined(GPSEE_NO_frexp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(frexp)
+#endif
+#if !defined(GPSEE_NO_frexpf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(frexpf)
+#endif
+#if !defined(GPSEE_NO_frexpl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(frexpl)
+#endif
+#if !defined(GPSEE_NO_fscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fscanf)
+#endif
+#if !defined(GPSEE_NO_fseek) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fseek)
+#endif
+#if !defined(GPSEE_NO_fseeko) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(fseeko)
+#endif
+#if !defined(GPSEE_NO_fsetpos) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(fsetpos)
+#endif
+#if !defined(GPSEE_NO_fstat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fstat)
+#endif
+#if !defined(GPSEE_NO_fstatvfs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(fstatvfs)
+#endif
+#if !defined(GPSEE_NO_fsync) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fsync)
+#endif
+#if !defined(GPSEE_NO_ftell) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ftell)
+#endif
+#if !defined(GPSEE_NO_ftello) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(ftello)
+#endif
+#if !defined(GPSEE_NO_ftime) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ftime)
+#endif
+#if !defined(GPSEE_NO_ftok) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(ftok)
+#endif
+#if !defined(GPSEE_NO_ftruncate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(ftruncate)
+#endif
+#if !defined(GPSEE_NO_ftrylockfile) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(ftrylockfile)
+#endif
+#if !defined(GPSEE_NO_ftw) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(ftw)
+#endif
+#if !defined(GPSEE_NO_funlockfile) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(funlockfile)
+#endif
+#if !defined(GPSEE_NO_fwide) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fwide)
+#endif
+#if !defined(GPSEE_NO_fwprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fwprintf)
+#endif
+#if !defined(GPSEE_NO_fwrite) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(fwrite)
+#endif
+#if !defined(GPSEE_NO_fwscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(fwscanf)
+#endif
+#if !defined(GPSEE_NO_gai_strerror) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(gai_strerror)
+#endif
+#if !defined(GPSEE_NO_gcvt) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gcvt)
+#endif
+#if !defined(GPSEE_NO_getaddrinfo) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(getaddrinfo)
+#endif
+#if !defined(GPSEE_NO_getc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getc)
+#endif
+#if !defined(GPSEE_NO_getc_unlocked) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getc_unlocked)
+#endif
+#if !defined(GPSEE_NO_getchar) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getchar)
+#endif
+#if !defined(GPSEE_NO_getchar_unlocked) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getchar_unlocked)
+#endif
+#if !defined(GPSEE_NO_getcontext) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getcontext)
+#endif
+#if !defined(GPSEE_NO_getcwd) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(getcwd)
+#endif
+#if !defined(GPSEE_NO_getdate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getdate)
+#endif
+#if !defined(GPSEE_NO_getegid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getegid)
+#endif
+#if !defined(GPSEE_NO_getenv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getenv)
+#endif
+#if !defined(GPSEE_NO_geteuid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(geteuid)
+#endif
+#if !defined(GPSEE_NO_getgid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getgid)
+#endif
+#if !defined(GPSEE_NO_getgrent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getgrent)
+#endif
+#if !defined(GPSEE_NO_getgrgid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getgrgid)
+#endif
+#if !defined(GPSEE_NO_getgrgid_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getgrgid_r)
+#endif
+#if !defined(GPSEE_NO_getgrnam) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(getgrnam)
+#endif
+#if !defined(GPSEE_NO_getgrnam_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getgrnam_r)
+#endif
+#if !defined(GPSEE_NO_getgroups) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getgroups)
+#endif
+#if !defined(GPSEE_NO_gethostbyaddr) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gethostbyaddr)
+#endif
+#if !defined(GPSEE_NO_gethostbyname) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gethostbyname)
+#endif
+#if !defined(GPSEE_NO_gethostent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gethostent)
+#endif
+#if !defined(GPSEE_NO_gethostid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gethostid)
+#endif
+#if !defined(GPSEE_NO_gethostname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(gethostname)
+#endif
+#if !defined(GPSEE_NO_getitimer) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getitimer)
+#endif
+#if !defined(GPSEE_NO_getlogin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getlogin)
+#endif
+#if !defined(GPSEE_NO_getlogin_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getlogin_r)
+#endif
+#if !defined(GPSEE_NO_getmsg) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getmsg)
+#endif
+#if !defined(GPSEE_NO_getnameinfo) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(getnameinfo)
+#endif
+#if !defined(GPSEE_NO_getnetbyaddr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getnetbyaddr)
+#endif
+#if !defined(GPSEE_NO_getnetbyname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getnetbyname)
+#endif
+#if !defined(GPSEE_NO_getnetent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getnetent)
+#endif
+#if !defined(GPSEE_NO_getopt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getopt)
+#endif
+#if !defined(GPSEE_NO_getpeername) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getpeername)
+#endif
+#if !defined(GPSEE_NO_getpgid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getpgid)
+#endif
+#if !defined(GPSEE_NO_getpgrp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getpgrp)
+#endif
+#if !defined(GPSEE_NO_getpid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getpid)
+#endif
+#if !defined(GPSEE_NO_getpmsg) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getpmsg)
+#endif
+#if !defined(GPSEE_NO_getppid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getppid)
+#endif
+#if !defined(GPSEE_NO_getpriority) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getpriority)
+#endif
+#if !defined(GPSEE_NO_getprotobyname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getprotobyname)
+#endif
+#if !defined(GPSEE_NO_getprotobynumber) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getprotobynumber)
+#endif
+#if !defined(GPSEE_NO_getprotoent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getprotoent)
+#endif
+#if !defined(GPSEE_NO_getpwent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getpwent)
+#endif
+#if !defined(GPSEE_NO_getpwnam) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getpwnam)
+#endif
+#if !defined(GPSEE_NO_getpwnam_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getpwnam_r)
+#endif
+#if !defined(GPSEE_NO_getpwuid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getpwuid)
+#endif
+#if !defined(GPSEE_NO_getpwuid_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(getpwuid_r)
+#endif
+#if !defined(GPSEE_NO_getrlimit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getrlimit)
+#endif
+#if !defined(GPSEE_NO_getrusage) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getrusage)
+#endif
+#if !defined(GPSEE_NO_gets) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(gets)
+#endif
+#if !defined(GPSEE_NO_getservbyname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getservbyname)
+#endif
+#if !defined(GPSEE_NO_getservbyport) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getservbyport)
+#endif
+#if !defined(GPSEE_NO_getservent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getservent)
+#endif
+#if !defined(GPSEE_NO_getsid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getsid)
+#endif
+#if !defined(GPSEE_NO_getsockname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getsockname)
+#endif
+#if !defined(GPSEE_NO_getsockopt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getsockopt)
+#endif
+#if !defined(GPSEE_NO_getsubopt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(getsubopt)
+#endif
+#if !defined(GPSEE_NO_gettimeofday) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(gettimeofday)
+#endif
+#if !defined(GPSEE_NO_getuid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(getuid)
+#endif
+#if !defined(GPSEE_NO_getutxent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(getutxent)
+#endif
+#if !defined(GPSEE_NO_getutxid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(getutxid)
+#endif
+#if !defined(GPSEE_NO_getutxline) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(getutxline)
+#endif
+#if !defined(GPSEE_NO_getwc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(getwc)
+#endif
+#if !defined(GPSEE_NO_getwchar) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(getwchar)
+#endif
+#if !defined(GPSEE_NO_getwd) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(getwd)
+#endif
+#if !defined(GPSEE_NO_glob) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(glob)
+#endif
+#if !defined(GPSEE_NO_globfree) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(globfree)
+#endif
+#if !defined(GPSEE_NO_gmtime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(gmtime)
+#endif
+#if !defined(GPSEE_NO_gmtime_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(gmtime_r)
+#endif
+#if !defined(GPSEE_NO_grantpt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(grantpt)
+#endif
+#if !defined(GPSEE_NO_hcreate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(hcreate)
+#endif
+#if !defined(GPSEE_NO_hdestroy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(hdestroy)
+#endif
+#if !defined(GPSEE_NO_hsearch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(hsearch)
+#endif
+#if !defined(GPSEE_NO_htonl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(htonl)
+#endif
+#if !defined(GPSEE_NO_htons) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(htons)
+#endif
+#if !defined(GPSEE_NO_hypot) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(hypot)
+#endif
+#if !defined(GPSEE_NO_hypotf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(hypotf)
+#endif
+#if !defined(GPSEE_NO_hypotl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(hypotl)
+#endif
+#if !defined(GPSEE_NO_iconv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(iconv)
+#endif
+#if !defined(GPSEE_NO_iconv_close) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(iconv_close)
+#endif
+#if !defined(GPSEE_NO_iconv_open) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(iconv_open)
+#endif
+#if !defined(GPSEE_NO_if_freenameindex) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(if_freenameindex)
+#endif
+#if !defined(GPSEE_NO_if_indextoname) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(if_indextoname)
+#endif
+#if !defined(GPSEE_NO_if_nameindex) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(if_nameindex)
+#endif
+#if !defined(GPSEE_NO_if_nametoindex) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(if_nametoindex)
+#endif
+#if !defined(GPSEE_NO_ilogb) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99))
+defineFunction(ilogb)
+#endif
+#if !defined(GPSEE_NO_ilogbf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ilogbf)
+#endif
+#if !defined(GPSEE_NO_ilogbl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ilogbl)
+#endif
+#if !defined(GPSEE_NO_imaxabs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(imaxabs)
+#endif
+#if !defined(GPSEE_NO_imaxdiv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(imaxdiv)
+#endif
+#if !defined(GPSEE_NO_index) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(index)
+#endif
+#if !defined(GPSEE_NO_inet_addr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(inet_addr)
+#endif
+#if !defined(GPSEE_NO_inet_ntoa) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(inet_ntoa)
+#endif
+#if !defined(GPSEE_NO_inet_ntop) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(inet_ntop)
+#endif
+#if !defined(GPSEE_NO_inet_pton) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(inet_pton)
+#endif
+#if !defined(GPSEE_NO_initstate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(initstate)
+#endif
+#if !defined(GPSEE_NO_insque) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(insque)
+#endif
+#if !defined(GPSEE_NO_ioctl) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ioctl)
+#endif
+#if !defined(GPSEE_NO_isalnum) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isalnum)
+#endif
+#if !defined(GPSEE_NO_isalpha) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isalpha)
+#endif
+#if !defined(GPSEE_NO_isascii) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isascii)
+#endif
+#if !defined(GPSEE_NO_isastream) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(isastream)
+#endif
+#if !defined(GPSEE_NO_isatty) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isatty)
+#endif
+#if !defined(GPSEE_NO_isblank) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isblank)
+#endif
+#if !defined(GPSEE_NO_iscntrl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(iscntrl)
+#endif
+#if !defined(GPSEE_NO_isdigit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isdigit)
+#endif
+#if !defined(GPSEE_NO_isfinite) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isfinite)
+#endif
+#if !defined(GPSEE_NO_isgraph) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isgraph)
+#endif
+#if !defined(GPSEE_NO_isgreater) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isgreater)
+#endif
+#if !defined(GPSEE_NO_isgreaterequal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isgreaterequal)
+#endif
+#if !defined(GPSEE_NO_isinf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isinf)
+#endif
+#if !defined(GPSEE_NO_isless) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isless)
+#endif
+#if !defined(GPSEE_NO_islessequal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(islessequal)
+#endif
+#if !defined(GPSEE_NO_islessgreater) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(islessgreater)
+#endif
+#if !defined(GPSEE_NO_islower) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(islower)
+#endif
+#if !defined(GPSEE_NO_isnan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(isnan)
+#endif
+#if !defined(GPSEE_NO_isnormal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isnormal)
+#endif
+#if !defined(GPSEE_NO_isprint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isprint)
+#endif
+#if !defined(GPSEE_NO_ispunct) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ispunct)
+#endif
+#if !defined(GPSEE_NO_isspace) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isspace)
+#endif
+#if !defined(GPSEE_NO_isunordered) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(isunordered)
+#endif
+#if !defined(GPSEE_NO_isupper) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isupper)
+#endif
+#if !defined(GPSEE_NO_iswalnum) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswalnum)
+#endif
+#if !defined(GPSEE_NO_iswalpha) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswalpha)
+#endif
+#if !defined(GPSEE_NO_iswblank) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(iswblank)
+#endif
+#if !defined(GPSEE_NO_iswcntrl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswcntrl)
+#endif
+#if !defined(GPSEE_NO_iswctype) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswctype)
+#endif
+#if !defined(GPSEE_NO_iswdigit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswdigit)
+#endif
+#if !defined(GPSEE_NO_iswgraph) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswgraph)
+#endif
+#if !defined(GPSEE_NO_iswlower) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswlower)
+#endif
+#if !defined(GPSEE_NO_iswprint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswprint)
+#endif
+#if !defined(GPSEE_NO_iswpunct) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswpunct)
+#endif
+#if !defined(GPSEE_NO_iswspace) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswspace)
+#endif
+#if !defined(GPSEE_NO_iswupper) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswupper)
+#endif
+#if !defined(GPSEE_NO_iswxdigit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(iswxdigit)
+#endif
+#if !defined(GPSEE_NO_isxdigit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(isxdigit)
+#endif
+#if !defined(GPSEE_NO_j0) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(j0)
+#endif
+#if !defined(GPSEE_NO_j1) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(j1)
+#endif
+#if !defined(GPSEE_NO_jn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(jn)
+#endif
+#if !defined(GPSEE_NO_jrand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(jrand48)
+#endif
+#if !defined(GPSEE_NO_kill) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(kill)
+#endif
+#if !defined(GPSEE_NO_killpg) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(killpg)
+#endif
+#if !defined(GPSEE_NO_l64a) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(l64a)
+#endif
+#if !defined(GPSEE_NO_labs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(labs)
+#endif
+#if !defined(GPSEE_NO_lchown) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lchown)
+#endif
+#if !defined(GPSEE_NO_lcong48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lcong48)
+#endif
+#if !defined(GPSEE_NO_ldexp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ldexp)
+#endif
+#if !defined(GPSEE_NO_ldexpf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ldexpf)
+#endif
+#if !defined(GPSEE_NO_ldexpl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(ldexpl)
+#endif
+#if !defined(GPSEE_NO_ldiv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(ldiv)
+#endif
+#if !defined(GPSEE_NO_lfind) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lfind)
+#endif
+#if !defined(GPSEE_NO_lgamma) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(lgamma)
+#endif
+#if !defined(GPSEE_NO_lgammaf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lgammaf)
+#endif
+#if !defined(GPSEE_NO_lgammal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lgammal)
+#endif
+#if !defined(GPSEE_NO_link) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(link)
+#endif
+#if !defined(GPSEE_NO_lio_listio) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(lio_listio)
+#endif
+#if !defined(GPSEE_NO_listen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(listen)
+#endif
+#if !defined(GPSEE_NO_llabs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llabs)
+#endif
+#if !defined(GPSEE_NO_lldiv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lldiv)
+#endif
+#if !defined(GPSEE_NO_llrint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llrint)
+#endif
+#if !defined(GPSEE_NO_llrintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llrintf)
+#endif
+#if !defined(GPSEE_NO_llrintl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llrintl)
+#endif
+#if !defined(GPSEE_NO_llround) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llround)
+#endif
+#if !defined(GPSEE_NO_llroundf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llroundf)
+#endif
+#if !defined(GPSEE_NO_llroundl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(llroundl)
+#endif
+#if !defined(GPSEE_NO_localeconv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(localeconv)
+#endif
+#if !defined(GPSEE_NO_localtime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(localtime)
+#endif
+#if !defined(GPSEE_NO_localtime_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(localtime_r)
+#endif
+#if !defined(GPSEE_NO_lockf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lockf)
+#endif
+#if !defined(GPSEE_NO_log) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(log)
+#endif
+#if !defined(GPSEE_NO_log10) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(log10)
+#endif
+#if !defined(GPSEE_NO_log10f) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log10f)
+#endif
+#if !defined(GPSEE_NO_log10l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log10l)
+#endif
+#if !defined(GPSEE_NO_log1p) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_BSD))
+defineFunction(log1p)
+#endif
+#if !defined(GPSEE_NO_log1pf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log1pf)
+#endif
+#if !defined(GPSEE_NO_log1pl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log1pl)
+#endif
+#if !defined(GPSEE_NO_log2) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log2)
+#endif
+#if !defined(GPSEE_NO_log2f) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log2f)
+#endif
+#if !defined(GPSEE_NO_log2l) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(log2l)
+#endif
+#if !defined(GPSEE_NO_logb) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(logb)
+#endif
+#if !defined(GPSEE_NO_logbf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(logbf)
+#endif
+#if !defined(GPSEE_NO_logbl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(logbl)
+#endif
+#if !defined(GPSEE_NO_logf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(logf)
+#endif
+#if !defined(GPSEE_NO_logl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(logl)
+#endif
+#if !defined(GPSEE_NO_longjmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(longjmp)
+#endif
+#if !defined(GPSEE_NO_lrand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lrand48)
+#endif
+#if !defined(GPSEE_NO_lrint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lrint)
+#endif
+#if !defined(GPSEE_NO_lrintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lrintf)
+#endif
+#if !defined(GPSEE_NO_lrintl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lrintl)
+#endif
+#if !defined(GPSEE_NO_lround) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lround)
+#endif
+#if !defined(GPSEE_NO_lroundf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lroundf)
+#endif
+#if !defined(GPSEE_NO_lroundl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(lroundl)
+#endif
+#if !defined(GPSEE_NO_lsearch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(lsearch)
+#endif
+#if !defined(GPSEE_NO_lseek) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(lseek)
+#endif
+#if !defined(GPSEE_NO_lstat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(lstat)
+#endif
+#if !defined(GPSEE_NO_makecontext) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(makecontext)
+#endif
+#if !defined(GPSEE_NO_malloc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(malloc)
+#endif
+#if !defined(GPSEE_NO_mblen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(mblen)
+#endif
+#if !defined(GPSEE_NO_mbrlen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(mbrlen)
+#endif
+#if !defined(GPSEE_NO_mbrtowc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(mbrtowc)
+#endif
+#if !defined(GPSEE_NO_mbsinit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(mbsinit)
+#endif
+#if !defined(GPSEE_NO_mbsrtowcs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(mbsrtowcs)
+#endif
+#if !defined(GPSEE_NO_mbstowcs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(mbstowcs)
+#endif
+#if !defined(GPSEE_NO_mbtowc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(mbtowc)
+#endif
+#if !defined(GPSEE_NO_memccpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(memccpy)
+#endif
+#if !defined(GPSEE_NO_memchr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(memchr)
+#endif
+#if !defined(GPSEE_NO_memcmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(memcmp)
+#endif
+#if !defined(GPSEE_NO_memcpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(memcpy)
+#endif
+#if !defined(GPSEE_NO_memmove) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(memmove)
+#endif
+#if !defined(GPSEE_NO_memset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(memset)
+#endif
+#if !defined(GPSEE_NO_mkdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(mkdir)
+#endif
+#if !defined(GPSEE_NO_mkfifo) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(mkfifo)
+#endif
+#if !defined(GPSEE_NO_mknod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(mknod)
+#endif
+#if !defined(GPSEE_NO_mkstemp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(mkstemp)
+#endif
+#if !defined(GPSEE_NO_mktemp) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(mktemp)
+#endif
+#if !defined(GPSEE_NO_mktime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(mktime)
+#endif
+#if !defined(GPSEE_NO_mlock) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mlock)
+#endif
+#if !defined(GPSEE_NO_mlockall) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mlockall)
+#endif
+#if !defined(GPSEE_NO_mmap) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(mmap)
+#endif
+#if !defined(GPSEE_NO_modf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(modf)
+#endif
+#if !defined(GPSEE_NO_modff) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(modff)
+#endif
+#if !defined(GPSEE_NO_modfl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(modfl)
+#endif
+#if !defined(GPSEE_NO_mprotect) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(mprotect)
+#endif
+#if !defined(GPSEE_NO_mq_close) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_close)
+#endif
+#if !defined(GPSEE_NO_mq_getattr) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_getattr)
+#endif
+#if !defined(GPSEE_NO_mq_notify) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_notify)
+#endif
+#if !defined(GPSEE_NO_mq_open) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_open)
+#endif
+#if !defined(GPSEE_NO_mq_receive) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_receive)
+#endif
+#if !defined(GPSEE_NO_mq_send) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_send)
+#endif
+#if !defined(GPSEE_NO_mq_setattr) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_setattr)
+#endif
+#if !defined(GPSEE_NO_mq_timedreceive) && (0)
+defineFunction(mq_timedreceive)
+#endif
+#if !defined(GPSEE_NO_mq_timedsend) && (0)
+defineFunction(mq_timedsend)
+#endif
+#if !defined(GPSEE_NO_mq_unlink) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(mq_unlink)
+#endif
+#if !defined(GPSEE_NO_mrand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(mrand48)
+#endif
+#if !defined(GPSEE_NO_msgctl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(msgctl)
+#endif
+#if !defined(GPSEE_NO_msgget) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(msgget)
+#endif
+#if !defined(GPSEE_NO_msgrcv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(msgrcv)
+#endif
+#if !defined(GPSEE_NO_msgsnd) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(msgsnd)
+#endif
+#if !defined(GPSEE_NO_msync) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96))
+defineFunction(msync)
+#endif
+#if !defined(GPSEE_NO_munlock) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(munlock)
+#endif
+#if !defined(GPSEE_NO_munlockall) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(munlockall)
+#endif
+#if !defined(GPSEE_NO_munmap) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(munmap)
+#endif
+#if !defined(GPSEE_NO_nan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nan)
+#endif
+#if !defined(GPSEE_NO_nanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nanf)
+#endif
+#if !defined(GPSEE_NO_nanl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nanl)
+#endif
+#if !defined(GPSEE_NO_nanosleep) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(nanosleep)
+#endif
+#if !defined(GPSEE_NO_nearbyint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nearbyint)
+#endif
+#if !defined(GPSEE_NO_nearbyintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nearbyintf)
+#endif
+#if !defined(GPSEE_NO_nearbyintl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nearbyintl)
+#endif
+#if !defined(GPSEE_NO_nextafter) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID))
+defineFunction(nextafter)
+#endif
+#if !defined(GPSEE_NO_nextafterf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nextafterf)
+#endif
+#if !defined(GPSEE_NO_nextafterl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nextafterl)
+#endif
+#if !defined(GPSEE_NO_nexttoward) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nexttoward)
+#endif
+#if !defined(GPSEE_NO_nexttowardf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nexttowardf)
+#endif
+#if !defined(GPSEE_NO_nexttowardl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(nexttowardl)
+#endif
+#if !defined(GPSEE_NO_nftw) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(nftw)
+#endif
+#if !defined(GPSEE_NO_nice) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(nice)
+#endif
+#if !defined(GPSEE_NO_nl_langinfo) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(nl_langinfo)
+#endif
+#if !defined(GPSEE_NO_nrand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(nrand48)
+#endif
+#if !defined(GPSEE_NO_ntohl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ntohl)
+#endif
+#if !defined(GPSEE_NO_ntohs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ntohs)
+#endif
+#if !defined(GPSEE_NO_open) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(open)
+#endif
+#if !defined(GPSEE_NO_opendir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(opendir)
+#endif
+#if !defined(GPSEE_NO_openlog) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(openlog)
+#endif
+#if !defined(GPSEE_NO_pathconf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(pathconf)
+#endif
+#if !defined(GPSEE_NO_pause) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(pause)
+#endif
+#if !defined(GPSEE_NO_pclose) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(pclose)
+#endif
+#if !defined(GPSEE_NO_perror) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(perror)
+#endif
+#if !defined(GPSEE_NO_pipe) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(pipe)
+#endif
+#if !defined(GPSEE_NO_poll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(poll)
+#endif
+#if !defined(GPSEE_NO_popen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(popen)
+#endif
+#if !defined(GPSEE_NO_posix_fadvise) && (0)
+defineFunction(posix_fadvise)
+#endif
+#if !defined(GPSEE_NO_posix_fallocate) && (0)
+defineFunction(posix_fallocate)
+#endif
+#if !defined(GPSEE_NO_posix_madvise) && (0)
+defineFunction(posix_madvise)
+#endif
+#if !defined(GPSEE_NO_posix_mem_offset) && (0)
+defineFunction(posix_mem_offset)
+#endif
+#if !defined(GPSEE_NO_posix_memalign) && (0)
+defineFunction(posix_memalign)
+#endif
+#if !defined(GPSEE_NO_posix_openpt) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(posix_openpt)
+#endif
+#if !defined(GPSEE_NO_posix_spawn) && (0)
+defineFunction(posix_spawn)
+#endif
+#if !defined(GPSEE_NO_posix_spawn_file_actions_addclose) && (0)
+defineFunction(posix_spawn_file_actions_addclose)
+#endif
+#if !defined(GPSEE_NO_posix_spawn_file_actions_adddup2) && (0)
+defineFunction(posix_spawn_file_actions_adddup2)
+#endif
+#if !defined(GPSEE_NO_posix_spawn_file_actions_addopen) && (0)
+defineFunction(posix_spawn_file_actions_addopen)
+#endif
+#if !defined(GPSEE_NO_posix_spawn_file_actions_destroy) && (0)
+defineFunction(posix_spawn_file_actions_destroy)
+#endif
+#if !defined(GPSEE_NO_posix_spawn_file_actions_init) && (0)
+defineFunction(posix_spawn_file_actions_init)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_destroy) && (0)
+defineFunction(posix_spawnattr_destroy)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getflags) && (0)
+defineFunction(posix_spawnattr_getflags)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getpgroup) && (0)
+defineFunction(posix_spawnattr_getpgroup)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getschedparam) && (0)
+defineFunction(posix_spawnattr_getschedparam)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getschedpolicy) && (0)
+defineFunction(posix_spawnattr_getschedpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getsigdefault) && (0)
+defineFunction(posix_spawnattr_getsigdefault)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_getsigmask) && (0)
+defineFunction(posix_spawnattr_getsigmask)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_init) && (0)
+defineFunction(posix_spawnattr_init)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setflags) && (0)
+defineFunction(posix_spawnattr_setflags)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setpgroup) && (0)
+defineFunction(posix_spawnattr_setpgroup)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setschedparam) && (0)
+defineFunction(posix_spawnattr_setschedparam)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setschedpolicy) && (0)
+defineFunction(posix_spawnattr_setschedpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setsigdefault) && (0)
+defineFunction(posix_spawnattr_setsigdefault)
+#endif
+#if !defined(GPSEE_NO_posix_spawnattr_setsigmask) && (0)
+defineFunction(posix_spawnattr_setsigmask)
+#endif
+#if !defined(GPSEE_NO_posix_spawnp) && (0)
+defineFunction(posix_spawnp)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_destroy) && (0)
+defineFunction(posix_trace_attr_destroy)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getclockres) && (0)
+defineFunction(posix_trace_attr_getclockres)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getcreatetime) && (0)
+defineFunction(posix_trace_attr_getcreatetime)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getgenversion) && (0)
+defineFunction(posix_trace_attr_getgenversion)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getinherited) && (0)
+defineFunction(posix_trace_attr_getinherited)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getlogfullpolicy) && (0)
+defineFunction(posix_trace_attr_getlogfullpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getlogsize) && (0)
+defineFunction(posix_trace_attr_getlogsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getmaxdatasize) && (0)
+defineFunction(posix_trace_attr_getmaxdatasize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getmaxsystemeventsize) && (0)
+defineFunction(posix_trace_attr_getmaxsystemeventsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getmaxusereventsize) && (0)
+defineFunction(posix_trace_attr_getmaxusereventsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getname) && (0)
+defineFunction(posix_trace_attr_getname)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getstreamfullpolicy) && (0)
+defineFunction(posix_trace_attr_getstreamfullpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_getstreamsize) && (0)
+defineFunction(posix_trace_attr_getstreamsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_init) && (0)
+defineFunction(posix_trace_attr_init)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setinherited) && (0)
+defineFunction(posix_trace_attr_setinherited)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setlogfullpolicy) && (0)
+defineFunction(posix_trace_attr_setlogfullpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setlogsize) && (0)
+defineFunction(posix_trace_attr_setlogsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setmaxdatasize) && (0)
+defineFunction(posix_trace_attr_setmaxdatasize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setname) && (0)
+defineFunction(posix_trace_attr_setname)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setstreamfullpolicy) && (0)
+defineFunction(posix_trace_attr_setstreamfullpolicy)
+#endif
+#if !defined(GPSEE_NO_posix_trace_attr_setstreamsize) && (0)
+defineFunction(posix_trace_attr_setstreamsize)
+#endif
+#if !defined(GPSEE_NO_posix_trace_clear) && (0)
+defineFunction(posix_trace_clear)
+#endif
+#if !defined(GPSEE_NO_posix_trace_close) && (0)
+defineFunction(posix_trace_close)
+#endif
+#if !defined(GPSEE_NO_posix_trace_create) && (0)
+defineFunction(posix_trace_create)
+#endif
+#if !defined(GPSEE_NO_posix_trace_create_withlog) && (0)
+defineFunction(posix_trace_create_withlog)
+#endif
+#if !defined(GPSEE_NO_posix_trace_event) && (0)
+defineFunction(posix_trace_event)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventid_equal) && (0)
+defineFunction(posix_trace_eventid_equal)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventid_get_name) && (0)
+defineFunction(posix_trace_eventid_get_name)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventid_open) && (0)
+defineFunction(posix_trace_eventid_open)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventset_add) && (0)
+defineFunction(posix_trace_eventset_add)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventset_del) && (0)
+defineFunction(posix_trace_eventset_del)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventset_empty) && (0)
+defineFunction(posix_trace_eventset_empty)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventset_fill) && (0)
+defineFunction(posix_trace_eventset_fill)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventset_ismember) && (0)
+defineFunction(posix_trace_eventset_ismember)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventtypelist_getnext_id) && (0)
+defineFunction(posix_trace_eventtypelist_getnext_id)
+#endif
+#if !defined(GPSEE_NO_posix_trace_eventtypelist_rewind) && (0)
+defineFunction(posix_trace_eventtypelist_rewind)
+#endif
+#if !defined(GPSEE_NO_posix_trace_flush) && (0)
+defineFunction(posix_trace_flush)
+#endif
+#if !defined(GPSEE_NO_posix_trace_get_attr) && (0)
+defineFunction(posix_trace_get_attr)
+#endif
+#if !defined(GPSEE_NO_posix_trace_get_filter) && (0)
+defineFunction(posix_trace_get_filter)
+#endif
+#if !defined(GPSEE_NO_posix_trace_get_status) && (0)
+defineFunction(posix_trace_get_status)
+#endif
+#if !defined(GPSEE_NO_posix_trace_getnext_event) && (0)
+defineFunction(posix_trace_getnext_event)
+#endif
+#if !defined(GPSEE_NO_posix_trace_open) && (0)
+defineFunction(posix_trace_open)
+#endif
+#if !defined(GPSEE_NO_posix_trace_rewind) && (0)
+defineFunction(posix_trace_rewind)
+#endif
+#if !defined(GPSEE_NO_posix_trace_set_filter) && (0)
+defineFunction(posix_trace_set_filter)
+#endif
+#if !defined(GPSEE_NO_posix_trace_shutdown) && (0)
+defineFunction(posix_trace_shutdown)
+#endif
+#if !defined(GPSEE_NO_posix_trace_start) && (0)
+defineFunction(posix_trace_start)
+#endif
+#if !defined(GPSEE_NO_posix_trace_stop) && (0)
+defineFunction(posix_trace_stop)
+#endif
+#if !defined(GPSEE_NO_posix_trace_timedgetnext_event) && (0)
+defineFunction(posix_trace_timedgetnext_event)
+#endif
+#if !defined(GPSEE_NO_posix_trace_trid_eventid_open) && (0)
+defineFunction(posix_trace_trid_eventid_open)
+#endif
+#if !defined(GPSEE_NO_posix_trace_trygetnext_event) && (0)
+defineFunction(posix_trace_trygetnext_event)
+#endif
+#if !defined(GPSEE_NO_posix_typed_mem_get_info) && (0)
+defineFunction(posix_typed_mem_get_info)
+#endif
+#if !defined(GPSEE_NO_posix_typed_mem_open) && (0)
+defineFunction(posix_typed_mem_open)
+#endif
+#if !defined(GPSEE_NO_pow) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(pow)
+#endif
+#if !defined(GPSEE_NO_powf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(powf)
+#endif
+#if !defined(GPSEE_NO_powl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(powl)
+#endif
+#if !defined(GPSEE_NO_pread) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pread)
+#endif
+#if !defined(GPSEE_NO_printf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(printf)
+#endif
+#if !defined(GPSEE_NO_pselect) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(pselect)
+#endif
+#if !defined(GPSEE_NO_pthread_atfork) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_atfork)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_destroy) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getdetachstate) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_getdetachstate)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getguardsize) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_attr_getguardsize)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getinheritsched) && (0)
+defineFunction(pthread_attr_getinheritsched)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getschedparam) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_getschedparam)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getschedpolicy) && (0)
+defineFunction(pthread_attr_getschedpolicy)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getscope) && (0)
+defineFunction(pthread_attr_getscope)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getstack) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(pthread_attr_getstack)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getstackaddr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_attr_getstackaddr)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_getstacksize) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_attr_getstacksize)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_init) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_init)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setdetachstate) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_setdetachstate)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setguardsize) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_attr_setguardsize)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setinheritsched) && (0)
+defineFunction(pthread_attr_setinheritsched)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setschedparam) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_attr_setschedparam)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setschedpolicy) && (0)
+defineFunction(pthread_attr_setschedpolicy)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setscope) && (0)
+defineFunction(pthread_attr_setscope)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setstack) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(pthread_attr_setstack)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setstackaddr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_attr_setstackaddr)
+#endif
+#if !defined(GPSEE_NO_pthread_attr_setstacksize) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_attr_setstacksize)
+#endif
+#if !defined(GPSEE_NO_pthread_barrier_destroy) && (0)
+defineFunction(pthread_barrier_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_barrier_init) && (0)
+defineFunction(pthread_barrier_init)
+#endif
+#if !defined(GPSEE_NO_pthread_barrier_wait) && (0)
+defineFunction(pthread_barrier_wait)
+#endif
+#if !defined(GPSEE_NO_pthread_barrierattr_destroy) && (0)
+defineFunction(pthread_barrierattr_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_barrierattr_getpshared) && (0)
+defineFunction(pthread_barrierattr_getpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_barrierattr_init) && (0)
+defineFunction(pthread_barrierattr_init)
+#endif
+#if !defined(GPSEE_NO_pthread_barrierattr_setpshared) && (0)
+defineFunction(pthread_barrierattr_setpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_cancel) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cancel)
+#endif
+#if !defined(GPSEE_NO_pthread_cleanup_pop) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cleanup_pop)
+#endif
+#if !defined(GPSEE_NO_pthread_cleanup_push) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cleanup_push)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_broadcast) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_broadcast)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_destroy) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_init) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_init)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_signal) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_signal)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_timedwait) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_timedwait)
+#endif
+#if !defined(GPSEE_NO_pthread_cond_wait) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_cond_wait)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_destroy) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_condattr_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_getclock) && (0)
+defineFunction(pthread_condattr_getclock)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_getpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_condattr_getpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_init) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_condattr_init)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_setclock) && (0)
+defineFunction(pthread_condattr_setclock)
+#endif
+#if !defined(GPSEE_NO_pthread_condattr_setpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_condattr_setpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_create) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_create)
+#endif
+#if !defined(GPSEE_NO_pthread_detach) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_detach)
+#endif
+#if !defined(GPSEE_NO_pthread_equal) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_equal)
+#endif
+#if !defined(GPSEE_NO_pthread_exit) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_exit)
+#endif
+#if !defined(GPSEE_NO_pthread_getconcurrency) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_getconcurrency)
+#endif
+#if !defined(GPSEE_NO_pthread_getcpuclockid) && (0)
+defineFunction(pthread_getcpuclockid)
+#endif
+#if !defined(GPSEE_NO_pthread_getschedparam) && (0)
+defineFunction(pthread_getschedparam)
+#endif
+#if !defined(GPSEE_NO_pthread_getspecific) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_getspecific)
+#endif
+#if !defined(GPSEE_NO_pthread_join) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_join)
+#endif
+#if !defined(GPSEE_NO_pthread_key_create) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_key_create)
+#endif
+#if !defined(GPSEE_NO_pthread_key_delete) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_key_delete)
+#endif
+#if !defined(GPSEE_NO_pthread_kill) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_kill)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_destroy) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutex_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_getprioceiling) && (0)
+defineFunction(pthread_mutex_getprioceiling)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_init) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutex_init)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_lock) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutex_lock)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_setprioceiling) && (0)
+defineFunction(pthread_mutex_setprioceiling)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_timedlock) && (0)
+defineFunction(pthread_mutex_timedlock)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_trylock) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutex_trylock)
+#endif
+#if !defined(GPSEE_NO_pthread_mutex_unlock) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutex_unlock)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_destroy) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutexattr_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_getprioceiling) && (0)
+defineFunction(pthread_mutexattr_getprioceiling)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_getprotocol) && (0)
+defineFunction(pthread_mutexattr_getprotocol)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_getpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_mutexattr_getpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_gettype) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_mutexattr_gettype)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_init) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_mutexattr_init)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_setprioceiling) && (0)
+defineFunction(pthread_mutexattr_setprioceiling)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_setprotocol) && (0)
+defineFunction(pthread_mutexattr_setprotocol)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_setpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_mutexattr_setpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_mutexattr_settype) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_mutexattr_settype)
+#endif
+#if !defined(GPSEE_NO_pthread_once) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_once)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_destroy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_init) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_init)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_rdlock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_rdlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_timedrdlock) && (0)
+defineFunction(pthread_rwlock_timedrdlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_timedwrlock) && (0)
+defineFunction(pthread_rwlock_timedwrlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_tryrdlock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_tryrdlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_trywrlock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_trywrlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_unlock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_unlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlock_wrlock) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlock_wrlock)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlockattr_destroy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlockattr_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlockattr_getpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_rwlockattr_getpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlockattr_init) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_rwlockattr_init)
+#endif
+#if !defined(GPSEE_NO_pthread_rwlockattr_setpshared) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U95))
+defineFunction(pthread_rwlockattr_setpshared)
+#endif
+#if !defined(GPSEE_NO_pthread_self) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_self)
+#endif
+#if !defined(GPSEE_NO_pthread_setcancelstate) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_setcancelstate)
+#endif
+#if !defined(GPSEE_NO_pthread_setcanceltype) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_setcanceltype)
+#endif
+#if !defined(GPSEE_NO_pthread_setconcurrency) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pthread_setconcurrency)
+#endif
+#if !defined(GPSEE_NO_pthread_setschedparam) && (0)
+defineFunction(pthread_setschedparam)
+#endif
+#if !defined(GPSEE_NO_pthread_setschedprio) && (0)
+defineFunction(pthread_setschedprio)
+#endif
+#if !defined(GPSEE_NO_pthread_setspecific) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_setspecific)
+#endif
+#if !defined(GPSEE_NO_pthread_sigmask) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_sigmask)
+#endif
+#if !defined(GPSEE_NO_pthread_spin_destroy) && (0)
+defineFunction(pthread_spin_destroy)
+#endif
+#if !defined(GPSEE_NO_pthread_spin_init) && (0)
+defineFunction(pthread_spin_init)
+#endif
+#if !defined(GPSEE_NO_pthread_spin_lock) && (0)
+defineFunction(pthread_spin_lock)
+#endif
+#if !defined(GPSEE_NO_pthread_spin_trylock) && (0)
+defineFunction(pthread_spin_trylock)
+#endif
+#if !defined(GPSEE_NO_pthread_spin_unlock) && (0)
+defineFunction(pthread_spin_unlock)
+#endif
+#if !defined(GPSEE_NO_pthread_testcancel) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(pthread_testcancel)
+#endif
+#if !defined(GPSEE_NO_ptsname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(ptsname)
+#endif
+#if !defined(GPSEE_NO_putc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(putc)
+#endif
+#if !defined(GPSEE_NO_putc_unlocked) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(putc_unlocked)
+#endif
+#if !defined(GPSEE_NO_putchar) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(putchar)
+#endif
+#if !defined(GPSEE_NO_putchar_unlocked) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(putchar_unlocked)
+#endif
+#if !defined(GPSEE_NO_putenv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(putenv)
+#endif
+#if !defined(GPSEE_NO_putmsg) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(putmsg)
+#endif
+#if !defined(GPSEE_NO_putpmsg) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(putpmsg)
+#endif
+#if !defined(GPSEE_NO_puts) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(puts)
+#endif
+#if !defined(GPSEE_NO_pututxline) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(pututxline)
+#endif
+#if !defined(GPSEE_NO_putwc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(putwc)
+#endif
+#if !defined(GPSEE_NO_putwchar) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(putwchar)
+#endif
+#if !defined(GPSEE_NO_pwrite) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(pwrite)
+#endif
+#if !defined(GPSEE_NO_qsort) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(qsort)
+#endif
+#if !defined(GPSEE_NO_raise) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(raise)
+#endif
+#if !defined(GPSEE_NO_rand) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(rand)
+#endif
+#if !defined(GPSEE_NO_rand_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(rand_r)
+#endif
+#if !defined(GPSEE_NO_random) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(random)
+#endif
+#if !defined(GPSEE_NO_read) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(read)
+#endif
+#if !defined(GPSEE_NO_readdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(readdir)
+#endif
+#if !defined(GPSEE_NO_readdir_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(readdir_r)
+#endif
+#if !defined(GPSEE_NO_readlink) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(readlink)
+#endif
+#if !defined(GPSEE_NO_readv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(readv)
+#endif
+#if !defined(GPSEE_NO_realloc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(realloc)
+#endif
+#if !defined(GPSEE_NO_realpath) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(realpath)
+#endif
+#if !defined(GPSEE_NO_recv) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(recv)
+#endif
+#if !defined(GPSEE_NO_recvfrom) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(recvfrom)
+#endif
+#if !defined(GPSEE_NO_recvmsg) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(recvmsg)
+#endif
+#if !defined(GPSEE_NO_regcomp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(regcomp)
+#endif
+#if !defined(GPSEE_NO_regerror) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(regerror)
+#endif
+#if !defined(GPSEE_NO_regexec) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(regexec)
+#endif
+#if !defined(GPSEE_NO_regfree) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(regfree)
+#endif
+#if !defined(GPSEE_NO_remainder) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_SVID))
+defineFunction(remainder)
+#endif
+#if !defined(GPSEE_NO_remainderf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(remainderf)
+#endif
+#if !defined(GPSEE_NO_remainderl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(remainderl)
+#endif
+#if !defined(GPSEE_NO_remove) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(remove)
+#endif
+#if !defined(GPSEE_NO_remque) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(remque)
+#endif
+#if !defined(GPSEE_NO_remquo) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(remquo)
+#endif
+#if !defined(GPSEE_NO_remquof) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(remquof)
+#endif
+#if !defined(GPSEE_NO_remquol) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(remquol)
+#endif
+#if !defined(GPSEE_NO_rename) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(rename)
+#endif
+#if !defined(GPSEE_NO_rewind) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(rewind)
+#endif
+#if !defined(GPSEE_NO_rewinddir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(rewinddir)
+#endif
+#if !defined(GPSEE_NO_rindex) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(rindex)
+#endif
+#if !defined(GPSEE_NO_rint) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_BSD))
+defineFunction(rint)
+#endif
+#if !defined(GPSEE_NO_rintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(rintf)
+#endif
+#if !defined(GPSEE_NO_rintl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(rintl)
+#endif
+#if !defined(GPSEE_NO_rmdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(rmdir)
+#endif
+#if !defined(GPSEE_NO_round) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(round)
+#endif
+#if !defined(GPSEE_NO_roundf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(roundf)
+#endif
+#if !defined(GPSEE_NO_roundl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(roundl)
+#endif
+#if !defined(GPSEE_NO_scalb) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(scalb)
+#endif
+#if !defined(GPSEE_NO_scalbln) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalbln)
+#endif
+#if !defined(GPSEE_NO_scalblnf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalblnf)
+#endif
+#if !defined(GPSEE_NO_scalblnl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalblnl)
+#endif
+#if !defined(GPSEE_NO_scalbn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalbn)
+#endif
+#if !defined(GPSEE_NO_scalbnf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalbnf)
+#endif
+#if !defined(GPSEE_NO_scalbnl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(scalbnl)
+#endif
+#if !defined(GPSEE_NO_scanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(scanf)
+#endif
+#if !defined(GPSEE_NO_sched_get_priority_max) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_get_priority_max)
+#endif
+#if !defined(GPSEE_NO_sched_get_priority_min) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_get_priority_min)
+#endif
+#if !defined(GPSEE_NO_sched_getparam) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_getparam)
+#endif
+#if !defined(GPSEE_NO_sched_getscheduler) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_getscheduler)
+#endif
+#if !defined(GPSEE_NO_sched_rr_get_interval) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_rr_get_interval)
+#endif
+#if !defined(GPSEE_NO_sched_setparam) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_setparam)
+#endif
+#if !defined(GPSEE_NO_sched_setscheduler) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sched_setscheduler)
+#endif
+#if !defined(GPSEE_NO_sched_yield) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(sched_yield)
+#endif
+#if !defined(GPSEE_NO_seed48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(seed48)
+#endif
+#if !defined(GPSEE_NO_seekdir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(seekdir)
+#endif
+#if !defined(GPSEE_NO_select) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(select)
+#endif
+#if !defined(GPSEE_NO_sem_close) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_close)
+#endif
+#if !defined(GPSEE_NO_sem_destroy) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_destroy)
+#endif
+#if !defined(GPSEE_NO_sem_getvalue) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_getvalue)
+#endif
+#if !defined(GPSEE_NO_sem_init) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_init)
+#endif
+#if !defined(GPSEE_NO_sem_open) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_open)
+#endif
+#if !defined(GPSEE_NO_sem_post) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_post)
+#endif
+#if !defined(GPSEE_NO_sem_timedwait) && (0)
+defineFunction(sem_timedwait)
+#endif
+#if !defined(GPSEE_NO_sem_trywait) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_trywait)
+#endif
+#if !defined(GPSEE_NO_sem_unlink) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_unlink)
+#endif
+#if !defined(GPSEE_NO_sem_wait) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sem_wait)
+#endif
+#if !defined(GPSEE_NO_semctl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(semctl)
+#endif
+#if !defined(GPSEE_NO_semget) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(semget)
+#endif
+#if !defined(GPSEE_NO_semop) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(semop)
+#endif
+#if !defined(GPSEE_NO_send) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(send)
+#endif
+#if !defined(GPSEE_NO_sendmsg) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(sendmsg)
+#endif
+#if !defined(GPSEE_NO_sendto) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(sendto)
+#endif
+#if !defined(GPSEE_NO_setbuf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setbuf)
+#endif
+#if !defined(GPSEE_NO_setcontext) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(setcontext)
+#endif
+#if !defined(GPSEE_NO_setegid) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(setegid)
+#endif
+#if !defined(GPSEE_NO_setenv) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(setenv)
+#endif
+#if !defined(GPSEE_NO_seteuid) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(seteuid)
+#endif
+#if !defined(GPSEE_NO_setgid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setgid)
+#endif
+#if !defined(GPSEE_NO_setgrent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setgrent)
+#endif
+#if !defined(GPSEE_NO_sethostent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(sethostent)
+#endif
+#if !defined(GPSEE_NO_setitimer) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setitimer)
+#endif
+#if !defined(GPSEE_NO_setjmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setjmp)
+#endif
+#if !defined(GPSEE_NO_setkey) && (0 || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setkey)
+#endif
+#if !defined(GPSEE_NO_setlocale) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(setlocale)
+#endif
+#if !defined(GPSEE_NO_setlogmask) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setlogmask)
+#endif
+#if !defined(GPSEE_NO_setnetent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setnetent)
+#endif
+#if !defined(GPSEE_NO_setpgid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(setpgid)
+#endif
+#if !defined(GPSEE_NO_setpgrp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setpgrp)
+#endif
+#if !defined(GPSEE_NO_setpriority) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setpriority)
+#endif
+#if !defined(GPSEE_NO_setprotoent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setprotoent)
+#endif
+#if !defined(GPSEE_NO_setpwent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setpwent)
+#endif
+#if !defined(GPSEE_NO_setregid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setregid)
+#endif
+#if !defined(GPSEE_NO_setreuid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setreuid)
+#endif
+#if !defined(GPSEE_NO_setrlimit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setrlimit)
+#endif
+#if !defined(GPSEE_NO_setservent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setservent)
+#endif
+#if !defined(GPSEE_NO_setsid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(setsid)
+#endif
+#if !defined(GPSEE_NO_setsockopt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setsockopt)
+#endif
+#if !defined(GPSEE_NO_setstate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(setstate)
+#endif
+#if !defined(GPSEE_NO_setuid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(setuid)
+#endif
+#if !defined(GPSEE_NO_setutxent) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(setutxent)
+#endif
+#if !defined(GPSEE_NO_setvbuf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(setvbuf)
+#endif
+#if !defined(GPSEE_NO_shm_open) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(shm_open)
+#endif
+#if !defined(GPSEE_NO_shm_unlink) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(shm_unlink)
+#endif
+#if !defined(GPSEE_NO_shmat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_SVID))
+defineFunction(shmat)
+#endif
+#if !defined(GPSEE_NO_shmctl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_SVID))
+defineFunction(shmctl)
+#endif
+#if !defined(GPSEE_NO_shmdt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_SVID))
+defineFunction(shmdt)
+#endif
+#if !defined(GPSEE_NO_shmget) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_SVID))
+defineFunction(shmget)
+#endif
+#if !defined(GPSEE_NO_shutdown) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(shutdown)
+#endif
+#if !defined(GPSEE_NO_sigaction) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigaction)
+#endif
+#if !defined(GPSEE_NO_sigaddset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigaddset)
+#endif
+#if !defined(GPSEE_NO_sigaltstack) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(sigaltstack)
+#endif
+#if !defined(GPSEE_NO_sigdelset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigdelset)
+#endif
+#if !defined(GPSEE_NO_sigemptyset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigemptyset)
+#endif
+#if !defined(GPSEE_NO_sigfillset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigfillset)
+#endif
+#if !defined(GPSEE_NO_sighold) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(sighold)
+#endif
+#if !defined(GPSEE_NO_sigignore) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(sigignore)
+#endif
+#if !defined(GPSEE_NO_siginterrupt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(siginterrupt)
+#endif
+#if !defined(GPSEE_NO_sigismember) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigismember)
+#endif
+#if !defined(GPSEE_NO_siglongjmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(siglongjmp)
+#endif
+#if !defined(GPSEE_NO_signal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(signal)
+#endif
+#if !defined(GPSEE_NO_signbit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(signbit)
+#endif
+#if !defined(GPSEE_NO_sigpause) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sigpause)
+#endif
+#if !defined(GPSEE_NO_sigpending) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigpending)
+#endif
+#if !defined(GPSEE_NO_sigprocmask) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigprocmask)
+#endif
+#if !defined(GPSEE_NO_sigqueue) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sigqueue)
+#endif
+#if !defined(GPSEE_NO_sigrelse) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(sigrelse)
+#endif
+#if !defined(GPSEE_NO_sigset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(sigset)
+#endif
+#if !defined(GPSEE_NO_sigsetjmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigsetjmp)
+#endif
+#if !defined(GPSEE_NO_sigsuspend) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sigsuspend)
+#endif
+#if !defined(GPSEE_NO_sigtimedwait) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sigtimedwait)
+#endif
+#if !defined(GPSEE_NO_sigwait) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(sigwait)
+#endif
+#if !defined(GPSEE_NO_sigwaitinfo) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(sigwaitinfo)
+#endif
+#if !defined(GPSEE_NO_sin) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sin)
+#endif
+#if !defined(GPSEE_NO_sinf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sinf)
+#endif
+#if !defined(GPSEE_NO_sinh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sinh)
+#endif
+#if !defined(GPSEE_NO_sinhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sinhf)
+#endif
+#if !defined(GPSEE_NO_sinhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sinhl)
+#endif
+#if !defined(GPSEE_NO_sinl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sinl)
+#endif
+#if !defined(GPSEE_NO_sleep) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sleep)
+#endif
+#if !defined(GPSEE_NO_snprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99))
+defineFunction(snprintf)
+#endif
+#if !defined(GPSEE_NO_sockatmark) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(sockatmark)
+#endif
+#if !defined(GPSEE_NO_socket) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(socket)
+#endif
+#if !defined(GPSEE_NO_socketpair) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(socketpair)
+#endif
+#if !defined(GPSEE_NO_sprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sprintf)
+#endif
+#if !defined(GPSEE_NO_sqrt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sqrt)
+#endif
+#if !defined(GPSEE_NO_sqrtf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sqrtf)
+#endif
+#if !defined(GPSEE_NO_sqrtl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(sqrtl)
+#endif
+#if !defined(GPSEE_NO_srand) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(srand)
+#endif
+#if !defined(GPSEE_NO_srand48) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(srand48)
+#endif
+#if !defined(GPSEE_NO_srandom) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(srandom)
+#endif
+#if !defined(GPSEE_NO_sscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sscanf)
+#endif
+#if !defined(GPSEE_NO_stat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(stat)
+#endif
+#if !defined(GPSEE_NO_statvfs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(statvfs)
+#endif
+#if !defined(GPSEE_NO_strcasecmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(strcasecmp)
+#endif
+#if !defined(GPSEE_NO_strcat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strcat)
+#endif
+#if !defined(GPSEE_NO_strchr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strchr)
+#endif
+#if !defined(GPSEE_NO_strcmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strcmp)
+#endif
+#if !defined(GPSEE_NO_strcoll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strcoll)
+#endif
+#if !defined(GPSEE_NO_strcpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strcpy)
+#endif
+#if !defined(GPSEE_NO_strcspn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strcspn)
+#endif
+#if !defined(GPSEE_NO_strdup) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(strdup)
+#endif
+#if !defined(GPSEE_NO_strerror) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strerror)
+#endif
+#if !defined(GPSEE_NO_strerror_r) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(strerror_r)
+#endif
+#if !defined(GPSEE_NO_strfmon) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(strfmon)
+#endif
+#if !defined(GPSEE_NO_strftime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strftime)
+#endif
+#if !defined(GPSEE_NO_strlen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strlen)
+#endif
+#if !defined(GPSEE_NO_strncasecmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(strncasecmp)
+#endif
+#if !defined(GPSEE_NO_strncat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strncat)
+#endif
+#if !defined(GPSEE_NO_strncmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strncmp)
+#endif
+#if !defined(GPSEE_NO_strncpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(strncpy)
+#endif
+#if !defined(GPSEE_NO_strpbrk) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strpbrk)
+#endif
+#if !defined(GPSEE_NO_strptime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98))
+defineFunction(strptime)
+#endif
+#if !defined(GPSEE_NO_strrchr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strrchr)
+#endif
+#if !defined(GPSEE_NO_strspn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strspn)
+#endif
+#if !defined(GPSEE_NO_strstr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strstr)
+#endif
+#if !defined(GPSEE_NO_strtod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strtod)
+#endif
+#if !defined(GPSEE_NO_strtof) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtof)
+#endif
+#if !defined(GPSEE_NO_strtoimax) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtoimax)
+#endif
+#if !defined(GPSEE_NO_strtok) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strtok)
+#endif
+#if !defined(GPSEE_NO_strtok_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(strtok_r)
+#endif
+#if !defined(GPSEE_NO_strtol) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strtol)
+#endif
+#if !defined(GPSEE_NO_strtold) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtold)
+#endif
+#if !defined(GPSEE_NO_strtoll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtoll)
+#endif
+#if !defined(GPSEE_NO_strtoul) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strtoul)
+#endif
+#if !defined(GPSEE_NO_strtoull) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtoull)
+#endif
+#if !defined(GPSEE_NO_strtoumax) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(strtoumax)
+#endif
+#if !defined(GPSEE_NO_strxfrm) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(strxfrm)
+#endif
+#if !defined(GPSEE_NO_swab) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(swab)
+#endif
+#if !defined(GPSEE_NO_swapcontext) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(swapcontext)
+#endif
+#if !defined(GPSEE_NO_swprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(swprintf)
+#endif
+#if !defined(GPSEE_NO_swscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(swscanf)
+#endif
+#if !defined(GPSEE_NO_symlink) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(symlink)
+#endif
+#if !defined(GPSEE_NO_sync) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(sync)
+#endif
+#if !defined(GPSEE_NO_sysconf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(sysconf)
+#endif
+#if !defined(GPSEE_NO_syslog) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(syslog)
+#endif
+#if !defined(GPSEE_NO_system) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(system)
+#endif
+#if !defined(GPSEE_NO_tan) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(tan)
+#endif
+#if !defined(GPSEE_NO_tanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tanf)
+#endif
+#if !defined(GPSEE_NO_tanh) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(tanh)
+#endif
+#if !defined(GPSEE_NO_tanhf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tanhf)
+#endif
+#if !defined(GPSEE_NO_tanhl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tanhl)
+#endif
+#if !defined(GPSEE_NO_tanl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tanl)
+#endif
+#if !defined(GPSEE_NO_tcdrain) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcdrain)
+#endif
+#if !defined(GPSEE_NO_tcflow) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcflow)
+#endif
+#if !defined(GPSEE_NO_tcflush) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcflush)
+#endif
+#if !defined(GPSEE_NO_tcgetattr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcgetattr)
+#endif
+#if !defined(GPSEE_NO_tcgetpgrp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcgetpgrp)
+#endif
+#if !defined(GPSEE_NO_tcgetsid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(tcgetsid)
+#endif
+#if !defined(GPSEE_NO_tcsendbreak) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcsendbreak)
+#endif
+#if !defined(GPSEE_NO_tcsetattr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcsetattr)
+#endif
+#if !defined(GPSEE_NO_tcsetpgrp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tcsetpgrp)
+#endif
+#if !defined(GPSEE_NO_tdelete) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(tdelete)
+#endif
+#if !defined(GPSEE_NO_telldir) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(telldir)
+#endif
+#if !defined(GPSEE_NO_tempnam) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(tempnam)
+#endif
+#if !defined(GPSEE_NO_tfind) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(tfind)
+#endif
+#if !defined(GPSEE_NO_tgamma) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tgamma)
+#endif
+#if !defined(GPSEE_NO_tgammaf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tgammaf)
+#endif
+#if !defined(GPSEE_NO_tgammal) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(tgammal)
+#endif
+#if !defined(GPSEE_NO_time) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(time)
+#endif
+#if !defined(GPSEE_NO_timer_create) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(timer_create)
+#endif
+#if !defined(GPSEE_NO_timer_delete) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(timer_delete)
+#endif
+#if !defined(GPSEE_NO_timer_getoverrun) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(timer_getoverrun)
+#endif
+#if !defined(GPSEE_NO_timer_gettime) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(timer_gettime)
+#endif
+#if !defined(GPSEE_NO_timer_settime) && (defined(GPSEE_STDEXT_POSIX_REALTIME) && (0))
+defineFunction(timer_settime)
+#endif
+#if !defined(GPSEE_NO_times) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(times)
+#endif
+#if !defined(GPSEE_NO_tmpfile) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(tmpfile)
+#endif
+#if !defined(GPSEE_NO_tmpnam) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(tmpnam)
+#endif
+#if !defined(GPSEE_NO_toascii) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(toascii)
+#endif
+#if !defined(GPSEE_NO_tolower) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(tolower)
+#endif
+#if !defined(GPSEE_NO_toupper) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(toupper)
+#endif
+#if !defined(GPSEE_NO_towctrans) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(towctrans)
+#endif
+#if !defined(GPSEE_NO_towlower) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(towlower)
+#endif
+#if !defined(GPSEE_NO_towupper) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(towupper)
+#endif
+#if !defined(GPSEE_NO_trunc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(trunc)
+#endif
+#if !defined(GPSEE_NO_truncate) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(truncate)
+#endif
+#if !defined(GPSEE_NO_truncf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(truncf)
+#endif
+#if !defined(GPSEE_NO_truncl) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(truncl)
+#endif
+#if !defined(GPSEE_NO_tsearch) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(tsearch)
+#endif
+#if !defined(GPSEE_NO_ttyname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ttyname)
+#endif
+#if !defined(GPSEE_NO_ttyname_r) && (defined(GPSEE_STDEXT_POSIX_THREADS) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98)))
+defineFunction(ttyname_r)
+#endif
+#if !defined(GPSEE_NO_twalk) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(twalk)
+#endif
+#if !defined(GPSEE_NO_tzset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(tzset)
+#endif
+#if !defined(GPSEE_NO_ualarm) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(ualarm)
+#endif
+#if !defined(GPSEE_NO_ulimit) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(ulimit)
+#endif
+#if !defined(GPSEE_NO_umask) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(umask)
+#endif
+#if !defined(GPSEE_NO_uname) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID))
+defineFunction(uname)
+#endif
+#if !defined(GPSEE_NO_ungetc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(ungetc)
+#endif
+#if !defined(GPSEE_NO_ungetwc) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(ungetwc)
+#endif
+#if !defined(GPSEE_NO_unlink) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(unlink)
+#endif
+#if !defined(GPSEE_NO_unlockpt) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(unlockpt)
+#endif
+#if !defined(GPSEE_NO_unsetenv) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(unsetenv)
+#endif
+#if !defined(GPSEE_NO_usleep) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(usleep)
+#endif
+#if !defined(GPSEE_NO_utime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(utime)
+#endif
+#if !defined(GPSEE_NO_utimes) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(utimes)
+#endif
+#if !defined(GPSEE_NO_va_arg) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(va_arg)
+#endif
+#if !defined(GPSEE_NO_va_copy) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(va_copy)
+#endif
+#if !defined(GPSEE_NO_va_end) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(va_end)
+#endif
+#if !defined(GPSEE_NO_va_start) && (0 || defined(GPSEE_STD_XSI))
+defineFunction(va_start)
+#endif
+#if !defined(GPSEE_NO_vfork) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_BSD))
+defineFunction(vfork)
+#endif
+#if !defined(GPSEE_NO_vfprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(vfprintf)
+#endif
+#if !defined(GPSEE_NO_vfscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vfscanf)
+#endif
+#if !defined(GPSEE_NO_vfwprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(vfwprintf)
+#endif
+#if !defined(GPSEE_NO_vfwscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vfwscanf)
+#endif
+#if !defined(GPSEE_NO_vprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(vprintf)
+#endif
+#if !defined(GPSEE_NO_vscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vscanf)
+#endif
+#if !defined(GPSEE_NO_vsnprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99))
+defineFunction(vsnprintf)
+#endif
+#if !defined(GPSEE_NO_vsprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(vsprintf)
+#endif
+#if !defined(GPSEE_NO_vsscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vsscanf)
+#endif
+#if !defined(GPSEE_NO_vswprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(vswprintf)
+#endif
+#if !defined(GPSEE_NO_vswscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vswscanf)
+#endif
+#if !defined(GPSEE_NO_vwprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(vwprintf)
+#endif
+#if !defined(GPSEE_NO_vwscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(vwscanf)
+#endif
+#if !defined(GPSEE_NO_wait) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(wait)
+#endif
+#if !defined(GPSEE_NO_waitid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID))
+defineFunction(waitid)
+#endif
+#if !defined(GPSEE_NO_waitpid) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(waitpid)
+#endif
+#if !defined(GPSEE_NO_wcrtomb) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcrtomb)
+#endif
+#if !defined(GPSEE_NO_wcscat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcscat)
+#endif
+#if !defined(GPSEE_NO_wcschr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcschr)
+#endif
+#if !defined(GPSEE_NO_wcscmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcscmp)
+#endif
+#if !defined(GPSEE_NO_wcscoll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcscoll)
+#endif
+#if !defined(GPSEE_NO_wcscpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcscpy)
+#endif
+#if !defined(GPSEE_NO_wcscspn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcscspn)
+#endif
+#if !defined(GPSEE_NO_wcsftime) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsftime)
+#endif
+#if !defined(GPSEE_NO_wcslen) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcslen)
+#endif
+#if !defined(GPSEE_NO_wcsncat) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsncat)
+#endif
+#if !defined(GPSEE_NO_wcsncmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsncmp)
+#endif
+#if !defined(GPSEE_NO_wcsncpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsncpy)
+#endif
+#if !defined(GPSEE_NO_wcspbrk) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcspbrk)
+#endif
+#if !defined(GPSEE_NO_wcsrchr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsrchr)
+#endif
+#if !defined(GPSEE_NO_wcsrtombs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsrtombs)
+#endif
+#if !defined(GPSEE_NO_wcsspn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsspn)
+#endif
+#if !defined(GPSEE_NO_wcsstr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsstr)
+#endif
+#if !defined(GPSEE_NO_wcstod) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcstod)
+#endif
+#if !defined(GPSEE_NO_wcstof) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstof)
+#endif
+#if !defined(GPSEE_NO_wcstoimax) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstoimax)
+#endif
+#if !defined(GPSEE_NO_wcstok) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcstok)
+#endif
+#if !defined(GPSEE_NO_wcstol) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcstol)
+#endif
+#if !defined(GPSEE_NO_wcstold) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstold)
+#endif
+#if !defined(GPSEE_NO_wcstoll) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstoll)
+#endif
+#if !defined(GPSEE_NO_wcstombs) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(wcstombs)
+#endif
+#if !defined(GPSEE_NO_wcstoul) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcstoul)
+#endif
+#if !defined(GPSEE_NO_wcstoull) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstoull)
+#endif
+#if !defined(GPSEE_NO_wcstoumax) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_C99))
+defineFunction(wcstoumax)
+#endif
+#if !defined(GPSEE_NO_wcswcs) && (0 || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(wcswcs)
+#endif
+#if !defined(GPSEE_NO_wcswidth) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(wcswidth)
+#endif
+#if !defined(GPSEE_NO_wcsxfrm) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wcsxfrm)
+#endif
+#if !defined(GPSEE_NO_wctob) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wctob)
+#endif
+#if !defined(GPSEE_NO_wctomb) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C89) || defined(GPSEE_STD_SVID))
+defineFunction(wctomb)
+#endif
+#if !defined(GPSEE_NO_wctrans) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wctrans)
+#endif
+#if !defined(GPSEE_NO_wctype) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wctype)
+#endif
+#if !defined(GPSEE_NO_wcwidth) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95))
+defineFunction(wcwidth)
+#endif
+#if !defined(GPSEE_NO_wmemchr) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wmemchr)
+#endif
+#if !defined(GPSEE_NO_wmemcmp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wmemcmp)
+#endif
+#if !defined(GPSEE_NO_wmemcpy) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wmemcpy)
+#endif
+#if !defined(GPSEE_NO_wmemmove) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wmemmove)
+#endif
+#if !defined(GPSEE_NO_wmemset) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wmemset)
+#endif
+#if !defined(GPSEE_NO_wordexp) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(wordexp)
+#endif
+#if !defined(GPSEE_NO_wordfree) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_P96))
+defineFunction(wordfree)
+#endif
+#if !defined(GPSEE_NO_wprintf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wprintf)
+#endif
+#if !defined(GPSEE_NO_write) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_P96) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(write)
+#endif
+#if !defined(GPSEE_NO_writev) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(writev)
+#endif
+#if !defined(GPSEE_NO_wscanf) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_C99) || defined(GPSEE_STD_C95))
+defineFunction(wscanf)
+#endif
+#if !defined(GPSEE_NO_y0) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(y0)
+#endif
+#if !defined(GPSEE_NO_y1) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(y1)
+#endif
+#if !defined(GPSEE_NO_yn) && (0 || defined(GPSEE_STD_XSI) || defined(GPSEE_STD_U98) || defined(GPSEE_STD_U95) || defined(GPSEE_STD_SVID) || defined(GPSEE_STD_BSD))
+defineFunction(yn)
+#endif

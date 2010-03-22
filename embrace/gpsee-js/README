@@ -1,0 +1,23 @@
+This directory contains the build rules necessary for building the Mozilla JS 
+shell (js.cpp) with GPSEE-core underpinnings.
+
+It builds against the same version of Spidermonkey which you configured in the 
+master GPSEE build system.  It is extremely sensitive Spidermonkey library 
+versions, as the JS shell actually re-compiles most of the object files, and
+then some GPSEE native modules re-link with the interpreter via a DSO. This 
+means that there are two copies of most functions in SpiderMonkey, and which 
+gets called depends on the program linkage. It also means that you MUST not 
+try and SpiderMonkey library sleight of hand with this code if you want a 
+stable product.
+
+If you are looking for a stable scripting host, and do not need the 
+Mozilla-specific functions in this one, we suggest you look at gsr, the
+GPSEE Script Runner.
+
+If you are looking for a stable REPL, and do not need the Mozilla-specific
+functions in this one, we suggest you look at sample_programs/repl/simple.js
+under your GPSEE source tree.
+
+Building Notes
+--------------
+ - "make" to build
