@@ -255,7 +255,7 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   JS_AddNamedRoot(cx, &scriptFilename_jsstr, "GpseeModule.include.scriptFilename_jsstr");
 
   errno = 0;
-  failure = gpsee_compileScript(cx, scriptFilename, NULL, &script, thisObj, &scrobj, &errmsg);
+  failure = gpsee_compileScript(cx, scriptFilename, NULL, NULL, &script, thisObj, &scrobj, &errmsg);
 
   JS_RemoveRoot(cx, &scriptFilename_jsstr);
 

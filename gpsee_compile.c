@@ -39,8 +39,9 @@
  */
 
 #include "gpsee.h"
-#include <jsxdrapi.h>
+#include "gpsee_private.h"
 #include "gpsee_xdrfile.h"
+#include <jsxdrapi.h>
 
 #if defined(GPSEE_DEBUG_BUILD)
 # define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
@@ -78,6 +79,7 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
   return 0;
 }
 
+#define CSERR "error in gpsee_compileScript(\"%s\"): "
 /**
  *  Load a JavaScript-language source code file, passing back a compiled JSScript object and a "script object"
  *  instantiated for the benefit of the garbage collector, *or* an error message.
@@ -92,19 +94,21 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
  *  through the scriptObject parameter created with JS_NewScriptObject().
  *  
  *  @param    cx                  The JSAPI context to be associated with the return values of this function.
- *  @param    scriptFilename      Filename to Javascript source code file (optional.)
+ *  @param    scriptFilename      Filename to Javascript source code file. This argument is now required.
  *  @param    scriptFile          Open readable stdio FILE representing beginning of Javascript source code.
+ *                                Can be non-null.
+ *  @param    scriptCode          Actual source code to be compiled. Compiler cache is disabled if this is used.
+ *                                Can be non-null.
  *  @param    script              The address where a pointer to the new JSScript will be stored.
  *  @param    scope               The address of the JSObject that will represent the 'this' variable for the script.
  *  @param    scriptObject        The address where a pointer to a new "scrobj" will be stored.
  *  @param    errorMessage        The address where a pointer to an error message will be stored in case of error.
  *
- *  @returns  Zero on success; non-zero on error
+ *  @returns  JS_FALSE on error, JS_TRUE on success
  */
-int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
-                        JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage)
+JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, const char *scriptCode,
+                           JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage)
 {
-  gpsee_interpreter_t	*jsi;
   char 			cache_filename[PATH_MAX];
   int 			haveCacheFilename = 0;
   int 			useCompilerCache;
@@ -116,27 +120,33 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   *script = NULL;
   *scriptObject = NULL;
 
-  /* Open the script file if it hasn't been yet */
-  if (!scriptFile)
+  /* If literal script code was supplied ('scriptCode') then we must disable the compiler cache and skip over this
+   * file-oriented code.
+   */
+  if (scriptCode)
   {
-    if (!(scriptFile = fopen(scriptFilename, "r")))
-    {
-      gpsee_log(SLOG_NOTICE, "could not open script \"%s\" (%m)", scriptFilename);
-      *errorMessage = "could not open script";
-      return -1;
-    }
+    useCompilerCache = 0;
+    fileHeaderOffset = 0;
   }
+  else
+  {
+    gpsee_interpreter_t *jsi;
 
-  gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
+    /* Open the script file if it hasn't been yet */
+    if (!scriptFile && !(scriptFile = fopen(scriptFilename, "r")))
+      return gpsee_throw(cx, ERRINCS "fopen() error %m", scriptFilename);
 
-  /* Should we use the compiler cache at all? */
-  /* Check the compiler cache setting in our gpsee_interpreter_t struct */
-  jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  useCompilerCache = jsi->useCompilerCache;
+    gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
 
-  /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
-   * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */
-  fileHeaderOffset = ftell(scriptFile);
+    /* Should we use the compiler cache at all? */
+    /* Check the compiler cache setting in our gpsee_interpreter_t struct */
+    jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+    useCompilerCache = jsi->useCompilerCache;
+
+    /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
+     * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */
+    fileHeaderOffset = ftell(scriptFile);
+  }
 
   /* Before we compile the script, let's check the compiler cache */
   if (useCompilerCache && make_jsc_filename(cx, scriptFilename, cache_filename, sizeof(cache_filename)) == 0)
@@ -153,21 +163,21 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
     {
       /* We have already opened the script file, I can think of no reason why stat() would fail. */
       useCompilerCache = 0;
-      gpsee_log(SLOG_ERR, "could not stat() script \"%s\" (%m)", scriptFilename);
+      gpsee_log(SLOG_ERR, AT "could not fstat(filedes %d allegedly \"%s\") (%m)", fileno(scriptFile), scriptFilename);
       goto cache_read_end;
     }
 
     /* Open the cache file, in a rather specific way */
     if (!(cache_file = fopen(cache_filename, "r")))
     {
-      dprintf(__FILE__":%d: could not load from compiler cache \"%s\" (%m)\n", __LINE__, cache_filename);
+      dprintf(AT "could not load from compiler cache \"%s\" (%m)\n", cache_filename);
       goto cache_read_end;
     }
 
     gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH);
     if (fstat(fileno(cache_file), &cache_st))
     {
-      dprintf("could not stat() compiler cache \"%s\"\n", cache_filename);
+      dprintf(AT "could not stat() compiler cache \"%s\"\n", cache_filename);
       goto cache_read_end;
     }
 
@@ -265,13 +275,13 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   /* Was the precompiled script thawed from the cache? If not, we must compile it */
   if (!*script)
   {
-    *script = JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
+    /* Actually compile the script! */
+    *script = scriptCode ?
+      JS_CompileScript(cx, scope, scriptCode, strlen(scriptCode), scriptFilename, 0):
+      JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
 
     if (!*script)
-    {
-      *errorMessage = "could not compile script";
-      return -1;
-    }
+      return JS_FALSE;
 
     /* Should we freeze the compiled script for the compiler cache? */
     if (useCompilerCache && haveCacheFilename)
@@ -361,10 +371,7 @@ int gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptF
   /* We must associate a GC object with the JSScript to protect it from the GC */
   *scriptObject = JS_NewScriptObject(cx, *script);
   if (!*scriptObject)
-  {
-    *errorMessage = "unable to create module's script object";
-    return -1;
-  }
+    return JS_FALSE;
 
-  return 0;
+  return JS_TRUE;
 }

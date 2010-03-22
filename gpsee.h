@@ -313,8 +313,9 @@ JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript
 JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
 JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
-JS_EXTERN_API(int)                  gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, JSScript **script,
-                                                        JSObject *scope, JSObject **scriptObject, const char **errorMessage);
+JS_EXTERN_API(int)                  gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile,
+                                    const char *scriptCode, JSScript **script, JSObject *scope, JSObject **scriptObject,
+                                    const char **errorMessage);
 JS_EXTERN_API(JSBool)               gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
 JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
                                                     JSClass *clasp, JSNative constructor, uintN nargs,
@@ -322,7 +323,7 @@ JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj
                                                     JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
                                                     const char *moduleID);
 JS_EXTERN_API(JSObject*)            gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
-JS_EXTERN_API(const char*)          gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile);
+JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile);
 JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
 JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 
