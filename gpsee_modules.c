@@ -1443,11 +1443,9 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
   JS_SetGlobalObject(cx, module->scope);
-  if (gpsee_compileScript(cx, fnBuf, scriptFile, NULL, &module->script,
+  if (!gpsee_compileScript(cx, fnBuf, scriptFile, NULL, &module->script,
       module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
   {
-    if (!JS_IsExceptionPending(cx))
-      (void)gpsee_throw(cx, RUNPROERR "gpsee_compileScript() error: %s", scriptFilename, errorMessage);
     goto fail;
   }
 
@@ -1471,7 +1469,7 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 
   dpDepth(-1);
  
-  return JS_FALSE;;
+  return JS_FALSE;
 }
 
 /** Callback from the garbage collector, which marks all

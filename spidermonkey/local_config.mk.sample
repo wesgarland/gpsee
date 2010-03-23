@@ -38,7 +38,7 @@
 #
 
 # Where is the SpiderMonkey source code?
-SPIDERMONKEY_SRC	?= $(HOME)/hg/tracemonkey/js/src
+SPIDERMONKEY_SRC	?= $(HOME)/src/hg/tracemonkey/js/src
 
 ## - RELEASE    Optimized jsapi build, no GC Zeal, no symbols
 ## - DRELEASE   Optimized jsapi build, GC Zeal, symbols
@@ -48,10 +48,10 @@ SPIDERMONKEY_SRC	?= $(HOME)/hg/tracemonkey/js/src
 ## Use BUILD ?= instead of BUILD = to allow GPSEE's local_config.mk to infer
 ## the SpidermMnkey build type
 ##
-BUILD 			= RELEASE
+BUILD 			= DEBUG
 
 # Where is the Autoconf version 2.13 binary?
-AUTOCONF		?= autoconf-2.13
+AUTOCONF		?= autoconf2.13
 
 # Where do you keep tr?
 TR			?= tr
@@ -60,6 +60,6 @@ TR			?= tr
 CONFIGURE_OPTIONS	+= --with-system-nspr
 
 # Extra optoins to pass to make while building SpiderMonkey
-SM_MAKE_OPTIONS		?= -j3
+SM_MAKE_OPTIONS		?= -j2
 
 # You can override any variables in Makefile here with the = operator
