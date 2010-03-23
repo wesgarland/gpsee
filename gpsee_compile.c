@@ -134,7 +134,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
     /* Open the script file if it hasn't been yet */
     if (!scriptFile && !(scriptFile = fopen(scriptFilename, "r")))
-      return gpsee_throw(cx, ERRINCS "fopen() error %m", scriptFilename);
+      return gpsee_throw(cx, CSERR "fopen() error %m", scriptFilename);
 
     gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
 
