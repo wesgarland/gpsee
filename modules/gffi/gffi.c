@@ -39,10 +39,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: gffi.c,v 1.8 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.8 2010/03/06 18:17:14 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi.h"
@@ -105,6 +105,10 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
     return NULL;
 
   if (!WillFinalize_InitClass(cx, moduleObject, NULL))
+    return NULL;
+
+  proto = CType_InitClass(cx, moduleObject, NULL);
+  if (proto == NULL)
     return NULL;
 
   if (JS_DefineProperty(cx, moduleObject, "pointerSize", INT_TO_JSVAL(sizeof(void *)), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 
