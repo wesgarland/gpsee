@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi.h,v 1.11 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: gffi.h,v 1.12 2010/03/26 00:19:32 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -48,6 +48,7 @@
 JSObject *Library_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
+JSObject *CType_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *WillFinalize_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
@@ -55,6 +56,9 @@ JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject);
 
 JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp);
 JSBool pointer_fromString(JSContext *cx, jsval v, void **pointer_p, const char *throwLabel);
+
+/** Argument signature for jsval->ffi_type converters */
+typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn, const char *throwPrefix);
 
 /** Struct element types */
 typedef enum { selt_integer, selt_array, selt_string, selt_pointer } sel_type_e;
@@ -79,7 +83,7 @@ typedef struct struct_s
   size_t		memberCount;	/**< Number of members in the struct */
 } structShape;
 
-/** Private handle used to describe an instance of a memory object */
+/** Private handle used to describe an instance of a Memory object */
 typedef struct
 {
   size_t		length;		/**< Size of buffer or 0 if unknown */
@@ -87,6 +91,18 @@ typedef struct
   JSObject		*memoryOwner;	/**< Pointer to JSObject responsible for freeing memory */
   byteThing_flags_e	btFlags;	/**< GPSEE ByteThing attributes (bitmask) */
 } memory_handle_t;
+
+/** Private handle used to describe an instance of a CType object */
+typedef struct
+{
+  size_t		length;		 /**< Size of buffer or 0 if unknown */
+  char          	*buffer;	 /**< Pointer to memory */
+  JSObject		*memoryOwner;	 /**< Pointer to JSObject responsible for freeing memory */
+  byteThing_flags_e	btFlags;	 /**< GPSEE ByteThing attributes (bitmask) */
+  valueTo_fn		valueTo_ffiType; /**< Function to convert a jsval to this CType's ffi type */
+  ffi_type		*ffiType;	 /**< FFI type for this CType */
+} ctype_handle_t;
+
 
 /** Private handle used to describe an instance of a MutableStruct or ImmutableStruct object */
 typedef struct
@@ -133,9 +149,6 @@ typedef enum gffi_jsv
 #undef jsv
 } gffi_jsv_e;
 
-/** Argument signature for return value converters */
-typedef JSBool (* valueTo_fn)(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn, const char *throwPrefix);
-
 /** Private data struct for CFunction instances */
 typedef struct
 {
@@ -154,7 +167,7 @@ typedef struct
 {
   cFunction_handle_t    *hnd;          /**< Private data for the CFunction instance */
   void                  *rvaluep;      /**< Pointer to the return value */
-  void                  **avalues;     /**< Array of rgument values */
+  void                  **avalues;     /**< Array of argument values */
   void                  **storage;
 } cFunction_closure_t;
 /* The function that produces a cFunction_closure_t */
@@ -178,3 +191,5 @@ JSBool struct_setArray(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, c
 JSBool setupCFunctionArgumentConverters(JSContext *cx, jsval *typeIndicators, cFunction_handle_t *hnd, const char *throwPrefix);
 size_t ffi_type_size(ffi_type *type);
 JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, const char *throwPrefix);
+JSBool ctypeStorageSize(JSContext *cx, jsval tival, size_t *size, const char *throwPrefix);
+JSBool setupCTypeDetails(JSContext *cx, jsval typeIndicator, ctype_handle_t *hnd, const char *throwPrefix);

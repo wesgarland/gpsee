@@ -46,7 +46,7 @@ std_cppflags.mk:
 DEFS	 	 	= gpsee std
 AUTOGEN_HEADERS		+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
 AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl mk_std_cppflags.mk
-EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o 
+EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o CType.o
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
