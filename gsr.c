@@ -633,13 +633,12 @@ PRIntn prmain(PRIntn argc, char **argv)
     if (access(preloadScriptFilename, F_OK) == 0)
     {
       jsval 		v;
-      const char	*errmsg;
       JSScript		*script;
       JSObject		*scrobj;
 
-      if (!gpsee_compileScript(jsi->cx, preloadScriptFilename, NULL, NULL, &script, jsi->globalObj, &scrobj, &errmsg))
+      if (!gpsee_compileScript(jsi->cx, preloadScriptFilename, NULL, NULL, &script, jsi->globalObj, &scrobj))
       {
-	gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s' - %s", preloadScriptFilename, errmsg);
+	gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
 	goto out;
       }
 
@@ -683,14 +682,13 @@ PRIntn prmain(PRIntn argc, char **argv)
     /* Just compile and exit? */
     if (noRunScript)
     {
-      const char      *errmsg;
       JSScript        *script;
       JSObject        *scrobj;
 
-      if (!gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj, &errmsg))
+      if (!gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj))
       {
-	gpsee_log(SLOG_NOTICE, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
-	GPSEE_ASSERT(errmsg);
+	gpsee_log(SLOG_NOTICE, "Could not compile %s\n", scriptFilename);
+	GPSEE_NOT_REACHED("Could not compile");
 	exitCode = 1;
       }
       else

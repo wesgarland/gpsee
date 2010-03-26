@@ -102,12 +102,11 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
  *  @param    script              The address where a pointer to the new JSScript will be stored.
  *  @param    scope               The address of the JSObject that will represent the 'this' variable for the script.
  *  @param    scriptObject        The address where a pointer to a new "scrobj" will be stored.
- *  @param    errorMessage        The address where a pointer to an error message will be stored in case of error.
  *
  *  @returns  JS_FALSE on error, JS_TRUE on success
  */
 JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, const char *scriptCode,
-                           JSScript **script, JSObject *scope, JSObject **scriptObject, const char **errorMessage)
+                           JSScript **script, JSObject *scope, JSObject **scriptObject)
 {
   char 			cache_filename[PATH_MAX];
   int 			haveCacheFilename = 0;

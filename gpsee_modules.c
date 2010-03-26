@@ -122,7 +122,7 @@ struct modulePathEntry
 /** Type describing a module loader function pointer. These functions can load and
  *  initialize a module during loadDiskModule.
  */
-typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
+typedef JSBool(*moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
 static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module);
@@ -765,27 +765,24 @@ static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
  *   @param	module		Pre-populated moduleHandle
  *   @param	filename	Fully-qualified path to the file to load
  *
- *   @returns	NULL if the module was found,
- *		or a descriptive error string if the module was found but could not load.
+ *   @returns	JSBool
  */
-static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
+static JSBool loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
-  const char *errorMessage;
-
   dprintf("loadJSModule(\"%s\")\n", filename);
   dpDepth(+1);
 
-  if (gpsee_compileScript(cx, filename, NULL, NULL, &module->script,
-      module->scope, &module->scrobj, &errorMessage))
+  if (!gpsee_compileScript(cx, filename, NULL, NULL, &module->script,
+      module->scope, &module->scrobj))
   {
-    dprintf("module %s returns compilation error: %s\n", moduleShortName(filename), errorMessage);
+    dprintf("module %s compilation failed\n", moduleShortName(filename));
     dpDepth(-1);
-    return errorMessage;
+    return JS_FALSE;
   }
 
   dprintf("module %s compiled okay\n", moduleShortName(filename));
   dpDepth(-1);
-  return NULL;
+  return JS_TRUE;
 }
 
 /**
@@ -793,10 +790,9 @@ static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const cha
  *   addresses of the symbols with dlsym().
  *
  *   @param	cx			JS Context
- *   @returns	NULL if the module was found,
- *		or a descriptive error string if the module was found but could not load.
+ *   @returns	JSBool
  */
-static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const char *filename)
+static JSBool loadDSOModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
   jsrefcount 	depth;
 
@@ -806,7 +802,7 @@ static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const ch
 
   if (!module->DSOHnd)
   {
-    return dlerror();
+    return gpsee_throw(cx, "dlopen() error: %s", dlerror());
   }
   else
   {
@@ -820,7 +816,7 @@ static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const ch
     module->fini = dlsym(module->DSOHnd, symbol);
   }
 
-  return NULL;
+  return JS_TRUE;
 }
 
 /**  Check to insure a full path is a child of a jail path.
@@ -968,57 +964,57 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
 static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
 				   moduleHandle_t **module_p)
 {
-  const char		**ext_p, *extensions[] 	= { DSO_EXTENSION,	"js", 		NULL };
-  moduleLoader_t	loaders[] 		= { loadDSOModule, 	loadJSModule};
-  moduleHandle_t	*module = NULL;
+  const char    **ext_p, *extensions[]  = { DSO_EXTENSION,  "js",     NULL };
+  moduleLoader_t  loaders[]             = {loadDSOModule, loadJSModule};
+  moduleHandle_t  *module               = NULL;
   char			fnBuf[PATH_MAX];
 
   for (ext_p = extensions; *ext_p; ext_p++)
   {
     if (snprintf(fnBuf, sizeof(fnBuf), "%s/%s.%s", directory, moduleName, *ext_p) >= sizeof(fnBuf))
     {
-      GPSEE_ASSERT("path buffer overrun");
+      GPSEE_NOT_REACHED("path buffer overrun");
       continue;
     }
 
     dprintf("%s() trying filename '%s'\n", __func__, fnBuf);
     if (access(fnBuf, F_OK) == 0)
     {
-      const char 	*errmsg;
-      char		cnBuf[PATH_MAX];
-      char		*s;
+      JSBool success;
+      char   cnBuf[PATH_MAX];
+      char   *s;
 
       if (!module)
       {
-	int i = gpsee_resolvepath(fnBuf, cnBuf, sizeof(cnBuf));
-	if (i == -1)
-	  return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize: "
-			     "Error canonicalizing '%s' (%m)", fnBuf);
-	if (i >= sizeof(cnBuf))
-	  return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize.overflow: "
-			     "Error canonicalizing '%s' (buffer overflow)", fnBuf);
+        int i = gpsee_resolvepath(fnBuf, cnBuf, sizeof(cnBuf));
+        if (i == -1)
+          return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize: "
+              "Error canonicalizing '%s' (%m)", fnBuf);
+        if (i >= sizeof(cnBuf))
+          return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize.overflow: "
+              "Error canonicalizing '%s' (buffer overflow)", fnBuf);
 
-	if (!checkJail(cnBuf, jsi->moduleJail))
-	  break;
+        if (!checkJail(cnBuf, jsi->moduleJail))
+          break;
 
-	if ((s = strchr(cnBuf, '.')))
-	  if (strcmp(s + 1, *ext_p) == 0)
-	    *s = (char)0;
+        if ((s = strchr(cnBuf, '.')))
+          if (strcmp(s + 1, *ext_p) == 0)
+            *s = (char)0;
 
-	module = acquireModuleHandle(cx, cnBuf, NULL);
-	if (!module)
-	  return JS_FALSE;
-	if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
-	  break;
+        module = acquireModuleHandle(cx, cnBuf, NULL);
+        if (!module)
+          return JS_FALSE;
+        if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
+          break;
       }
 
-      errmsg = loaders[ext_p - extensions](cx, module, fnBuf);
-      if (errmsg)
+      success = loaders[ext_p - extensions](cx, module, fnBuf);
+      if (!success)
       {
-	if (module)
-	  markModuleUnused(cx, module);
-	*module_p = NULL;
-	return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: %s", errmsg);
+        if (module) 
+          markModuleUnused(cx, module);
+        *module_p = NULL;
+        return JS_FALSE;
       }
     }
   }
@@ -1429,7 +1425,6 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   if (!module)
   {
     dprintf("Could not acquire module handle for program module\n");
-    errorMessage = "could not allocate module handle";
     goto fail;
   }
 
@@ -1444,7 +1439,7 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 
   JS_SetGlobalObject(cx, module->scope);
   if (!gpsee_compileScript(cx, fnBuf, scriptFile, NULL, &module->script,
-      module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
+      module->scope, &module->scrobj))
   {
     goto fail;
   }
