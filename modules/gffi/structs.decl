@@ -103,3 +103,22 @@ beginStruct(struct utsname)
   member(char,	machine,	array)
 endStruct(struct utsname)
 
+#include <netinet/in.h>
+beginStruct(struct sockaddr)
+  member(sa_family_t,	sa_family,	integer)
+endStruct(struct sockaddr_in)
+
+beginStruct(struct sockaddr_in)
+  member(sa_family_t,	sin_family,	integer)
+  member(in_port_t,	sin_port,	integer)
+  member(int32_t,	sin_addr,	integer)
+endStruct(struct sockaddr_in)
+
+#if defined(SIN6_LEN)
+beginStruct(struct sockaddr_in6)
+  member(sa_family_t,	sin6_family,	integer)
+  member(in_port_t,	sin6_port,	integer)
+  member(uint16_t,	sin6_addr,	array)
+  member(uint32_t,	sin6_flowinfo,	integer)
+endStruct(struct sockaddr_in)
+#endif
