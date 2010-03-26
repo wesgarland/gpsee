@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base.js,v 1.11 2010/03/08 22:17:55 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.12 2010/03/26 00:22:16 wes Exp $
  */
 
 const binary = require("binary");
@@ -790,6 +790,8 @@ function Stream(stream, fd, mode)
   if (mode)
     this.mode = eval(uneval(mode));
 }
+
+exports.Stream = Stream;	/* temporary, socket depends on this */
 
 /** Generator method which yields lines from a Stream as ByteStrings.
  *
