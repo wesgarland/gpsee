@@ -72,7 +72,7 @@ XMLHttpRequest.prototype = {
         this._status_line = null;
         this.curl.blob = new ByteArray;
         this.curl.header_list = [];
-        this.extraheaders = new easycurl_slist();
+        this.extraheaders = new easycurl_slist;
     },
 
     _charsetSniffer: function(header, raw) {
