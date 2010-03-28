@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.7 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.8 2010/03/26 00:19:32 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.
@@ -191,7 +191,10 @@ JSBool MutableStruct_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval
   return JS_TRUE;
 }
 
-/** Struct casts require the castee and struct name as arguments */
+/** Struct casts require struct name and castee as arguments
+ * 
+ *  @example var s = ffi.MutableStruct("struct stat", byteThing);
+ */
 JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   byteThing_handle_t	*srcHnd;
@@ -201,13 +204,13 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   if (argc != 2)
     return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
 
-  if (!JSVAL_IS_OBJECT(argv[0]))
+  if (!JSVAL_IS_OBJECT(argv[1]))
   {
-    if (JS_ValueToObject(cx, argv[0], &obj) == JS_FALSE)
+    if (JS_ValueToObject(cx, argv[1], &obj) == JS_FALSE)
       return JS_FALSE;
   }
   else
-    obj = JSVAL_TO_OBJECT(argv[0]);
+    obj = JSVAL_TO_OBJECT(argv[1]);
 
   clasp = JS_GET_CLASS(cx, obj);
   srcHnd = JS_GetPrivate(cx, obj);
@@ -229,7 +232,7 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 
   *rval = OBJECT_TO_JSVAL(obj);
 
-  if (MutableStruct_Constructor(cx, obj, 1, argv + 1, rval) == JS_FALSE)
+  if (MutableStruct_Constructor(cx, obj, 1, argv, rval) == JS_FALSE)
     return JS_FALSE;
 
   newHnd = JS_GetPrivate(cx, obj);

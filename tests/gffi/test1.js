@@ -1,4 +1,4 @@
-#! /usr/bin/gsr -ddzz
+#! /usr/bin/gsr -zz
 
 // GFFI program which lightly tests:
 //  - call method

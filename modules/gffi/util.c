@@ -39,7 +39,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Sep 2009
- *  @version	$Id: util.c,v 1.2 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: util.c,v 1.3 2010/03/26 00:19:33 wes Exp $
  */
 
 #include <gpsee.h>
@@ -90,6 +90,11 @@ JSBool pointer_fromString(JSContext *cx, jsval v, void **pointer_p, const char *
   return JS_TRUE;
 }
 
+/** Return the number of bytes required to store a particular ffi_type.
+ *
+ *  @param	ffi_type     	The type
+ *  @returns the number of bytes, or panic
+ */
 size_t ffi_type_size(ffi_type *type)
 {
 #define ffi_type(ftype, ctype) if (type == &ffi_type_ ##ftype) return sizeof(ctype); else
@@ -98,6 +103,30 @@ size_t ffi_type_size(ffi_type *type)
 #undef  FFI_TYPES_SIZED_ONLY
 #undef ffi_type
     panic("corrupted FFI information");
+}
+
+/** Get the number of bytes require to store the indicated type.
+ * 
+ *  @param	tival		A type indicator
+ *  @param	size		[out] the size
+ *  @param	throwPrefix	Prefix for any exceptions thrown
+ *
+ *  @returns	JS_TRUE on success, JS_FALSE if throws
+ */
+JSBool ctypeStorageSize(JSContext *cx, jsval tival, size_t *size, const char *throwPrefix)
+{
+  switch(tival)
+  {
+#define FFI_TYPES_SIZED_ONLY
+#define ffi_type(ftype, ctype) case jsve_ ## ftype: *size = sizeof(ctype); break; 
+#include "ffi_types.decl"
+#undef ffi_type
+#undef FFI_TYPES_SIZED_ONLY
+    default:
+      return gpsee_throw(cx, "%s.typeStorageSize.typeIndicator.invalid", throwPrefix);
+  }
+  
+  return JS_TRUE;
 }
 
 /**
@@ -174,6 +203,7 @@ JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsva
   return gpsee_throw(cx, "%s.returnType.unhandled: unhandled return type", throwPrefix);
 }
 
+/** Not an arg converter - poor naming */
 static JSBool valueTo_jsint(JSContext *cx, jsval v, jsint *ip, int argn, const char *throwPrefix)
 {
   jsdouble d;
@@ -375,8 +405,9 @@ static JSBool valueTo_pointer(JSContext *cx, jsval v, void **avaluep, void **sto
 static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn, const char *throwPrefix) 
 { 
   jsdouble d;
+  long double	*storagep_ld;
 
-  *storagep = JS_malloc(cx, sizeof(long double));
+  *storagep = storagep_ld = JS_malloc(cx, sizeof(long double));
 
   if (!*storagep)
     return JS_FALSE;
@@ -384,7 +415,7 @@ static JSBool valueTo_longdouble(JSContext *cx, jsval v, void **avaluep, void **
   if (JS_ValueToNumber(cx, v, &d) == JS_FALSE)
     return JS_FALSE;
 
-  *(long double *)storagep = d;
+  *storagep_ld = d;
   *avaluep = storagep;
 
   return JS_TRUE; 
@@ -420,3 +451,33 @@ JSBool setupCFunctionArgumentConverters(JSContext *cx, jsval *typeIndicators, cF
 
   return JS_TRUE;
 }
+
+/** Setup up the data size, arguments converter, and ffi_type pointer for a CType instance. 
+ *  @param cx              The JavaScript context
+ *  @param typeIndicator   A type indicator (e.g. jsve_int)
+ *  @param hnd             A CType handle. The handle will be modfied to reflect the details of this particular CType.
+ *                         argument.
+ *  @returns JS_TRUE on success or JS_FALSE on exception
+ */
+JSBool setupCTypeDetails(JSContext *cx, jsval typeIndicator, ctype_handle_t *hnd, const char *throwPrefix)
+{
+  switch(typeIndicator)
+  {
+#define FFI_TYPES_SIZED_ONLY
+#define ffi_type(ftype, ctype) 			\
+    case jsve_ ## ftype: 			\
+      hnd->length = sizeof(ctype); 		\
+      hnd->valueTo_ffiType = valueTo_ ## ftype;	\
+      hnd->ffiType = &ffi_type_ ## ftype; 	\
+      break;					
+#include "ffi_types.decl"
+#undef ffi_type
+#undef FFI_TYPES_SIZED_ONLY
+    default:
+      return gpsee_throw(cx, "%s: invalid type indicator", throwPrefix);
+  }
+
+  return JS_TRUE;
+}
+
+

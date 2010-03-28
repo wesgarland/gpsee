@@ -1,4 +1,4 @@
-#! /usr/bin/gsr -ddzz
+#! /usr/bin/gsr -zz
 
 const ffi = require("gffi");
 

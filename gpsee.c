@@ -262,7 +262,6 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
 
     if (JSREPORT_IS_WARNING(report->flags))
     {
-      loglevel = SLOG_DEBUG;
       snprintf(er_warning, sizeof(er_warning), "%swarning ", (JSREPORT_IS_STRICT(report->flags) ? "strict " : ""));
     }
   }
@@ -826,6 +825,9 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   }
 
   interpreter = calloc(sizeof(*interpreter), 1);
+
+  if (isatty(STDOUT_FILENO))
+    gpsee_verbosity(+1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
   if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x40000"), NULL, 0))))
