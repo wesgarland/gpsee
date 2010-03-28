@@ -30,7 +30,7 @@
  * the provisions above, a recipient may use your version of this file under
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
- * ***** END LICENSE /**
+ * ***** END LICENSE **
  *  @file   curl_module.c       GPSEE wrapper around the easycurl interface of the
  *                              libcurl networking library http://curl.haxx.se/libcurl/c/
  *  @author Nick Galbreath
@@ -51,9 +51,13 @@
 #include "libcurl_constants.h"
 #include "libcurl_curlinfo.h"
 
-// TBD on namespace
+// TODO: correct namespace
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.curl"
 static const char __attribute__((unused)) rcsid[]="$Id: $";
+
+// Forward declarations
+static JSClass easycurl_slist_class;
+static JSClass easycurl_class;
 
 struct callback_data {
   CURL* handle;
@@ -69,44 +73,61 @@ struct callback_data {
  *   ctors/dtors.
  *
  */
-static JSClass easycurl_slist_class;
 
-
-static JSBool easycurl_slist_valueOf(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
+/**
+ * returns a *copy* of slist as an array for debugging only
+ */
+static JSBool easycurl_slist_toArray(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct curl_slist *slist=NULL;
-  slist = (struct curl_slist *)(JS_GetPrivate(cx, obj));
+
+  // slist is a bit weird since it can have a NULL value for private data
+  // so can't use GetInstancePrivate.  Have to check instance and then get
+  // private data
+  if (!JS_InstanceOf(cx, obj, &easycurl_slist_class, rval))
+    return JS_FALSE;
+
+  struct curl_slist *slist = (struct curl_slist *)(JS_GetPrivate(cx, obj));
+
   JSObject* ary = JS_NewArrayObject(cx, 0, NULL);
   *rval = OBJECT_TO_JSVAL(ary);
   int count = 0;
   while (slist != NULL) {
     JSString* s = JS_NewStringCopyN(cx, slist->data, strlen(slist->data));
+    if (!s)
+      return JS_FALSE;
     jsval v = STRING_TO_JSVAL(s);
     JS_SetElement(cx, ary, count, &v);
     slist = slist->next;
-    count++;
+    ++count;
   }
   return JS_TRUE;
 }
 
 static JSBool easycurl_slist_append(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct curl_slist *slist=NULL;
+  struct curl_slist *slist = NULL;
+
+  // slist is a bit weird since it can have a NULL value for private data
+  // so can't use GetInstancePrivate.  Have to check instance and then get
+  // private data
+  if (!JS_InstanceOf(cx, obj, &easycurl_slist_class, rval))
+    return JS_FALSE;
+
   slist = (struct curl_slist *)(JS_GetPrivate(cx, obj));
 
   JSString* str = JS_ValueToString(cx, argv[0]);
   if (!str)
-  {
-    JS_ReportError(cx, "arg1 is not a string\n");
     return JS_FALSE;
-  }
+
+
+  // root the new str
   argv[0] = STRING_TO_JSVAL(str);
 
   const char* s = (const char*) JS_GetStringBytes(str);
   slist = curl_slist_append(slist, s);
   if (!slist)
   {
-    JS_ReportError(cx, "slist append failed");
+    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
   }
 
@@ -129,16 +150,13 @@ static void easycurl_slist_finalize(JSContext* cx, JSObject* obj)
   struct curl_slist* list = (struct curl_slist*)(JS_GetPrivate(cx, obj));
   // SHOULD ASSERT HERE
   if (list)
-  {
     curl_slist_free_all(list);
-    JS_SetPrivate(cx, obj, 0);
-  }
 }
 
 static JSFunctionSpec easycurl_slist_fn[] =
 {
   JS_FS("append", easycurl_slist_append, 1, 0, 0),
-  JS_FS("valueOf", easycurl_slist_valueOf, 0, 0, 0),
+  JS_FS("toArray", easycurl_slist_toArray, 0, 0, 0),
   JS_FS_END
 };
 
@@ -163,6 +181,8 @@ static JSClass easycurl_slist_class =
  */
 static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream)
 {
+  jsval rval;
+  jsval argv[1];
   size_t len = size * nmemb;
 
   // passback from the read/write/header operations
@@ -172,20 +192,23 @@ static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream)
   JSContext* cx = cb->cx;
   JSObject* obj = cb->obj;
 
+  // TODO: Donny; JS_ResumeRequest
   JSObject* bthing = byteThing_fromCArray(cx, (const unsigned char *) ptr, len);
-  jsval argv[1];
   argv[0] = OBJECT_TO_JSVAL(bthing);
 
-  jsval rval;
+  // TODO: check function return value to see if we want to abort or not?
   if (!JS_CallFunctionName(cx, obj, "write", 1, argv, &rval))
     return -1;
 
+  // TODO: Donny: JS_SuspendRequest
   return len;
 }
 
 static size_t header_callback( void *ptr, size_t size, size_t nmemb, void *stream)
 {
-
+  JSString* s;
+  jsval rval;
+  jsval argv[1];
   size_t len = size * nmemb;
 
   // passback from the read/write/header operations
@@ -195,20 +218,21 @@ static size_t header_callback( void *ptr, size_t size, size_t nmemb, void *strea
   JSContext* cx = cb->cx;
   JSObject* obj = cb->obj;
 
-  // TBD: http headers are always ASCII?  Need to read spec
-  JSString* s = JS_NewStringCopyN(cx, (const char*) ptr, len);
+  // TODO: Donny: JS_ResumeRequest(cx, XXXX);
+  // TODO: http headers are always ASCII?  Need to read spec, handle gracefully
+  s = JS_NewStringCopyN(cx, (const char*) ptr, len);
   if (!s)
     return -1;
 
-  jsval rval;
-
-  jsval argv[1];
+  // root new string
   argv[0] = STRING_TO_JSVAL(s);
-  // TBD -- needed or this is auto-rooted in call below?
+
+  // TODO -- needed or this is auto-rooted in call below?
   //JS_AddRoot(cx, &(argv[0]));
   if (!JS_CallFunctionName(cx, obj, "header", 1, argv, &rval))
     return -1;
 
+  // TODO: Donny: JS_SuspendRequest(cx);
   return len;
 }
 
@@ -218,19 +242,19 @@ static size_t header_callback( void *ptr, size_t size, size_t nmemb, void *strea
 
 static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  if (!cb)
+    return JS_FALSE;
   CURL* handle = cb->handle;
-
   int opt = 0;
   CURLcode c = 0;
 
   jsval arg = argv[0];
   if (!JS_ValueToInt32(cx, arg, &opt))
-  {
-    JS_ReportError(cx, "first arg not an int or is an unknown option");
     return JS_FALSE;
-  }
 
+  // TODO: DONNY NOTES: can curl_easy_getinfo() fail for other reasons?
+  //  does it have a way of reporting what went wrong?
   switch (opt)
   {
     // STRINGS
@@ -243,12 +267,16 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
   case CURLINFO_FTP_ENTRY_PATH:
   {
     char* val = NULL;
+    JSString* s = NULL;
+
     c = curl_easy_getinfo(handle, opt, &val);
     if (c != CURLE_OK) {
       JS_ReportError(cx, "Unable to get string value");
       return JS_FALSE;
     }
-    JSString* s = JS_NewStringCopyN(cx, val, strlen(val));
+    s = JS_NewStringCopyN(cx, val, strlen(val));
+    if (!s)
+      return JS_FALSE;
     *rval = STRING_TO_JSVAL(s);
     return JS_TRUE;
   }
@@ -273,13 +301,7 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
       JS_ReportError(cx, "Unable to get long value");
       return JS_FALSE;
     }
-    JSBool ok = JS_NewNumberValue(cx, val, rval);
-    if (!ok)
-    {
-      JS_ReportError(cx, "Unable to covert number to JS!");
-      return JS_FALSE;
-    }
-    return JS_TRUE;
+    return (JS_NewNumberValue(cx, val, rval)) ? JS_TRUE : JS_FALSE;
   }
   // DOUBLES
   case CURLINFO_TOTAL_TIME:
@@ -301,19 +323,14 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
       JS_ReportError(cx, "Unable to get double value");
       return JS_FALSE;
     }
-    JSBool ok = JS_NewNumberValue(cx, dval, rval);
-    if (!ok)
-    {
-      JS_ReportError(cx, "Unable to covert number to JS!");
-      return JS_FALSE;
-    }
-    return JS_TRUE;
+    return (JS_NewNumberValue(cx, dval, rval)) ? JS_TRUE : JS_FALSE;
   }
   // SLISTS
   case CURLINFO_SSL_ENGINES:
   case CURLINFO_COOKIELIST:
   {
     struct curl_slist *list = NULL;
+    JSObject* newobj = NULL;
 
     c = curl_easy_getinfo(handle, opt, &list);
     if (c != CURLE_OK)
@@ -322,17 +339,17 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
       return JS_FALSE;
     }
 
-    JSObject* newobj = JS_NewObject(cx, &easycurl_slist_class, NULL, NULL);
+    newobj = JS_NewObject(cx, &easycurl_slist_class, NULL, NULL);
+    // TODO: Donny  OOM here?
     *rval = OBJECT_TO_JSVAL(newobj);
     JS_SetPrivate(cx, newobj, (void*) list);
     return JS_TRUE;
   }
-  // Not SUpported
+  // Not Supported
   case CURLINFO_PRIVATE:
     //case CURLINFO_CERTINFO:
     JS_ReportError(cx, "Sorry, that option isn't supported yet");
     return JS_FALSE;
-    break;
   default:
     JS_ReportError(cx, "Unknown curl_easy_getinfo option");
     return JS_FALSE;
@@ -359,16 +376,16 @@ static int option_expected_type(int opt)
 
 static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  if (!cb)
+    return JS_FALSE;
+
   CURL* handle = cb->handle;
   int opt = 0;
   CURLcode c = 0;
   jsval arg = argv[0];
   if (!JS_ValueToInt32(cx, arg, &opt))
-  {
-    JS_ReportError(cx, "first arg not an int");
     return JS_FALSE;
-  }
 
   arg = argv[1];
   int optype = option_expected_type(opt);
@@ -380,10 +397,8 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
   if (optype == 1)
   {
     int val;
-    if (!JS_ValueToInt32(cx, argv[1], &val)) {
-      JS_ReportError(cx, "second arg not an int");
+    if (!JS_ValueToInt32(cx, argv[1], &val))
       return JS_FALSE;
-    }
     c = curl_easy_setopt(handle, opt, val);
   }
   else if (optype == 2)
@@ -397,15 +412,19 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
     case CURLOPT_PREQUOTE:
     case CURLOPT_TELNETOPTIONS: {
       // take linked list
-      if (JSVAL_IS_NULL(argv[1]) || JSVAL_IS_VOID(argv[1])) {
+      if (JSVAL_IS_NULL(argv[1])) {
         // null is ok, used to reset to default behavior
         c = curl_easy_setopt(handle, opt, NULL);
       }
       else
       {
-        // TBD OBJECT TYPE CHECK
+        struct curl_slist* slist = NULL;
         JSObject* slistobj = JSVAL_TO_OBJECT(argv[1]);
-        struct curl_slist* slist = (struct curl_slist*) (JS_GetPrivate(cx, slistobj));
+
+        if (!JS_InstanceOf(cx, slistobj, &easycurl_slist_class, rval))
+          return JS_FALSE;
+        slist = (struct curl_slist*) (JS_GetPrivate(cx, slistobj));
+        // null is ok!
         c = curl_easy_setopt(handle, opt, slist);
       }
       break;
@@ -414,14 +433,14 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
     {
       // DEFAULT CASE IS NORMAL STRING
       char* val = NULL;
+      // TODO: why null and void?
       if (!JSVAL_IS_NULL(argv[1]) &&  !JSVAL_IS_VOID(argv[1])) {
         JSString* str = JS_ValueToString(cx, argv[1]);
-        if (!str) {
-          JS_ReportError(cx, "arg1 is not a string\n");
+        if (!str)
           return JS_FALSE;
-        }
+        // root new string
         argv[1] = STRING_TO_JSVAL(str);
-        // TODO CHECK INSTANCE OF EASYCURL_CALLBACK
+        // TODO CHECK that arg is a function.. if not, it will abort anyways when curl calls it.
         val = JS_GetStringBytes(str);
       }
       c = curl_easy_setopt(handle, opt, val);
@@ -439,12 +458,15 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
 
 static JSBool jscurl_perform(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  if (!cb)
+    return JS_FALSE;
+
+  // TODO: Donny: set the cx here and not in construction
+  // TODO: Donny: JS_SuspendRequest
   CURLcode c = curl_easy_perform(cb->handle);
   if (c == 0)
-  {
     return JS_TRUE;
-  }
 
   // something bad happened
   JS_ReportError(cx, "Failed with %d: %s", c, curl_easy_strerror(c));
@@ -462,7 +484,7 @@ static JSBool jscurl_setupcallbacks(struct callback_data* cb)
   CURLcode c = 0;
   // TBD error check
 
-  // TBD why are read and write the same thing.  Doh!
+  // TODO why are read and write the same thing.  Doh!
   //     which is which?
   c = curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
   c = curl_easy_setopt(handle, CURLOPT_WRITEDATA, cb);
@@ -480,6 +502,8 @@ static JSBool jscurl_version(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
 {
   char* v = curl_version();
   JSString* s = JS_NewStringCopyN(cx, v, strlen(v));
+  if (!s)
+    return JS_FALSE;
   *rval = STRING_TO_JSVAL(s);
   return JS_TRUE;
 }
@@ -489,17 +513,13 @@ static JSBool jscurl_getdate(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
   JSString* str = JS_ValueToString(cx, argv[0]);
   if (!str)
     return JS_FALSE;
+
+  // root string
   argv[0] = STRING_TO_JSVAL(str);
   const char* val = JS_GetStringBytes(str);
   double d = curl_getdate(val, NULL);
 
-  JSBool ok = JS_NewNumberValue(cx, d, rval);
-  if (!ok)
-  {
-    JS_ReportError(cx, "Unable to covert to JS!");
-    return JS_FALSE;
-  }
-  return JS_TRUE;
+  return JS_NewNumberValue(cx, d, rval) ? JS_TRUE : JS_FALSE;
 }
 
 static void easycurl_finalize(JSContext* cx, JSObject* obj)
@@ -508,8 +528,7 @@ static void easycurl_finalize(JSContext* cx, JSObject* obj)
   if (cb)
   {
     curl_easy_cleanup(cb->handle);
-    free(cb);
-    JS_SetPrivate(cx, obj, 0);
+    JS_free(cx, cb);
   }
 }
 
@@ -539,18 +558,24 @@ static JSClass easycurl_class =
 
 static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp, jsval* rval)
 {
+  struct callback_data* cb = NULL;
+  JSObject* newobj = NULL;
+
   CURL* handle = curl_easy_init();
   if (!handle)
   {
     JS_ReportError(cx, "Unable to initialize libcurl!");
     return JS_FALSE;
   }
-  JSObject* newobj = JS_NewObject(cx, &easycurl_class, NULL, NULL);
+  newobj = JS_NewObject(cx, &easycurl_class, NULL, NULL);
+  if (!newobj)
+    return JS_FALSE;
   *rval = OBJECT_TO_JSVAL(newobj);
 
-  struct callback_data* cb = (struct callback_data*) malloc(sizeof(struct callback_data));
+  cb = (struct callback_data*) JS_malloc(cx, sizeof(struct callback_data));
   if (!cb)
   {
+    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
   }
 
@@ -560,7 +585,9 @@ static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp,
 
   if (!jscurl_setupcallbacks(cb))
   {
-    free(cb);
+    JS_free(cx, cb);
+    // TODO: Donny: should this really be OOM?
+    JS_ReportError(cx, "failed to set libcurl callbacks");
     return JS_FALSE;
   }
 
@@ -573,12 +600,8 @@ static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp,
 const char *curl_InitModule(JSContext *cx, JSObject *obj)
 {
 
-  JSObject* curlmem = Memory_InitClass(cx, obj);
-  if (!curlmem)
-  {
-    // TBD REPORTING
+  if (!Memory_InitClass(cx, obj))
     return NULL;
-  }
 
   JSObject* easycurl_proto =
     JS_InitClass(cx, obj,
@@ -592,24 +615,13 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
       );
 
   if (!easycurl_proto)
-  {
-    // TBD ERROR REPORTING
     return NULL;
-  }
 
   if (!JS_DefineConstDoubles(cx, easycurl_proto, easycurl_options))
-  {
-    // TBD ERROR REPORTIG
-    fprintf(stderr, "whoopsies -- bad easycurl options spec");
     return NULL;
-  }
 
   if (!JS_DefineConstDoubles(cx, easycurl_proto, easycurl_info))
-  {
-    // TBD ERROR REPORTING
-    fprintf(stderr, "whoopsies -- bad info spec");
     return NULL;
-  }
 
   JSObject* easycurl_slist_proto =
     JS_InitClass(cx, obj,
@@ -623,10 +635,7 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
       );
 
   if (!easycurl_slist_proto)
-  {
-    // TBD: error?
     return NULL;
-  }
 
   return MODULE_ID;
 }
