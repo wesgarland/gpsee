@@ -6,6 +6,7 @@ myxhr.onreadystatechange = function() {
 }
 
 myxhr.open('GET', 'http://www.google.com/');
+
 myxhr.send();
 
 print(myxhr.getAllResponseHeaders());
