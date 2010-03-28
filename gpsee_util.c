@@ -424,7 +424,19 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   size_t sz;
   int tty = isatty(STDOUT_FILENO);
-  
+
+  if (tty)
+  {
+    const char *term = getenv("TERM");
+
+    if (!term || ( 
+		  (strncmp(term, "vt10", 4) != 0) &&
+		  (strncmp(term, "xterm", 5) != 0) &&
+		  (strcmp(term, "dtterm") != 0) &&
+		  (strcmp(term, "ansi") != 0)))
+      tty = 0;
+  }
+
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", report->filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
@@ -518,8 +530,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
     {
       if (JSVAL_IS_STRING(v))
       {
-        int lines;
-        char *c, *d, *stack;
+        char *stack;
         /* Make char buffer from JSString* */
         stack = JS_GetStringBytes(JSVAL_TO_STRING(v));
         if (!stack) // OOM
@@ -599,7 +610,7 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
   size_t widecol;
   size_t tablewidth;
   int i;
-  char *c, *d;
+  char *c;
   
   /* How many characters wide is the terminal? */
   if (getenv("COLUMNS"))

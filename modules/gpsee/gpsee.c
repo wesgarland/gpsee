@@ -211,15 +211,13 @@ static size_t strcpylen(char *target, const char *source)
 /** Load and interpreter a script in the caller's context */
 static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  JSScript 	*script;
-  JSObject	*scrobj;
-  JSObject	*thisObj;
-  jsval		*fnArg;
-  const char	*scriptFilename;
-  JSString	*scriptFilename_jsstr;
-  JSBool	retval;
-  int           failure;
-  const char    *errmsg;
+  JSScript    *script;
+  JSObject    *scrobj;
+  JSObject    *thisObj;
+  jsval       *fnArg;
+  const char  *scriptFilename;
+  JSString    *scriptFilename_jsstr;
+  JSBool      success;
 
   switch(argc)
   {
@@ -235,10 +233,10 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
       fnArg = argv + 1;
 
       if (JSVAL_IS_OBJECT(argv[0]) != JS_TRUE)
-	return gpsee_throw(cx, MODULE_ID ".include.arguments.0.notObject");
+        return gpsee_throw(cx, MODULE_ID ".include.arguments.0.notObject");
 
       if (JSVAL_IS_NULL(argv[0]) == JS_TRUE)
-	return gpsee_throw(cx, MODULE_ID ".include.arguments.0.isNull");
+        return gpsee_throw(cx, MODULE_ID ".include.arguments.0.isNull");
 
       break;
   }
@@ -255,24 +253,18 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   JS_AddNamedRoot(cx, &scriptFilename_jsstr, "GpseeModule.include.scriptFilename_jsstr");
 
   errno = 0;
-  failure = gpsee_compileScript(cx, scriptFilename, NULL, &script, thisObj, &scrobj, &errmsg);
+  success = gpsee_compileScript(cx, scriptFilename, NULL, NULL, &script, thisObj, &scrobj);
 
   JS_RemoveRoot(cx, &scriptFilename_jsstr);
 
-  if (failure)
-  {
-    if (!JS_IsExceptionPending(cx))
-      return gpsee_throw(cx, MODULE_ID ".include.compile: Error compiling \"%s\": %s (%s)",
-			 scriptFilename, errmsg, strerror(errno));
-    else
-      return JS_FALSE;
-  }
+  if (!success)
+    return JS_FALSE;
 
   JS_AddNamedRoot(cx, &scrobj, "include_scrobj");
-  retval = JS_ExecuteScript(cx, thisObj, script, rval);
+  success = JS_ExecuteScript(cx, thisObj, script, rval);
   JS_RemoveRoot(cx, &scrobj);
 
-  return retval;
+  return success;
 }
 
 /** Issue a shell command */

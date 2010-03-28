@@ -122,7 +122,7 @@ struct modulePathEntry
 /** Type describing a module loader function pointer. These functions can load and
  *  initialize a module during loadDiskModule.
  */
-typedef const char *(* moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
+typedef JSBool(*moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
 static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module);
@@ -765,27 +765,24 @@ static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
  *   @param	module		Pre-populated moduleHandle
  *   @param	filename	Fully-qualified path to the file to load
  *
- *   @returns	NULL if the module was found,
- *		or a descriptive error string if the module was found but could not load.
+ *   @returns	JSBool
  */
-static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
+static JSBool loadJSModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
-  const char *errorMessage;
-
   dprintf("loadJSModule(\"%s\")\n", filename);
   dpDepth(+1);
 
-  if (gpsee_compileScript(cx, filename, NULL, &module->script,
-      module->scope, &module->scrobj, &errorMessage))
+  if (!gpsee_compileScript(cx, filename, NULL, NULL, &module->script,
+      module->scope, &module->scrobj))
   {
-    dprintf("module %s returns compilation error: %s\n", moduleShortName(filename), errorMessage);
+    dprintf("module %s compilation failed\n", moduleShortName(filename));
     dpDepth(-1);
-    return errorMessage;
+    return JS_FALSE;
   }
 
   dprintf("module %s compiled okay\n", moduleShortName(filename));
   dpDepth(-1);
-  return NULL;
+  return JS_TRUE;
 }
 
 /**
@@ -793,10 +790,9 @@ static const char *loadJSModule(JSContext *cx, moduleHandle_t *module, const cha
  *   addresses of the symbols with dlsym().
  *
  *   @param	cx			JS Context
- *   @returns	NULL if the module was found,
- *		or a descriptive error string if the module was found but could not load.
+ *   @returns	JSBool
  */
-static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const char *filename)
+static JSBool loadDSOModule(JSContext *cx, moduleHandle_t *module, const char *filename)
 {
   jsrefcount 	depth;
 
@@ -806,7 +802,7 @@ static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const ch
 
   if (!module->DSOHnd)
   {
-    return dlerror();
+    return gpsee_throw(cx, "dlopen() error: %s", dlerror());
   }
   else
   {
@@ -820,7 +816,7 @@ static const char *loadDSOModule(JSContext *cx, moduleHandle_t *module, const ch
     module->fini = dlsym(module->DSOHnd, symbol);
   }
 
-  return NULL;
+  return JS_TRUE;
 }
 
 /**  Check to insure a full path is a child of a jail path.
@@ -968,57 +964,57 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
 static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
 				   moduleHandle_t **module_p)
 {
-  const char		**ext_p, *extensions[] 	= { DSO_EXTENSION,	"js", 		NULL };
-  moduleLoader_t	loaders[] 		= { loadDSOModule, 	loadJSModule};
-  moduleHandle_t	*module = NULL;
+  const char    **ext_p, *extensions[]  = { DSO_EXTENSION,  "js",     NULL };
+  moduleLoader_t  loaders[]             = {loadDSOModule, loadJSModule};
+  moduleHandle_t  *module               = NULL;
   char			fnBuf[PATH_MAX];
 
   for (ext_p = extensions; *ext_p; ext_p++)
   {
     if (snprintf(fnBuf, sizeof(fnBuf), "%s/%s.%s", directory, moduleName, *ext_p) >= sizeof(fnBuf))
     {
-      GPSEE_ASSERT("path buffer overrun");
+      GPSEE_NOT_REACHED("path buffer overrun");
       continue;
     }
 
     dprintf("%s() trying filename '%s'\n", __func__, fnBuf);
     if (access(fnBuf, F_OK) == 0)
     {
-      const char 	*errmsg;
-      char		cnBuf[PATH_MAX];
-      char		*s;
+      JSBool success;
+      char   cnBuf[PATH_MAX];
+      char   *s;
 
       if (!module)
       {
-	int i = gpsee_resolvepath(fnBuf, cnBuf, sizeof(cnBuf));
-	if (i == -1)
-	  return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize: "
-			     "Error canonicalizing '%s' (%m)", fnBuf);
-	if (i >= sizeof(cnBuf))
-	  return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize.overflow: "
-			     "Error canonicalizing '%s' (buffer overflow)", fnBuf);
+        int i = gpsee_resolvepath(fnBuf, cnBuf, sizeof(cnBuf));
+        if (i == -1)
+          return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize: "
+              "Error canonicalizing '%s' (%m)", fnBuf);
+        if (i >= sizeof(cnBuf))
+          return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize.overflow: "
+              "Error canonicalizing '%s' (buffer overflow)", fnBuf);
 
-	if (!checkJail(cnBuf, jsi->moduleJail))
-	  break;
+        if (!checkJail(cnBuf, jsi->moduleJail))
+          break;
 
-	if ((s = strchr(cnBuf, '.')))
-	  if (strcmp(s + 1, *ext_p) == 0)
-	    *s = (char)0;
+        if ((s = strchr(cnBuf, '.')))
+          if (strcmp(s + 1, *ext_p) == 0)
+            *s = (char)0;
 
-	module = acquireModuleHandle(cx, cnBuf, NULL);
-	if (!module)
-	  return JS_FALSE;
-	if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
-	  break;
+        module = acquireModuleHandle(cx, cnBuf, NULL);
+        if (!module)
+          return JS_FALSE;
+        if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
+          break;
       }
 
-      errmsg = loaders[ext_p - extensions](cx, module, fnBuf);
-      if (errmsg)
+      success = loaders[ext_p - extensions](cx, module, fnBuf);
+      if (!success)
       {
-	if (module)
-	  markModuleUnused(cx, module);
-	*module_p = NULL;
-	return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: %s", errmsg);
+        if (module) 
+          markModuleUnused(cx, module);
+        *module_p = NULL;
+        return JS_FALSE;
       }
     }
   }
@@ -1323,6 +1319,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   return JS_TRUE;
 }
 
+#define RUNPROERR "error in gpsee_runProgramModule(\"%s\"): "
 /** Run a program as if it were a module. Interface differs from gpsee_loadModule()
  *  to reflect things like that the source of the program module may be stdin rather
  *  than a module file, may not be in the libexec dir, etc.
@@ -1332,13 +1329,16 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
  *
  *  Note that only JavaScript modules can be program modules.
  *
- *  @param 	cx		JavaScript context for execution
- *  @param	scriptFilename	Filename where we can find the script
- *  @param	scriptFile	Stream positioned where we can start reading the script, or NULL
+ *  @param      cx              JavaScript context for execution
+ *  @param      scriptFilename  This specifies the file to open if neither scriptCode nor ScriptFile are non-null. If
+ *                              either of those are non-null, this filename is still handed off to Spidermonkey and is
+ *                              useful in qualifying warnings, error messages, or for identifying code via debugger.
+ *  @param      scriptCode      If non-null, points to actual Javascript source code.
+ *  @param      scriptFile      Stream positioned where we can start reading the script, or NULL
  *
- *  @returns	NULL on success, error string on failure
+ *  @returns    JS_TRUE on success, otherwise JS_FALSE
  */
-const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FILE *scriptFile)
+JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile)
 {
   moduleHandle_t 	*module;
   char			cnBuf[PATH_MAX];
@@ -1357,45 +1357,62 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
     char	tmpBuf[PATH_MAX];
     
     if (getcwd(tmpBuf, sizeof(tmpBuf)) == NULL)
-      return "getcwd failure";
+      return gpsee_throw(cx, RUNPROERR "getcwd() error: %m", scriptFilename);
 
     if (gpsee_catstrn(tmpBuf, "/", sizeof(tmpBuf)) == 0)
-      return "buffer overrun";
+      return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
 
     if (gpsee_catstrn(tmpBuf, scriptFilename, sizeof(tmpBuf)) == 0)
-      return "buffer overrun";
+      return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
 
     i = gpsee_resolvepath(tmpBuf, cnBuf, sizeof(cnBuf));
   }
   if ((i >= sizeof(cnBuf)) || (i == -1))
-    return "buffer overrun";
+    return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
   else
     cnBuf[i] = (char)0;
 
-  dprintf("Running program module %s\n", moduleShortName(scriptFilename ?: " from FILE*"));
+  // Is this change ok?
+  dprintf("Running program module \"%s\"\n", scriptFilename);
   dpDepth(+1);
-
-  if (scriptFile)
-  {
-    /* Insure that the supplied script file stream matches the file name */
-    int 	e = 0;
-    struct stat sb1, sb2;
-
-    e = stat(cnBuf, &sb1);
-    if (!e)
-      e = fstat(fileno(scriptFile), &sb2);
-
-    if (e)
-      gpsee_log(SLOG_ERR, "Unable to stat program module %s: %m", cnBuf);
-    else
-    {
-      if ((sb1.st_ino != sb2.st_ino) || (sb1.st_dev != sb2.st_dev))
-	gpsee_log(SLOG_ERR, "Program module does not have a valid canonical name");
-    }
-  }
 
   /* Before mangling cnBuf, let's copy it to fnBuf to be used in gpsee_compileScript() */
   strcpy(fnBuf, cnBuf);
+
+  /* If we were supplied a FILE* from which to get our source code, we want to ensure that the scriptFilename
+   * still refers to this file. This check may be unnecessary or redundant, but it will help keep knots out of our
+   * hair. TODO we should fix this check if we ever support symbolic filenames like "stdin" or URIs like
+   * "http://what/ever.js" (in fact we should probably use something like "sym://" for symbolic filenames to simplify
+   * things, should this ever be added.
+   */
+  if (scriptFile)
+  {
+    /* Ensure that the supplied script file stream matches the file name */
+    struct stat sb1, sb2;
+
+    if (stat(fnBuf, &sb1))
+      return gpsee_throw(cx, RUNPROERR "stat(\"%s\") error: %m", scriptFilename, fnBuf);
+
+    if (fstat(fileno(scriptFile), &sb2))
+      return gpsee_throw(cx, RUNPROERR "fstat(file descriptor %d, allegedly \"%s\") error: %m", scriptFilename,
+                             fileno(scriptFile), fnBuf);
+
+    if ((sb1.st_ino != sb2.st_ino) || (sb1.st_dev != sb2.st_dev))
+      return gpsee_throw(cx, RUNPROERR "file moved? \"%s\" stat inode/dev %d/%d doesn't match file descriptor"
+                             " %d inode/dev %d/%d", scriptFilename,
+                             fnBuf, (int)sb1.st_ino, (int)sb1.st_dev,
+                             fileno(scriptFile), (int)sb2.st_ino, (int)sb2.st_dev);
+  }
+
+  /* If we are no supplied an open FILE* ('scriptFile') or literal script code ('scriptCode') then we should try to
+   * open the file from 'scriptFilename'
+   */
+  if (!scriptFile && !scriptCode)
+  {
+    scriptFile = fopen(scriptFilename, "r");
+    if (!scriptFile)
+      return gpsee_throw(cx, RUNPROERR "fopen() error %m", scriptFilename);
+  }
 
   /* The "cname" argument to acquireModuleHandle() names a module, not a file, so let's remove the .js extension */
   if ((s = strrchr(cnBuf, '.')))
@@ -1408,7 +1425,6 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (!module)
   {
     dprintf("Could not acquire module handle for program module\n");
-    errorMessage = "could not allocate module handle";
     goto fail;
   }
 
@@ -1422,11 +1438,9 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   dprintf("compiling program module %s\n", moduleShortName(module->cname));
 
   JS_SetGlobalObject(cx, module->scope);
-  if (gpsee_compileScript(cx, fnBuf, scriptFile, &module->script,
-      module->scope, &module->scrobj, &errorMessage)) /* XXX refactor */
+  if (!gpsee_compileScript(cx, fnBuf, scriptFile, NULL, &module->script,
+      module->scope, &module->scrobj))
   {
-    if (!JS_IsExceptionPending(cx))
-      (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".runProgramModule.compile: %s", errorMessage);
     goto fail;
   }
 
@@ -1436,43 +1450,21 @@ const char *gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, FI
   if (initializeModule(cx, module) == JS_TRUE)
     goto good;
 
-  /* More serious errors get handled here in "fail:" but twe fall through to "good:" where
-   * additional and/or less serious error reporting facilities exist.
-   */
-  fail:
-  {
-    dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
-  }
-
   good:
-  JS_SetGlobalObject(cx, jsi->globalObj);
 
-  /* If there is a pending exception, we'll report it here */
-  if (JS_IsExceptionPending(cx))
-  {
-    int exitCode;
-    /* Is this a formal SystemExit? Assume all error reporting has been performed by the application. */
-    exitCode = gpsee_getExceptionExitCode(cx);
-    if (exitCode >= 0)
-    {
-      jsi->exitCode = exitCode;
-      jsi->exitType = et_finished;
-    }
-    /* Any other type of program exception will be reported here */
-    else
-    {
-      /* @todo where should we publish this stuff to? */
-      gpsee_reportUncaughtException(cx, JSVAL_NULL);
-      jsi->exitType = et_exception;
-    }
-  }
+  JS_SetGlobalObject(cx, jsi->globalObj);
+  return JS_TRUE;
+
+  fail:
+
+  dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
 
   if (module)
     markModuleUnused(cx, module);
 
   dpDepth(-1);
  
-  return errorMessage; /* NULL == no failures */
+  return JS_FALSE;
 }
 
 /** Callback from the garbage collector, which marks all
