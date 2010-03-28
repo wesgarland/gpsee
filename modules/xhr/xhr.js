@@ -3,8 +3,7 @@
 
 const curlmod = require('curl');
 
-// Allowing it so I can change ByteArray or ByteString as needed
-const Binary = require('binary').ByteArray;
+const ByteArray = require('binary').ByteArray;
 
 // Only two items exported.
 var easycurl = curlmod.easycurl;
@@ -45,9 +44,9 @@ var XMLHttpRequest = function() {
     z.setopt(z.CURLOPT_SSL_VERIFYPEER, 0);
 
     // CALLBACKS FOR READS AND HEADERS
-    z.blobs = [];
+    z.blob = [];
     z.header_list = [];
-    z.write  = function(s) { print("BLOB: " + s.size); z.blobs.push(s); };
+    z.write  = function(s) { z.blob.concat(ByteArray(s)); };
     z.header = function(s) { z.header_list.push(s); }
 
 };
@@ -71,7 +70,7 @@ XMLHttpRequest.prototype = {
         this._send_flag = false;
         this._error_flag = false;
         this._status_line = null;
-        this.curl.blobs = [];
+        this.curl.blob = new ByteArray;
         this.curl.header_list = [];
         this.extraheaders = new easycurl_slist();
     },
@@ -394,26 +393,7 @@ XMLHttpRequest.prototype = {
             return null;
         }
 
-        // take all the chunks and concat them
-        // this is a bit weird since the curl binary object
-        //  IS NOT a "binary/b" ByteArray but a special
-        //  binary type unique to curl
-        //
-        // This is not so great.
-        //
-        var body = null;
-        var parts = this.curl.blobs.length;
-        if (parts > 0) {
-            body = Binary(this.curl.blobs[0]);
-            for (var i=1; i< parts; ++i) {
-                body.concat(Binary(this.curl.blobs[i]));
-            }
-        }
-        if (body === null) {
-            return null;
-        } else {
-            return body;
-        }
+        return this.curl.blob;
     },
 
     /**

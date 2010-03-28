@@ -10,11 +10,12 @@ myxhr.send();
 
 print(myxhr.getAllResponseHeaders());
 
-print(myxhr.responseRaw);
+print("RAW DATA IS: " + myxhr.responseRaw);
 
 print("STATUS CODE = " + myxhr.status);
 print("STATUS TEXT = " + myxhr.statusText);
 
 var text = myxhr.responseText;
 print("TEXT = " + text);
+
 
