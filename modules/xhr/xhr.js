@@ -6,8 +6,8 @@ const curlmod = require('curl');
 const ByteArray = require('binary').ByteArray;
 
 // Only two items exported.
-var easycurl = curlmod.easycurl;
-var easycurl_slist = curlmod.easycurl_slist;
+const easycurl = curlmod.easycurl;
+const easycurl_slist = curlmod.easycurl_slist;
 
 /**
  * @class
@@ -294,9 +294,7 @@ XMLHttpRequest.prototype = {
                 postdata = data.toString();
             }
         }
-
         this.curl.setopt(this.curl.CURLOPT_HTTPHEADER, this.extraheaders);
-
         // reset header and body buffers
         this._reset();
 
@@ -310,7 +308,6 @@ XMLHttpRequest.prototype = {
         } else {
             throw new Error("DOMException.NOT_SUPPORTED_ERR");
         }
-
         // DO IT
         this.curl.perform();
 
