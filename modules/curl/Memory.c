@@ -229,18 +229,18 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
       jsdouble d;
 
       if (JS_ValueToNumber(cx, argv[0], &d) == JS_FALSE)
-	return JS_FALSE;
+        return JS_FALSE;
 
       hnd->length = d;
       if (d != hnd->length)
-	return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
+        return gpsee_throw(cx, CLASS_ID ".constructor.size: %1.2g is not a valid memory size", d);
     }
 
   if (hnd->length)
     {
       hnd->buffer = JS_malloc(cx, hnd->length);
       if (!hnd->buffer)
-	return JS_FALSE;
+        return JS_FALSE;
 
       hnd->memoryOwner = obj;
       memset(hnd->buffer, 0, hnd->length);
@@ -249,19 +249,19 @@ JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   if (argc == 2) /* Allow JS programmer to override sanity */
     {
       if (argv[1] != JSVAL_TRUE && argv[1] != JSVAL_FALSE)
-	{
-	  JSBool b;
+        {
+          JSBool b;
 
-	  if (JS_ValueToBoolean(cx, argv[1], &b) == JSVAL_FALSE)
-	    return JS_FALSE;
-	  else
-	    argv[1] = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
-	}
+          if (JS_ValueToBoolean(cx, argv[1], &b) == JSVAL_FALSE)
+            return JS_FALSE;
+          else
+            argv[1] = (b == JS_TRUE) ? JSVAL_TRUE : JSVAL_FALSE;
+        }
 
       if (argv[1] == JSVAL_TRUE)
-	hnd->memoryOwner = obj;
+        hnd->memoryOwner = obj;
       else
-	hnd->memoryOwner = NULL;
+        hnd->memoryOwner = NULL;
     }
 
   return JS_TRUE;
