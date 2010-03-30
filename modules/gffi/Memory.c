@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.10 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: Memory.c,v 1.11 2010/03/30 21:08:55 wes Exp $
  */
 
 #include <gpsee.h>
@@ -100,7 +100,9 @@ static JSBool memory_parseLengthArgument(JSContext *cx, jsval v, char *buffer, s
  *     - strlen
  */
 /* @jazzdoc gffi.Memory.asString()
- * This is an interface to JS_NewStringCopyN().
+ * This is an interface to JS_NewStringCopyN(). It turns a C character buffer into a JS String, obeying the
+ * current rules for JS C Strings -- this will be either a naive uchar-uint16 cast or interpretation via UTF-8,
+ * depending on the embedding.
  *
  * @form (instance of Memory).asString()
  * This form of the asString() instance method infers the length of memory to be consumed, and the Javascript String returned,
@@ -158,9 +160,167 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 }
 
 /**
+ *  Implements Memory.prototype.asDataString -- a method to take a Memory object,
+ *  treat it as a char * and be decoded toString() with a simple uchar->uint16 cast.
+ *  This function will not change behaviour regardless of the local environment
+ *  or spidermonkey UTF-8 settings.
+ *
+ *  asDataString can take one argument: a length. If length is -1, use strlen;
+ *  otherwise use at most length bytes. If length is not defined, we use either
+ *     - buffer->length when !hnd->memoryOwner != this, or
+ *     - strlen
+ */
+/* @jazzdoc gffi.Memory.asDataString()
+ * This is an interface turns a C character buffer into a JS String, ignoring the
+ * current rules for JS C Strings -- this will be always be a naive uchar-uint16 cast.
+ *
+ * @form (instance of Memory).asDataString()
+ * This form of the asDataString() instance method infers the length of memory to be consumed, and the Javascript String returned,
+ * on its own. It will use strlen() to accomplish this if it does not already "know" its own length. 
+ *
+ * @form (instance of Memory).asDataString(-1)
+ * Like the above form, but use of strlen() is forced.
+ *
+ * @form (instance of Memory).asDataString(length >= 0)
+ * As the first form, but assuming the specified length.
+ */
+static JSBool memory_asDataString(JSContext *cx, uintN argc, jsval *vp)
+{
+  memory_handle_t	*hnd;
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  JSString		*str;
+  size_t		length, i;
+  jsval			*argv = JS_ARGV(cx, vp);
+  jschar		*buf;
+
+  if (!obj)
+    return JS_FALSE;
+
+  hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  if (!hnd)
+    return JS_FALSE;
+
+  if (!hnd->buffer)
+  {
+    *vp = JSVAL_NULL;
+    return JS_TRUE;
+  }
+
+  switch(argc)
+  {
+    case 0:
+      if (hnd->length || (hnd->memoryOwner == obj))
+	length = hnd->length;
+      else
+	length = strlen((char *)hnd->buffer);
+      break;
+    case 1:
+      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asDataString.argument.1") == JS_FALSE)
+	return JS_FALSE;
+      break;
+    default:
+      return gpsee_throw(cx, CLASS_ID ".asDataString.arguments.count");
+  }
+
+  buf = JS_malloc(cx, length * 2);
+  if (!buf)
+    return JS_FALSE;
+
+  for (i=0; i < length; i++)
+    buf[i] = ((unsigned char *)hnd->buffer)[i];
+
+  str = JS_NewUCString(cx, buf, length);
+  if (!str)
+    return JS_FALSE;
+
+  *vp = STRING_TO_JSVAL(str);
+  return JS_TRUE;
+}
+
+/**
+ *  Implements Memory.prototype.copyDataString -- a method to take a String and
+ *  and copy it into a Memory object's backing store a simple uint16->uchar cast.
+ *  This function will not change behaviour regardless of the local environment
+ *  or spidermonkey UTF-8 settings.
+ *
+ */
+/* @jazzdoc gffi.Memory.copyDataString()
+ * 
+ * Turn a JS String into a C character buffer into a JS String, ignoring the
+ * current rules for JS C Strings -- this will be always be a ive uint16-uchar cast.
+ * Strings using characters > 255 will have those characters truncated to eight bits.
+ *
+ * @form (instance of Memory).copyDataString(instance of String)
+ * This form of the copyDataString() instance method infers the length of Javascript String consumed
+ * on its own. 
+ *
+ * @form (instance of Memory).asDataString(instance of String, length)
+ * Like the above form, but the number of characters to consume is forced.
+ */
+static JSBool memory_copyDataString(JSContext *cx, uintN argc, jsval *vp)
+{
+  memory_handle_t	*hnd;
+  JSObject		*obj = JS_THIS_OBJECT(cx, vp);
+  size_t		length, i;
+  jsval			*argv = JS_ARGV(cx, vp);
+  jschar		*buf;
+  JSString		*str;
+
+  if (!obj)
+    return JS_FALSE;
+
+  hnd = JS_GetInstancePrivate(cx, obj, memory_clasp, NULL);
+  if (!hnd)
+    return JS_FALSE;
+
+  if (!hnd->buffer)
+  {
+    *vp = JSVAL_NULL;
+    return JS_TRUE;
+  }
+
+  switch(argc)
+  {
+    case 1:
+      length = JS_GetStringLength(str);
+      break;
+    case 2:
+      if (JSVAL_IS_INT(argv[1]))
+	length = JSVAL_TO_INT(argv[1]);
+      else
+      {
+	jsdouble d;
+
+	if (JS_ValueToNumber(cx, argv[0], &d) != JS_TRUE)
+	  return JS_FALSE;
+
+	length = d;
+	if (d != length)
+	  return gpsee_throw(cx, CLASS_ID ".copyDataString.overflow");
+      }
+
+      break;
+    default:
+      return gpsee_throw(cx, CLASS_ID ".fromDataString.arguments.count");      
+  }
+
+  if (JSVAL_IS_STRING(argv[0]))
+    str = JSVAL_TO_STRING(argv[0]);
+  else
+    return gpsee_throw(cx, CLASS_ID ".fromDataString.arguments.0.type: must be a string");
+
+  buf = JS_GetStringChars(str);
+  
+  for (i=0; i < min(length, JS_GetStringLength(str)); i++)
+    hnd->buffer[i] = buf[i];
+  
+  return JS_TRUE;
+}
+
+/**
  *  Implements Memory.prototype.toString -- a method to take a Memory object,
  *  and return the address of the backing store encoded in a JavaScript String,
- *  so that JS programmers can compare pointers.
+ *  so that JS programmers can examine pointers.
  */
 static JSBool memory_toString(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -625,10 +785,12 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 
   static JSFunctionSpec memory_methods[] = 
   {
-    JS_FN("toString",	memory_toString, 	0, JSPROP_ENUMERATE),
-    JS_FN("asString",	memory_asString, 	0, JSPROP_ENUMERATE),
-    JS_FN("realloc",	memory_realloc, 	0, JSPROP_ENUMERATE),
-    JS_FN("duplicate",	memory_duplicate,	0, JSPROP_ENUMERATE),
+    JS_FN("toString",		memory_toString, 	0, JSPROP_ENUMERATE),
+    JS_FN("asString",		memory_asString, 	0, JSPROP_ENUMERATE),
+    JS_FN("asDataString",	memory_asDataString, 	0, JSPROP_ENUMERATE),
+    JS_FN("copyDataString",	memory_copyDataString, 	0, JSPROP_ENUMERATE),
+    JS_FN("realloc",		memory_realloc, 	0, JSPROP_ENUMERATE),
+    JS_FN("duplicate",		memory_duplicate,	0, JSPROP_ENUMERATE),
     JS_FS_END
   };
 
@@ -652,3 +814,21 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 
   return memory_proto;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
