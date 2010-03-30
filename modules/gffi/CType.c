@@ -46,7 +46,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Mar 2010
- *  @version	$Id: Memory.c,v 1.10 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: CType.c,v 1.1 2010/03/30 21:06:58 wes Exp $
  *
  *  @example
  *
@@ -144,8 +144,12 @@ JSBool CType_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     obj = JSVAL_TO_OBJECT(argv[1]);
 
   clasp = JS_GET_CLASS(cx, obj);
-  srcHnd = JS_GetPrivate(cx, obj);
-  if (!srcHnd || !gpsee_isByteThingClass(cx, clasp))
+  if (gpsee_isByteThingClass(cx, clasp))
+    srcHnd = JS_GetPrivate(cx, obj);
+  else
+    srcHnd = NULL;
+
+  if (!srcHnd)
   {
     const char	*className;
 
@@ -308,8 +312,29 @@ static JSBool ctype_valueOf(JSContext *cx, uintN argc, jsval *vp)
   return ctype_value_getter(cx, JS_THIS_OBJECT(cx, vp), 0, vp);
 }
 
+static JSBool ctype_size_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  ctype_handle_t	*hnd = JS_GetInstancePrivate(cx, obj, ctype_clasp, NULL);
+  jsdouble		d;
+
+  if (!hnd)
+    return JS_FALSE;
+
+  if (INT_FITS_IN_JSVAL(hnd->length))
+  {
+    *vp = INT_TO_JSVAL(hnd->length);
+    return JS_TRUE;
+  }
+
+  d = hnd->length;
+  if (hnd->length != d)
+    return gpsee_throw(cx, CLASS_ID ".size.getter.overflow");
+
+  return JS_NewNumberValue(cx, d, vp);
+}
+
 /**
- *  Initialize the Memory class prototype.
+ *  Initialize the CType class prototype.
  *
  *  @param	cx	Valid JS Context
  *  @param	obj	The module's exports object
@@ -345,6 +370,7 @@ JSObject *CType_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
   static JSPropertySpec ctype_props[] =
   {
     { "value",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, ctype_value_getter, ctype_value_setter },
+    { "size",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, ctype_size_getter, JS_PropertyStub },
     { NULL, 0, 0, NULL, NULL }
   };
 
