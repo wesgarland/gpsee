@@ -1,0 +1,124 @@
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/fcntl.h>
+beginStruct(struct stat)
+  member(dev_t,		st_dev,		integer)
+  member(ino_t,		st_ino,		integer)
+  member(mode_t,	st_mode,	integer)
+  member(nlink_t,	st_nlink,	integer)
+  member(uid_t,		st_uid,		integer)
+  member(gid_t,		st_gid,		integer)
+  member(dev_t,		st_rdev,	integer)
+  member(off_t,		st_size,	integer)
+  member(time_t,	st_atime,	integer)
+  member(time_t,	st_mtime,	integer)
+  member(time_t,	st_ctime,	integer)
+  member(blksize_t,	st_blksize,	integer)
+  member(blkcnt_t,	st_blocks,	integer)
+endStruct(struct stat)
+
+#include <dirent.h>
+beginStruct(struct dirent)
+    member(ino_t,	d_ino,		integer)
+    member(char,	d_name,		array)
+endStruct(struct dirent)
+
+#include <time.h>
+beginStruct(struct tm)
+  member(int,	  	tm_sec,		integer)     	/* seconds after the minute [0, 60]  */
+  member(int,	  	tm_min,		integer)     	/* minutes after the hour [0, 59] */
+  member(int,	  	tm_hour,	integer)    	/* hour since midnight [0, 23] */
+  member(int,	  	tm_mday,	integer)    	/* day of the month [1, 31] */
+  member(int,	  	tm_mon,		integer)     	/* months since January [0, 11] */
+  member(int,	  	tm_year,	integer)    	/* years since 1900 */
+  member(int,	  	tm_wday,	integer)    	/* days since Sunday [0, 6] */
+  member(int,	  	tm_yday,	integer)    	/* days since January 1 [0, 365] */
+  member(int,	  	tm_isdst,	integer)	/* flag for daylight savings time */
+endStruct(struct tm)
+
+#include <netdb.h>
+beginStruct(struct hostent)
+  member(char *,	h_name,		string)		/* canonical name of host */
+  member(char **,	h_aliases,	array)	     	/* alias list */
+  member(int,		h_addrtype,	integer)       	/* host address type */
+  member(int,		h_length,	integer)        /* length of address */
+  member(char **,	h_addr_list,	array)		/* list of addresses */
+endStruct(struct hostent)
+
+#include <pwd.h>
+beginStruct(struct passwd)
+  member(char *, pw_name,	string)      	/* user's login name */
+  member(char *, pw_passwd,	string)    	/* no longer used */
+  member(uid_t,  pw_uid,    	integer)       	/* user's uid */
+  member(gid_t,  pw_gid,    	integer)       	/* user's gid */
+#ifdef ATT_AGE
+  member(char *, pw_age,	integer)       	/* not used */
+#endif
+#ifdef ATT_COMMENT
+  member(char *, pw_comment,	string)   	/* not used */
+#endif
+  member(char *, pw_gecos,	string)     	/* typically user's full name */
+  member(char *, pw_dir,	string)       	/* user's home dir */
+  member(char *, pw_shell,	string)		/* user's login shell */
+endStruct(struct passwd)
+
+#include <grp.h>
+beginStruct(struct group)
+  member(char *, gr_name,	string)		/* the name of the group */
+  member(char *, gr_passwd,	string)		/* the encrypted group password */
+  member(gid_t,  gr_gid,    	integer)	/* the numerical group ID */
+  member(char **, gr_mem,	pointer)	/* vector of pointers to member names */
+endStruct(struct group)
+
+#include <sys/resource.h>
+beginStruct(struct rlimit)
+  member(rlim_t, rlim_cur,	integer)	/* current (soft) limit */
+  member(rlim_t, rlim_max,	integer)	/* hard limit */
+endStruct(struct rlimit)
+/*
+resolver
+sockets struct in_addr, struct socket, sockaddr, sockaddr_dl
+iovec
+termio
+termios
+dirent
+*/
+
+#include <sys/select.h>
+beginStruct(fd_set)
+endStruct(fd_set)
+
+#include <utime.h>
+beginStruct(struct utimbuf)
+  member(time_t, actime,	integer)	/* access time */
+  member(time_t, modtime,	integer)	/* modification time */
+endStruct(utime)
+
+#include <sys/utsname.h>
+beginStruct(struct utsname)
+  member(char,	sysname,	array)
+  member(char,	nodename,	array)
+  member(char,	release,	array)
+  member(char,	version,	array)
+  member(char,	machine,	array)
+endStruct(struct utsname)
+
+#include <netinet/in.h>
+beginStruct(struct sockaddr)
+  member(sa_family_t,	sa_family,	integer)
+endStruct(struct sockaddr_in)
+
+beginStruct(struct sockaddr_in)
+  member(sa_family_t,	sin_family,	integer)
+  member(in_port_t,	sin_port,	integer)
+  member(int32_t,	sin_addr,	integer)
+endStruct(struct sockaddr_in)
+
+#if defined(SIN6_LEN)
+beginStruct(struct sockaddr_in6)
+  member(sa_family_t,	sin6_family,	integer)
+  member(in_port_t,	sin6_port,	integer)
+  member(uint16_t,	sin6_addr,	array)
+  member(uint32_t,	sin6_flowinfo,	integer)
+endStruct(struct sockaddr_in)
+#endif
