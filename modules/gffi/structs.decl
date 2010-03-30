@@ -122,3 +122,9 @@ beginStruct(struct sockaddr_in6)
   member(uint32_t,	sin6_flowinfo,	integer)
 endStruct(struct sockaddr_in)
 #endif
+
+#include <sys/time.h>
+beginStruct(struct timeval)
+  member(time_t,	tv_sec, 	integer)
+  member(suseconds_t,	tv_usec,	integer)
+endStruct(struct timeval)
