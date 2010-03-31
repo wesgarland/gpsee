@@ -35,7 +35,7 @@
  *  @file	sockets.js	Simple sockets API for GPSEE
  *  @author	Wes Garland
  *  @date	March 2010
- *  @version	$Id: net.js,v 1.1 2010/03/30 21:12:36 wes Exp $
+ *  @version	$Id: net.js,v 1.2 2010/03/31 01:12:16 wes Exp $
  */
 
 const binary = require("binary");
@@ -61,8 +61,8 @@ const _FD_CLR		= new dl.CFunction(ffi.void,	"FD_CLR",		ffi.int, ffi.pointer);
 const _FD_ZERO		= new dl.CFunction(ffi.void,	"FD_ZERO",		ffi.pointer);
 const _write		= new dl.CFunction(ffi.ssize_t,	"write",		ffi.int, ffi.pointer, ffi.size_t);
 const _read		= new dl.CFunction(ffi.ssize_t,	"read",			ffi.int, ffi.pointer, ffi.size_t);
-const _inet_pton	= new dl.CFunction(ffi.int,	"inet_pton",		ffi.int, ffi.pointer, ffi.pointer, ffi.size_t);
-const _inet_ntop	= new dl.CFunction(ffi.pointer,	"inet_ntop",		ffi.int, ffi.pointer, ffi.pointer);
+const _inet_pton	= new dl.CFunction(ffi.int,	"inet_pton",		ffi.int, ffi.pointer, ffi.pointer);
+const _inet_ntop	= new dl.CFunction(ffi.pointer,	"inet_ntop",		ffi.int, ffi.pointer, ffi.pointer, ffi.size_t);
 
 /**
  *  Return a string documenting the most recent OS-level error, if there was one.
@@ -79,10 +79,18 @@ function syserr(force)
     return '';
 }
 
+/**
+ *  IP Address class; can hold IPv4 or IPv6 addresses. Note that IPv6 is not yet implemented.
+ *
+ *  this.ipv6		True if ipv6 address
+ *  this.in4_addr	IP address represented as a 32-bit number
+ *  this.toString()	Presentation format (human-oriented string)
+ */
 exports.IP_Address = function IP_Address(address)
 {
-  this.ipv4 = true;
-  this.address = new ffi.CType(ffi.int32_t);
+  this.ipv6 = false;
+
+  var addrBuf = new ffi.CType(ffi.int32_t);
 
   if (typeof address === "string")
   {
@@ -93,7 +101,7 @@ exports.IP_Address = function IP_Address(address)
 	address = 0;
 	break;
       case "localhost":
-	address = 0x80000001;
+	address = 0x7F000001;
 	break;
     }
   }
@@ -101,37 +109,32 @@ exports.IP_Address = function IP_Address(address)
   switch(typeof address)
   {
     case "number":
-      this.address.value = address;
+      this.in4_addr = htonl(address);
       break;
     case "object":
       address = address.toString();
     case "string":
-      if (inet_pton(dh.AF_INET, this.address, i) != 1)
+      if (_inet_pton.call(dh.AF_INET, address, addrBuf) != 1)
 	throw new Error("Cannot convert input string to IP address" + syserr());
-      this.address = i.valueOf();
+      this.in4_addr = htonl(addrBuf.valueOf());
       break;
   }
-}
-
-exports.IP_Address.prototype.valueOf = function IP_Address_valueOf()
-{
-  return this.address.value;
 }
 
 exports.IP_Address.prototype.toString = function IP_Address_toString()
 {
   var buf;
 
-  switch(this.address)
+  switch(this.in4_addr)
   {
     case 0:
       return "INADDR_ANY";
-    case 0x80000001:
+    case 0x7F000001:
       return "localhost";
   }
 
-  buf = ffi.Memory(dh.INET_ADDRSTRLEN);
-  if (inet_ntop(dh.AF_INET, this.address, buf, buf.size) == null)
+  buf = new ffi.Memory(dh.INET_ADDRSTRLEN);
+  if (_inet_ntop.call(dh.AF_INET, this.in4_addr, buf, buf.size) == null)
     throw new Error("Cannot convert IP address toString" + syserr());
 
   return buf.asString(-1);
@@ -143,11 +146,15 @@ function hton_detect()
   {
     htonl = function(num) num;		/* big endian host */
     htons = htonl;
+    ntohl = htonl;
+    ntohs = htonl;
   }
   else
   {
     htonl = _htonl.call;
     htons = _htons.call;
+    ntohl = _ntohl.call;
+    ntohs = _ntohs.call;
   }
 }
 
@@ -161,6 +168,18 @@ var htons = function htons_thunk(num)
 {
   hton_detect()
   return htons(num);
+}
+
+var ntohl = function ntohl_thunk(num)
+{
+  ntoh_detect()
+  return ntohl(num);
+}
+
+var ntohs = function ntohs_thunk(num)
+{
+  ntoh_detect()
+  return ntohs(num);
 }
 
 var sockStream_methods = 
@@ -258,7 +277,7 @@ exports.socketStream = function (port, address, ipv6)
 
   sockStream.sockaddr		 = new ffi.MutableStruct("struct sockaddr_in");
   sockStream.sockaddr.sin_family = dh.AF_INET;
-  sockStream.sockaddr.sin_addr	 = htonl(sockStream.address);
+  sockStream.sockaddr.sin_addr	 = sockStream.address.in4_addr;
   sockStream.sockaddr.sin_port 	 = htons(sockStream.port);
 
   graft(sockStream, sockStream_methods);
@@ -409,6 +428,9 @@ function Server()
 
 Server.prototype.listen = function listen(port, host, backlog)
 {
+  if (this.socket && this.socket.listening)
+    throw new Error("Cannot listen again; server is already listening to " + this.socket.address + ", on port " + ntohl(this.socket.sockaddr.sin_port));
+
   this.socket = new exports.socketStream(port, host);
   this.socket.listen(backlog);
 }
