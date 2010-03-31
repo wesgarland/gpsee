@@ -77,17 +77,17 @@ std_functions.o: std_gpsee_no.h
 std_gpsee_no.h: std_functions.h
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-	$(EGREP) '^function[(]' function_aliases.incl | sed -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
-	$(EGREP) '^voidfunction[(]' function_aliases.incl | sed -e 's/^[^(]*(//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
-	$(EGREP) '^function[(]' unsupported_functions.incl | sed -e 's/.*[(]//' -e 's/[)].*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
-	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | sed 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
-		sed -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(EGREP) '^function[(]' function_aliases.incl | $(SED) -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(EGREP) '^voidfunction[(]' function_aliases.incl | $(SED) -e 's/^[^(]*(//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(EGREP) '^function[(]' unsupported_functions.incl | $(SED) -e 's/.*[(]//' -e 's/[)].*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | $(SED) 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
+		$(SED) -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 
 compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
 
 compiler_dmp.re:
-	$(CPP) $(CPPFLAGS) -dM - < /dev/null | sed 's/[ 	][ 	]*/ /g' | $(sort) -u \
-	| sed \
+	$(CPP) $(CPPFLAGS) -dM - < /dev/null | $(SED) 's/[ 	][ 	]*/ /g' | $(sort) -u \
+	| $(SED) \
 		-e 's/[[]/[[]/g' -e 's/[]]/[]]/g' \
 		-e 's/[*]/[*]/g' -e 's/[?]/[?]/g' \
 		-e 's/[(]/[(]/g' -e 's/[)]/[)]/g' \
@@ -100,7 +100,7 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	@echo $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER))))
 	$(CPP) $(CPPFLAGS) -dM \
 	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
-		| sed 's/[ 	][ 	]*/ /g' \
+		| $(SED) 's/[ 	][ 	]*/ /g' \
 		| $(sort) -u \
 		| $(EGREP) -vf compiler_dmp.re \
 		| $(EGREP) -v '^#define *NULL '\
@@ -172,7 +172,7 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 	@echo "#undef main" >> $@
 	@echo "int main(int argc, char **argv) {" >> $@
 	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp \
-	| sed \
+	| $(SED) \
 		-e 's/  */ /g' \
 		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveInt(\2,"); \
@@ -180,14 +180,14 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 	>> $@
 	@echo " - Floating-point Expression"
 	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
-		| sed \
+		| $(SED) \
 		-e 's/  */ /g' \
 		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveFloat(\2,%100e," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
 	>> $@
 	@echo " - Strings"
 	@$(EGREP) '$(START)$(STRING_EXPR)$$' $*_defs.dmp \
-	| sed -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
+	| $(SED) -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
 		printf("haveString(\2,\\\"%s\\\")\\n",(\2));/' \
 	>> $@
 
@@ -197,11 +197,11 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 	| $(EGREP) -v '($(START)$(STRING_EXPR))' \
 	| $(EGREP) -v '($(START)$(INT_EXPR))' \
 	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' \
-	| sed -f tmse_parse.sed \
+	| $(SED) -f tmse_parse.sed \
 		>>$@
 #	@echo " - Argument Macro Expressions"
 #	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
-#	| sed \
+#	| $(SED) \
 #		-e 's/^#define  *//' \
 #		-e 's/\"/\\\\\\\"/g'\
 #		-e 's/^\([^(]*\)\( *\)\([(][^)]*[)]\)\( *\)\(.*\)$$/puts("haveArgMacro(\1, \\"\3\\",\\"\5\\")");/' \
@@ -239,7 +239,7 @@ aux_types.incl: aux_types aux_types.decl
 structs.incl: structs.decl module.mk
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-	sed \
+	$(SED) \
 		-e '/beginStruct/h' \
 		-e 's/\(beginStruct[(]\)\([^)]*\)\([)].*\)/#define member_offset(X) offsetOf(\2,X)/' \
 		-e '/^#define member_offset/p' \
