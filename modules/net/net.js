@@ -35,7 +35,7 @@
  *  @file	sockets.js	Simple sockets API for GPSEE
  *  @author	Wes Garland
  *  @date	March 2010
- *  @version	$Id: net.js,v 1.2 2010/03/31 01:12:16 wes Exp $
+ *  @version	$Id: net.js,v 1.3 2010/03/31 18:32:29 wes Exp $
  */
 
 const binary = require("binary");
@@ -426,16 +426,45 @@ function Server()
   graft(this, eventSystem);
 }
 
-Server.prototype.listen = function listen(port, host, backlog)
+Server.prototype.connections = [];
+
+Server.prototype.listen = function Server_listen(port, host, backlog)
 {
   if (this.socket && this.socket.listening)
     throw new Error("Cannot listen again; server is already listening to " + this.socket.address + ", on port " + ntohl(this.socket.sockaddr.sin_port));
 
   this.socket = new exports.socketStream(port, host);
   this.socket.listen(backlog);
+  this.ident = "the server";
+  this.socket.ident = "the socket";
+  this.socket.server = this;
+  this.socket.onReadable = reactorConnectEvent;
 }
 
-Server.prototype.connections = [];
+Server.prototype.close = function Server_close()
+{
+  delete this.socket.onReadable;
+  this.socket.close();
+
+  for each (connection in this.connections)
+    connection.addEventListener("close", reactorTryCloseServer);
+}
+
+Server.prototype.toString = function Server_toString()
+{
+  var a=[];
+
+  if (this.socket.listening)
+    a.push("listening");
+
+  if (this.socket.bound)
+    a.push("bound");
+
+  if (this.socket)
+    a.push("on " + this.socket.address + ", port " + ntohl(this.socket.sockaddr.sin_port));
+
+  return "[Object net.Server" + a.join("; ") + "]";
+}
 
 exports.createServer = function createServer(connection_listener)
 {
@@ -464,7 +493,6 @@ exports.reactor = function(servers, quitObject)
 
     for each (let server in servers)
     {
-      server.socket.onReadable = function(socket) { reactorConnectEvent(server) };
       pollSockets.push(server.socket);
 
       for each (let connection in server.connections)
@@ -482,16 +510,16 @@ exports.reactor = function(servers, quitObject)
   } while(!quitObject.quit);
 }
 
-function reactorConnectEvent(server)
+function reactorConnectEvent(socket)
 {
-  var new_socket = server.socket.accept();
+  var new_socket = socket.accept();
 
   new_socket.write = reactorWrite;
   new_socket.pendingWrites = [];
   graft(new_socket, eventSystem);
 
-  server.connections.push(new_socket);
-  server.emit("connection", new_socket);
+  socket.server.connections.push(new_socket);
+  socket.server.emit("connection", new_socket);
   new_socket.emit("connect");
 }
 
@@ -507,6 +535,7 @@ function reactorRead(socket)
   switch(bytesRead)
   {
     case 0:
+      socket.readyState = "readOnly";
       socket.emit("end");
       break;
     case -1:
@@ -575,3 +604,14 @@ function reactorDrain(socket)
 
   socket.emit("drain");
 }
+
+function reactorTryCloseServer(socket)
+{
+  var server = socket.server;
+
+  if (server.connections.length)
+    return;
+
+  this.emit("close");
+}
+
