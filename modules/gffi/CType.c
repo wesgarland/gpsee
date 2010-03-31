@@ -178,7 +178,7 @@ JSBool CType_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_FALSE;
 
   if (srcHnd->length && (newHnd->length != srcHnd->length))
-    return gpsee_throw(cx, CLASS_ID ".cast.size: Cannot cast %i-byte backing store to %i-byte type", newHnd->length, srcHnd->length);
+    return gpsee_throw(cx, CLASS_ID ".cast.size: Cannot cast " GPSEE_SIZET_FMT "-byte backing store to " GPSEE_SIZET_FMT "-byte type", newHnd->length, srcHnd->length);
 
   *(byteThing_handle_t *)newHnd = *(byteThing_handle_t *)srcHnd;
 
