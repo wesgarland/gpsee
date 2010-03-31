@@ -687,8 +687,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj))
       {
-	gpsee_log(SLOG_NOTICE, "Could not compile %s\n", scriptFilename);
-	GPSEE_NOT_REACHED("Could not compile");
+        gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL);
 	exitCode = 1;
       }
       else
@@ -698,11 +697,22 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
     else /* noRunScript is false; run the program */
     {
-      gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile);
-      if ((jsi->exitType & et_successMask) == jsi->exitType)
-	exitCode = jsi->exitCode;
+      if (!gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile))
+      {
+        int code = gpsee_getExceptionExitCode(jsi->cx);
+        if (code >= 0)
+        {
+          exitCode = code;
+        }
+        else
+        {
+          gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL);
+          exitCode = 1;
+        }
+      }
       else
-	exitCode = 1;
+      {
+      }
     }
       fclose(scriptFile);
     goto out;
