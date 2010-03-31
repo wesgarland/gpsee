@@ -1447,8 +1447,8 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
   module->flags |= mhf_loaded;	
 
-  if (initializeModule(cx, module) == JS_TRUE)
-    goto good;
+  if (initializeModule(cx, module) == JS_FALSE)
+    goto fail;
 
   good:
 
