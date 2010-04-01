@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.21 2010/04/01 13:43:19 wes Exp $
+ * @version	$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.21 2010/04/01 13:43:19 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre2"
@@ -253,8 +253,14 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 
 #ifdef JSFEATURE_GC_ZEAL
   if (JS_HasFeature(JSFEATURE_GC_ZEAL) == JS_TRUE)
-#endif
     JS_SetGCZeal(jsi->cx, gcZeal);
+#else
+# ifdef JS_GC_ZEAL
+  JS_SetGCZeal(jsi->cx, gcZeal);
+# else
+#  warning JS_SetGCZeal not available when building with this version of SpiderMonkey (try a debug build?)
+# endif
+#endif
 
   JS_SetOptions(jsi->cx, jsOptions);
 }
