@@ -27,3 +27,20 @@ if [ "$exitCode" = 1 ]; then
 else
   echo "FAIL: Exit code for a syntax error was $exitCode"
 fi
+
+$GSR -F "$path/throw_123.js" >/dev/null 2>&1
+exitCode="$?"
+if [ "$exitCode" = 123 ]; then
+  echo "OKAY: Exit code for an integer throw passes"
+else
+  echo "FAIL: Exit code for throw(123) was $exitCode"
+fi
+
+$GSR -c 'blah(' -F "$path/throw_123.js" >/dev/null 2>&1
+exitCode="$?"
+if [ "$exitCode" = 1 ]; then
+  echo "OKAY: Exit code for a syntax error in -c passes"
+else
+  echo "FAIL: Exit code for a syntax error in -c was $exitCode"
+fi
+
