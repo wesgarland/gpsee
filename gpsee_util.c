@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.10 2010/04/01 13:43:19 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.11 2010/04/01 14:14:28 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.10 2010/04/01 13:43:19 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.11 2010/04/01 14:14:28 wes Exp $:";
 
 #include "gpsee.h"
 #define NO_FUNCTION_NAME "<global scope>"
@@ -487,8 +487,9 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
   int 			tty = isatty(STDERR_FILENO);
+  int			bold = tty;
 
-  if (tty)
+  if (bold)
   {
     const char *term = getenv("TERM");
 
@@ -497,7 +498,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
 		  (strncmp(term, "xterm", 5) != 0) &&
 		  (strcmp(term, "dtterm") != 0) &&
 		  (strcmp(term, "ansi") != 0)))
-      tty = 0;
+      bold = 0;
   }
 
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
@@ -505,10 +506,10 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
 
   if (jsi->pendingErrorMessage)
   {
-    fprintf(stderr, "%s%s: %s%s\n", tty?VT_BOLD:"", prefix, jsi->pendingErrorMessage, tty?VT_UNBOLD:"");
+    fprintf(stderr, "%s%s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
   }
 
-  if (report->linebuf)
+  if (tty && report->linebuf)
   {
     size_t start, len;
     const char *c = report->linebuf;
