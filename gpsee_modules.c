@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.28 2010/03/10 18:48:36 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.29 2010/04/01 13:43:19 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.28 2010/03/10 18:48:36 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.29 2010/04/01 13:43:19 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -1654,7 +1654,7 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
  *  @note	This is why the module memo tree is allocated 
  *		with malloc rather than JS_malloc.
  */
-void  gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi)
+void gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi)
 {
   moduleHandle_t	*module, *nextModule;
 
@@ -1670,4 +1670,8 @@ void  gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi)
   free(jsi->modules);
 }
 
+const char *gpsee_getModuleCName(moduleHandle_t *module)
+{
+  return module ? module->cname : NULL;
+}
 
