@@ -42,6 +42,7 @@ fi
 echo "Asking for root password to remove /opt/local/gpsee"
 sudo rm -rf /opt/local/gpsee
 
+rm -rf gpsee
 hg clone https://gpsee.googlecode.com/hg/ gpsee
 cd gpsee
 hg pull && hg update
@@ -76,11 +77,18 @@ make build
 echo "May ask for password for install of libffi"
 sudo make install
 cd ..
+
+#
+#
+#
+echo "Starting libmozjs build"
 cd spidermonkey
 make build
-echo "May ask for password for install of spidermonkey
+echo "May ask for password for install of spidermonkey"
 sudo make install
 cd ..
+
+echo "Starting GPSEE build in `pwd`"
 make build
 echo "May ask for password for final install of gpseey
 sudo make install
