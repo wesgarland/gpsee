@@ -193,3 +193,6 @@ size_t ffi_type_size(ffi_type *type);
 JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsval *rval, const char *throwPrefix);
 JSBool ctypeStorageSize(JSContext *cx, jsval tival, size_t *size, const char *throwPrefix);
 JSBool setupCTypeDetails(JSContext *cx, jsval typeIndicator, ctype_handle_t *hnd, const char *throwPrefix);
+
+/** Extra headers required to support aux types */
+#include <sys/socket.h>
