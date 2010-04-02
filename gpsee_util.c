@@ -37,13 +37,14 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.9 2010/03/06 18:39:51 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.11 2010/04/01 14:14:28 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.9 2010/03/06 18:39:51 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.11 2010/04/01 14:14:28 wes Exp $:";
 
 #include "gpsee.h"
+#define NO_FUNCTION_NAME "<global scope>"
 
 /* ctype.h provides isspace() used by gpsee_reportErrorSourceCode()
  */
@@ -413,6 +414,67 @@ haveint:
   return -1;
 }
 
+/** Get the current (as indicated by jsi->globalObj) program module's directory,
+ *  and return a copy allocated with JS_malloc().
+ *
+ *  @param	cx	The JavaScript context
+ *  @param	jsi	The GPSEE context
+ *  @returns	A copy of the directory, including the trailing slash, or a copy of an empty buffer,
+ *		or NULL on OOM.
+ */
+const char *gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi)
+{
+  const char *cname;
+  const char *bname;
+  char *dircopy;
+
+  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
+  if (!programModule)
+    goto err;
+
+  cname = gpsee_getModuleCName(programModule);
+  if (!cname)
+    goto err;
+
+  bname = strrchr(cname, '/');
+  if (!bname)
+    goto err;
+
+  dircopy = JS_malloc(cx, (bname-cname) + 2);
+  if (!dircopy)
+    goto err;
+
+  strncpy(dircopy, cname, (bname-cname) + 1);
+  dircopy[(bname-cname) + 1] = (char)0;
+  return dircopy;
+  
+  err:
+  return JS_strdup(cx, "");
+}
+
+const char *gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename)
+{
+  const char *cname;
+  const char *bname;
+
+  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
+  if (!programModule)
+    return long_filename;
+
+  cname = gpsee_getModuleCName(programModule);
+  if (!cname)
+    return long_filename;
+
+  bname = strrchr(cname, '/');
+  if (!bname)
+    return long_filename;
+
+  if (strncmp(long_filename, cname, (bname-cname) + 1) == 0)
+    return long_filename + (bname-cname) + 1;
+
+  return long_filename;
+}
+
 #define VT_BOLD "\33[1m"
 #define VT_UNBOLD "\33[22m"
 /** An error reporter used by gpsee_reportUncaughtException() because only an "error reporter" (see JS_SetErrorReporter()
@@ -420,12 +482,14 @@ haveint:
  */
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
-  char prefix[strlen(report->filename) + 21]; /* Allocate enough room for "filename:lineno" */
-  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  size_t sz;
-  int tty = isatty(STDOUT_FILENO);
+  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  const char		*filename = gpsee_programRelativeFilename(cx, jsi, report->filename);
+  char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
+  size_t 		sz;
+  int 			tty = isatty(STDERR_FILENO);
+  int			bold = tty;
 
-  if (tty)
+  if (bold)
   {
     const char *term = getenv("TERM");
 
@@ -434,18 +498,18 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
 		  (strncmp(term, "xterm", 5) != 0) &&
 		  (strcmp(term, "dtterm") != 0) &&
 		  (strcmp(term, "ansi") != 0)))
-      tty = 0;
+      bold = 0;
   }
 
-  sz = snprintf(prefix, sizeof(prefix), "%s:%d", report->filename, report->lineno);
+  sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
   if (jsi->pendingErrorMessage)
   {
-    fprintf(stderr, "%s%s: %s%s\n", tty?VT_BOLD:"", prefix, jsi->pendingErrorMessage, tty?VT_UNBOLD:"");
+    fprintf(stderr, "%s%s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
   }
 
-  if (report->linebuf)
+  if (tty && report->linebuf)
   {
     size_t start, len;
     const char *c = report->linebuf;
@@ -470,7 +534,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
       strncpy(linebuf, report->linebuf + start, len+1);
       fprintf(stderr, "%s: %s\n", prefix, linebuf);
       fprintf(stderr, "%s: ", prefix);
-      for (i = report->tokenptr - report->linebuf - start; i; i--)
+      for (i = report->tokenptr - report->linebuf - start; i > 1; i--)
         fputc('.', stderr);
       fputs("^\n", stderr);
     }
@@ -480,6 +544,18 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
     }
   }
 }
+
+static const char *rev_strchr(const char *start, char search, const char *limit)
+{
+  const char *s;
+
+  for (s = start; s >= limit; s--)
+    if (*s == search)
+      return s;
+
+  return NULL;
+}
+
 /** Report any pending exception as though it were uncaught.
  *  Renders a nice-looking error report to stderr.
  *
@@ -489,12 +565,12 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
  * 
  *  @todo Should there be an option argument for publishing to gpsee_log()?
  */
-JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
+JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 {
-  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  jsval                v;
-  char *longerror = NULL;
-  JSErrorReporter reporter;
+  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  jsval                	v;
+  char 			*longerror = NULL;
+  JSErrorReporter 	reporter;
 
   /* Must we look up the exception value ourselves? */
   if (exval == JSVAL_NULL)
@@ -534,7 +610,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
         /* Make char buffer from JSString* */
         stack = JS_GetStringBytes(JSVAL_TO_STRING(v));
         if (!stack) // OOM
-          return JS_FALSE;
+          panic("Out of memory reporting an uncaught exception in " __FILE__);
         longerror = JS_strdup(cx, stack);
       }
     }
@@ -547,6 +623,69 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
   JS_ReportPendingException(cx);
   JS_SetErrorReporter(cx, reporter);
   jsi->pendingErrorMessage = NULL;
+
+  if (!dumpStack)
+    return JS_TRUE;
+
+  /* Tweak the exception output format without re-allocating buffers */
+  if (longerror && *longerror)
+  {
+    const char		*pm_dir;
+    size_t		pm_dir_len;
+    char		*nl, *line_start, *tok;
+    size_t		extraBytes = 0;
+
+    /* Look for filenames which can be shortened */
+    pm_dir = gpsee_programModuleDirCopy(cx, jsi);
+    if (!pm_dir)
+      panic("Out of memory reporting an uncaught exception in " __FILE__);
+    if (!pm_dir[0])
+      goto done;
+    pm_dir_len = strlen(pm_dir);
+
+    for (line_start = longerror, nl=strchr(line_start, '\n'); 
+	 nl; 
+	 line_start = nl + 1, nl = strchr(line_start, '\n'))
+    {
+      tok = (char *)rev_strchr(nl, '@', line_start);
+      if (!tok)
+	continue;
+      if (strncmp(tok + 1, pm_dir, pm_dir_len) == 0)
+      {
+	memmove(tok + 1, tok + 1 + pm_dir_len, strlen(tok + 1 + pm_dir_len) + 1);
+	nl -= pm_dir_len;
+	extraBytes += pm_dir_len;
+      }
+    }
+
+    /* Lines beginning with @ need a fake function name for the table to render right */
+    for (nl = strchr(longerror, '\n'); 
+	 nl; 
+	 nl = strchr(nl + 1, '\n'))
+    {
+      if (nl[1] == '@')
+      {
+	/* realloc longerror only if we didn't make enough space above */
+	if (extraBytes < (sizeof(NO_FUNCTION_NAME) - 1))
+	{
+	  char *new_longerror;
+
+	  GPSEE_ASSERT(sizeof(NO_FUNCTION_NAME) < 256);
+	  extraBytes += 128 + (128 - extraBytes);
+	  new_longerror = JS_malloc(cx, strlen(longerror) + extraBytes);
+	  strcpy(new_longerror, longerror);
+	  nl = new_longerror + (nl - longerror);
+	  JS_free(cx, longerror);
+	  new_longerror = longerror;
+	}
+
+	memmove(nl + sizeof(NO_FUNCTION_NAME) - 1, nl, strlen(nl) + 1);
+	memcpy(nl + 1, NO_FUNCTION_NAME, sizeof(NO_FUNCTION_NAME) - 1);
+	extraBytes -= (sizeof(NO_FUNCTION_NAME) - 1);
+      }
+    }
+  }
+  done:
 
   /* Output the exception information :) There are two possible sinks */
   if (longerror && *longerror)
@@ -584,11 +723,41 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
       }
       c++;
     }
+
+    /* More output tweaking: pull out @:0 from first exception */
+    if (longerror && *longerror)
+    {
+      char		*nl, *tok;
+
+      nl = strchr(longerror, '\n');
+      if (nl)
+	tok = (char *)rev_strchr(nl, '\t', longerror);
+      if (nl && tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
+      {
+	tok--;
+	memmove(tok, tok + 1, strlen(tok + 1) + 1);
+	memcpy(tok, "\t\t\n", 3);
+      }
+    }
+
     gpsee_printTable(stderr, longerror, 3, columnPrefixes, 1, 9);
     JS_free(cx, longerror);
   }
 
   return JS_TRUE;
+}
+
+static const char *spaces(size_t n, char *buf, size_t len)
+{
+  if (!len)
+    return NULL;
+
+  if (n >= len)
+    n = len - 1;
+
+  memset(buf, ' ', n);
+  buf[n] = (char)0;
+  return buf;
 }
 
 /** A convenient function for rendering fixed-width font tables. Like this one:
@@ -603,14 +772,15 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval)
  */
 void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
 {
-  size_t shrinkamount;
-  int screencols;
-  size_t cols[ncols];
-  size_t cols1[ncols];
-  size_t widecol;
-  size_t tablewidth;
-  int i;
-  char *c;
+  char		spaceBuf[32];
+  size_t 	shrinkamount;
+  int 		screencols;
+  size_t 	cols[ncols];
+  size_t 	cols1[ncols];
+  size_t 	widecol;
+  size_t 	tablewidth;
+  int 		i;
+  char 		*c;
   
   /* How many characters wide is the terminal? */
   if (getenv("COLUMNS"))
@@ -715,7 +885,8 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
         c += shrinkamount;
 
       /* Output column prefix, column content, and whitespace padding */
-      fprintf(out, "%s%s%s", pfix[i], c, space + widecol - cols[i] + strlen(c) - 1);
+      fprintf(out, "%s%s%s", c[0] ? pfix[i] : spaces(strlen(pfix[i]), spaceBuf, sizeof(spaceBuf)), 
+	      c, space + widecol - cols[i] + strlen(c) - 1);
 
       /* Advance the column counter */
       if (++i >= ncols)

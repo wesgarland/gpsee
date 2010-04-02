@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.26 2010/03/06 18:17:13 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.27 2010/04/01 13:43:19 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.27  2010/04/01 13:43:19  wes
+ *  Improved uncaught exception handling & added tests
+ *
  *  Revision 1.26  2010/03/06 18:17:13  wes
  *  Synchronize Mercurial and CVS Repositories
  *
@@ -141,7 +144,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.26 2010/03/06 18:17:13 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.27 2010/04/01 13:43:19 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -152,7 +155,7 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.26 201
 extern rc_list rc;
 
 #if defined(GPSEE_DEBUG_BUILD)
-# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("gpsee\t> "), printf(a); } while(0)
 #else
 # define dprintf(a...) while(0) printf(a)
 #endif
@@ -167,6 +170,11 @@ signed int gpsee_verbosity(signed int changeBy)
   static signed int verbosity = 0;
 
   verbosity += changeBy;
+  
+  GPSEE_ASSERT(verbosity >= 0);
+  if (verbosity < 0)
+    verbosity = 0;
+
   return verbosity;
 }
 
