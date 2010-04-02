@@ -82,31 +82,38 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew)
   return fmt;
 }
 
-void gpsee_log(signed int pri, const char *fmt, ...)
+void gpsee_log(unsigned int extra, signed int pri, const char *fmt, ...)
 {
   va_list	ap;
   int 		printToStderr;
 
-  switch(gpsee_verbosity(0))
+  if (extra & 1) /* 1==suppress TTY output */
   {
-    case 0:
-      printToStderr = 0;
-      break;
-    case 1:
-      if ((pri == LOG_DEBUG) || (pri == LOG_INFO))
+    printToStderr = 0;
+  }
+  else
+  {
+    switch(gpsee_verbosity(0))
+    {
+      case 0:
 	printToStderr = 0;
-      else
+	break;
+      case 1:
+	if ((pri == LOG_DEBUG) || (pri == LOG_INFO))
+	  printToStderr = 0;
+	else
+	  printToStderr = 1;
+	break;
+      case 2:
+	if (pri == LOG_DEBUG)
+	  printToStderr = 0;
+	else
+	  printToStderr = 1;
+	break;
+      default:
 	printToStderr = 1;
-      break;
-    case 2:
-      if (pri == LOG_DEBUG)
-	printToStderr = 0;
-      else
-	printToStderr = 1;
-      break;
-    default:
-      printToStderr = 1;
-      break;
+	break;
+    }
   }
 
   va_start(ap, fmt);

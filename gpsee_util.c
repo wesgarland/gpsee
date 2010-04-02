@@ -486,8 +486,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   const char		*filename = gpsee_programRelativeFilename(cx, jsi, report->filename);
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
-  int 			tty = isatty(STDERR_FILENO);
-  int			bold = tty;
+  int			bold = isatty(STDERR_FILENO);
 
   if (bold)
   {
@@ -504,12 +503,13 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
-  if (jsi->pendingErrorMessage)
+  if (jsi->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
-    fprintf(stderr, "%s%s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
+    fprintf(stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
+    gpsee_log(SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
   }
 
-  if (tty && report->linebuf)
+  if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
   {
     size_t start, len;
     const char *c = report->linebuf;

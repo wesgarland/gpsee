@@ -334,6 +334,7 @@ JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 
 /* support routines */
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
+JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
 JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
 JS_EXTERN_API(int)                  gpsee_printf(const char *format, /* args */ ...) __attribute__((format(printf,1,2)));
 JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
@@ -508,4 +509,13 @@ cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 
 #define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls); ecls ## _eclass.base = ecls ##_class; }
 
+#define GPSEE_ERROR_OUTPUT_VERBOSITY   0
+#define GPSEE_WARNING_OUTPUT_VERBOSITY 1
+#define GPSEE_ERROR_POINTER_VERBOSITY  1
+#define GPSEE_MODULE_DEBUG_VERBOSITY   3
+#define GPSEE_XDR_DEBUG_VERBOSITY      3
+#define GSR_MIN_TTY_VERBOSITY          1
+#define GSR_FORCE_STACK_DUMP_VERBOSITY 2
+#define GSR_PREPROGRAM_TTY_VERBOSITY   2
+#define GSR_PREPROGRAM_NOTTY_VERBOSITY 0
 #endif /* GPSEE_H */

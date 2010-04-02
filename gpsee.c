@@ -178,6 +178,12 @@ signed int gpsee_verbosity(signed int changeBy)
   return verbosity;
 }
 
+void gpsee_setVerbosity(signed int newValue)
+{
+  gpsee_verbosity(-1 * gpsee_verbosity(0));
+  gpsee_verbosity(newValue);
+}
+
 /** @see JS_Assert() in jsutil.c */
 void gpsee_assert(const char *s, const char *file, JSIntn ln)
 {
@@ -194,7 +200,26 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
 void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
 {
   fprintf(stderr, "GPSEE Fatal Error: %s\n", message);
+  gpsee_log(SLOG_NOTTY_NOTICE, "GPSEE Fatal Error: %s", message);
   exit(1);
+}
+
+static void output_message(JSContext *cx, gpsee_interpreter_t *jsi, const char *er_pfx, const char *log_message, JSErrorReport *report, int printOnTTY)
+{
+  if (jsi->errorLogger)
+    jsi->errorLogger(cx, er_pfx, log_message);
+  else
+  {
+    if (JSREPORT_IS_WARNING(report->flags))
+      gpsee_log(SLOG_NOTTY_INFO, "%s %s", er_pfx, log_message);
+    else
+      gpsee_log(SLOG_NOTTY_NOTICE, "%s %s", er_pfx, log_message);
+  }
+
+  if (printOnTTY)
+    fprintf(stderr, "%s %s\n", er_pfx, log_message);
+
+  return;
 }
 
 /** Error Reporter for Spidermonkey. Used to report warnings and
@@ -203,8 +228,6 @@ void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
 void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
   const char 		*ctmp;
-  int			loglevel = SLOG_NOTICE;
-
   char			er_filename[64];
   char			er_exception[16];
   char			er_warning[16];
@@ -213,13 +236,14 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
   char			er_charno[16];
   char			er_pfx[64];
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  int                   printOnTTY = 0;
 
   if (jsi->errorReport == er_none)
     return;
 
   if (!report)
   {
-    gpsee_log(loglevel, "JS error from unknown source: %s\n", message);
+    gpsee_log(SLOG_NOTICE, "JS error from unknown source: %s\n", message);
     return;
   }
 
@@ -231,7 +255,13 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
 
     if (rc_bool_value(rc, "gpsee_report_warnings") == rc_false)
       return;
+
+    if (gpsee_verbosity(0) >= GPSEE_WARNING_OUTPUT_VERBOSITY)
+      printOnTTY = 1 && isatty(STDERR_FILENO);
   }
+  else
+    if (gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
+      printOnTTY = 1 && isatty(STDERR_FILENO);
 
   if (report->filename)
   {
@@ -261,7 +291,6 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
 
   if (JSREPORT_IS_EXCEPTION(report->flags))
   {
-    loglevel = SLOG_INFO;
     snprintf(er_exception, sizeof(er_exception), "exception ");
   }
   else
@@ -269,9 +298,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     er_exception[0] = (char)0;
 
     if (JSREPORT_IS_WARNING(report->flags))
-    {
       snprintf(er_warning, sizeof(er_warning), "%swarning ", (JSREPORT_IS_STRICT(report->flags) ? "strict " : ""));
-    }
   }
 
   if (report->errorNumber)
@@ -293,17 +320,14 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     ctmp++;
     strncpy(log_message, message, ctmp-message);
     log_message[ctmp - message] = (char)0;
-    if (jsi->errorLogger)
-      jsi->errorLogger(cx, er_pfx, log_message);
-    else
-      gpsee_log(loglevel, "%s %s", er_pfx, log_message);
+    output_message(cx, jsi, er_pfx, log_message, report, printOnTTY);
     message = ctmp;
-  }
 
-  if (jsi->errorLogger)
-    jsi->errorLogger(cx, er_pfx, message);
-  else
-    gpsee_log(loglevel, "%s %s", er_pfx, message);
+    memset(er_pfx, ' ', strlen(er_pfx));
+    er_pfx[0] = '|';   
+  }
+  
+  output_message(cx, jsi, er_pfx, message, report, printOnTTY);
 }
 
 /** API-Compatible with Print() in js.c. Uses more RAM, but much less likely
@@ -833,9 +857,6 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
   }
 
   interpreter = calloc(sizeof(*interpreter), 1);
-
-  if (isatty(STDOUT_FILENO))
-    gpsee_verbosity(+1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
   if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x40000"), NULL, 0))))

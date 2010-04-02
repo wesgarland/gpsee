@@ -88,7 +88,7 @@ static const char *spaces(void)
   return buf;
 }
 # define dpDepth(a) 		do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
-# define dprintf(a...) 		do { if (gpsee_verbosity(0) > 2) printf("modules\t> %s", spaces()), printf(a); } while(0)
+# define dprintf(a...) 		do { if (gpsee_verbosity(0) > GPSEE_MODULE_DEBUG_VERBOSITY) printf("modules\t> %s", spaces()), printf(a); } while(0)
 # define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 #else
 # define RTLD_mode	RTLD_LAZY
