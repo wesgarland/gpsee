@@ -40,12 +40,19 @@
  *  @version	$Id: gpsee_unix.h,v 1.7 2010/02/08 16:57:15 wes Exp $
  */
 
-#define SLOG_EMERG	LOG_EMERG
-#define SLOG_ERR	LOG_ERR
-#define SLOG_WARNING	LOG_WARNING
-#define SLOG_NOTICE	LOG_NOTICE
-#define SLOG_INFO	LOG_INFO
-#define SLOG_DEBUG	LOG_DEBUG
+#define SLOG_EMERG	0,LOG_EMERG
+#define SLOG_ERR	0,LOG_ERR
+#define SLOG_WARNING	0,LOG_WARNING
+#define SLOG_NOTICE	0,LOG_NOTICE
+#define SLOG_INFO	0,LOG_INFO
+#define SLOG_DEBUG	0,LOG_DEBUG
+
+#define SLOG_NOTTY_EMERG	1,LOG_EMERG
+#define SLOG_NOTTY_ERR	        1,LOG_ERR
+#define SLOG_NOTTY_WARNING	1,LOG_WARNING
+#define SLOG_NOTTY_NOTICE	1,LOG_NOTICE
+#define SLOG_NOTTY_INFO	        1,LOG_INFO
+#define SLOG_NOTTY_DEBUG	1,LOG_DEBUG
 
 #if !defined GPSEE_LOG_FACILITY
 # define GPSEE_LOG_FACILITY	LOG_USER
@@ -53,7 +60,7 @@
 
 #define	gpsee_printf(a...)		printf(a)
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-JS_EXTERN_API(void) gpsee_log(signed int pri, const char *fmt, ...)  __attribute__((format(printf,2,3)));
+JS_EXTERN_API(void) gpsee_log(unsigned int extra, signed int pri, const char *fmt, ...)  __attribute__((format(printf,3,4)));
 #define gpsee_closelog()		closelog()
 
 typedef void * rc_list;					/**< opaque dictionary */

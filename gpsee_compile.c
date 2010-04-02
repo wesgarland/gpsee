@@ -44,7 +44,7 @@
 #include <jsxdrapi.h>
 
 #if defined(GPSEE_DEBUG_BUILD)
-# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+# define dprintf(a...) do { if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY) printf("> "), printf(a); } while(0)
 #else
 # define dprintf(a...) while(0) printf(a)
 #endif
@@ -258,7 +258,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
                     cache_filename, exception);
         } else {
           /* Success */
-	  if (gpsee_verbosity(0) > 2)
+	  if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY)
 	    gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
 		      cache_filename);
         }
@@ -347,7 +347,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
                     cache_filename, exception);
         } else {
           /* Success */
-	  if (gpsee_verbosity(0) > 2)
+	  if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY)
 	    gpsee_log(SLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
 		      scriptFilename, cache_filename);
         }

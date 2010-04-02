@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -80,6 +80,8 @@ static apr_pool_t *permanent_pool;
 # define whenSureLynx(a,b)	b
 #endif
 
+#define xstr(s) str(s)
+#define str(s) #s
 
 extern rc_list rc;
 
@@ -149,20 +151,21 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
                   "SureLynx "
 #endif
                   PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
-                  "Copyright (c) 2007-2009 PageMail, Inc. All Rights Reserved.\n"
+                  "Copyright (c) 2007-2010 PageMail, Inc. All Rights Reserved.\n"
                   "\n"
                   "As an interpreter: #! %s {-/*flags*/}\n"
                   "As a command:      %s "
 #if defined(__SURELYNX__)
                                         "{-r file} [-D file] "
 #endif
-                                                              "[-z #] [-n] <[-c code]|[-f filename]>\n"
+                                                              "[-z #] [-n] <[-c code] [-f filename]>\n"
                   "                   %s {-/*flags*/} {[--] [arg...]}\n"
                   "Command Options:\n"
                   "    -c code     Specifies literal JavaScript code to execute\n"
                   "    -f filename Specifies the filename containing code to run\n"
                   "    -F filename Like -f, but skip shebang if present.\n"
                   "    -h          Display this help\n"
+		  "    -H          Display more help\n"
                   "    -n          Engine will load and parse, but not run, the script\n"
 #if defined(__SURELYNX__)
                   "    -D file     Specifies a debug output file\n"
@@ -190,17 +193,79 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
   exit(1);
 }
 
+
+/** More help text for this program, which doubles as the "official"
+ *  documentation for the more subtle behaviours of this embedding.
+ *
+ *  @param	argv_zero	How this program was invoked.
+ *
+ *  @note	Exits with status 1
+ */
+static void __attribute__((noreturn)) moreHelp(const char *argv_zero)
+{
+  char spaces[strlen(argv_zero) + 1];
+
+  memset(spaces, (int)(' '), sizeof(spaces) -1);
+  spaces[sizeof(spaces) - 1] = (char)0;
+
+  gpsee_printf(
+                  "\n"
+#if defined(__SURELYNX__)
+                  "SureLynx "
+#endif
+                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
+                  "Copyright (c) 2007-2010 PageMail, Inc. All Rights Reserved.\n"
+                  "\n"
+		  "More Help: Additional information beyond basic usage.\n"
+		  "\n"
+		  "Verbosity\n"
+		  "  Verbosity is a measure of how much output GPSEE and " PRODUCT_SHORTNAME " send to stderr.\n"
+		  "  To request verbosity N, specify the d flag N times when invoking " PRODUCT_SHORTNAME ".\n"
+		  "  Requests in both the shebang (#!) and comment-embedded options is additive.\n"
+		  "\n"
+		  "  If you invoke " PRODUCT_SHORTNAME " such that stderr is a tty, verbosity will be automatically\n"
+		  "  set to " xstr(GSR_MIN_TTY_VERBOSITY) ", unless your -d flags indicate an even higher level.\n"
+		  "\n"
+		  "  Before your program runs, i.e. you are running script code with -c or a\n"
+		  "  preload script, verbosity will be set to " xstr(GSR_PREPROGRAM_TTY_VERBOSITY) " when stderr is a tty,\n"
+		  "  and " xstr(GSR_PREPROGRAM_NOTTY_VERBOSITY) " otherwise.\n"
+		  "\n"
+		  "Uncaught Exceptions\n"
+		  "  - Errors are output to stderr when verbosity >= " xstr(GPSEE_ERROR_OUTPUT_VERBOSITY) "\n"
+		  "  - Warnings are output to stderr when verbosity >= " xstr(GPSEE_ERROR_OUTPUT_VERBOSITY) "\n"
+		  "  - Stack is dumped when error output is enabled and stderr is a tty,\n"
+		  "    or verbosity >= " xstr(GSR_FORCE_STACK_DUMP_VERBOSITY) "\n"
+		  "  - Syntax errors will have their location within the source shown when stderr\n"
+		  "    is a tty, and verbosity >= " xstr(GPSEE_ERROR_POINTER_VERBOSITY) "\n"
+		  "\n"
+		  "GPSEE-core debugging\n"
+		  "  - The module system will generate debug output whe verbosity >= " xstr(GPSEE_MODULE_DEBUG_VERBOSITY) "\n"
+		  "  - The script precompilation sub-system will generate debug output\n"
+		  "    when verbosity >= " xstr(GPSEE_XDR_DEBUG_VERBOSITY) "\n"
+		  "\n"
+		  "Miscellaneous\n"
+		  "  - Exit codes 0 and 1 are reserved for 'success' and 'error' respectively.\n"
+		  "    Application programs can return any exit code they wish, from 0-127,\n"
+		  "    with either require('system').exit() or by throwing a number literal.\n"
+		  "  - Preload scripts will only be processed when " PRODUCT_SHORTNAME " is not invoked\n"
+		  "    as " SYSTEM_GSR ".\n"
+		  "\n"
+	       );
+  exit(1);
+};
+
 /** Process the script interpreter flags.
  *
  *  @param	flags	An array of flags, in no particular order.
  */
-static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
+static void processFlags(gpsee_interpreter_t *jsi, const char *flags, signed int *verbosity_p)
 {
   int			gcZeal = 0;
   int			jsOptions;
   const char 		*f;
 
   jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
+  *verbosity_p = 0;
 
   /* Iterate over each flag */
   for (f=flags; *f; f++)
@@ -242,7 +307,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 	break;
 
       case 'd':	/* increase debug level */
-	gpsee_verbosity(+1);
+	(*verbosity_p)++;;
 	break;	
 
       default:
@@ -265,7 +330,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
   JS_SetOptions(jsi->cx, jsOptions);
 }
 
-static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile)
+static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile, signed int *verbosity_p)
 {
   char	buf[256];
   off_t	offset;
@@ -299,7 +364,7 @@ static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile)
     }
 
     if (s[0])
-      processFlags(jsi, s);
+      processFlags(jsi, s, verbosity_p);
   }
 
   fseeko(scriptFile, offset, SEEK_SET);
@@ -440,13 +505,13 @@ PRIntn prmain(PRIntn argc, char **argv)
 
   int			fiArg = 0;
   int			skipSheBang = 0;
-  int			exitCode;
-  int			preloadVerbosity;		/* Verbosity to use before flags are processed */
+  int			exitCode = 1;
+  int			verbosity;	                /* Verbosity to use before flags are processed */
 
 #if defined(__SURELYNX__)
   permanent_pool = apr_initRuntime();
 #endif
-  preloadVerbosity = isatty(STDERR_FILENO) ? 1 : 0;
+  gpsee_setVerbosity(isatty(STDERR_FILENO) ? GSR_PREPROGRAM_TTY_VERBOSITY : GSR_PREPROGRAM_NOTTY_VERBOSITY);
   gpsee_openlog(gpsee_basename(argv[0]));
 
   /* Print usage and exit if no arguments were given */
@@ -462,7 +527,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     int 	c;
     char	*flag_p = flags;
 
-    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hnf:F:aCRxSUWdeJ"
+    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hHnf:F:aCRxSUWdeJ"
 #ifdef JS_GC_ZEAL
 		       "z"
 #endif
@@ -484,6 +549,10 @@ PRIntn prmain(PRIntn argc, char **argv)
 
 	case 'h':
 	  usage(argv[0]);
+	  break;
+
+	case 'H':
+	  moreHelp(argv[0]);
 	  break;
 
 	case 'n':
@@ -586,29 +655,26 @@ PRIntn prmain(PRIntn argc, char **argv)
 
   jsi = gpsee_createInterpreter(script_argv, script_environ);
   gpsee_setThreadStackLimit(jsi->cx, &jsi);
-  processFlags(jsi, flags);
+
+  processFlags(jsi, flags, &verbosity);
   free(flags);
 
-  /* Set the correct verbosity level, then temporarily increase by preloadVerbosity if 0 */
 #if defined(__SURELYNX__)
   sl_set_debugLevel(gpsee_verbosity(0));
   enableTerminalLogs(permanent_pool, gpsee_verbosity(0) > 0, NULL);
 #else
-  if (!gpsee_verbosity(0) && isatty(STDERR_FILENO))
-    gpsee_verbosity(1);
+  if (verbosity < GSR_MIN_TTY_VERBOSITY && isatty(STDERR_FILENO))
+    verbosity = GSR_MIN_TTY_VERBOSITY;
 #endif
 
-  if (!gpsee_verbosity(0) && preloadVerbosity)
-    gpsee_verbosity(preloadVerbosity);
-  else
-    preloadVerbosity = 0;
+  if (gpsee_verbosity(0) < verbosity)
+    gpsee_setVerbosity(verbosity);
 
   /* Run JavaScript specified with -c */
   if (scriptCode) 
   {
     jsval v;
-    JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "command_line", 1, &v);
-    if (JS_IsExceptionPending(jsi->cx))
+    if (JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "command_line", 1, &v) == JS_FALSE)
       goto out;
   }
 
@@ -646,10 +712,10 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!noRunScript)
       {
         JS_AddNamedRoot(jsi->cx, &scrobj, "preload_scrobj");
-        JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v);
-        if (JS_IsExceptionPending(jsi->cx))
+        if (JS_ExecuteScript(jsi->cx, jsi->globalObj, script, &v) == JS_FALSE)
         {
-          jsi->exitType = et_exception;
+	  if (JS_IsExceptionPending(jsi->cx))
+	    jsi->exitType = et_exception;
           JS_ReportPendingException(jsi->cx);
         }
         JS_RemoveRoot(jsi->cx, &scrobj);
@@ -660,8 +726,8 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
   }
 
-  /* Setup for main-script running -- cancel preload verbosity and use our own error reporting system in gsr that does not use error reporter */
-  gpsee_verbosity(-1 * preloadVerbosity);
+  /* Setup for main-script running -- cancel preprogram verbosity and use our own error reporting system in gsr that does not use error reporter */
+  gpsee_setVerbosity(verbosity);
   JS_SetOptions(jsi->cx, JS_GetOptions(jsi->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
 
   if (!scriptFilename)
@@ -679,7 +745,8 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
     }
 
-    processInlineFlags(jsi, scriptFile);
+    processInlineFlags(jsi, scriptFile, &verbosity);
+    gpsee_setVerbosity(verbosity);
 
     /* Just compile and exit? */
     if (noRunScript)
@@ -689,7 +756,9 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj))
       {
-        gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, isatty(STDERR_FILENO));
+        gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, 
+				      (gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
+				      ((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
 	exitCode = 1;
       }
       else
@@ -708,15 +777,18 @@ PRIntn prmain(PRIntn argc, char **argv)
         }
         else
         {
-          gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, isatty(STDERR_FILENO));
-          exitCode = 1;
+	  gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, 
+					(gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
+					((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
+	  exitCode = 1;
         }
       }
       else
       {
+	exitCode = 0;
       }
     }
-      fclose(scriptFile);
+    fclose(scriptFile);
     goto out;
   }
 
