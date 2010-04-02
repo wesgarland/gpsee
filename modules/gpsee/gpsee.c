@@ -378,10 +378,39 @@ static JSBool gpsee_fork(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   return JS_TRUE;
 }
 
+static JSBool gpseemod_isByteThing(JSContext *cx, uintN argc, jsval *vp)
+{
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".isByteThing() requires exactly argument");
+  jsval * argv = JS_ARGV(cx, vp);
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return JS_FALSE;
+  JS_SET_RVAL(cx, vp, gpsee_isByteThing(cx, JSVAL_TO_OBJECT(argv[0])) ? JSVAL_TRUE : JSVAL_FALSE);
+  return JS_TRUE;
+}
+
+static JSBool gpseemod_sizeofByteThing(JSContext *cx, uintN argc, jsval *vp)
+{
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".sizeofByteThing() requires exactly argument");
+  jsval * argv = JS_ARGV(cx, vp);
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return JS_FALSE;
+  JSObject * obj = JSVAL_TO_OBJECT(argv[0]);
+  if (!gpsee_isByteThing(cx, obj))
+    return gpsee_throw(cx, MODULE_ID ".sizeofByteThing() requires a bytething as its argument");
+  byteThing_handle_t * bt = JS_GetPrivate(cx, obj);
+  if (!JS_NewNumberValue(cx, (jsdouble)bt->length, &JS_RVAL(cx, vp)))
+    return JS_FALSE;
+  return JS_TRUE;
+}
+
 const char *gpsee_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   static JSFunctionSpec gpsee_static_methods[] = 
   {
+    JS_FN("isByteThing",        gpseemod_isByteThing,           1, 0),
+    JS_FN("sizeofByteThing",    gpseemod_sizeofByteThing,       1, 0),
     { "include",		gpsee_include,			0, 0, 0 },	/* char: filename */
     { "system",			gpsee_system,			0, 0, 0 },	/* char: cmd str returns int exit code */
     { "exit",			gpsee_exit,			0, 0, 0 },	/* int: exit code */

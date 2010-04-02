@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $
+ * @version	$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.20 2010/02/08 22:03:55 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre2"
@@ -184,9 +184,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
 		  "    U - Disable UTF-8 C string processing\n"
                   "    W - Do not report warnings\n"
                   "    x - Parse <!-- comments --> as E4X tokens\n"
-#ifdef JS_GC_ZEAL
                   "    z - Increase GC Zealousness\n"
-#endif /* JS_GC_ZEAL */
                   "\n",
                   argv_zero, argv_zero, spaces);
   exit(1);
@@ -198,11 +196,8 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
  */
 static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 {
-#ifdef JS_GC_ZEAL
   int			gcZeal = 0;
-#endif /* JS_GC_ZEAL */
   int			jsOptions;
-  int			verbosity = max(whenSureLynx(sl_get_debugLevel(), 0), gpsee_verbosity(0));
   const char 		*f;
 
   jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
@@ -242,14 +237,12 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
 	jsOptions &= ~JSOPTION_JIT;
 	break;
 
-#ifdef JS_GC_ZEAL
       case 'z':	/* GC Zeal */
 	gcZeal++;
 	break;
-#endif /* JS_GC_ZEAL */
 
-      case 'd':	/* debug */
-	verbosity++;
+      case 'd':	/* increase debug level */
+	gpsee_verbosity(+1);
 	break;	
 
       default:
@@ -258,16 +251,18 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags)
     }
   }
 
-#ifdef JS_GC_ZEAL
+#ifdef JSFEATURE_GC_ZEAL
+  if (JS_HasFeature(JSFEATURE_GC_ZEAL) == JS_TRUE)
+    JS_SetGCZeal(jsi->cx, gcZeal);
+#else
+# ifdef JS_GC_ZEAL
   JS_SetGCZeal(jsi->cx, gcZeal);
-#endif /* JS_GC_ZEAL */
-  JS_SetOptions(jsi->cx, jsOptions);
-
-  gpsee_verbosity(verbosity);
-#if defined(__SURELYNX__)
-  sl_set_debugLevel(verbosity);
-  enableTerminalLogs(permanent_pool, verbosity > 0, NULL);
+# else
+#  warning JS_SetGCZeal not available when building with this version of SpiderMonkey (try a debug build?)
+# endif
 #endif
+
+  JS_SetOptions(jsi->cx, jsOptions);
 }
 
 static void processInlineFlags(gpsee_interpreter_t *jsi, FILE *scriptFile)
@@ -442,17 +437,17 @@ PRIntn prmain(PRIntn argc, char **argv)
   char * const  	*script_environ = NULL;		/* Environment to pass to script */
   char			*flags = malloc(8);		/* Flags found on command line */
   int			noRunScript = 0;		/* !0 = compile but do not run */
-  int			verbosity = 0;			/* 0 = no debug, bigger = more debug */
 
   int			fiArg = 0;
   int			skipSheBang = 0;
   int			exitCode;
-
-  gpsee_openlog(gpsee_basename(argv[0]));
+  int			preloadVerbosity;		/* Verbosity to use before flags are processed */
 
 #if defined(__SURELYNX__)
   permanent_pool = apr_initRuntime();
 #endif
+  preloadVerbosity = isatty(STDERR_FILENO) ? 1 : 0;
+  gpsee_openlog(gpsee_basename(argv[0]));
 
   /* Print usage and exit if no arguments were given */
   if (argc < 2)
@@ -554,14 +549,6 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
 
     *flag_p = (char)0;
-
-    if (verbosity)
-    {
-#if defined(__SURELYNX__)
-      sl_set_debugLevel(verbosity);
-#endif
-      gpsee_verbosity(verbosity);
-    }
   }
   else 
   {
@@ -602,8 +589,19 @@ PRIntn prmain(PRIntn argc, char **argv)
   processFlags(jsi, flags);
   free(flags);
 
-  /* We have our own error reporting system in gsr that does not use error reporter */
-  JS_SetOptions(jsi->cx, JS_GetOptions(jsi->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
+  /* Set the correct verbosity level, then temporarily increase by preloadVerbosity if 0 */
+#if defined(__SURELYNX__)
+  sl_set_debugLevel(gpsee_verbosity(0));
+  enableTerminalLogs(permanent_pool, gpsee_verbosity(0) > 0, NULL);
+#else
+  if (!gpsee_verbosity(0) && isatty(STDERR_FILENO))
+    gpsee_verbosity(1);
+#endif
+
+  if (!gpsee_verbosity(0) && preloadVerbosity)
+    gpsee_verbosity(preloadVerbosity);
+  else
+    preloadVerbosity = 0;
 
   /* Run JavaScript specified with -c */
   if (scriptCode) 
@@ -662,6 +660,10 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
   }
 
+  /* Setup for main-script running -- cancel preload verbosity and use our own error reporting system in gsr that does not use error reporter */
+  gpsee_verbosity(-1 * preloadVerbosity);
+  JS_SetOptions(jsi->cx, JS_GetOptions(jsi->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
+
   if (!scriptFilename)
   {
     exitCode = scriptCode ? 0 : 1;
@@ -687,8 +689,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj))
       {
-	gpsee_log(SLOG_NOTICE, "Could not compile %s\n", scriptFilename);
-	GPSEE_NOT_REACHED("Could not compile");
+        gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, isatty(STDERR_FILENO));
 	exitCode = 1;
       }
       else
@@ -698,11 +699,22 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
     else /* noRunScript is false; run the program */
     {
-      gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile);
-      if ((jsi->exitType & et_successMask) == jsi->exitType)
-	exitCode = jsi->exitCode;
+      if (!gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile))
+      {
+        int code = gpsee_getExceptionExitCode(jsi->cx);
+        if (code >= 0)
+        {
+          exitCode = code;
+        }
+        else
+        {
+          gpsee_reportUncaughtException(jsi->cx, JSVAL_NULL, isatty(STDERR_FILENO));
+          exitCode = 1;
+        }
+      }
       else
-	exitCode = 1;
+      {
+      }
     }
       fclose(scriptFile);
     goto out;
