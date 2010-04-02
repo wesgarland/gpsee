@@ -104,9 +104,11 @@ beginStruct(struct utsname)
 endStruct(struct utsname)
 
 #include <netinet/in.h>
+#if 0
 beginStruct(struct sockaddr)
   member(sa_family_t,	sa_family,	integer)
 endStruct(struct sockaddr_in)
+#endif
 
 beginStruct(struct sockaddr_in)
   member(sa_family_t,	sin_family,	integer)
