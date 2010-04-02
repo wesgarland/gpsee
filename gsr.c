@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $
+ * @version	$Id: gsr.c,v 1.23 2010/04/02 04:07:31 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.22 2010/04/01 13:52:32 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.23 2010/04/02 04:07:31 wes Exp $";
 
 #define PRODUCT_SHORTNAME	"gsr"
 #define PRODUCT_VERSION		"1.0-pre2"
@@ -159,7 +159,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
                                                               "[-z #] [-n] <[-c code]|[-f filename]>\n"
                   "                   %s {-/*flags*/} {[--] [arg...]}\n"
                   "Command Options:\n"
-                  "    -c code     Specifies literal JavaScript code to execute\n"
+                  "    -c code     Specifies literal JavaScript code to execute (runs before -f)\n"
                   "    -f filename Specifies the filename containing code to run\n"
                   "    -F filename Like -f, but skip shebang if present.\n"
                   "    -h          Display this help\n"
