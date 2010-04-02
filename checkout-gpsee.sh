@@ -15,6 +15,7 @@
 #
 set -e
 
+HG_DIR=gpsee-nickg
 LIBFFI="libffi-3.0.8"
 LIBFFI_TAR="${LIBFFI}.tar.gz"
 LIBFFI_DIR="`pwd`/${LIBFFI}"
@@ -42,11 +43,16 @@ fi
 echo "Asking for root password to remove /opt/local/gpsee"
 sudo rm -rf /opt/local/gpsee
 
-rm -rf gpsee
-hg clone https://gpsee.googlecode.com/hg/ gpsee
-cd gpsee
+#rm -rf gpsee-nickg
+#hg clone https://gpsee.googlecode.com/hg/ gpsee
+#hg clone https://nickgsuperstar-libcurl.googlecode.com/hg ${HG_DIR}
+cd ${HG_DIR}
 hg pull && hg update
 
+# Darwin only hack
+#
+echo "CPPFLAGS += -D_XOPEN_SOURCE=600 -D_DARWIN_C_SOURCE" >> build.mk
+#
 # MAIN CONFIG
 #  -- no changes
 #
