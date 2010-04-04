@@ -16,6 +16,7 @@
 set -e
 
 HG_DIR=gpsee-nickg
+
 LIBFFI="libffi-3.0.8"
 LIBFFI_TAR="${LIBFFI}.tar.gz"
 LIBFFI_DIR="`pwd`/${LIBFFI}"
@@ -49,9 +50,6 @@ sudo rm -rf /opt/local/gpsee
 cd ${HG_DIR}
 hg pull && hg update
 
-# Darwin only hack
-#
-echo "CPPFLAGS += -D_XOPEN_SOURCE=600 -D_DARWIN_C_SOURCE" >> build.mk
 #
 # MAIN CONFIG
 #  -- no changes
@@ -79,6 +77,7 @@ echo "LIBFFI_SRC = ${LIBFFI_DIR}" >> libffi/local_config.mk
 #
 #
 cd libffi
+echo "Starting libffi build in `pwd`"
 make build
 echo "May ask for password for install of libffi"
 sudo make install
@@ -87,8 +86,9 @@ cd ..
 #
 #
 #
-echo "Starting libmozjs build"
 cd spidermonkey
+echo "Starting libmozjs build in `pwd`"
+
 make build
 echo "May ask for password for install of spidermonkey"
 sudo make install
@@ -96,5 +96,5 @@ cd ..
 
 echo "Starting GPSEE build in `pwd`"
 make build
-echo "May ask for password for final install of gpseey
+echo "May ask for password for final install of gpsee"
 sudo make install
