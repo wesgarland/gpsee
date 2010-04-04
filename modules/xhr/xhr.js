@@ -446,7 +446,22 @@ XMLHttpRequest.prototype = {
 
         var header = this.getResponseHeader('content-type');
         var charset = this._charsetSniffer(header, raw);
-        return raw.decodeToString(charset);
+        try {
+            return raw.decodeToString(charset);
+        } catch(e) {
+            if (charset ==  'UTF-8' || charset == 'UTF8') {
+                // LOTS of files have content type, meta tag, bom or
+                //  anything to indicate charset the default is to try
+                //  utf8, but frequenty that will fail. In N. America,
+                //  try latin1.  There are algorithm to detect asian
+                //  charset too.  See the firefox source code.
+
+                return raw.decodeToString('iso-8859-1');
+            }
+
+            // if we already tried latin1, then just explode
+            throw e;
+        }
     },
 
     get responseXML() {
