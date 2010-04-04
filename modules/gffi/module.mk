@@ -70,7 +70,7 @@ gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs std_defs.o: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
