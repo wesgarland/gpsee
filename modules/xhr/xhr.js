@@ -1,6 +1,34 @@
-// XMLHttpRequest
-// http://www.w3.org/TR/XMLHttpRequest/
-
+/**
+ * xhr.js -- XMLHttpRequest in javascript
+ *
+ *  Basic XHR for
+ *   - gpsee  http://code.google.com/p/gpsee/
+ *   - libcurl http://curl.haxx.se/
+ *
+ * SPECS:
+ *   - XMLHttpRequest V1
+ *     http://www.w3.org/TR/XMLHttpRequest/
+ *
+ *   - XMLHttpRequest V2
+ *     http://www.w3.org/TR/XMLHttpRequest2/
+ *
+ * IMPORTANT:
+ *  - At the moment, this mostly follows the v1 spec.
+ *  - Does not support XML/HTML parsing
+ *  - Does not support Events (from V2 spec)
+ *  - This is SYNCHRONOUS, as async requires a reactor
+ *
+ * Change Log:
+ * 04-APR-2010:
+ *  - Support username/password in http
+ *  - Correctly handle headers when redirects, 100s, or auth occurs
+ *  - Change reponseBody to responseRaw as per XHRv2
+ *
+ * Copyright 2010 Nick Galbreath
+ * MIT LICENCE
+ * http://www.opensource.org/licenses/mit-license.php
+ *
+ */
 const curlmod = require('curl');
 
 const ByteArray = require('binary').ByteArray;
@@ -17,7 +45,7 @@ var XMLHttpRequest = function() {
     this._send_flag = false;
     this._error_flag = false;
     this._status_line = null;
-    this.headers = [];
+    this.headers_in = [];
 
     var z = this.curl = new easycurl;
     // CURL SETUP
@@ -60,8 +88,8 @@ XMLHttpRequest.prototype = {
     LOADING           : 3,
     DONE              : 4,
 
-    _status_re : /^HTTP.[0-9.]+ +([0-9]+) +(.*)/,
-    _charset_re : /charset=(\S*)/,
+    _status_re : /^HTTP.[0-9.]+ +([0-9]+) +(.*)/ ,
+    _charset_re : /charset=([-\w]*)/,
 
     // You'll want to define something like this to be called
     // at the start of each request.
@@ -73,6 +101,7 @@ XMLHttpRequest.prototype = {
         this.curl.blob = new ByteArray;
         this.curl.header_list = [];
         this.extraheaders = new easycurl_slist;
+        this.headers_in.length = 0;
     },
 
     _charsetSniffer: function(header, raw) {
@@ -80,7 +109,7 @@ XMLHttpRequest.prototype = {
         if (header !== null) {
             var parts = this._charset_re.exec(header);
             if (parts && parts[1]) {
-                return parts[1].toLowerCase();
+                return parts[1].toUpperCase();
             }
         }
 
@@ -109,7 +138,7 @@ XMLHttpRequest.prototype = {
             return "UTF-8";
         }
         // when in doubt try this
-        return 'utf-8';
+        return 'UTF-8';
     },
 
     /**
@@ -146,7 +175,7 @@ XMLHttpRequest.prototype = {
 
         // do it lazy and not save result.  Unlike to be called
         // twice (or even once!)
-        return Array.prototype.join(this.headers, '\r\n');
+        return Array.prototype.join(this.headers_in, '\r\n');
     },
 
     /**
@@ -229,6 +258,13 @@ XMLHttpRequest.prototype = {
         // steps 8,9,10
         // dealing with user passwords
         //  Should set libcurl stuff
+        if (user) {
+            this.curl.opt(this.curl.CURLOPT_USERNAME, user);
+        }
+        if (password) {
+            this.curl.opt(this.curl.CURLOPT_PASSWORD, password);
+        }
+
 
         // step 11
         // same origin policy
@@ -237,7 +273,7 @@ XMLHttpRequest.prototype = {
         // step 12
         //  In this implementation async is ignored
         if (typeof async === 'undefined') {
-            this.async = true;
+            this.async = false;
         }
 
         // step 13
@@ -311,20 +347,23 @@ XMLHttpRequest.prototype = {
         // DO IT
         this.curl.perform();
 
-        // code http 100 is a bit funny
-        // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+        // When curl is configured to follow redirects and to perform
+        // auth, and follow htp code 100 the final headers list
+        // contains the headers for ALL intermediate steps.
+        //
+        var imax =  this.curl.header_list.length;
+        for (var i = 0; i < imax; ++i) {
+            var ahead = this.curl.header_list[i];
+            if (this._status_re.exec(ahead)) {
+                // header is a status line "HTTP/1.1 302..."
+                // delete all previously seen headers
 
-        // maybe use  z.getinfo(z.CURLINFO_RESPONSE_CODE)
-        // instead of the regexp
-        var code = 100;
-        var i = 0;
-        while (code === 100) {
-            var status = this.curl.header_list[i].trim();
-            if (status.length > 0) {
-                var parts = /^HTTP\/[0-9.]+ ([0-9]+)/(status);
-                code = parseInt(parts[1]);
+                this._status_line = ahead;
+                this.headers_in.length = 0;
+            } else {
+                // else copy
+                this.headers_in.push(ahead);
             }
-            ++i; // future: break if i > XXX?
         }
 
         // step 6 -- no actual state change
@@ -336,8 +375,7 @@ XMLHttpRequest.prototype = {
         }
 
         // lots of steps here skipped
-        this.headers_in = this.curl.header_list;
-        this._status_line = this.headers_in.shift();
+
         this._readyState = this.HEADERS_RECEIVED;
         this.onreadystatechange();
 
@@ -385,7 +423,7 @@ XMLHttpRequest.prototype = {
      * not in spec
      * returns a ByteString
      */
-    get responseRaw() {
+    get responseBody() {
         if (this._readyState != this.DONE) {
             return null;
         }
@@ -401,7 +439,7 @@ XMLHttpRequest.prototype = {
         if (this._readyState != this.DONE) {
             return null;
         }
-        var raw = this.responseRaw;
+        var raw = this.responseBody;
         if (raw === null) {
             return '';
         }
@@ -416,7 +454,7 @@ XMLHttpRequest.prototype = {
             return null;
         }
 
-        var raw = this.responseRaw;
+        var raw = this.responseBody;
         if (raw === null) {
             return '';
         }
