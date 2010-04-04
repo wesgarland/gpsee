@@ -98,9 +98,9 @@ XMLHttpRequest.prototype = {
         this._send_flag = false;
         this._error_flag = false;
         this._status_line = null;
-        this.curl.blob = new ByteArray;
+        this.curl.blob = new ByteArray();
         this.curl.header_list = [];
-        this.extraheaders = new easycurl_slist;
+        this.extraheaders = new easycurl_slist();
         this.headers_in.length = 0;
     },
 
@@ -420,7 +420,7 @@ XMLHttpRequest.prototype = {
     },
 
     /**
-     * not in spec
+     * XHRv2
      * returns a ByteString
      */
     get responseBody() {
