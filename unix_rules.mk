@@ -53,6 +53,9 @@ build_debug:
 	@echo "ICONV_CPPFLAGS:  $(ICONV_CPPFLAGS)"
 	@echo "ICONV_HEADER:    $(ICONV_HEADER)"
 	@echo
+	@echo "PROGS:           $(PROGS)"
+	@echo "OBJS:		$(OBJS)"
+	@echo "EXPORT_LIBS:	$(EXPORT_LIBS)"
 
 # Install shared libraries
 install-nodeps install install-solibs: XLIBS =$(strip $(filter %.$(SOLIB_EXT),$(EXPORT_LIBS)))
