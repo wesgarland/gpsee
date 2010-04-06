@@ -37,4 +37,4 @@ VERSION_C_IN    ?= $(GPSEE_SRC_DIR)/version.c.in
 MK_VERSION_C    ?= cat $(VERSION_C_IN) | $(SED) 's/@@HG_VERSION@@/$(shell hg id -r .)/g' > $(VERSION_C)
 
 clean: AUTOGEN_SOURCE += $(VERSION_C)
-
+clean: OBJS += $(VERSION_O)

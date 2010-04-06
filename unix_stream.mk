@@ -92,7 +92,11 @@ ifdef VERSION_O
 VERSION_C 	?= $(VERSION_O:.$(OBJ_EXT)=.c)
 VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
 
-.PHONY .INTERMEDIATE:   $(VERSION_O)
+ifdef SUDO_USER
+.INTERMEDIATE:   	$(VERSION_O)
+else
+.PHONY:			$(VERSION_O)
+endif
 $(VERSION_O):           $(VERSION_C)
 	$(CC) $(CFLAGS) -c $(VERSION_C) -o $@
 $(VERSION_C):           $(VERSION_C_IN) $(VERSION_H)
@@ -102,4 +106,3 @@ VERSION_C=
 VERSION_H=
 endif # VERSION_O
 endif # NO_VERSION_O_RULES
-
