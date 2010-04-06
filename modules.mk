@@ -78,6 +78,7 @@ $(MODULE).$(LIB_EXT) $(MODULE).$(SOLIB_EXT): $(MODULE_OBJ) $(EXTRA_MODULE_OBJS)
 
 .PHONY: build_debug_module
 
-clean: OBJS+=$(MODULE_OBJ) $(EXTRA_MODULE_OBJS) $(MODULE)
+clean: OBJS += $(MODULE_OBJ) $(EXTRA_MODULE_OBJS) $(MODULE).$(LIB_EXT) $(MODULE).$(SOLIB_EXT) $(wildcard $(PROGS:=.o))
+
 
 
