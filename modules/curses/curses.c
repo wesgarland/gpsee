@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses.c,v 1.6 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: curses.c,v 1.7 2010/04/04 14:56:07 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses.c,v 1.6 2010/03/06 18:17:14 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: curses.c,v 1.7 2010/04/04 14:56:07 wes Exp $";
 
 #include "gpsee.h"
 #include <stdlib.h>
@@ -49,6 +49,15 @@ static const char __attribute__((unused)) rcsid[]="$Id: curses.c,v 1.6 2010/03/0
 #include <string.h>
 #include <curses.h>
 #include <signal.h>
+#ifdef GPSEE_DARWIN_SYSTEM
+/* Work around 10.6 oddity */
+# ifndef SIGWINCH
+#  define SIGWINCH 28
+# endif
+# ifndef SIGINFO
+#  define SIGINFO 29
+# endif
+#endif
 #include "curses_module.h"
 
 /** Curses-mode error logger.
