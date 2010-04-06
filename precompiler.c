@@ -91,9 +91,9 @@ int main(int argc, char *argv[])
   }
 
   printf(" * Precompiling %s\n", scriptFilename);
-  if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, &script, jsi->globalObj, &scrobj, &errmsg))
+  if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj) == JS_FALSE)
   {
-    fprintf(stderr, "Could not compile %s (%s)\n", scriptFilename, errmsg ?: "unknown failure");
+    fprintf(stderr, "Could not compile %s (%s)\n", scriptFilename, errno ? strerror(errno) : "no system error");
     GPSEE_ASSERT(errmsg);
     exitCode = 1;
   }
