@@ -246,7 +246,7 @@ static void __attribute__((noreturn)) moreHelp(const char *argv_zero)
 		  "Miscellaneous\n"
 		  "  - Exit codes 0 and 1 are reserved for 'success' and 'error' respectively.\n"
 		  "    Application programs can return any exit code they wish, from 0-127,\n"
-		  "    with either require('system').exit() or by throwing a number literal.\n"
+		  "    with either require('gpsee').exit() or by throwing a number literal.\n"
 		  "  - Preload scripts will only be processed when " PRODUCT_SHORTNAME " is not invoked\n"
 		  "    as " SYSTEM_GSR ".\n"
 		  "\n"
@@ -527,11 +527,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     int 	c;
     char	*flag_p = flags;
 
-    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hHnf:F:aCRxSUWdeJ"
-#ifdef JS_GC_ZEAL
-		       "z"
-#endif
-		       )) != -1)
+    while ((c = getopt(argc, argv, whenSureLynx("D:r:","") "v:c:hHnf:F:aCRxSUWdeJz")) != -1)
     {
       switch(c)
       {
