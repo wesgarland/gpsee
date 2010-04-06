@@ -172,6 +172,7 @@ install:
 	@$(MAKE) $(MAKEFLAGS) QUIET=True build
 	@$(MAKE) $(MAKEFLAGS) _install
 	@$(MAKE) $(MAKEFLAGS) vars.mk
+	@[ ! "$(SUDO_USER)" ] || $(CHOWN) $(SUDO_USER):$(SUDO_GROUP) vars.mk
 ifneq ($(QUIET),True)
 	@echo " * SpiderMonkey Build & Installation Complete"
 endif

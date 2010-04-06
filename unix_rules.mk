@@ -1,5 +1,6 @@
 ifneq ($(NO_BUILD_RULES),TRUE)
 # Standard targets
+ifndef SUDO_USER
 ifneq ($(MAKECMDGOALS),)
 ifneq ($(MAKECMDGOALS),top)
 ifneq ($(MAKECMDGOALS),help)
@@ -21,6 +22,7 @@ endif # goal = install-nodeps
 endif # goal = help
 endif # goal = top
 endif # goal = none
+endif # ndef SUDO_USER
 
 clean:
 	-$(if $(strip $(OBJS)), $(RM) $(OBJS))
@@ -59,7 +61,11 @@ build_debug:
 
 # Install shared libraries
 install-nodeps install install-solibs: XLIBS =$(strip $(filter %.$(SOLIB_EXT),$(EXPORT_LIBS)))
+ifdef SUDO_USER
+install-solibs:
+else
 install-solibs:	$(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS)
+endif
 		@$(if $(XLIBS), [ -d $(SOLIB_DIR) ] || mkdir -p $(SOLIB_DIR))
 		$(if $(XLIBS), $(CP) $(XLIBS) $(SOLIB_DIR))
 		@$(if $(EXPORT_LIBEXEC_OBJS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
@@ -68,7 +74,11 @@ install-solibs:	$(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS)
 # Install binaries and shared libraries
 install-nodeps install:	XPROGS =$(strip $(EXPORT_PROGS))
 install-nodeps install:	XCGIS =$(strip $(CGI_PROGS))
+ifdef SUDO_USER
+install:
+else
 install:	$(EXPORT_LIBS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_PROGS) $(CGI_PROGS)
+endif
 ifneq (X$(EXPORT_LIBS)$(EXPORT_LIBEXEC_OBJS),X)
 		@$(MAKE) install-solibs
 endif
@@ -86,7 +96,11 @@ install-nodeps:
 # Propagate changes to headers and static libraries
 srcmaint:	XLIBS =$(strip $(filter %.$(LIB_EXT),$(EXPORT_LIBS)))
 srcmaint:	XHEADERS =$(strip $(EXPORT_HEADERS))
+ifdef SUDO_USER
+srcmaint:
+else
 srcmaint:	$(strip $(filter %.$(LIB_EXT),$(EXPORT_LIBS))) $(EXPORT_HEADERS)
+endif
 ifneq (X,X$(STATICLIB_DIR))
 		@$(if $(XLIBS), [ -d $(STATICLIB_DIR) ] || mkdir -p $(STATICLIB_DIR))
 		$(if $(XLIBS), $(CP) $(XLIBS) $(STATICLIB_DIR))

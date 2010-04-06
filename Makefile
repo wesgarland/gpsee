@@ -129,7 +129,7 @@ DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
 .PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help install_js_components
-build install: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+build: $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
 install: $(TARGET_LIBEXEC_JSC) gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
@@ -259,9 +259,15 @@ libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o $(VERSION_O)
+
+$(SPIDERMONKEY_BUILD)/libjs_static.a:
+	$(warning $@ should have already been built!)
+	cd $(SPIDERMONKEY_BUILD)
+	make libjs_static.a
+
 precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS))
 precompiler: LOADLIBES := -lstdc++
-precompiler: precompiler.o $(GPSEE_OBJS) $(SPIDERMONKEY_BUILD)/libjs_static.a 
+precompiler: precompiler.o $(filter-out $(VERSION_O),$(GPSEE_OBJS)) $(SPIDERMONKEY_BUILD)/libjs_static.a 
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules

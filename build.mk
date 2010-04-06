@@ -62,12 +62,10 @@ LOADLIBES               += $(EXTRA_LOADLIBES)
 CFLAGS                  += $(EXTRA_CFLAGS)
 
 # Implicit Rules for building libraries
-%.$(SOLIB_EXT):	
-		$(if $(VERSION_O), $(MAKE) $(VERSION_O))
+%.$(SOLIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
 		$(SO_AR) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 
-%.$(LIB_EXT):	
-		$(if $(VERSION_O), $(MAKE) $(VERSION_O))
+%.$(LIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
 		$(AR_RU) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 		$(RANLIB) $@
 
