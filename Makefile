@@ -99,7 +99,7 @@ JS_MODULE_FILES			:= $(shell $(foreach DIR, $(LOADABLE_MODULE_DIRS_ALL), [ ! -r 
 ALL_MODULE_DIRS			:= $(sort $(AR_MODULE_DIRS_ALL) $(LOADABLE_MODULE_DIRS_ALL) $(dir $(JS_MODULE_FILES)))
 
 # PROGS must appear before build.mk until darwin-ld.sh is obsolete.
-PROGS		 	?= gsr minimal
+PROGS		 	?= gsr minimal precompiler
 
 include build.mk
 -include depend.mk
@@ -157,8 +157,8 @@ install_js_components:
 		@$(if $(TARGET_LIBEXEC_JS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
-$(TARGET_LIBEXEC_JSC):	install_js_components gsr $(TARGET_LIBEXEC_JS)
-#	./gsr -ndf $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
+$(TARGET_LIBEXEC_JSC):	install_js_components precompiler $(TARGET_LIBEXEC_JS)
+	@./precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//')
 
 show_modules:
 	@echo 
@@ -259,6 +259,9 @@ libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o $(VERSION_O)
+precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS))
+precompiler: LOADLIBES := -lstdc++
+precompiler: precompiler.o $(GPSEE_OBJS) $(SPIDERMONKEY_BUILD)/libjs_static.a 
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
