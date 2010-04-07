@@ -212,6 +212,14 @@ static void xdrfile_finalize (JSXDRState *xdr)
   }
   #endif
 
+  /* Release the "raw" memory allocation if necessary */
+  if (self->raw)
+  {
+    JS_free(xdr->cx, self->raw);
+    self->raw = NULL;
+    self->rawsize = 0;
+  }
+
   /* Close the underlying file */
   if (self->f)
   {
