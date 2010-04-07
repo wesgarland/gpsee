@@ -89,6 +89,10 @@
 # define _BSD_SOURCE
 #endif
 
+#if defined(GPSEE_STD_GNU)
+# define _GNU_SOURCE
+#endif
+
 /* Pull feature-detection code in with unistd / stdlib */
 #include <unistd.h>
 #include <stdlib.h>
@@ -143,15 +147,15 @@ int main(int argc, const char *argv[])
 #endif
 
 #ifdef _SVID_SOURCE
-	" -D__SOURCE"
+	" -D_SVID_SOURCE"
 #endif
 
 #ifdef _BSD_SOURCE
-	" -D__SOURCE"
+	" -D_BSD_SOURCE"
 #endif
 
 #ifdef _GNU_SOURCE
-	" -D__SOURCE"
+	" -D_GNU_SOURCE"
 #endif
 
 #ifdef __EXTENSIONS__
