@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2009 PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s):
  * 
@@ -30,7 +30,8 @@
  * the provisions above, a recipient may use your version of this file under
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
- * ***** END LICENSE BLOCK ***** */
+ * ***** END LICENSE BLOCK ***** 
+ */
 
 /**
  *  @file	CFunction.c	Support code for GPSEE's gffi module which
@@ -173,7 +174,7 @@ fail:
 }
 
 /* @jazzdoc gffi.CFunction.prototype.call()
- * Invokes a foreign function.
+ * Invokes a foreign function. Obsolete, can now invoke CFunction objects as functions.
  *
  * @form CFunctionInstance.call(arguments[])
  * The exact form of invocation depends on the instantiation of the CFunction. Please see gffi.CFunction for more
@@ -188,6 +189,8 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   cFunction_closure_t   *clos;
   JSObject              *obj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
+
+  printf("call: %p\n", obj);
 
   /* Prepare the FFI call */
   if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".call"))
@@ -204,6 +207,60 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   /* Clean up */
   cFunction_closure_free(cx, clos);
 
+  return ret;
+}
+
+/**
+ *  JSNative for use by JSClass.call to replace F.call() with F()
+ */
+static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  JSBool                ret;
+  jsrefcount            depth;
+  cFunction_closure_t   *clos;
+  
+  obj = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
+
+  printf("invoke: %p\n", obj);
+
+  /* Prepare the FFI call */
+  if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".invoke"))
+    return JS_FALSE;
+
+  /* Make the call */
+  if (!clos->hnd->noSuspend)
+    depth = JS_SuspendRequest(cx);
+  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
+  if (!clos->hnd->noSuspend)
+    JS_ResumeRequest(cx, depth);
+  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, rval, CLASS_ID ".invoke");
+
+  /* Clean up */
+  cFunction_closure_free(cx, clos);
+
+  if (ret == JS_FALSE)
+    goto out;
+
+  /* Box if necessary so we can finalize */
+  switch(*rval)
+  {
+    case JSVAL_NULL:
+    case JSVAL_VOID:
+      goto out;
+  }
+
+  /* Box primitive values so that they can be garbage collected, and support a finalizeWith() instance method */
+
+  /*  - make a new object
+   *  - add valueOf method which returns what rval is right now  (ffiType_toValue result)
+   *  - add finalizeWith method which sets up finalizer
+   *    - finalizeWith can use JSClass call op if we need to preserve private slot, other wise
+   *      it can be a OBJECT_TO_JSVAL(JSFunction *)
+   *  - add destroy method which calls then removes finalizer    
+   *  - set rval to new object
+   */
+
+  out:
   return ret;
 }
 
@@ -516,7 +573,8 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
   };
 
   JSObject *proto;
-  
+
+  cFunction_class.call = CFunction_call;
   cFunction_clasp = &cFunction_class;
 
   proto =

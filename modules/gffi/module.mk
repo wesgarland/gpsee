@@ -32,20 +32,50 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
+# Notes
+#
+# 1. Cannot use standard AUTOGEN_HEADERS / AUTOGEN_SOURCE rules for some 
+#    of these files, as producing them during the depend.mk phase could
+#    result in compilation errors (and does on Snow Leopard).  This is 
+#    because the depend.mk phase precenes the dynamic generation of 
+#    std_cppflags.mk, which in turn selects the correct standards symbol
+#    set for for the target being built.
+#
+# 2. There are "standards" symbol sets and "regular" symbols sets. The
+#    "standards" symbols sets are built with an explicitly-selected
+#    standard, usually Single UNIX Specification v3 (SUSv3) and the
+#    System V Interface Definition (SVID). Whatever standard is selected,
+#    (via GPSEE_STD_ macros) GFFI will theoretically expose the standard
+#    symbol name, with a dynamically generated trampoline if necessary,
+#    or die trying (during the build process).  We force C99 for the
+#    standard symbol sets, although this is not strictly necessary if
+#    we're not exposing SUSv3.
+#
+# 3. The "gpsee" symbol set is special, and refers to "however GPSEE was
+#    was built" - which is usually /not/ strict SUSv3
+#
+# 4. Additional structs can be added in structs.decl
+#
+# 5. Additional symbols sets (header groups) can by added by specifying
+#    MYGROUP_defs.%: 	HEADERS  = list_of_headers_with_defines
+#    and then adding MYGROUP to do the DEFS variable.
 
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
+ifneq ($(MAKECMDGOALS),clean)
+include std_cppflags.mk
+endif
 include sanity.mk
--include std_cppflags.mk
 
-std_cppflags.mk:
+std_cppflags.mk: mk_std_cppflags
 	@echo " * Building $@"
 	$(CC) $(CFLAGS) $(CPPFLAGS) mk_std_cppflags.c -o mk_std_cppflags
-	./mk_std_cppflags STD_CPPFLAGS= > $@
+	./mk_std_cppflags "STD_CPPFLAGS=-std=gnu99" > $@
+mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
 
 DEFS	 	 	= gpsee std
-AUTOGEN_HEADERS		+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
-AUTOGEN_SOURCE		+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl mk_std_cppflags.mk
+ND_AUTOGEN_HEADERS	+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
+ND_AUTOGEN_SOURCE	+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o CType.o
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
 OBJS			+= $(EXTRA_MODULE_OBJS)
@@ -53,24 +83,27 @@ CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
 MDFLAGS 		+= $(LIBFFI_CFLAGS)
 
-.PRECIOUS:		$(AUTOGEN_SOURCE) $(AUTOGEN_HEADERS)
+.PRECIOUS:		$(ND_AUTOGEN_SOURCE) $(ND_AUTOGEN_HEADERS)
 
 build:
 
 build_debug_module:
 	@echo " - In gffi"
-	@echo "   - CFLAGS   = $(CFLAGS)"
-	@echo "   - LDFLAGS  = $(LDFLAGS)"
-	@echo "   - CPPFLAGS = $(CPPFLAGS)"
+	@echo "   - CFLAGS   		= $(CFLAGS)"
+	@echo "   - LDFLAGS  		= $(LDFLAGS)"
+	@echo "   - CPPFLAGS 		= $(CPPFLAGS)"
+	@echo "   - STD_CPPFLAGS	= $(STD_CPPFLAGS)"
+	@echo "   - GFFI_CPPFLAGS	= $(GFFI_CPPFLAGS)"
 
 clean:	OBJS += aux_types.o
+clean:	AUTOGEN_HEADERS = $(ND_AUTOGEN_HEADERS)
+clean:  AUTOGEN_SOURCE = $(ND_AUTOGEN_SOURCE)
 
 gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
 gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
-mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
-std_functions.o std_gpsee_no.h std_defs.dmp std_defs std_defs.o: CPPFLAGS += -std=gnu99 $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
+std_functions.o std_gpsee_no.h std_defs.dmp std_defs std_defs.o: CPPFLAGS += $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
 std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
@@ -257,4 +290,3 @@ structs.incl: structs.decl module.mk
 
 
 defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
-
