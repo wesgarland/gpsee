@@ -45,6 +45,7 @@ var XMLHttpRequest = function() {
     this._send_flag = false;
     this._error_flag = false;
     this._status_line = null;
+    this._method = null;
     this.headers_in = [];
 
     var z = this.curl = new easycurl;
@@ -232,11 +233,11 @@ XMLHttpRequest.prototype = {
         var tmp = method.toUpperCase();
         if (tmp in ['CONNECT', 'DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST',
                     'PUT', 'TRACE', 'TRACK']) {
-            this.method = tmp;
+            this._method = tmp;
         }
 
         // step 4
-        if (this.method in ['CONNECT', 'TRACE', 'TRACK']) {
+        if (this._method in ['CONNECT', 'TRACE', 'TRACK']) {
             throw new Error("SECURITY_ERR");
         }
 
@@ -326,7 +327,7 @@ XMLHttpRequest.prototype = {
         // Step 4
         var postdata = '';
         if (this._method !== 'GET') {
-            if (typeof data !== 'undefined' || data !== null ) {
+            if (data !== undefined && data !== null ) {
                 postdata = data.toString();
             }
         }
@@ -405,7 +406,7 @@ XMLHttpRequest.prototype = {
         // check for validity of header name
 
         // step 4
-        if (value === null || typeof value === 'undefined') {
+        if (value === null || value === undefined) {
             return;
         }
 
