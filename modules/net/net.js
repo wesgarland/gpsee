@@ -41,7 +41,7 @@
 const binary = require("binary");
 const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
-const dh = ffi.gpsee	/**< Header collection for #define'd constants */
+const dh = ffi.std	/**< Header collection for #define'd constants */
 
 const _close		= new dl.CFunction(ffi.int,	"close",		ffi.int);
 const _strerror		= new dl.CFunction(ffi.pointer, "strerror",		ffi.int);
@@ -63,6 +63,7 @@ const _write		= new dl.CFunction(ffi.ssize_t,	"write",		ffi.int, ffi.pointer, ff
 const _read		= new dl.CFunction(ffi.ssize_t,	"read",			ffi.int, ffi.pointer, ffi.size_t);
 const _inet_pton	= new dl.CFunction(ffi.int,	"inet_pton",		ffi.int, ffi.pointer, ffi.pointer);
 const _inet_ntop	= new dl.CFunction(ffi.pointer,	"inet_ntop",		ffi.int, ffi.pointer, ffi.pointer, ffi.size_t);
+const _shutdown         = new dl.CFunction(ffi.int,     "shutdown",             ffi.int, ffi.int);
 
 /**
  *  Return a string documenting the most recent OS-level error, if there was one.
@@ -151,10 +152,10 @@ function hton_detect()
   }
   else
   {
-    htonl = _htonl.call;
-    htons = _htons.call;
-    ntohl = _ntohl.call;
-    ntohs = _ntohs.call;
+    htonl = function(num) _htonl.call(num);
+    htons = function(num) _htons.call(num);
+    ntohl = function(num) _ntohl.call(num);
+    ntohs = function(num) _ntohs.call(num);
   }
 }
 
@@ -341,12 +342,17 @@ exports.poll = function poll(pollSockets, timeout)
 
   for each (let socket in pollSockets)
   {
-    if (_FD_ISSET.call(socket.fd, rfds) != 0)
+    let fd;     /* events could modify sock.fd */
+
+    fd = socket.fd;
+
+    if (_FD_ISSET.call(fd, rfds) != 0)
     {
       if (socket.onReadable)
 	socket.onReadable(socket);
     }
-    if (_FD_ISSET.call(socket.fd, wfds) != 0)
+
+    if (_FD_ISSET.call(fd, wfds) != 0)
       if (socket.onWritable)
 	socket.onWritable(socket);
   }
@@ -363,50 +369,50 @@ var eventSystem =
 {
   addListener: function addListener(eventName, eventHandler)
   {
-    if (!this.listeners)
-      this.listeners = {};
+    if (!this._listeners)
+      this._listeners = {};
 
-    if (!this.listeners[eventName])
-      this.listeners[eventName] = [];
+    if (!this._listeners[eventName])
+      this._listeners[eventName] = [];
 
-    this.listeners[eventName].push(eventHandler);
+    this._listeners[eventName].push(eventHandler);
   },
 
   removeListener: function removeListener(eventName, eventHandler)
   {
     var i;
 
-    if (!this.listeners || !this.listeners[eventName])
+    if (!this._listeners || !this._listeners[eventName])
       return;
 
-    i = this.listeners[eventName].indexOf(eventHandler);
+    i = this._listeners[eventName].indexOf(eventHandler);
     if (i != -1)
-      this.listeners[eventName].splice(i, 1);
+      this._listeners[eventName].splice(i, 1);
   },
 
   removeAllListeners: function removeAllListeners(eventname)
   {
-    if (this.listeners)
-      delete this.listeners[eventName];
+    if (this._listeners)
+      delete this._listeners[eventName];
   },
 
   listeners: function listeners(eventName)
   {
-    if (!this.listeners)
-      this.listeners = {};
+    if (!this._listeners)
+      this._listeners = {};
 
-    if (!this.listeners[eventName])
-      this.listeners[eventName] = [];
+    if (!this._listeners[eventName])
+      this._listeners[eventName] = [];
 
-    return this.listeners[eventName];
+    return this._listeners[eventName];
   },
 
   vemit: function vemit(eventName, args)
   {
-    if (!this.listeners || !this.listeners[eventName])
+    if (!this._listeners || !this._listeners[eventName])
       return;
 
-    for each(let event in this.listeners[eventName])
+    for each(let event in this._listeners[eventName])
       event.apply(this, args);
   },
 
@@ -421,9 +427,16 @@ var eventSystem =
   }
 }
 
+function EventSystem()
+{
+  this._listeners = {};
+}
+
+EventSystem.prototype = eventSystem;
+
 function Server()
 {
-  graft(this, eventSystem);
+  graft(this, new EventSystem());
 }
 
 Server.prototype.connections = [];
@@ -447,7 +460,7 @@ Server.prototype.close = function Server_close()
   this.socket.close();
 
   for each (connection in this.connections)
-    connection.addEventListener("close", reactorTryCloseServer);
+    connection.addListener("close", reactorTryCloseServer);
 }
 
 Server.prototype.toString = function Server_toString()
@@ -483,8 +496,8 @@ exports.reactor = function(servers, quitObject)
   {
     quitObject = { quit: false };
 
-//    if (!require("system").global.quit)
-//      require("signal").onINT = function () { quitObject.quit = true; };	/* gpsee-js crashes when trapping signals */
+    if (!require("system").global.quit)
+      require("signal").onINT = function () { quitObject.quit = true; };	/* gpsee-js crashes when trapping signals */
   }
 
   do 
@@ -497,11 +510,23 @@ exports.reactor = function(servers, quitObject)
 
       for each (let connection in server.connections)
       {
+        if (connection.readyState === "closed")
+        {
+          let idx = server.connections.indexOf(connection);
+
+          if (idx === -1)
+            throw new Error("Socket on fd " + (0+this.fd) + "is not in server's connection list!");
+
+          server.connections.splice(idx, 1);
+          continue;
+        }
+
+	connection.onReadable = reactorRead;
 	if (connection.pendingWrites.length)
 	  connection.onWriteable = reactorDrain;
 	else
 	  delete connection.onWriteable;
-	connection.onReadable = reactorRead;
+
 	pollSockets.push(connection);
       }
     }
@@ -514,9 +539,15 @@ function reactorConnectEvent(socket)
 {
   var new_socket = socket.accept();
 
+  new_socket.readyState = "opening";
+  new_socket.server = socket.server;
   new_socket.write = reactorWrite;
   new_socket.pendingWrites = [];
-  graft(new_socket, eventSystem);
+
+  graft(new_socket, new EventSystem());
+
+  new_socket.readyState = "open";
+  new_socket.addListener("end", reactSocketEnd);
 
   socket.server.connections.push(new_socket);
   socket.server.emit("connection", new_socket);
@@ -535,7 +566,6 @@ function reactorRead(socket)
   switch(bytesRead)
   {
     case 0:
-      socket.readyState = "readOnly";
       socket.emit("end");
       break;
     case -1:
@@ -580,8 +610,33 @@ function reactorWrite(data)
     if (bytesWritten != -1)
       this.pendingWrites.push(data.slice(bytesWritten));
     else
+    {
+      if (ffi.errno == dh.EPIPE)
+      {
+        delete this.onWriteable;
+        this.readyState = "readOnly";
+      }
       this.had_write_error = ffi.errno;
+    }
   }
+}
+
+function reactSocketEnd()
+{
+  var socket = this;
+
+  delete this.onReadable;
+  delete this.onWriteable;
+
+  if (_shutdown.call(this.fd, dh.O_RDWR) != 0)
+    if (ffi.errno != dh.ENOTCONN)
+      throw new Error("Could not shutdown socket on fd " + (0+this.fd) + syserr());
+
+  if (_close.call(this.fd) != 0)
+    throw new Error("Could not close socket on fd " + (0+this.fd) + syserr());
+
+  this.readyState = "closed";
+  delete this.fd;
 }
 
 function reactorDrain(socket)
