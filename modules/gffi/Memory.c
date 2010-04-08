@@ -279,6 +279,11 @@ static JSBool memory_copyDataString(JSContext *cx, uintN argc, jsval *vp)
     return JS_TRUE;
   }
 
+  if (JSVAL_IS_STRING(argv[0]))
+    str = JSVAL_TO_STRING(argv[0]);
+  else
+    return gpsee_throw(cx, CLASS_ID ".fromDataString.arguments.0.type: must be a string");
+
   switch(argc)
   {
     case 1:
@@ -303,11 +308,6 @@ static JSBool memory_copyDataString(JSContext *cx, uintN argc, jsval *vp)
     default:
       return gpsee_throw(cx, CLASS_ID ".fromDataString.arguments.count");      
   }
-
-  if (JSVAL_IS_STRING(argv[0]))
-    str = JSVAL_TO_STRING(argv[0]);
-  else
-    return gpsee_throw(cx, CLASS_ID ".fromDataString.arguments.0.type: must be a string");
 
   buf = JS_GetStringChars(str);
   
