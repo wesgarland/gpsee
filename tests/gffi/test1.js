@@ -24,29 +24,29 @@ var sb = new ffi.MutableStruct("struct stat");			/* Create a JS object reflectin
 var filename;
 var owner;
 
-dirp = _opendir.call("/etc");					/* String literal automatically becomes pointer for call () */
+dirp = _opendir("/etc");					/* String literal automatically becomes pointer for call () */
 if (!dirp)
   throw("can't open dir");
 
-while (dent = _readdir.call(dirp))				/* dent returned as instanceof Memory or null */
+while ((dent = _readdir(dirp)))					/* dent returned as instanceof Memory or null */
 {
-  dent = ffi.MutableStruct(dent, "struct dirent");		/* dent pointer casted to struct dirent JS reflection object (no copy),
+  dent = ffi.MutableStruct("struct dirent", dent);		/* dent pointer casted to struct dirent JS reflection object (no copy),
 								 * FFI layer holds weak reference to original dent via JSTraceOp 
 								 * until this one is final.
 								 */
   filename = "/etc/" + dent.d_name.asString(-1);		/* d_name falls off the struct: -1 tells FFI to believe strlen, not sizeof() */
 
-  if (_stat.call(filename, sb) != 0)
+  if (_stat(filename, sb) != 0)
   {				/* String and instanceof MutableStruct become pointer for call() */
     print("can't stat " + filename + ", errno=" + ffi.errno);
     continue;
   }
 
-  pwent = _getpwuid.call(sb.st_uid);
+  pwent = _getpwuid(sb.st_uid);
   if (!pwent)
-    throw("Could not turn UID " + statBuf.st_uid + " into a username: " + _strerror.call(ffi.errno));
+    throw("Could not turn UID " + statBuf.st_uid + " into a username: " + _strerror(ffi.errno));
 
-  owner = ffi.MutableStruct(pwent, "struct passwd").pw_name;	/* Type cast (no copy), then dereference member */
+  owner = ffi.MutableStruct("struct passwd",pwent).pw_name;	/* Type cast (no copy), then dereference member */
 
   if (sb.st_mode & ffi.std.S_IFDIR)				/* S_IFDIR is an int jsval defined in header collection named posix */
     print(filename + " is a directory owned by " + owner)

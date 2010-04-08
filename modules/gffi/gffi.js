@@ -85,4 +85,3 @@ exports.CFunction.prototype.call = function() {
     return new exports.BoxedPrimitive(rval);
   }
 }
-
