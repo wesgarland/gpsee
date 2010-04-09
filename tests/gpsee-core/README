@@ -1,0 +1,11 @@
+This directory holds tests which test components of the core GPSEE
+infrastructure.
+
+Some tests are JavaScript programs, some must be build through the
+build system that GPSEE exposes to outside-the-tree consumers.
+
+To build these tests, the Makefile must be able to find gpsee-config.
+If gpsee-config is not on your path, you will need to specify it on 
+your make command line; something like:
+
+# make GPSEE_CONFIG=/path/to/gpsee-config

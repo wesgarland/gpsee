@@ -1,0 +1,31 @@
+/**
+ * @namespace       gpsee.module.ca.page.cgi - CGI module
+ * @author          Wes Garland, PageMail, Inc., wes@page.ca
+ * @description     CGI module for writing CGI scripts
+ */
+var cgi = {};
+/** 
+ *  @name           cgi.query
+ *  @description    Provides access to parsed query-string variables
+ *  <p>
+ *  cgi.query's members reflect the contents of the query string once it has been initialized with its readQuery()
+ *  member method. Multiple query string arguments of the same name may be unsupported.
+ *  </p>
+ */
+var cgi.query =
+{
+  /** readQuery() initializes access to cgi.query so that its members reflect the contents of the query string.
+   *  @throws cgi.query.readQuery.alreadyRead
+   */
+  var readQuery = function(){};
+};
+
+/** @class
+ *  @description    PHP session reflection for Javascript
+ *  <p>
+ *  An instance of PHPSession maps its members to PHP session key=value pairs. This mapping is read-only, and cannot
+ *  be used to modify the client's PHP session.
+ *  </p>
+ */
+var cgi.PHPSession = function(){};
+

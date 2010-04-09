@@ -1,0 +1,80 @@
+/** @namespace 		gpsee.module.ca.page.gpsee
+ *  @description 	Interface to systems-level functions.
+ *  @author		Wes Garland, PageMail, Inc., wes@page.ca
+ */
+var System = function() {
+
+/** Translate a system error number into a string.
+ *  @param	error	System-level error number
+ *  @see  	errno.h
+ */
+function strerror(error){};
+
+/** Pause execution of the current thread for N seconds.
+ *  @param	sleepTime	Amount of time to sleep.
+ *  @note	Floating point numbers are supported, but are rounded to
+ *              to the nearest second unless GPSEE was built with APR.
+ */
+function sleep(sleepTime){};
+
+/** Load and interpreter a script in the caller's context 
+ *  @param	thisObj		(OPTIONAL) JS object to bind as global/this during execution. Optional.
+ *  @param	filename	Script filename, either relative or rooted.
+ */
+function include(thisObj, filename){};
+
+/** Issue a shell command 
+ *  @param	command		Command to execute with shell.
+ *  @see	system()
+ */
+function system(command){};
+
+/** Terminate the running JS application. 
+ *  Does not cleanly shut down the interpreter.
+ *  @see	exit()
+ *  @see	PR_ProcessExit()
+ *  @warning 	Experimental
+ *  @param	exitCode	Exit value to return to OS.
+ */
+function _exit(exitCode){};
+
+/** Terminate the running JS application, properly
+ *  closing/releasing/etc resources, including waiting for
+ *  other Threads to terminate when Thread class is active.
+ *
+ *  @param	exitCode	Exit value to return to OS.
+ */
+function exit(exitCode){};
+
+/** Fork the running application. 
+ *  @see	fork()
+ *
+ *  @note	This function doesn't know anything at all about SpiderMonkey or APR.
+ *		So you can pretty much bet it's not safe to use when you have an open
+ *		SNPAF_Datagram, or at least, when one is open for write.
+ *
+ *  @warning	Experimental
+ *
+ *  @returns	Child PID when returning as original process, 
+ *              0 when returning as child.
+ */
+function fork(){};
+
+/** Most recent system-level error number */
+var errno = {};
+
+/** Current load average */
+var loadavg = {};
+
+/** Current process ID */
+var pid = {};
+
+/** Parent process ID */
+var ppid = {};
+
+/** Parent process group */
+var pgrp = {};
+
+/** Parent Group ID */
+var pgid = {};
+};
