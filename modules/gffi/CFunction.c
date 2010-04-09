@@ -190,8 +190,6 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   JSObject              *obj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
 
-  printf("call: %p\n", obj);
-
   /* Prepare the FFI call */
   if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".call"))
     return JS_FALSE;
