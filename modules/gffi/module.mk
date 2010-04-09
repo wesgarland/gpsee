@@ -74,7 +74,7 @@ std_cppflags.mk: mk_std_cppflags
 mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
 
 DEFS	 	 	= gpsee std
-ND_AUTOGEN_HEADERS	+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
+ND_AUTOGEN_HEADERS	+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h std_macro_consts.h
 ND_AUTOGEN_SOURCE	+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o CType.o
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags std_macro_consts
@@ -131,6 +131,7 @@ compiler_dmp.re:
 		-e 's/[|]/[|]/g' \
 	> $@
 INCLUDE_DIRS=. /usr/local/include /usr/include /
+std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 %.dmp: compiler_dmp.re #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
 	@echo $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER))))
