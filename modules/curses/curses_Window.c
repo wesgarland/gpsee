@@ -891,7 +891,7 @@ JSBool window_getXY(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
   }
 
   if (JS_DefineFunction(cx, point, "valueOf", window_getXY_valueOf, 0, 0) == NULL)
-    return gpsee_throw(cx, CLASS_ID "getXY.valueOf");
+    return gpsee_throw(cx, CLASS_ID ".getXY.valueOf");
 
   return JS_TRUE;
 }
@@ -901,7 +901,6 @@ JSBool window_getXY(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
  */
 JSBool window_getMaxXY(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  int 		x,y;
   int32		windowWidth, windowHeight;
   JSObject	*point;
   win_hnd_t 	*hnd  = JS_GetInstancePrivate(cx, obj, WindowClass, argv);
@@ -922,16 +921,16 @@ JSBool window_getMaxXY(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
   if (getIntProp(cx, obj, "height", &windowHeight, "getMaxXY.parent.height") == JS_FALSE)
     return JS_FALSE;
 
-  if ((JS_DefineProperty(cx, point, "x", INT_TO_JSVAL(x), JS_PropertyStub, JS_PropertyStub, 
+  if ((JS_DefineProperty(cx, point, "x", INT_TO_JSVAL(windowWidth), JS_PropertyStub, JS_PropertyStub, 
 			 JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_FALSE) ||
-      (JS_DefineProperty(cx, point, "y", INT_TO_JSVAL(y), JS_PropertyStub, JS_PropertyStub, 
+      (JS_DefineProperty(cx, point, "y", INT_TO_JSVAL(windowHeight), JS_PropertyStub, JS_PropertyStub, 
 			 JSPROP_ENUMERATE | JSPROP_PERMANENT) == JS_FALSE))
   {
-    return gpsee_throw(cx, CLASS_ID ".getXY.defineProps"); /* impossible */
+    return gpsee_throw(cx, CLASS_ID ".getMaxXY.point.defineProps");
   }
 
   if (JS_DefineFunction(cx, point, "valueOf", window_getXY_valueOf, 0, 0) == NULL)
-    return gpsee_throw(cx, CLASS_ID "getXY.valueOf");
+    return gpsee_throw(cx, CLASS_ID ".getMaxXY.point.valueOf");
 
   return JS_TRUE;
 }
