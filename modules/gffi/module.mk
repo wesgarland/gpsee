@@ -77,7 +77,7 @@ DEFS	 	 	= gpsee std
 ND_AUTOGEN_HEADERS	+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h
 ND_AUTOGEN_SOURCE	+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o CType.o
-PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags
+PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags std_macro_consts
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
@@ -104,10 +104,10 @@ gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 std_functions.o std_gpsee_no.h std_defs.dmp std_defs std_defs.o: CPPFLAGS += $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
-std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
+std_macro_consts.o std_functions.o: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(CPPFLAGS) 
 std_functions.o: std_gpsee_no.h
 
-std_gpsee_no.h: std_functions.h
+std_gpsee_no.h: std_functions.h std_macro_consts.h
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
 	$(EGREP) '^function[(]' function_aliases.incl | $(SED) -e 's/^[^,]*, *//' -e 's/,.*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
@@ -115,6 +115,9 @@ std_gpsee_no.h: std_functions.h
 	$(EGREP) '^function[(]' unsupported_functions.incl | $(SED) -e 's/.*[(]//' -e 's/[)].*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 	$(CPP) $(CPPFLAGS) -dM - < std_functions.h | $(SED) 's/[ 	][ 	]*/ /g' | $(EGREP) '[ 	]__builtin_..*$$' | \
 		$(SED) -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
+
+std_macro_consts.h: std_macro_consts
+	./std_macro_consts > $@
 
 compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
 
@@ -142,8 +145,8 @@ INCLUDE_DIRS=. /usr/local/include /usr/include /
 	[ -f $@ ]
 
 std_defs:	EXTRA_CPPFLAGS += -I.
-std_defs.%:	HEADERS  = std_functions.h stdint.h
-gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h
+std_defs.%:	HEADERS  = std_functions.h stdint.h std_macro_consts.h
+gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h std_macro_consts.h
 
 ############ BEWARE - Dragons Below ###############
 
