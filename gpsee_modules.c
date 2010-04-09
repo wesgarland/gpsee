@@ -1344,7 +1344,6 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   char			cnBuf[PATH_MAX];
   char			fnBuf[PATH_MAX];
   int			i;
-  const char		*errorMessage = NULL;
   gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   char			*s;
 
@@ -1449,8 +1448,6 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 
   if (initializeModule(cx, module) == JS_FALSE)
     goto fail;
-
-  good:
 
   JS_SetGlobalObject(cx, jsi->globalObj);
   return JS_TRUE;

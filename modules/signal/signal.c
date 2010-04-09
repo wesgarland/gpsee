@@ -285,12 +285,12 @@ static JSBool signal_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     case JSVAL_NULL:
     case JSVAL_FALSE:
       if ((e = signal_removeSignalHandler(cx, sig)))
-	return gpsee_throw(cx, e);
+	return gpsee_throw(cx, "%s", e);
       return JS_TRUE;
   }
 
   if ((e = signal_setSignalHandler(cx, sig, *vp)))
-    return gpsee_throw(cx, e);
+    return gpsee_throw(cx, "%s", e);
 
   return JS_TRUE;
 }
