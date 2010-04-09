@@ -265,9 +265,9 @@ $(SPIDERMONKEY_BUILD)/libjs_static.a:
 	cd $(SPIDERMONKEY_BUILD)
 	make libjs_static.a
 
-precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS))
-precompiler: LOADLIBES := -lstdc++
-precompiler: precompiler.o $(filter-out $(VERSION_O),$(GPSEE_OBJS)) $(SPIDERMONKEY_BUILD)/libjs_static.a 
+precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS)) 
+precompiler: LOADLIBES := $(filter modules/%,$(GPSEE_OBJS)) -lstdc++
+precompiler: precompiler.o $(filter-out modules/% $(VERSION_O),$(GPSEE_OBJS)) $(SPIDERMONKEY_BUILD)/libjs_static.a 
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
