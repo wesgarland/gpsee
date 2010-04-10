@@ -236,9 +236,23 @@ static size_t header_callback( void *ptr, size_t size, size_t nmemb, void *strea
   return len;
 }
 
-
 /*******************************************************/
+/**
+ * Helper function to determine what type of value curl_getinfo returns
+ *
+ */
+static int info_expected_type(int opt)
+{
+    // opt & 0xf00000
+    opt = (opt & CURLINFO_TYPEMASK);
 
+    // opt is 0x100000 to 0x400000
+    //  5*4 = 20;
+    opt = opt >> 20;
+    if (opt < 1 || opt > 4)
+	opt = 0;
+    return opt;
+}
 
 static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
@@ -255,16 +269,10 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
 
   // TODO: DONNY NOTES: can curl_easy_getinfo() fail for other reasons?
   //  does it have a way of reporting what went wrong?
-  switch (opt)
+  switch (info_expected_type(opt))
   {
     // STRINGS
-  case CURLINFO_EFFECTIVE_URL:
-#ifdef CURLINFO_REDIRECT_URL:
-  case CURLINFO_REDIRECT_URL:
-#endif
-  case CURLINFO_CONTENT_TYPE:
-    //case CURLINFO_PRIMARY_IP:
-  case CURLINFO_FTP_ENTRY_PATH:
+  case 1:
   {
     char* val = NULL;
     JSString* s = NULL;
@@ -281,18 +289,7 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
     return JS_TRUE;
   }
   // LONGS
-  case CURLINFO_RESPONSE_CODE:
-  case CURLINFO_HTTP_CONNECTCODE:
-  case CURLINFO_FILETIME:
-  case CURLINFO_REDIRECT_COUNT:
-  case CURLINFO_HEADER_SIZE:
-  case CURLINFO_REQUEST_SIZE:
-  case CURLINFO_SSL_VERIFYRESULT:
-  case CURLINFO_HTTPAUTH_AVAIL:
-  case CURLINFO_PROXYAUTH_AVAIL:
-  case CURLINFO_OS_ERRNO:
-  case CURLINFO_NUM_CONNECTS:
-  case CURLINFO_LASTSOCKET:
+  case 2:
   {
     long val = 0;
     c = curl_easy_getinfo(handle, opt, &val);
@@ -303,18 +300,8 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
     }
     return (JS_NewNumberValue(cx, val, rval)) ? JS_TRUE : JS_FALSE;
   }
-  // DOUBLES
-  case CURLINFO_TOTAL_TIME:
-  case CURLINFO_CONNECT_TIME:
-    //  case CURLINFO_APPCONNECT_TIME:
-  case CURLINFO_PRETRANSFER_TIME:
-  case CURLINFO_STARTTRANSFER_TIME:
-  case CURLINFO_REDIRECT_TIME:
-  case CURLINFO_SIZE_UPLOAD:
-  case CURLINFO_SIZE_DOWNLOAD:
-  case CURLINFO_SPEED_DOWNLOAD:
-  case CURLINFO_CONTENT_LENGTH_DOWNLOAD:
-  case CURLINFO_CONTENT_LENGTH_UPLOAD:
+  // DOUBLE
+  case 3:
   {
     double dval = 0;
     c = curl_easy_getinfo(handle, opt, &dval);
@@ -325,10 +312,15 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
     }
     return (JS_NewNumberValue(cx, dval, rval)) ? JS_TRUE : JS_FALSE;
   }
-  // SLISTS
-  case CURLINFO_SSL_ENGINES:
-  case CURLINFO_COOKIELIST:
+
+  // SLIST OR OBJECTS
+  case 4:
   {
+      if (opt == CURLINFO_PRIVATE) {
+	  JS_ReportError(cx, "Sorry, that option isn't supported.");
+	  return JS_FALSE;
+      }
+
     struct curl_slist *list = NULL;
     JSObject* newobj = NULL;
 
@@ -345,11 +337,6 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
     JS_SetPrivate(cx, newobj, (void*) list);
     return JS_TRUE;
   }
-  // Not Supported
-  case CURLINFO_PRIVATE:
-    //case CURLINFO_CERTINFO:
-    JS_ReportError(cx, "Sorry, that option isn't supported yet");
-    return JS_FALSE;
   default:
     JS_ReportError(cx, "Unknown curl_easy_getinfo option");
     return JS_FALSE;
@@ -357,7 +344,10 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
 }
 
 /**
- * Helper function to determine what type of value a curl_setopt takes
+ * Helper function to determine what type of value a curl_setopt and
+ * takes
+ *
+ * There are defined in decimal so we use "<" not bit ops
  *
  * @return 0 if invalid, 1,2,3 if valid
  */
