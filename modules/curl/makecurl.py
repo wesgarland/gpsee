@@ -3,8 +3,8 @@
 text = None
 
 name = '/opt/local/include/curl/curl.h'
+name = '/usr/include/curl/curl.h'
 f = open(name)
-#f = open('/Users/nickg/root/include/curl/curl.h')
 text = f.read()
 f.close();
 
