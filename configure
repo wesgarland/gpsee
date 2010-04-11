@@ -11,6 +11,10 @@ help()
 
 cat <<EOF
 
+*** Working in progress -- if you're not working on this,  ***
+*** it's not for you. Build instructions for GPSEE are at  ***
+*** http://code.google.com/p/gpsee/wiki/Building           ***
+
 configure -- Configuration automator for GPSEE.
 Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
 
