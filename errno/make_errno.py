@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+#
+# Code to generate JS properties for posix errno macros ("EGAIN" -> 9)
+#  and a function mapping the errno back to it's macro name
+#  9 -> "EAGAIN"
+#
+# Nick Galbreath
+# Copyright 2010
+# MIT License
+# http://www.opensource.org/licenses/mit-license.php
+
 errnos = [
     'EPERM', 'ENOENT', 'ESRCH', 'EINTR', 'ENXIO', 'E2BIG', 'ENOEXEC', 'EBADF',
     'ECHILD', 'EAGAIN', 'ENOMEM','EACCES', 'EFAULT', 'ENOTBLK', 'EBUSY',
