@@ -105,6 +105,19 @@ XMLHttpRequest.prototype = {
         this.headers_in.length = 0;
     },
 
+    /**
+     * Hook for doing content decoding (eg zip, gzip)
+     */
+    _contentDecoder: function(header, raw) {
+        // this implementation does nothing
+        return raw;
+    },
+
+    /**
+     * Hook for doing charset decoding (utf8, latin1, etc)
+     *
+     * The API here isn't quite right
+     */
     _charsetSniffer: function(header, raw) {
 
         if (header !== null) {
@@ -245,6 +258,8 @@ XMLHttpRequest.prototype = {
 
         // step 6 -- resolve relative url
         //  Does not apply for server-side XHR
+
+        print("URL = " + url);
         this.curl.setopt(this.curl.CURLOPT_URL, url);
 
         if (false) {
@@ -273,7 +288,7 @@ XMLHttpRequest.prototype = {
 
         // step 12
         //  In this implementation async is ignored
-        if (typeof async === 'undefined') {
+        if (async === undefined) {
             this.async = false;
         }
 
@@ -327,8 +342,8 @@ XMLHttpRequest.prototype = {
         // Step 4
         var postdata = '';
         if (this._method !== 'GET') {
-            if (data !== undefined && data !== null ) {
-                postdata = data.toString();
+            if (typeof data !== 'undefined' && data !== null ) {
+                postdata = '' + data;
             }
         }
         this.curl.setopt(this.curl.CURLOPT_HTTPHEADER, this.extraheaders);
@@ -429,7 +444,11 @@ XMLHttpRequest.prototype = {
             return null;
         }
 
-        return this.curl.blob;
+        // Hook for content decoding to make it easier instead
+        // over-riding 'getters'.  This is for hooking in gzip
+        // or deflate/uncompress
+        var header = this.getResponseHeader('content-encoding');
+        return  this._contentDecoder(header, this.curl.blob);
     },
 
     /**
@@ -437,16 +456,23 @@ XMLHttpRequest.prototype = {
      *
      */
     get responseText() {
+        var raw; // raw bytes from network
+        var header; // header storage
+        var charset; // guess of charset encoding
+
         if (this._readyState != this.DONE) {
             return null;
         }
-        var raw = this.responseBody;
+        raw = this.responseBody;
         if (raw === null) {
             return '';
         }
 
-        var header = this.getResponseHeader('content-type');
-        var charset = this._charsetSniffer(header, raw);
+        // HACK ALERT, this whole thing should be an API
+
+        header = this.getResponseHeader('content-type');
+        charset = this._charsetSniffer(header, raw);
+
         try {
             return raw.decodeToString(charset);
         } catch(e) {

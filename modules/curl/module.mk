@@ -5,4 +5,4 @@ OBJS += $(EXTRA_MODULE_OBJS)
 #   /opt/local/include for macports
 #   /usr/local/include for others
 EXTRA_CFLAGS += -I/opt/local/include
-LDFLAGS += -lcurl
+LDFLAGS += -L/opt/local/lib -lcurl
