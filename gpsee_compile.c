@@ -284,20 +284,27 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
       if (unlink(cache_filename))
       {
-        useCompilerCache = 0;
-        /* Report that we could not unlink the cache file */
-        gpsee_log(SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+        if (errno != ENOENT)
+        {
+          useCompilerCache = 0;
+          /* Report that we could not unlink the cache file */
+          gpsee_log(SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+        }
       }
       errno = 0;
 
       /* Open the cache file atomically; fails on collision with other process */
-printf("@@@@@ creating a cache file with mode 0%o (from source file with mode 0%o)\n", source_st.st_mode & 0666, source_st.st_mode & 0777);
+      mode_t oldumask = umask(~0666);
+      printf("@@@ creating a file with mode 0%o\n", source_st.st_mode);
       if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, source_st.st_mode & 0666)) < 0)
       {
+        umask(oldumask);
 	if (errno != EEXIST)
 	  gpsee_log(SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
         goto cache_write_end;
       }
+      umask(oldumask);
+
       /* Acquire write lock for file */
       gpsee_flock(cache_fd, GPSEE_LOCK_EX);
       /* Truncate file again now that we have the lock */
