@@ -295,7 +295,6 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
       /* Open the cache file atomically; fails on collision with other process */
       mode_t oldumask = umask(~0666);
-      printf("@@@ creating a file with mode 0%o\n", source_st.st_mode);
       if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, source_st.st_mode & 0666)) < 0)
       {
         umask(oldumask);
