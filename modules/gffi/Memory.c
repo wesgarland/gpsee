@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.11 2010/03/30 21:08:55 wes Exp $
+ *  @version	$Id: Memory.c,v 1.12 2010/04/14 00:38:35 wes Exp $
  */
 
 #include <gpsee.h>

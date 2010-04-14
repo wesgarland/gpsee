@@ -46,7 +46,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Mar 2010
- *  @version	$Id: CType.c,v 1.1 2010/03/30 21:06:58 wes Exp $
+ *  @version	$Id: CType.c,v 1.2 2010/04/14 00:38:33 wes Exp $
  *
  *  @example
  *

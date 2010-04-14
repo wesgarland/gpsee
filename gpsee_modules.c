@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.29 2010/04/01 13:43:19 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.29 2010/04/01 13:43:19 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"

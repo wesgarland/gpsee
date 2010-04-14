@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** 
  *
  *  @author	Donny Viszneki, PageMail, Inc., hdon@page.ca
- *  @version	$Id: gpsee_compile.c,v 1.2 2010/03/06 18:17:13 wes Exp $
+ *  @version	$Id: gpsee_compile.c,v 1.3 2010/04/14 00:37:56 wes Exp $
  *  @file	gpsee_compile.c		Code to compile JavaScript, and to transparently
  *					cache compiled byte code to/from disk.
  */
