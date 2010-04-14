@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.35 2010/04/14 00:03:33 wes Exp $
+## @version	$Id: Makefile,v 1.36 2010/04/14 01:09:25 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
@@ -247,7 +247,7 @@ invasive-bin-dist bin-dist:: install
 		$(foreach FILE, $(notdir $(EXPORT_PROGS)), "$(BIN_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBEXEC_OBJS)), "$(LIBEXEC_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
-		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS)
+		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS) $(TARGET_LIBEXEC_JSC)
 	@echo
 	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
 	@echo
