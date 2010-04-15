@@ -1,0 +1,148 @@
+#! /bin/sh
+
+argv_zero="$0"
+gpsee_dir="`dirname $0`"
+
+[ ! "$USER" ] && [ "$LOGNAME" ] && USER="$LOGNAME"
+
+help()
+{
+  [ "$1" = "help" ] && echo "display this help" && return
+
+cat <<EOF
+
+*** Working in progress -- if you're not working on this,  ***
+*** it's not for you. Build instructions for GPSEE are at  ***
+*** http://code.google.com/p/gpsee/wiki/Building           ***
+
+configure -- Configuration automator for GPSEE.
+Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
+
+Usage: $argv_zero [options]
+
+Note: This is not autoconf; it simply automates specifying common options in
+      GPSEE's local_config.mk files with a more familiar user interface.
+
+Example:
+  $argv_zero --with-mozilla=~/hg/tracemonkey
+
+Options:
+EOF
+
+  typeset -F | sed -e 's/^.* //'  | while read func
+  do
+    opt="`echo \"$func\" | sed -e 's/_/-/g'`"
+    echo "$func" | egrep -v '^enable|disable|help' >/dev/null && opt="$opt=value"
+    echo "  --$opt\t`$func help`" 
+  done
+
+  echo
+  exit 2
+}
+
+prefix()
+{
+  [ "$1" = "help" ] && echo "specify location of GPSEE install" && return
+  echo "GPSEE_PREFIX_DIR=$1" >&5
+}
+
+with_build()
+{
+  [ "$1" = "help" ] && echo "specify GPSEE build type (DEBUG or RELEASE)" && return
+  echo "BUILD=$1" >$5
+}
+
+with_pkg_config()
+{
+  [ "$1" = "help" ] && echo "specify location of pkg-config executable" && return
+  echo "PKG_CONFIG=$1" >$5
+}
+
+with_autoconf213()
+{
+  [ "$1" = "help" ] && echo "specify location of autoconf 2.13 executable" && return
+  echo "AUTOCONF=$1" >$5
+}
+
+with_spidermonkey_build()
+{
+  [ "$1" = "help" ] && echo "specify SpiderMonkey build type (DEBUG or RELEASE)" && return
+  echo "BUILD=$1" >$6
+}
+
+with_spidermonkey()
+{
+  [ "$1" = "help" ] && echo "specify location of js/src (if not using Mozilla tree)" && return
+  echo "SPIDERMONKEY_SRC=$1" >&6
+}
+
+with_mozilla()
+{
+  [ "$1" = "help" ] && echo "specify location of Mozilla tree" && return
+  echo "SPIDERMONKEY_SRC=$1/js/src" >&6
+}
+
+with_gcc_prefix()
+{
+  [ "$1" = "help" ] && echo "specify prefix of GCC to use" && return
+  echo "GCC_PREFIX=$1" >&5
+}
+
+disable_async_callbacks()
+{
+  [ "$1" = "help" ] && echo "disable async callback facility (breaks require('signals')" && return
+
+  if [ "$1" = "enable" ]; then
+    echo "EXTRA_CPPFLAGS += -UGPSEE_NO_ASYNC_CALLBACKS" >&5
+  else
+    echo "EXTRA_CPPFLAGS += -DGPSEE_NO_ASYNC_CALLBACKS" >&5
+  fi
+}
+
+# main
+[ "$1" ] || help
+
+fd=5
+confdirs=". spidermonkey libffi"
+for dir in $confdirs
+do
+  file="$gpsee_dir/$dir/local_config.mk"
+  [ -f "$file" ] && head -1 "$file" | grep -v "Generated" >/dev/null && mv "$dir/local_config.mk" "$dir/local_config.mk.old"
+  echo "# Generated `date` by $USER on `hostname`" > "$file"
+  cat "$file.sample" >> "$file"
+  #echo "$file is on fd $fd"
+  eval "exec $fd>>\"$file\""
+  fd=`expr $fd + 1`
+done
+
+while [ "$1" ]
+do
+  if echo "$1" | grep '^--' >/dev/null; then
+    # --enable-option, --disable-option, or --option=value
+    func="`echo \"$1\" | sed -e 's/^--//' -e 's/-/_/g' -e 's/=.*//'`"
+    arg="`echo \"$1\" | grep = | sed -e 's/.*=//'`"
+    if ! typeset -f "$func" >/dev/null; then
+      if echo "$func" | grep '^enable' >/dev/null; then
+        func="`echo \"$func\" | sed 's/^enable/disable/'`"
+        arg="enable"
+      else
+        if echo "$func" | grep '^disable' >/dev/null; then
+          func="`echo \"$func\" | sed 's/^disable/enable/'`"
+          arg="disable"
+        fi
+      fi
+    fi
+
+    if ! typeset -f "$func" >/dev/null; then
+      echo "$1: invalid option"
+      exit 1
+    else
+      echo "$arg" | grep '^~/' >/dev/null && arg="`echo \"$arg\" | sed 's/^~\//$(HOME)\//'`"
+      $func "$arg"
+    fi
+  else
+    echo "$1: invalid option"
+    exit 3
+  fi
+  shift
+done
