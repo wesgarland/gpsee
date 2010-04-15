@@ -132,11 +132,13 @@ compiler_dmp.re:
 	> $@
 INCLUDE_DIRS=$(PWD) /usr/local/include /usr/include /
 std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
+%.dmp: FP_HEADERS=$(sort $(wildcard $(foreach DIR,$(INCLUDE_DIRS),$(addprefix $(DIR)/,$(filter-out $^,$(HEADERS))))) $(addprefix $(PWD)/,$(filter $^,$(HEADERS))))
 %.dmp: compiler_dmp.re #Makefile
+	@echo ""
 	@echo " * Generating $@ from $(HEADERS), found at:"
-	@echo $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER))))
-	$(CPP) $(CPPFLAGS) -dM \
-	        $(foreach HEADER, $(HEADERS), $(foreach DIR,$(INCLUDE_DIRS),$(wildcard $(DIR)/$(HEADER)))) \
+	@ls $(FP_HEADERS)
+	@echo ""
+	$(CPP) $(CPPFLAGS) -dM $(FP_HEADERS)\
 		| $(SED) 's/[ 	][ 	]*/ /g' \
 		| $(sort) -u \
 		| $(EGREP) -vf compiler_dmp.re \
