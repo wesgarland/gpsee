@@ -130,7 +130,7 @@ compiler_dmp.re:
 		-e 's/[.]/[.]/g' \
 		-e 's/[|]/[|]/g' \
 	> $@
-INCLUDE_DIRS=. /usr/local/include /usr/include /
+INCLUDE_DIRS=$(PWD) /usr/local/include /usr/include /
 std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 %.dmp: compiler_dmp.re #Makefile
 	@echo " * Generating $@ from $(HEADERS), found at:"
@@ -145,7 +145,7 @@ std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-std_defs:	EXTRA_CPPFLAGS += -I.
+std_defs:	EXTRA_CPPFLAGS += -I$(PWD)
 std_defs.%:	HEADERS  = std_functions.h stdint.h std_macro_consts.h
 gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h std_macro_consts.h
 
