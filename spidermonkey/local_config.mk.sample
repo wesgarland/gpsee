@@ -38,7 +38,7 @@
 #
 
 # Where is the SpiderMonkey source code?
-SPIDERMONKEY_SRC	?= $(HOME)/tracemonkey/js/src
+SPIDERMONKEY_SRC	?= $(HOME)/hg/tracemonkey/js/src
 
 ## - RELEASE    Optimized jsapi build, no GC Zeal, no symbols
 ## - DRELEASE   Optimized jsapi build, GC Zeal, symbols

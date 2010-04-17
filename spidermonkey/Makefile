@@ -177,7 +177,6 @@ ifneq ($(QUIET),True)
 	@echo " * SpiderMonkey Build & Installation Complete"
 endif
 
-ifdef XX
 vars.mk: JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
 ifeq ($(UNAME_SYSTEM),Darwin)
 # Work around a long-standing bug in js-config for Darwin
@@ -185,7 +184,6 @@ vars.mk: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFL
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
 vars.mk: JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
-endif
 endif
 
 _install:
