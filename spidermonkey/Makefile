@@ -143,15 +143,15 @@ all:	build
 $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 
-$(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
+$(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
 	[ -d $(SPIDERMONKEY_BUILD) ] || mkdir -p $(SPIDERMONKEY_BUILD)
 	cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
-reconfigure::
-	rm $(SPIDERMONKEY_SRC)/configure
-	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
-	cd $(SPIDERMONKEY_BUILD) && $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
+configure: $(SPIDERMONKEY_BUILD)/Makefile vars.mk
+force_configure:
+	$(RM) $(SPIDERMONKEY_BUILD)/Makefile vars.mk
+	$(MAKE) configure
 
 ifeq ($(UNAME_SYSTEM),Darwin)
 MOZJS_INSTALL_NAME_OPT=-Wl,-install_name,$(LIB_DIR)/libmozjs.dylib
@@ -177,14 +177,14 @@ ifneq ($(QUIET),True)
 	@echo " * SpiderMonkey Build & Installation Complete"
 endif
 
-ifneq (X$(findstring $(MAKECMDGOALS),_install vars.mk),X)
-JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
+ifdef XX
+vars.mk: JSAPI_LDFLAGS=$(shell $(JS_CONFIG) --libs)
 ifeq ($(UNAME_SYSTEM),Darwin)
 # Work around a long-standing bug in js-config for Darwin
-JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
+vars.mk: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFLAGS))\
 	$(filter -%_namespace,$(JSAPI_LDFLAGS))\
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
-JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
+vars.mk: JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
 endif
 endif
 
@@ -204,7 +204,7 @@ _install:
 	@[ -f $(JS_CONFIG) ]
 	@echo ""
 
-vars.mk:
+vars.mk: $(JS_CONFIG)
 	@echo " * Building vars.mk"
 	@echo "# Generated on `date` by $(USER)" > vars.mk
 	@echo "JSAPI_INCLUDE_DIR=$(shell $(JS_CONFIG) --includedir)" >> vars.mk
@@ -238,7 +238,7 @@ build_debug:
 	@echo "  $(SM_MAKE)"
 	@echo
 	@echo "Configure will be invoked as:"
-	@echo "$(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
+	@echo "cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
 	@echo "JS_CONFIG = $(JS_CONFIG)"
 	@echo

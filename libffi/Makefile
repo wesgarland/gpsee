@@ -137,6 +137,11 @@ $(LIBFFI_BUILD)/Makefile: $(LIBFFI_SRC)/configure #Makefile local_config.mk
 	cd $(LIBFFI_BUILD) && CC="$(CC)" $(LIBFFI_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
+configure: $(LIBFFI_BUILD)/Makefile vars.mk
+force_configure:
+	$(RM) $(LIBFFI_BUILD)/Makefile vars.mk
+	$(MAKE) configure
+
 build: $(LIBFFI_BUILD)/Makefile
 ifneq (X,X$(LIBFFI_SRC))
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE)
