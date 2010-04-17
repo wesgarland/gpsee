@@ -1,9 +1,33 @@
 #! /bin/sh
 
+if [ $_ = "/bin/dash" ]; then
+  if [ -x /bin/bash ]; then 
+    /bin/bash $0 $*
+    exit $?
+  fi
+  if [ -x /bin/ksh ]; then 
+    /bin/ksh $0 $*
+    exit $?
+  fi
+
+  echo "Sorry, we need a shell that supports typeset" >/dev/stderr
+  exit 3
+fi
+
 argv_zero="$0"
 gpsee_dir="`dirname $0`"
 
 [ ! "$USER" ] && [ "$LOGNAME" ] && USER="$LOGNAME"
+
+_printf_fmt_opt_help()
+{
+  printf "  %25.25s %s\n" "$1                                                         " "$2"
+}
+
+_echo_fmt_opt_help()
+{
+  echo -- "  $1\t$2"
+}
 
 help()
 {
@@ -29,11 +53,18 @@ Example:
 Options:
 EOF
 
-  typeset -F | sed -e 's/^.* //'  | while read func
+  if printf "" 2>/dev/null; then 
+    fmt=_printf_fmt_opt_help
+  else
+    fmt=_echo_fmt_opt_help
+  fi
+
+  typeset -F | grep -v ' _' | sed -e 's/^.* //'  | while read func
   do
     opt="`echo \"$func\" | sed -e 's/_/-/g'`"
     echo "$func" | egrep -v '^enable|disable|help' >/dev/null && opt="$opt=value"
-    echo "  --$opt\t`$func help`" 
+    #echo "  --$opt\t`$func help`" 
+    $fmt "--$opt" "`$func help`"
   done
 
   echo
@@ -64,13 +95,13 @@ with_autoconf213()
   echo "AUTOCONF=$1" >$5
 }
 
-with_spidermonkey_build()
+with_jsapi_build()
 {
   [ "$1" = "help" ] && echo "specify SpiderMonkey build type (DEBUG or RELEASE)" && return
   echo "BUILD=$1" >$6
 }
 
-with_spidermonkey()
+with_jsapi()
 {
   [ "$1" = "help" ] && echo "specify location of js/src (if not using Mozilla tree)" && return
   echo "SPIDERMONKEY_SRC=$1" >&6
@@ -146,3 +177,5 @@ do
   fi
   shift
 done
+
+# Find autoconf if needed

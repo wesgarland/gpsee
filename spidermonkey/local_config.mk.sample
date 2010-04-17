@@ -18,7 +18,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -38,7 +38,7 @@
 #
 
 # Where is the SpiderMonkey source code?
-SPIDERMONKEY_SRC	?= $(HOME)/src/hg/tracemonkey/js/src
+SPIDERMONKEY_SRC	?= $(HOME)/tracemonkey/js/src
 
 ## - RELEASE    Optimized jsapi build, no GC Zeal, no symbols
 ## - DRELEASE   Optimized jsapi build, GC Zeal, symbols
@@ -48,7 +48,7 @@ SPIDERMONKEY_SRC	?= $(HOME)/src/hg/tracemonkey/js/src
 ## Use BUILD ?= instead of BUILD = to allow GPSEE's local_config.mk to infer
 ## the SpidermMnkey build type
 ##
-BUILD 			= DEBUG
+BUILD 			= RELEASE
 
 # Where is the Autoconf version 2.13 binary?
 AUTOCONF		?= autoconf2.13
