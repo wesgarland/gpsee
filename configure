@@ -1,5 +1,13 @@
 #! /bin/sh
 
+cat <<EOF
+
+*** Working in progress -- if you're not working on this,  ***
+*** it's not for you. Build instructions for GPSEE are at  ***
+*** http://code.google.com/p/gpsee/wiki/Building           ***
+
+EOF
+
 _errout()
 {
   echo "GPSEE configure: $*" > /dev/stderr
@@ -39,11 +47,6 @@ help()
   [ "$1" = "help" ] && echo "display this help" && return
 
 cat <<EOF
-
-*** Working in progress -- if you're not working on this,  ***
-*** it's not for you. Build instructions for GPSEE are at  ***
-*** http://code.google.com/p/gpsee/wiki/Building           ***
-
 configure -- Configuration automator for GPSEE.
 Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
 
