@@ -189,7 +189,7 @@ XMLHttpRequest.prototype = {
 
         // do it lazy and not save result.  Unlike to be called
         // twice (or even once!)
-        return Array.prototype.join(this.headers_in, '\r\n');
+	return this.headers_in.join('\r\n');
     },
 
     /**
