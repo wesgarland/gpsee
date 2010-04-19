@@ -264,7 +264,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags, signed int
   int			jsOptions;
   const char 		*f;
 
-  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
+  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ATLINE | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
   *verbosity_p = 0;
 
   /* Iterate over each flag */
