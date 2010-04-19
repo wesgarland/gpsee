@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.30 2010/04/01 13:43:19 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.31 2010/04/14 00:37:54 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.31  2010/04/14 00:37:54  wes
+ *  Synchronize with Mercurial
+ *
  *  Revision 1.30  2010/04/01 13:43:19  wes
  *  Improved uncaught exception handling & added tests
  *

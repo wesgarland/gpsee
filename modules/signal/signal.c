@@ -36,7 +36,7 @@
  *  @file       signal_module.c		Module to expose POSIX signals as JavaScript events.
  *  @author     Wes Garland, wes@page.ca
  *  @date       Oct 2007
- *  @version    $Id: signal.c,v 1.6 2010/04/04 14:56:07 wes Exp $
+ *  @version    $Id: signal.c,v 1.7 2010/04/14 00:38:50 wes Exp $
  *
  *  @bug	Not compatible with gpsee_context_private.c: both want the context callback. Will
  *		need to write some multiplexing code.
@@ -65,7 +65,7 @@
  *		</pre>
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: signal.c,v 1.6 2010/04/04 14:56:07 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: signal.c,v 1.7 2010/04/14 00:38:50 wes Exp $";
  
 #include "gpsee.h"
 #include <stdlib.h>
@@ -285,12 +285,12 @@ static JSBool signal_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     case JSVAL_NULL:
     case JSVAL_FALSE:
       if ((e = signal_removeSignalHandler(cx, sig)))
-	return gpsee_throw(cx, e);
+	return gpsee_throw(cx, "%s", e);
       return JS_TRUE;
   }
 
   if ((e = signal_setSignalHandler(cx, sig, *vp)))
-    return gpsee_throw(cx, e);
+    return gpsee_throw(cx, "%s", e);
 
   return JS_TRUE;
 }

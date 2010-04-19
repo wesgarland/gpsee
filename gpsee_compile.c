@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** 
  *
  *  @author	Donny Viszneki, PageMail, Inc., hdon@page.ca
- *  @version	$Id: gpsee_compile.c,v 1.2 2010/03/06 18:17:13 wes Exp $
+ *  @version	$Id: gpsee_compile.c,v 1.3 2010/04/14 00:37:56 wes Exp $
  *  @file	gpsee_compile.c		Code to compile JavaScript, and to transparently
  *					cache compiled byte code to/from disk.
  */
@@ -185,7 +185,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     ||  source_st.st_gid != cache_st.st_gid
     ||  ((source_st.st_mode & 0666) != (cache_st.st_mode & 0777)))
     {
-      /* This invalidates the cache file. Try to delete the cache file before moving on */
+      /* This invalidates the cache file. We will try to delete the cache file after goto cache_read_end */
       fclose(cache_file);
       cache_file = NULL;
       gpsee_log(SLOG_NOTICE,
@@ -193,12 +193,6 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
           cache_filename,
           (int)cache_st.st_uid,  (int)cache_st.st_gid,  (unsigned int)cache_st.st_mode & 0777,
           (int)source_st.st_uid, (int)source_st.st_gid, (unsigned int)source_st.st_mode & 0666);
-      if (unlink(cache_filename))
-      {
-        useCompilerCache = 0;
-        /* Report that we could not unlink the cache file */
-        gpsee_log(SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
-      }
       goto cache_read_end;
     }
 
@@ -288,15 +282,28 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       JSXDRState *xdr;
       int cache_fd;
 
-      unlink(cache_filename);
+      if (unlink(cache_filename))
+      {
+        if (errno != ENOENT)
+        {
+          useCompilerCache = 0;
+          /* Report that we could not unlink the cache file */
+          gpsee_log(SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+        }
+      }
       errno = 0;
+
       /* Open the cache file atomically; fails on collision with other process */
+      mode_t oldumask = umask(~0666);
       if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, source_st.st_mode & 0666)) < 0)
       {
+        umask(oldumask);
 	if (errno != EEXIST)
 	  gpsee_log(SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
         goto cache_write_end;
       }
+      umask(oldumask);
+
       /* Acquire write lock for file */
       gpsee_flock(cache_fd, GPSEE_LOCK_EX);
       /* Truncate file again now that we have the lock */
@@ -355,8 +362,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
         JS_XDRDestroy(xdr);
       }
 
+      /* We'll close the cache file's FILE handle. fclose(3) also calls close(2) on cache_fd for us */
       fclose(cache_file);
-      close(cache_fd);
       goto cache_write_end;
 
       cache_write_bail:

@@ -163,7 +163,7 @@ JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp,
       return gpsee_throw(cx, "%s.setInteger.%s.range.overflow", throwLabel, hnd->descriptor->members[memberIdx].name);
   }
 
-  if (JSVAL_TO_INT(*vp) < 0 && !hnd->descriptor->members[memberIdx].isSigned)
+  if (num < 0 && !hnd->descriptor->members[memberIdx].isSigned)
     return gpsee_throw(cx, "%s.setInteger.%s.range.underflow: Cannot store a negative number in an unsigned field",
 		       throwLabel, hnd->descriptor->members[memberIdx].name);
 

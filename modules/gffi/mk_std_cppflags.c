@@ -42,7 +42,7 @@
  *                                      poisoning further includes.
  *   @author	Wes Garland
  *   @date	March 2010
- *   @version	$Id: mk_std_cppflags.c,v 1.2 2010/03/26 00:19:32 wes Exp $
+ *   @version	$Id: mk_std_cppflags.c,v 1.3 2010/04/14 00:38:41 wes Exp $
  */
 
 #include "gpsee_config.h"
