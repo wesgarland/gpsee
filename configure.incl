@@ -1,0 +1,24 @@
+errout()
+{
+  echo "GPSEE configure: $*" > /dev/stderr
+}
+
+locate()
+{
+  OLDIFS="$IFS"
+  for filename in $*
+  do
+    IFS=":"
+    for path in $PATH
+    do
+      if [ -f "${path}/${filename}" ]; then
+        echo "${path}/${filename}"
+	IFS="$OLDFIS"
+        return 0
+      fi
+    done
+  done
+
+  IFS="$OLDFIS"
+  return 1
+}
