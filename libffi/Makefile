@@ -233,8 +233,3 @@ local_config.mk:
 	@echo
 	@echo
 	@[ X = Y ]
-
-test:
-	echo $(CC)
-	echo $(GCC_PREFIX)
-	echo $(GCC_BIN_DIR_SLASH)

@@ -1,3 +1,4 @@
+# Generated Tue Apr 20 14:54:19 EDT 2010 by wes on WesMac-3.local
 ## Please edit this file to suit your local environment and requirements.
 ## This file controls most of aspects of auto-building libffi 3 or better,
 ## to maintain configuration synchronization with GPSEE.
@@ -41,11 +42,12 @@
 # ***** END LICENSE BLOCK ***** 
 #
 
+# Pull in SpiderMonkey config if we have it, in case libffi is there
+-include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
+
 # Where is the libffi source code?
 lastword ?= $(if $1,$(word $(words $1),$1))
-#LIBFFI_SRC		?= $(HOME)/libffi-3.0.8
-LIBFFI_SRC		?= $(lastword $(sort $(wildcard $(HOME)/libffi-3*[0-9])))
-
+LIBFFI_SRC              ?= $(strip $(firstword $(wildcard $(SPIDERMONKEY_SRC)/ctypes/libffi) $(lastword $(sort $(wildcard $(HOME)/libffi-3*[0-9])))))
 # Where is your pkg-config binary?
 PKG_CONFIG		?= pkg-config
 
