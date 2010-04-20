@@ -141,6 +141,8 @@ help:
 all:	build
 
 $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
+	@if [ ! -f "$(AUTOCONF)" ]; then echo "error: Autoconf $(AUTOCONF) not found"; exit 1; fi
+	@echo " * Generating $@"
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 
 $(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 

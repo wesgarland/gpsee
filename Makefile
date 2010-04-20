@@ -127,8 +127,19 @@ $(PROGS): LDFLAGS	:= -L. $(LDFLAGS) $(JSAPI_LIBS)
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
-.PHONY:	all clean real-clean depend build_debug build_debug_modules show_modules clean_modules src-dist bin-dist top help install_js_components
-build: $(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) $(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+.PHONY:	all build _build _prebuild clean real-clean depend build_debug build_debug_modules \
+	show_modules clean_modules src-dist bin-dist top help install_js_components
+
+build: _prebuild
+	$(MAKE) _build
+_prebuild: $(SPIDERMONKEY_BUILD) $(LIBFFI_BUILD)
+_build: $(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) \
+	$(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+$(SPIDERMONKEY_BUILD):
+	cd spidermonkey && $(MAKE) build
+$(LIBFFI_BUILD):
+	cd spidermonkey && $(MAKE) build
+
 install: $(TARGET_LIBEXEC_JSC) gsr-link
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
