@@ -231,9 +231,13 @@ function Process(command) {
    * @form (instance of Process).close()
    * Closes the Process's sink
    */
+  var finalizer1 = new ffi.WillFinalize,
+      finalizer2 = new ffi.WillFinalize;
+  finalizer1.finalizeWith(_close, snk);
+  finalizer2.finalizeWith(_close, src);
   this.close = function() {
-    /* TODO discover why this returns -1 when the process has exited prematurely */
-    return _close.call(snk);
+    finalizer1.runFinalizer();
+    finalizer2.runFinalizer();
   }
 }
 
@@ -563,10 +567,14 @@ function Pipeline() {
   }
   /* runs the pipeline */
   function Pipeline_run() {
-    //print('running a "'+Pipeline_shape()+'"-type pipeline');
-    switch (Pipeline_shape()) {
+    var shape = Pipeline_shape();
+    //print('running a "'+shape+'"-type pipeline');
+    switch (shape) {
+      default:
+        throw new Error('Unknown pipeline shape "'+shape+'"');
       case 'empty':
-        return;
+        // @todo is this the desired behavior?
+        return null;
       case 'all internal':
         /* Get an array of all generator functions */
         var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
@@ -576,8 +584,7 @@ function Pipeline() {
       case 'all external':
         var cmd = m_graph.linearize(function(x)x.command).join('|');
         var p = new Process(cmd);
-        p.close(); // TODO will this shutdown the process?
-        break;
+        return p;
       case 'to internal':
         var cmd = m_graph.linearize(function(x)x).filter(function(x)x.hasOwnProperty('command')).map(function(x)x.command).join('|');
         var generators = m_graph.linearize(function(x)x.generator).filter(function(x)x);
