@@ -41,7 +41,7 @@
  *  @author     Donny Viszneki
  *              hdon@page.ca
  *  @date       Nov 2009
- *  @version    $Id: shellalike.js,v 1.2 2010/04/22 12:42:03 wes Exp $
+ *  @version    $Id: shellalike.js,v 1.3 2010/04/22 12:48:16 wes Exp $
  */
 
 /* Module requirements */
@@ -599,8 +599,6 @@ function Pipeline() {
         function process(src){var p = new Process(cmd); for(var y in src) { p.write(y) } };
         generators.push(process);
         return $CS(generators);
-      default:
-       throw new Error("Don't know what to do with a " + Pipeline_shape() + "-type pipeline");
     }
   }
   
