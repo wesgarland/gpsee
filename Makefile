@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.36 2010/04/14 01:09:25 wes Exp $
+## @version	$Id: Makefile,v 1.37 2010/04/22 12:45:15 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
@@ -69,7 +69,7 @@ include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/version.mk
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 
-PROGS		 	?= gsr minimal precompiler
+PROGS		 	?= gsr minimal gpsee_precompiler
 AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
@@ -111,7 +111,7 @@ ifneq ($(STREAM),surelynx)
 GPSEE_OBJS		+= gpsee_$(STREAM).o
 endif
 
-EXPORT_PROGS	 	= gsr gpsee-config
+EXPORT_PROGS	 	= gsr gpsee-config gpsee_precompiler
 EXPORT_SCRIPTS		= sample_programs/jsie.js
 EXPORT_LIBS	 	= libgpsee.$(SOLIB_EXT)
 EXPORT_LIBEXEC_OBJS 	= $(SO_MODULE_FILES)
@@ -167,8 +167,8 @@ install_js_components:
 		@$(if $(TARGET_LIBEXEC_JS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
-$(TARGET_LIBEXEC_JSC):	install_js_components precompiler $(TARGET_LIBEXEC_JS)
-	@./precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//')
+$(TARGET_LIBEXEC_JSC):	install_js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
+	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
 
 show_modules:
 	@echo 
@@ -275,9 +275,9 @@ $(SPIDERMONKEY_BUILD)/libjs_static.a:
 	cd $(SPIDERMONKEY_BUILD)
 	make libjs_static.a
 
-precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS)) 
-precompiler: LOADLIBES := $(filter modules/%,$(GPSEE_OBJS)) -lstdc++
-precompiler: precompiler.o $(filter-out modules/% $(VERSION_O),$(GPSEE_OBJS)) $(SPIDERMONKEY_BUILD)/libjs_static.a 
+gpsee_precompiler: LDFLAGS := $(filter-out -lmozjs,$(LDFLAGS)) 
+gpsee_precompiler: LOADLIBES := $(filter modules/%,$(GPSEE_OBJS)) -lstdc++
+gpsee_precompiler: gpsee_precompiler.o $(filter-out modules/% $(VERSION_O),$(GPSEE_OBJS)) $(SPIDERMONKEY_BUILD)/libjs_static.a 
 
 JSDOC_TEMPLATE=$(GPSEE_SRC_DIR)/docgen/jsdoc/templates/pmi
 JSDOC_TARGET_DIR=$(GPSEE_SRC_DIR)/docs/modules
