@@ -52,7 +52,7 @@ build:
 	cd ../.. && $(MAKE)
 
 cgihtml/cgihtml.a: $(wildcard cgihtml/*.[ch])
-	cd cgihtml && $(MAKE) "CFLAGS=$(CFLAGS)"
+	cd cgihtml && $(MAKE) "CFLAGS=$(CFLAGS)" "CPPFLAGS=-I$(CPPFLAGS)"
 
 clean: OBJS += $(wildcard cgihtml/*.o)
 

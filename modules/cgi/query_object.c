@@ -106,10 +106,10 @@ static JSBool query_readQuery(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 
   /* fix this later by making upload files == /dev/null in libcgihtml.so when upload dir is null */
   if (!hnd->uploadDir)
-    gpsee_log(SLOG_NOTICE, "Unspecified upload dir is a security problem! Specify rc." OBJECT_ID ".default_upload_dir!");
+    gpsee_log(cx, SLOG_NOTICE, "Unspecified upload dir is a security problem! Specify rc." OBJECT_ID ".default_upload_dir!");
 
   depth = JS_SuspendRequest(cx);
-  retval = read_cgi_input(hnd->query, hnd->uploadDir);
+  retval = read_cgi_input(cx, hnd->query, hnd->uploadDir);
   JS_ResumeRequest(cx, depth);
 
   *rval = retval ? JSVAL_TRUE : JSVAL_FALSE;

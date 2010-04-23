@@ -505,8 +505,8 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
 
   if (jsi->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
-    fprintf(stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
-    gpsee_log(SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
+    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
+    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
   }
 
   if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
@@ -532,15 +532,15 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
       int i;
 
       strncpy(linebuf, report->linebuf + start, len+1);
-      fprintf(stderr, "%s: %s\n", prefix, linebuf);
-      fprintf(stderr, "%s: ", prefix);
+      gpsee_fprintf(cx, stderr, "%s: %s\n", prefix, linebuf);
+      gpsee_fprintf(cx, stderr, "%s: ", prefix);
       for (i = report->tokenptr - report->linebuf - start; i > 1; i--)
-        fputc('.', stderr);
-      fputs("^\n", stderr);
+        gpsee_fputc(cx, '.', stderr);
+      gpsee_fputs(cx, "^\n", stderr);
     }
     else
     {
-      fprintf(stderr, "%s: %s\n", prefix, report->linebuf);
+      gpsee_fprintf(cx, stderr, "%s: %s\n", prefix, report->linebuf);
     }
   }
 }
@@ -694,7 +694,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
     char *c;
     int phase;
     if (longerror[strlen(longerror)-1] != '\n')
-      fprintf(stderr, "\n");
+      gpsee_fprintf(cx, stderr, "\n");
 
     c = longerror;
     phase = 0;
@@ -740,7 +740,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
       }
     }
 
-    gpsee_printTable(stderr, longerror, 3, columnPrefixes, 1, 9);
+    gpsee_printTable(cx, stderr, longerror, 3, columnPrefixes, 1, 9);
     JS_free(cx, longerror);
   }
 
@@ -770,7 +770,7 @@ static const char *spaces(size_t n, char *buf, size_t len)
  *  @notes  The buffer may be modified. Repeated lines will be absorbed and a message like "repeats 99 times"
  *          will be printed in their place.
  */
-void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
+void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
 {
   char		spaceBuf[32];
   size_t 	shrinkamount;
@@ -885,20 +885,20 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
         c += shrinkamount;
 
       /* Output column prefix, column content, and whitespace padding */
-      fprintf(out, "%s%s%s", c[0] ? pfix[i] : spaces(strlen(pfix[i]), spaceBuf, sizeof(spaceBuf)), 
-	      c, space + widecol - cols[i] + strlen(c) - 1);
+      gpsee_fprintf(cx, out, "%s%s%s", c[0] ? pfix[i] : spaces(strlen(pfix[i]), spaceBuf, sizeof(spaceBuf)), 
+                    c, space + widecol - cols[i] + strlen(c) - 1);
 
       /* Advance the column counter */
       if (++i >= ncols)
       {
         /* End of a line */
-        fprintf(out, "\n");
+        gpsee_fprintf(cx, out, "\n");
         /* Reset column counter */
         i = 0;
         /* Were there repeats? */
         if (repeats > 1)
         {
-          fprintf(out, "   ^ repeats %d times\n", repeats);
+          gpsee_fprintf(cx, out, "   ^ repeats %d times\n", repeats);
           /* Adjust the cursor to absorb the repeated lines */
           d = e;
         }
@@ -910,5 +910,5 @@ void gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrn
     }
     while (!done && *c);
   }
-  fprintf(out, "\n");
+  gpsee_fprintf(cx, out, "\n");
 }

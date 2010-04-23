@@ -245,7 +245,7 @@ static JSBool vm_isCompilableUnit(JSContext *cx, JSObject *obj, uintN argc, jsva
 
       strcpy(buf, JS_GetStringBytes(str));
       depth = JS_SuspendRequest(cx);
-      printf("%s%s", i ? " " : "", buf);
+      gpsee_printf(cx, "%s%s", i ? " " : "", buf);
       JS_ResumeRequest(cx, depth);
     }
   }

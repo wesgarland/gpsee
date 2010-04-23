@@ -88,11 +88,11 @@ static const char *spaces(void)
   return buf;
 }
 # define dpDepth(a) 		do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
-# define dprintf(a...) 		do { if (gpsee_verbosity(0) > GPSEE_MODULE_DEBUG_VERBOSITY) printf("modules\t> %s", spaces()), printf(a); } while(0)
+# define dprintf(a...) 		do { if (gpsee_verbosity(0) > GPSEE_MODULE_DEBUG_VERBOSITY) gpsee_printf(cx, "modules\t> %s", spaces()), gpsee_printf(cx, a); } while(0)
 # define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 #else
 # define RTLD_mode	RTLD_LAZY
-# define dprintf(a...) 		while(0) printf(a)
+# define dprintf(a...) 		while(0) gpsee_printf(cx, a)
 # define dpDepth(a) 		while(0)
 # define moduleShortName(a) 	a
 #endif
@@ -1482,6 +1482,19 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
 
   if (status != JSGC_MARK_END)
     return JS_TRUE;
+
+#warning Need general purpose GC callback hook - calling IO hook code from module GC handler
+  {
+    size_t i;
+
+    for (i = 0; i < jsi->user_io_hooks_len; i++)
+    {
+      if (jsi->user_io_hooks[i].input != JSVAL_VOID)
+        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].input, "input hook", NULL);
+      if (jsi->user_io_hooks[i].output != JSVAL_VOID)
+        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].output, "output hook", NULL);
+    }
+  }
 
   dprintf("Adding roots from GC Callback\n");
   dpDepth(+1);
