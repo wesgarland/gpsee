@@ -301,6 +301,21 @@ typedef struct
   PRThread              *asyncCallbackTriggerThread;
   unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
   const char            *pendingErrorMessage;   /**< This provides a way to provide an extra message for gpsee_reportErrorSourceCode() */
+
+  /** Hookable IO vtable */
+  int    (*user_io_printf)      (JSContext *, const char *, ...);
+  int    (*user_io_fprintf)     (JSContext *, FILE *, const char *, ...);
+  int    (*user_io_vfprintf)    (JSContext *, FILE *, const char *, va_list);
+  size_t (*user_io_fwrite)      (void *, size_t, size_t, FILE *, JSContext *);
+  size_t (*user_io_fread)       (void *, size_t, size_t, FILE *, JSContext *);
+  char * (*user_io_fgets)       (char *, int, FILE *, JSContext *);
+  int    (*user_io_fputs)       (const char *, FILE *, JSContext *);
+  int    (*user_io_fputc)       (int, FILE *, JSContext *);
+  int    (*user_io_puts)        (const char *, JSContext *);
+
+  /** Per-fd hooks */
+  size_t                                user_io_hooks_len;
+  struct { jsval input; jsval output; } *user_io_hooks;
 } gpsee_interpreter_t;
 
 JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
@@ -339,7 +354,6 @@ JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
 JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
 JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
-JS_EXTERN_API(int)                  gpsee_printf(const char *format, /* args */ ...) __attribute__((format(printf,1,2)));
 JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JS_EXTERN_API(char*)                gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
 JS_EXTERN_API(size_t)               gpsee_catstrn(char *dst, const char *src, size_t dst_size);
@@ -347,7 +361,10 @@ JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
-JS_EXTERN_API(void)                 gpsee_printTable(FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+
+/* Hookable I/O routines */
+JS_EXTERN_API(void)                 gpsee_initIOHooks(JSContext *cx, gpsee_interpreter_t *jsi);
 
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 

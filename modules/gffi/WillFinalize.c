@@ -121,7 +121,7 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
   /* Currently we only support one finalizer CFunction closure, so we will check for it here. */
   closOld = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
   if (closOld)
-    gpsee_log(SLOG_WARNING, CLASS_ID ".finalizeWith.contention: a finalizer has already installed!");
+    gpsee_log(cx, SLOG_WARNING, CLASS_ID ".finalizeWith.contention: a finalizer has already installed!");
   /* TODO support multiple finalizers? */
 
   /* Prepare a CFunction for calling. The product of this intermediate step will be pointed to by 'clos.'

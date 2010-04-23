@@ -112,15 +112,10 @@ static void __attribute__((noreturn)) fatal(const char *message)
 
   if (haveTTY)
   {
-#if defined(HAVE_APR)
-    if (apr_stderr)
-      apr_file_printf(apr_stderr, "\007Fatal Error in " PRODUCT_SHORTNAME ": %s\n", message);
-    else
-#endif
-      fprintf(stderr, "\007Fatal Error in " PRODUCT_SHORTNAME ": %s\n", message);
+    fprintf(stderr, "\007Fatal Error in " PRODUCT_SHORTNAME ": %s\n", message);
   }
   else
-    gpsee_log(SLOG_EMERG, "Fatal Error: %s", message);
+    gpsee_log(NULL, SLOG_EMERG, "Fatal Error: %s", message);
 
   exit(1);
 }
@@ -145,7 +140,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
   memset(spaces, (int)(' '), sizeof(spaces) -1);
   spaces[sizeof(spaces) - 1] = (char)0;
 
-  gpsee_printf(
+  printf(
                   "\n"
 #if defined(__SURELYNX__)
                   "SureLynx "
@@ -208,7 +203,7 @@ static void __attribute__((noreturn)) moreHelp(const char *argv_zero)
   memset(spaces, (int)(' '), sizeof(spaces) -1);
   spaces[sizeof(spaces) - 1] = (char)0;
 
-  gpsee_printf(
+  printf(
                   "\n"
 #if defined(__SURELYNX__)
                   "SureLynx "
@@ -311,7 +306,7 @@ static void processFlags(gpsee_interpreter_t *jsi, const char *flags, signed int
 	break;	
 
       default:
-	gpsee_log(SLOG_WARNING, "Error: Unrecognized option flag %c!", *f);
+	gpsee_log(jsi->cx, SLOG_WARNING, "Error: Unrecognized option flag %c!", *f);
 	break;
     }
   }
@@ -387,7 +382,7 @@ static FILE *openScriptFile(gpsee_interpreter_t *jsi, const char *scriptFilename
   {
     if ((line[0] != '#') || (line[1] != '!'))
     {
-      gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Warning: First line of "
+      gpsee_log(jsi->cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Warning: First line of "
 		"file-interpreter script does not contain #!");
       rewind(file);
     }
@@ -686,7 +681,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     i = snprintf(preloadScriptFilename, sizeof(preloadScriptFilename), "%s/.%s_preload", gpsee_dirname(argv[0], mydir, sizeof(mydir)), 
 		 gpsee_basename(argv[0]));
     if ((i == 0) || (i == (sizeof(preloadScriptFilename) -1)))
-      gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
+      gpsee_log(jsi->cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
     else
       errno = 0;
 
@@ -698,7 +693,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(jsi->cx, preloadScriptFilename, NULL, NULL, &script, jsi->globalObj, &scrobj))
       {
-	gpsee_log(SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
+	gpsee_log(jsi->cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
 	goto out;
       }
 
@@ -736,7 +731,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
     if (!scriptFile)
     {
-      gpsee_log(SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
+      gpsee_log(jsi->cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       exitCode = 1;
       goto out;
     }
