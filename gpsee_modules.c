@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.32 2010/04/22 12:43:29 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.32 2010/04/22 12:43:29 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -964,7 +964,7 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
 static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
 				   moduleHandle_t **module_p)
 {
-  const char    **ext_p, *extensions[]  = { DSO_EXTENSION,  "js",     NULL };
+  const char    **ext_p, *extensions[]  = { DSO_EXTENSION, "js", NULL };
   moduleLoader_t  loaders[]             = {loadDSOModule, loadJSModule};
   moduleHandle_t  *module               = NULL;
   char			fnBuf[PATH_MAX];
