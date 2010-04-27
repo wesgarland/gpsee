@@ -15,7 +15,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2009-2010, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s):
  * 
@@ -40,7 +40,7 @@
  *  @author     Donny Viszneki
  *              hdon@page.ca
  *  @date       Nov 2009
- *  @version    $Id: test1.js,v 1.1 2010/03/06 18:37:28 wes Exp $
+ *  @version    $Id: test1.js,v 1.3 2010/04/22 12:42:20 wes Exp $
  */
 
 const sh = require("shellalike");
