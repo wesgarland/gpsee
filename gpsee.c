@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.28 2010/04/14 00:37:52 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.29  2010/04/28 12:41:33  wes
+ *  Added support for js-ctypes
+ *
  *  Revision 1.28  2010/04/14 00:37:52  wes
  *  Synchronize with Mercurial
  *
@@ -147,7 +150,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.28 2010/04/14 00:37:52 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -786,6 +789,12 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
 {
   if (JS_InitStandardClasses(cx, obj) != JS_TRUE)
     return JS_FALSE;
+
+#ifdef JS_HAS_CTYPES
+    if (JS_InitCTypesClass(cx, obj) != JS_TRUE)
+      return JS_FALSE;
+    printf("cgtypes ready\n");
+#endif
 
   if (JS_DefineProperty(cx, obj, "gpseeNamespace", 
 		    STRING_TO_JSVAL(JS_NewStringCopyZ(cx, GPSEE_GLOBAL_NAMESPACE_NAME)), NULL, NULL, 0) != JS_TRUE)
