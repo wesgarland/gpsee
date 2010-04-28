@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.32 2010/04/22 12:43:29 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.30 2010/04/14 00:38:00 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.32 2010/04/22 12:43:29 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -88,11 +88,11 @@ static const char *spaces(void)
   return buf;
 }
 # define dpDepth(a) 		do { if (a > 0) dprintf("{\n"); dpDepthSpaces += a; if (a < 0) dprintf("}\n"); } while (0)
-# define dprintf(a...) 		do { if (gpsee_verbosity(0) > GPSEE_MODULE_DEBUG_VERBOSITY) printf("modules\t> %s", spaces()), printf(a); } while(0)
+# define dprintf(a...) 		do { if (gpsee_verbosity(0) > GPSEE_MODULE_DEBUG_VERBOSITY) gpsee_printf(cx, "modules\t> %s", spaces()), gpsee_printf(cx, a); } while(0)
 # define moduleShortName(a)	strstr(a, gpsee_basename(getenv("PWD")?:"trunk")) ?: a
 #else
 # define RTLD_mode	RTLD_LAZY
-# define dprintf(a...) 		while(0) printf(a)
+# define dprintf(a...) 		while(0) gpsee_printf(cx, a)
 # define dpDepth(a) 		while(0)
 # define moduleShortName(a) 	a
 #endif
@@ -964,7 +964,7 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
 static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
 				   moduleHandle_t **module_p)
 {
-  const char    **ext_p, *extensions[]  = { DSO_EXTENSION,  "js",     NULL };
+  const char    **ext_p, *extensions[]  = { DSO_EXTENSION, "js", NULL };
   moduleLoader_t  loaders[]             = {loadDSOModule, loadJSModule};
   moduleHandle_t  *module               = NULL;
   char			fnBuf[PATH_MAX];
@@ -1482,6 +1482,19 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
 
   if (status != JSGC_MARK_END)
     return JS_TRUE;
+
+#warning Need general purpose GC callback hook - calling IO hook code from module GC handler
+  {
+    size_t i;
+
+    for (i = 0; i < jsi->user_io_hooks_len; i++)
+    {
+      if (jsi->user_io_hooks[i].input != JSVAL_VOID)
+        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].input, "input hook", NULL);
+      if (jsi->user_io_hooks[i].output != JSVAL_VOID)
+        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].output, "output hook", NULL);
+    }
+  }
 
   dprintf("Adding roots from GC Callback\n");
   dpDepth(+1);

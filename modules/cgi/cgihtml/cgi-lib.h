@@ -49,8 +49,8 @@ short accept_image(void);
 /* form processing routines */
 void unescape_url(char *url);
 /* #define read_cgi_input(entries...)	_read_cgi_input(##entries, NULL) */
-#define read_cgi_input(entries...) _read_cgi_input(entries, NULL)
-int _read_cgi_input(llist* entries, const char *uploadDir, ...);
+#define read_cgi_input(cx, entries...) _read_cgi_input(cx, entries, NULL)
+    int _read_cgi_input(JSContext *cx, llist* entries, const char *uploadDir, ...);
 char *cgi_val(llist l, const char *name);
 char **cgi_val_multi(llist l, char *name);
 char *cgi_name(llist l,char *value);
@@ -58,8 +58,8 @@ char **cgi_name_multi(llist l, char *value);
 
 /* miscellaneous CGI routines */
 int parse_cookies(llist *entries);
-void print_cgi_env(void);
-void print_entries(llist l);
+void print_cgi_env(JSContext *cx);
+void print_entries(JSContext *cx, llist l);
 char *escape_input(char *str);
 
 /* boolean functions */

@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.28 2010/04/14 00:37:52 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,6 +46,9 @@
  *  standalone SureLynx JS shell. 
  *
  *  $Log: gpsee.c,v $
+ *  Revision 1.29  2010/04/28 12:41:33  wes
+ *  Added support for js-ctypes
+ *
  *  Revision 1.28  2010/04/14 00:37:52  wes
  *  Synchronize with Mercurial
  *
@@ -147,7 +150,7 @@
  *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.28 2010/04/14 00:37:52 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -158,9 +161,9 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.28 201
 extern rc_list rc;
 
 #if defined(GPSEE_DEBUG_BUILD)
-# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("gpsee\t> "), printf(a); } while(0)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "gpsee\t> "), gpsee_printf(cx, a); } while(0)
 #else
-# define dprintf(a...) while(0) printf(a)
+# define dprintf(a...) while(0) gpsee_printf(cx, a)
 #endif
 
 /** Increase, Decrease, or change application verbosity.
@@ -190,8 +193,8 @@ void gpsee_setVerbosity(signed int newValue)
 /** @see JS_Assert() in jsutil.c */
 void gpsee_assert(const char *s, const char *file, JSIntn ln)
 {
-  gpsee_printf("Assertion failure: %s, at %s:%d\n", s, file, ln);
-  gpsee_log(SLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
+  fprintf(stderr, "Assertion failure: %s, at %s:%d\n", s, file, ln);
+  gpsee_log(NULL, SLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
   abort();
 }   
 
@@ -203,7 +206,7 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
 void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
 {
   fprintf(stderr, "GPSEE Fatal Error: %s\n", message);
-  gpsee_log(SLOG_NOTTY_NOTICE, "GPSEE Fatal Error: %s", message);
+  gpsee_log(NULL, SLOG_NOTTY_NOTICE, "GPSEE Fatal Error: %s", message);
   exit(1);
 }
 
@@ -214,13 +217,13 @@ static void output_message(JSContext *cx, gpsee_interpreter_t *jsi, const char *
   else
   {
     if (JSREPORT_IS_WARNING(report->flags))
-      gpsee_log(SLOG_NOTTY_INFO, "%s %s", er_pfx, log_message);
+      gpsee_log(cx, SLOG_NOTTY_INFO, "%s %s", er_pfx, log_message);
     else
-      gpsee_log(SLOG_NOTTY_NOTICE, "%s %s", er_pfx, log_message);
+      gpsee_log(cx, SLOG_NOTTY_NOTICE, "%s %s", er_pfx, log_message);
   }
 
   if (printOnTTY)
-    fprintf(stderr, "%s %s\n", er_pfx, log_message);
+    gpsee_fprintf(cx, stderr, "%s %s\n", er_pfx, log_message);
 
   return;
 }
@@ -246,7 +249,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
 
   if (!report)
   {
-    gpsee_log(SLOG_NOTICE, "JS error from unknown source: %s\n", message);
+    gpsee_log(cx, SLOG_NOTICE, "JS error from unknown source: %s\n", message);
     return;
   }
 
@@ -369,7 +372,7 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     /* Suspend request, in case this write operation blocks TODO make optional? */
     depth = JS_SuspendRequest(cx);
     /* Print the argument, taking care for putting a space between arguments, and a newline at the end */
-    gpsee_printf("%s%s%s", i ? " " : "", JS_GetStringBytes(str), i+1==argc?"\n":"");
+    gpsee_printf(cx, "%s%s%s", i ? " " : "", JS_GetStringBytes(str), i+1==argc?"\n":"");
     JS_ResumeRequest(cx, depth);
   }
   return JS_TRUE;
@@ -419,7 +422,7 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
   }
 
   if (JS_IsExceptionPending(cx) == JS_TRUE)
-    gpsee_log(SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
+    gpsee_log(cx, SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
   else
     JS_ReportError(cx, "%s", message);
 
@@ -724,10 +727,10 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   PR_Unlock(interpreter->asyncCallbacks_lock);
   /* Interrupt the trigger thread in case it is in */
   if (PR_Interrupt(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
   /* Wait for the trigger thread to see this */
   if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
   interpreter->asyncCallbackTriggerThread = NULL;
   /* Destroy mutex */
   PR_DestroyLock(interpreter->asyncCallbacks_lock);
@@ -737,6 +740,7 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
 #endif
 
   gpsee_shutdownModuleSystem(interpreter, interpreter->cx);
+  gpsee_initIOHooks(interpreter->cx, interpreter); 
 
   JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
   JS_EndRequest(interpreter->cx);
@@ -785,6 +789,12 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
 {
   if (JS_InitStandardClasses(cx, obj) != JS_TRUE)
     return JS_FALSE;
+
+#ifdef JS_HAS_CTYPES
+    if (JS_InitCTypesClass(cx, obj) != JS_TRUE)
+      return JS_FALSE;
+    printf("cgtypes ready\n");
+#endif
 
   if (JS_DefineProperty(cx, obj, "gpseeNamespace", 
 		    STRING_TO_JSVAL(JS_NewStringCopyZ(cx, GPSEE_GLOBAL_NAMESPACE_NAME)), NULL, NULL, 0) != JS_TRUE)
@@ -887,6 +897,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
   JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
+  gpsee_initIOHooks(interpreter->cx, interpreter); 
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
   interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
@@ -955,7 +966,7 @@ JSObject *gpsee_InitClass (JSContext *cx, JSObject *obj, JSObject *parent_proto,
 
   if ((strncmp(moduleID, clasp->name, moduleID_len) != 0) || (clasp->name[moduleID_len] != '.'))
   {
-    gpsee_log(SLOG_NOTICE, "Initializing incorrectly-named class %s in module %s",
+    gpsee_log(cx, SLOG_NOTICE, "Initializing incorrectly-named class %s in module %s",
 	      clasp->name, moduleID);
   }
   else

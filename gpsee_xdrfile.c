@@ -54,7 +54,7 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.3 20
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
-#define dprintf(a...) do { if (gpsee_verbosity(0) > 2) printf("> "), printf(a); } while(0)
+#define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
 
 /* TODO JSXDR_FREE support? */
 
@@ -200,17 +200,17 @@ static void xdrfile_finalize (JSXDRState *xdr)
   xdrfile_commit_raw(xdr);
 
   /* Un-map the file from memory if necessary */
-  #ifdef XDR_USES_MMAP
+#ifdef XDR_USES_MMAP
   if (self->map)
   {
     if (munmap(self->map, self->maplen))
-      gpsee_log(LOG_NOTICE, "munmap(%p, %u) failure: %m\n", self->map, self->maplen);
+      gpsee_log(cx, SLOG_NOTICE, "munmap(%p, %u) failure: %m\n", self->map, self->maplen);
     self->map = NULL;
     self->maplen = 0;
     self->mappos = NULL;
     self->mapend = NULL;
   }
-  #endif
+#endif
 
   /* Release the "raw" memory allocation if necessary */
   if (self->raw)

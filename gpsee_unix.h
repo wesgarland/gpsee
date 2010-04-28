@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.8 2010/04/14 00:38:05 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.9 2010/04/28 12:44:48 wes Exp $
  */
 
 #define SLOG_EMERG	0,LOG_EMERG
@@ -58,9 +58,34 @@
 # define GPSEE_LOG_FACILITY	LOG_USER
 #endif
 
-#define	gpsee_printf(a...)		printf(a)
+#if defined(GPSEE_NO_JS_DEBUGGER)
+# define gpsee_printf(cx, a...)         printf(a)
+# define gpsee_fprintf(cx, f, s, a...)  fprintf(f, s, a)
+# define gpsee_vfprintf(cx, f, s, a)    vfprintf(f, s, a)
+# define gpsee_fwrite(cx, p, s, n, f)   fwrite(p, s, n, f)
+# define gpsee_fread(cx, p, s, n, f)    fread(p, s, n, f)
+# define gpsee_fgets(cx, s, n, f)       fgets(s, n, f)
+# define gpsee_fputs(cx, s, f)          fputs(s, f)
+# define gpsee_fputc(cx, c, f)          fputc(c, f)
+# define gpsee_puts(cx, s)              puts(s)
+#else
+static inline gpsee_interpreter_t *_jsi(JSContext *cx)
+{
+  return JS_GetRuntimePrivate(JS_GetRuntime(cx));
+}
+# define gpsee_printf(cx, a...)	        _jsi(cx)->user_io_printf(cx, a)
+# define gpsee_fprintf(cx, f, a...)     _jsi(cx)->user_io_fprintf(cx, f, a)
+# define gpsee_vfprintf(cx, f, s, a)    _jsi(cx)->user_io_vfprintf(cx, f, s, a)
+# define gpsee_fwrite(cx, p, s, n, f)   _jsi(cx)->user_io_fwrite(p, s, n, f, cx)
+# define gpsee_fread(cx, p, s, n, f)    _jsi(cx)->user_io_fread(p, s, n, f, cx)
+# define gpsee_fgets(cx, s, n, f)       _jsi(cx)->user_io_fgets(s, n, f, cx)
+# define gpsee_fputs(cx, s, f)          _jsi(cx)->user_io_fputs(s, f, cx)
+# define gpsee_fputc(cx, c, f)          _jsi(cx)->user_io_fputc(c, f, cx)
+# define gpsee_puts(cx, s)              _jsi(cx)->user_io_puts(s, f, cx)
+#endif
+
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
-JS_EXTERN_API(void) gpsee_log(unsigned int extra, signed int pri, const char *fmt, ...)  __attribute__((format(printf,3,4)));
+JS_EXTERN_API(void) gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fmt, ...)  __attribute__((format(printf,4,5)));
 #define gpsee_closelog()		closelog()
 
 typedef void * rc_list;					/**< opaque dictionary */

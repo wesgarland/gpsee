@@ -14,7 +14,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 

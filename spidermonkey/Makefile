@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.9 2010/04/14 00:38:54 wes Exp $ 
+## @version	$Id: Makefile,v 1.10 2010/04/28 12:41:33 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
@@ -66,7 +66,7 @@ include sanity.mk
 SPIDERMONKEY_BUILD	?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
 endif
 
-CONFIGURE_OPTIONS	+= --enable-threadsafe
+CONFIGURE_OPTIONS	+= --enable-threadsafe --enable-ctypes
 
 top: 
 	$(MAKE) help
@@ -141,6 +141,7 @@ help:
 all:	build
 
 $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
+	@echo " * Generating $@"
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 
 $(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
@@ -185,6 +186,8 @@ vars.mk: JSAPI_LDFLAGS:=$(filter -l%,$(JSAPI_LDFLAGS)) $(filter -L%,$(JSAPI_LDFL
 	$(filter -Wl%,$(JSAPI_LDFLAGS))
 vars.mk: JSAPI_LDFLAGS:=$(filter-out $(MOZJS_INSTALL_NAME_OPT),$(JSAPI_LDFLAGS))
 endif
+# Work around CTypes bug in js-config
+vars.mk: JSAPI_LDFLAGS:=$(filter-out %libffi.a,$(JSAPI_LDFLAGS))
 
 _install:
 	@echo " * Installing Spidermonkey"	

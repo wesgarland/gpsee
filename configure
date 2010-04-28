@@ -1,5 +1,7 @@
 #! /bin/sh
 
+[ ! "$BASH_VERSION" ] && [ -x /bin/bash ] && (BASH_VERSION=dontrecurse /bin/bash $0 $*; exit $?)
+
 cat <<EOF
 
 *** Working in progress -- if you're not working on this,  ***
@@ -8,12 +10,13 @@ cat <<EOF
 
 EOF
 
-_errout()
-{
-  echo "GPSEE configure: $*" > /dev/stderr
-}
+argv_zero="$0"
+gpsee_dir="`dirname $0`"
 
-if [ $_ = "/bin/dash" ]; then
+isFunc="typeset -f"
+listFuncs="typeset -F"
+
+if [ "$_" = "/bin/dash" ]; then
   if [ -x /bin/bash ]; then 
     /bin/bash $0 $*
     exit $?
@@ -23,12 +26,10 @@ if [ $_ = "/bin/dash" ]; then
     exit $?
   fi
 
-  _errout "Sorry, we need a shell that supports typeset"
+  . ${gpsee_dir}/configure.incl
+  errout "Sorry, we need a shell that supports typeset"
   exit 3
 fi
-
-argv_zero="$0"
-gpsee_dir="`dirname $0`"
 
 [ ! "$USER" ] && [ "$LOGNAME" ] && USER="$LOGNAME"
 
@@ -41,11 +42,8 @@ _echo_fmt_opt_help()
 {
   echo -- "  $1\t$2"
 }
-
-help()
+_help()
 {
-  [ "$1" = "help" ] && echo "display this help" && return
-
 cat <<EOF
 configure -- Configuration automator for GPSEE.
 Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
@@ -67,7 +65,9 @@ EOF
     fmt=_echo_fmt_opt_help
   fi
 
-  typeset -F | grep -v ' _' | sed -e 's/^.* //'  | while read func
+  $fmt "--help" "Display this help"
+
+  $listFuncs | grep -v ' _' | sed -e 's/^.* //'  | while read func
   do
     opt="`echo \"$func\" | sed -e 's/_/-/g'`"
     echo "$func" | egrep -v '^enable|disable|help' >/dev/null && opt="$opt=value"
@@ -138,7 +138,14 @@ disable_async_callbacks()
 }
 
 # main
-# [ "$1" ] || help
+
+case "$1" in 
+  "--help"|"-h"|"help")
+    _help
+    ;;
+esac
+
+. ${gpsee_dir}/configure.incl
 
 fd=5
 confdirs=". spidermonkey libffi"
@@ -153,13 +160,15 @@ do
   fd=`expr $fd + 1`
 done
 
+a="`locate autoconf2.13 autoconf213 autoconf-2.13`" && echo "AUTOCONF=$a" >&5
+
 while [ "$1" ]
 do
   if echo "$1" | grep '^--' >/dev/null; then
     # --enable-option, --disable-option, or --option=value
     func="`echo \"$1\" | sed -e 's/^--//' -e 's/-/_/g' -e 's/=.*//'`"
     arg="`echo \"$1\" | grep = | sed -e 's/.*=//'`"
-    if ! typeset -f "$func" >/dev/null; then
+    if ! $isFunc "$func" >/dev/null; then
       if echo "$func" | grep '^enable' >/dev/null; then
         func="`echo \"$func\" | sed 's/^enable/disable/'`"
         arg="enable"
@@ -171,31 +180,42 @@ do
       fi
     fi
 
-    if ! typeset -f "$func" >/dev/null; then
-      _errout "$1: invalid option"
+    if ! $isFunc "$func" >/dev/null; then
+      errout "$1: invalid option"
       exit 1
     else
       echo "$arg" | grep '^~/' >/dev/null && arg="`echo \"$arg\" | sed 's/^~\//$(HOME)\//'`"
       $func "$arg"
     fi
   else
-    _errout "$1: invalid option"
+    errout "$1: invalid option"
     exit 3
   fi
   shift
 done
 
+echo
+echo " * Configuring SpiderMonkey"
+echo
 (cd spidermonkey && make configure)
 if [ "$?" != "0" ]; then
-  _errout ""
-  _errout " *** Could not configure SpiderMonkey. Stop."
-  _errout ""
+  errout ""
+  errout " *** Could not configure SpiderMonkey. Stop."
+  errout ""
+  exit 4
 fi
 
+echo
+echo " * Configuring LibFFI"
+echo
 (cd libffi && make configure)
 if [ "$?" != "0" ]; then
-  _errout ""
-  _errout " *** Could not configure LibFFI. Stop."
-  _errout ""
+  errout ""
+  errout " *** Could not configure LibFFI. Stop."
+  errout ""
+  exit 5
 fi
 
+echo
+echo "Done. You may now build GPSEE."
+echo

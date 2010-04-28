@@ -82,7 +82,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew)
   return fmt;
 }
 
-void gpsee_log(unsigned int extra, signed int pri, const char *fmt, ...)
+void gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fmt, ...)
 {
   va_list	ap;
   int 		printToStderr;
@@ -119,13 +119,13 @@ void gpsee_log(unsigned int extra, signed int pri, const char *fmt, ...)
   va_start(ap, fmt);
   vsyslog(pri, fmt, ap);
 
-  if (printToStderr)
+  if (cx && printToStderr)
   {
     char		fmtBuf[GPSEE_MAX_LOG_MESSAGE_SIZE];
 
     va_start(ap, fmt);
-    vfprintf(stderr, gpsee_makeLogFormat(fmt, fmtBuf), ap);
-    fputc('\n', stderr);
+    gpsee_vfprintf(cx, stderr, gpsee_makeLogFormat(fmt, fmtBuf), ap);
+    gpsee_fputc(cx, '\n', stderr);
   }
   va_end(ap);
 

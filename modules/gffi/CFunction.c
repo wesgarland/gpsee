@@ -219,8 +219,6 @@ static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
   
   obj = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
 
-  printf("invoke: %p\n", obj);
-
   /* Prepare the FFI call */
   if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".invoke"))
     return JS_FALSE;
@@ -398,7 +396,7 @@ rtldDefault:
       n = snprintf(functionName, sizeof functionName, "gffi_alias_%s", hnd->functionName);
       GPSEE_ASSERT(n >= 0);
       if (n >= sizeof functionName)
-        gpsee_log(SLOG_WARNING, "gffi alias for \"%s\" exceeds " GPSEE_SIZET_FMT " characters", hnd->functionName, sizeof functionName);
+        gpsee_log(cx, SLOG_WARNING, "gffi alias for \"%s\" exceeds " GPSEE_SIZET_FMT " characters", hnd->functionName, sizeof functionName);
       else
         /* Try dlsym() again with the new mangled name! */
         hnd->fn = dlsym(RTLD_DEFAULT, functionName);
@@ -592,9 +590,9 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
   return proto;
 }
 
-static  __attribute__((unused)) void CFunction_debug_dump(void)
+static  __attribute__((unused)) void CFunction_debug_dump(JSContext *cx)
 {
-#define ffi_type(ftype, ctype) printf("FFI type %s is like C type %s and represented by jsve_%s, %i\n", #ftype, #ctype, #ftype, jsve_ ## ftype);
+#define ffi_type(ftype, ctype) gpsee_printf(cx, "FFI type %s is like C type %s and represented by jsve_%s, %i\n", #ftype, #ctype, #ftype, jsve_ ## ftype);
 #include "ffi_types.decl"
 #undef ffi_type
   return;

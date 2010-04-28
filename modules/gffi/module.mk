@@ -60,6 +60,8 @@
 #    MYGROUP_defs.%: 	HEADERS  = list_of_headers_with_defines
 #    and then adding MYGROUP to do the DEFS variable.
 
+GFFI_DIR := $(shell pwd)
+
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
 ifneq ($(MAKECMDGOALS),clean)
@@ -130,9 +132,9 @@ compiler_dmp.re:
 		-e 's/[.]/[.]/g' \
 		-e 's/[|]/[|]/g' \
 	> $@
-INCLUDE_DIRS=$(PWD) /usr/local/include /usr/include /
+INCLUDE_DIRS=$(GFFI_DIR) /usr/local/include /usr/include /
 std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
-%.dmp: FP_HEADERS=$(sort $(wildcard $(foreach DIR,$(INCLUDE_DIRS),$(addprefix $(DIR)/,$(filter-out $^,$(HEADERS))))) $(addprefix $(PWD)/,$(filter $^,$(HEADERS))))
+%.dmp: FP_HEADERS=$(sort $(wildcard $(foreach DIR,$(INCLUDE_DIRS),$(addprefix $(DIR)/,$(filter-out $^,$(HEADERS))))) $(addprefix $(GFFI_DIR)/,$(filter $^,$(HEADERS))))
 %.dmp: compiler_dmp.re #Makefile
 	@echo ""
 	@echo " * Generating $@ from $(HEADERS), found at:"
@@ -147,7 +149,7 @@ std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-std_defs:	EXTRA_CPPFLAGS += -I$(PWD)
+std_defs:	EXTRA_CPPFLAGS += -I$(GFFI_DIR)
 std_defs.%:	HEADERS  = std_functions.h stdint.h std_macro_consts.h
 gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h std_macro_consts.h
 

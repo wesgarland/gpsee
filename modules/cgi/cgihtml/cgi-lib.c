@@ -12,6 +12,7 @@
 
 static const char rcsid[] = "$Id: cgi-lib.c,v 1.4 2010/03/06 18:17:14 wes Exp $";
 
+#include "gpsee.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -65,16 +66,16 @@ void unescape_url(char *url)
   url[x] = '\0';
 }
 
-char *get_DEBUG(void)
+char *get_DEBUG(JSContext *cx)
 {
   int bufsize = 1024;
   char *buffer = (char *)malloc(sizeof(char) * bufsize + 1);
   int i = 0;
   char ch;
 
-  fprintf(stderr,"\n--- cgihtml Interactive Mode ---\n");
-  fprintf(stderr,"Enter CGI input string.  Remember to encode appropriate ");
-  fprintf(stderr,"characters.\nPress ENTER when done:\n\n");
+  gpsee_fprintf(cx, stderr, "\n--- cgihtml Interactive Mode ---\n");
+  gpsee_fprintf(cx, stderr, "Enter CGI input string.  Remember to encode appropriate ");
+  gpsee_fprintf(cx, stderr, "characters.\nPress ENTER when done:\n\n");
   while ( (i<=bufsize) && ((ch = getc(stdin)) != '\n') ) {
     buffer[i] = ch;
     i++;
@@ -84,12 +85,12 @@ char *get_DEBUG(void)
     }
   }
   buffer[i] = '\0';
-  fprintf(stderr,"\n Input string: %s\nString length: %d\n",buffer,i);
-  fprintf(stderr,"--- end cgihtml Interactive Mode ---\n\n");
+  gpsee_fprintf(cx, stderr, "\n Input string: %s\nString length: %d\n",buffer,i);
+  gpsee_fprintf(cx, stderr, "--- end cgihtml Interactive Mode ---\n\n");
   return buffer;
 }
 
-char *get_POST(void)
+char *get_POST(JSContext *cx)
 {
   unsigned int content_length;
   char *buffer = NULL;
@@ -99,7 +100,7 @@ char *get_POST(void)
     buffer = (char *)malloc(sizeof(char) * content_length + 1);
     if (fread(buffer,sizeof(char),content_length,stdin) != content_length) {
       /* consistency error. */
-      fprintf(stderr,"caught by cgihtml: input length < CONTENT_LENGTH\n");
+      gpsee_fprintf(cx, stderr, "caught by cgihtml: input length < CONTENT_LENGTH\n");
       exit(1);
     }
     buffer[content_length] = '\0';
@@ -374,7 +375,7 @@ int parse_form_encoded(llist* entries)
 
 //#define read_cgi_input(entries...)	_read_cgi_input(##entries, NULL)
 
-int _read_cgi_input(llist* entries, const char *uploadDir, ...)
+int _read_cgi_input(JSContext *cx, llist* entries, const char *uploadDir, ...)
 {
   char *input;
   int status;
@@ -406,13 +407,13 @@ int _read_cgi_input(llist* entries, const char *uploadDir, ...)
 
   /* get the input */
   if (REQUEST_METHOD == NULL)
-    input = get_DEBUG();
+    input = get_DEBUG(cx);
   else if (!strcmp(REQUEST_METHOD,"POST"))
-    input = get_POST();
+    input = get_POST(cx);
   else if (!strcmp(REQUEST_METHOD,"GET"))
     input = get_GET();
   else { /* error: invalid request method */
-    fprintf(stderr,"caught by cgihtml: REQUEST_METHOD invalid\n");
+    gpsee_fprintf(cx, stderr, "caught by cgihtml: REQUEST_METHOD invalid\n");
     exit(1);
   }
   /* parse the input */
@@ -604,60 +605,60 @@ int parse_cookies(llist *entries)
   return numcookies;
 }
 
-void print_cgi_env(void)
+void print_cgi_env(JSContext *cx)
 {
   if (SERVER_SOFTWARE != NULL)
-    printf("<p>SERVER_SOFTWARE = %s<br>\n",SERVER_SOFTWARE);
+    gpsee_printf(cx, "<p>SERVER_SOFTWARE = %s<br>\n",SERVER_SOFTWARE);
   if (SERVER_NAME != NULL)
-    printf("SERVER_NAME = %s<br>\n",SERVER_NAME);
+    gpsee_printf(cx, "SERVER_NAME = %s<br>\n",SERVER_NAME);
   if (GATEWAY_INTERFACE !=NULL)
-    printf("GATEWAY_INTERFACE = %s<br>\n",GATEWAY_INTERFACE);
+    gpsee_printf(cx, "GATEWAY_INTERFACE = %s<br>\n",GATEWAY_INTERFACE);
 
   if (SERVER_PROTOCOL != NULL)
-    printf("SERVER_PROTOCOL = %s<br>\n",SERVER_PROTOCOL);
+    gpsee_printf(cx, "SERVER_PROTOCOL = %s<br>\n",SERVER_PROTOCOL);
   if (SERVER_PORT != NULL)
-    printf("SERVER_PORT = %s<br>\n",SERVER_PORT);
+    gpsee_printf(cx, "SERVER_PORT = %s<br>\n",SERVER_PORT);
   if (REQUEST_METHOD != NULL)
-    printf("REQUEST_METHOD = %s<br>\n",REQUEST_METHOD);
+    gpsee_printf(cx, "REQUEST_METHOD = %s<br>\n",REQUEST_METHOD);
   if (PATH_INFO != NULL)
-    printf("PATH_INFO = %s<br>\n",PATH_INFO);
+    gpsee_printf(cx, "PATH_INFO = %s<br>\n",PATH_INFO);
   if (PATH_TRANSLATED != NULL)
-    printf("PATH_TRANSLATED = %s<br>\n",PATH_TRANSLATED);
+    gpsee_printf(cx, "PATH_TRANSLATED = %s<br>\n",PATH_TRANSLATED);
   if (SCRIPT_NAME != NULL)
-    printf("SCRIPT_NAME = %s<br>\n",SCRIPT_NAME);
+    gpsee_printf(cx, "SCRIPT_NAME = %s<br>\n",SCRIPT_NAME);
   if (QUERY_STRING != NULL)
-    printf("QUERY_STRING = %s<br>\n",QUERY_STRING);
+    gpsee_printf(cx, "QUERY_STRING = %s<br>\n",QUERY_STRING);
   if (REMOTE_HOST != NULL)
-    printf("REMOTE_HOST = %s<br>\n",REMOTE_HOST);
+    gpsee_printf(cx, "REMOTE_HOST = %s<br>\n",REMOTE_HOST);
   if (REMOTE_ADDR != NULL)
-    printf("REMOTE_ADDR = %s<br>\n",REMOTE_ADDR);
+    gpsee_printf(cx, "REMOTE_ADDR = %s<br>\n",REMOTE_ADDR);
   if (AUTH_TYPE != NULL)
-    printf("AUTH_TYPE = %s<br>\n",AUTH_TYPE);
+    gpsee_printf(cx, "AUTH_TYPE = %s<br>\n",AUTH_TYPE);
   if (REMOTE_USER != NULL)
-    printf("REMOTE_USER = %s<br>\n",REMOTE_USER);
+    gpsee_printf(cx, "REMOTE_USER = %s<br>\n",REMOTE_USER);
   if (REMOTE_IDENT != NULL)
-    printf("REMOTE_IDENT = %s<br>\n",REMOTE_IDENT);
+    gpsee_printf(cx, "REMOTE_IDENT = %s<br>\n",REMOTE_IDENT);
   if (CONTENT_TYPE != NULL)
-    printf("CONTENT_TYPE = %s<br>\n",CONTENT_TYPE);
+    gpsee_printf(cx, "CONTENT_TYPE = %s<br>\n",CONTENT_TYPE);
   if (CONTENT_LENGTH != NULL)
-    printf("CONTENT_LENGTH = %s<br></p>\n",CONTENT_LENGTH);
+    gpsee_printf(cx, "CONTENT_LENGTH = %s<br></p>\n",CONTENT_LENGTH);
 
   if (HTTP_USER_AGENT != NULL)
-    printf("HTTP_USER_AGENT = %s<br></p>\n",HTTP_USER_AGENT);
+    gpsee_printf(cx, "HTTP_USER_AGENT = %s<br></p>\n",HTTP_USER_AGENT);
 }
 
-void print_entries(llist l)
+void print_entries(JSContext *cx, llist l)
 {
   node* window;
 
   window = l.head;
-  printf("<dl>\n");
+  gpsee_printf(cx, "<dl>\n");
   while (window != NULL) {
-    printf("  <dt> <b>%s</b>\n",window->entry.name);
-    printf("  <dd> %s\n",replace_ltgt(window->entry.value));
+    gpsee_printf(cx, "  <dt> <b>%s</b>\n",window->entry.name);
+    gpsee_printf(cx, "  <dd> %s\n",replace_ltgt(window->entry.value));
     window = window->next;
   }
-  printf("</dl>\n");
+  gpsee_printf(cx, "</dl>\n");
 }
 
 char *escape_input(char *str)
