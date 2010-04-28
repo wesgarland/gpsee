@@ -37,7 +37,7 @@
  *  @file 	gpsee_unix.h		Definitions for UNIX world normally provided by SureLynx headers.
  *  @author	Wes Garland
  *  @date	Feb 2009
- *  @version	$Id: gpsee_unix.h,v 1.8 2010/04/14 00:38:05 wes Exp $
+ *  @version	$Id: gpsee_unix.h,v 1.9 2010/04/28 12:44:48 wes Exp $
  */
 
 #define SLOG_EMERG	0,LOG_EMERG
@@ -69,7 +69,6 @@
 # define gpsee_fputc(cx, c, f)          fputc(c, f)
 # define gpsee_puts(cx, s)              puts(s)
 #else
-//# define _jsi(cx)  ((gpsee_interpreter_t *)(JS_GetRuntimePrivate(JS_GetRuntime(cx)))
 static inline gpsee_interpreter_t *_jsi(JSContext *cx)
 {
   return JS_GetRuntimePrivate(JS_GetRuntime(cx));

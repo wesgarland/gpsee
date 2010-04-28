@@ -38,12 +38,11 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.37 2010/04/22 12:45:15 wes Exp $
+## @version	$Id: Makefile,v 1.38 2010/04/28 12:44:48 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
 
-PWD = $(shell pwd)
 GPSEE_SRC_DIR ?= $(shell pwd)
 
 $(GPSEE_SRC_DIR)/local_config.mk:
@@ -74,7 +73,7 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base 
+IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base sqlite
 INTERNAL_MODULES 	+= vm gpsee system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
