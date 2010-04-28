@@ -36,7 +36,7 @@
 #include <gpsee.h>
 #undef offsetOf
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.3 2010/02/04 23:12:03 wes Exp $";
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.4 2010/04/28 12:45:52 wes Exp $";
 static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
 
 #undef JS_GetContextPrivate
@@ -44,37 +44,7 @@ static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the numb
 #undef JS_GetGlobalObject
 #undef main
 
-#if 0
-#define JS_GetContextPrivate(cx)	gpsee_getContextPrivate(cx, &jsshell_contextPrivate_id, sizeof(void *), NULL)
-#define JS_SetContextPrivate(cx, data)	((*(void **)gpsee_getContextPrivate(cx, &jsshell_contextPrivate_id, sizeof(void *), NULL) = data), JS_TRUE)
-#define JS_SetContextCallback(rt, cb)	gpsee_getContextPrivate(cx ? cx : ((gpsee_interpreter_t *)JS_GetRuntimePrivate(rt))->cx, NULL, 0, cb)
-#endif 
-
-//#undef JS_DestroyRuntime
-//#define JS_DestroyRuntime gpseejs_DestroyRuntime
-//void gpseejs_DestroyRuntime(JSRuntime *rt)
-//{
-//  JS_SetContextCallback(rt, NULL);
-//  gpsee_destroyInterpreter((gpsee_interpreter_t *)JS_GetRuntimePrivate(rt));
-//}
-
-//#define JS_DestroyRuntime(rt) gpseejs_DestroyRuntime(rt)
-
-//#define JS_InitStandardClasses(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL)
-//#define JS_SetGlobalObject(cx, obj) gpsee_initGlobalObject(cx, obj, NULL, NULL);
-
 #define PRODUCT_SHORTNAME	"gpsee-js"
-
-//#undef JS_NewRuntime
-//#define JS_NewRuntime(n) gpseejs_NewRuntime(n)
-JSRuntime *gpseejs_NewRuntime(size_t n)
-{
-  extern char ** environ;
-
-  gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, environ);
-
-  return jsi->rt;
-}
 
 JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSObject *parent)
 {
@@ -91,6 +61,12 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 #define main(a,b,c) notMain(a,b,c)
 #include "shell/js.cpp"
 #undef main
+
+#if defined(JS_THREADSAFE) && defined(jsworkers_h___) && !defined(GPSEE_NO_WORKERS)
+# define WORKERS
+#else
+# warning Building without worker thread support
+#endif
 
 int
 main(int argc, char **argv, char **envp)
@@ -123,17 +99,23 @@ main(int argc, char **argv, char **envp)
     argc--;
     argv++;
 
-    rt = jsi->rt;
-    if (!rt)
-        return 1;
+    if (!jsi)
+      return 1;
+
     rt = jsi->rt;
 
     if (!InitWatchdog(rt))
         return 1;
 
+#ifdef jsworkers_h___
+    cx = NewContext(rt);
+    if (!cx)
+      return 1;
+#else
     JS_SetContextCallback(rt, ContextCallback);
     cx = jsi->cx;
     ContextCallback(cx, JSCONTEXT_NEW);
+#endif
 
     JS_SetGCParameterForThread(cx, JSGC_MAX_CODE_CACHE_BYTES, 16 * 1024 * 1024);
 
@@ -142,6 +124,14 @@ main(int argc, char **argv, char **envp)
     glob = jsi->globalObj;
     if (!glob)
         return 1;
+
+    if (cx != jsi->cx)
+      JS_SetGlobalObject(cx, glob);
+
+#ifdef JS_HAS_CTYPES
+    if (!JS_InitCTypesClass(cx, glob))
+        return NULL;
+#endif
 
     if (!JS_DefineFunctions(cx, glob, shell_functions))
         return 1;
@@ -165,11 +155,35 @@ main(int argc, char **argv, char **envp)
     if (!envobj || !JS_SetPrivate(cx, envobj, envp))
         return 1;
 
+#ifdef WORKERS
+    class ShellWorkerHooks : public js::workers::WorkerHooks {
+    public:
+        JSObject *newGlobalObject(JSContext *cx) { return NewGlobalObject(cx); }
+    };
+    ShellWorkerHooks hooks;
+    if (!JS_AddNamedRoot(cx, &gWorkers, "Workers") ||
+        !js::workers::init(cx, &hooks, glob, &gWorkers)) {
+        return 1;
+    }
+#endif
+
     result = ProcessArgs(cx, glob, argv, argc);
+
+#ifdef WORKERS
+    js::workers::finish(cx, gWorkers);
+    JS_RemoveRoot(cx, &gWorkers);
+    if (result == 0)
+        result = gExitCode;
+#endif
 
     JS_EndRequest(cx);
 
     // JS_CommenceRuntimeShutDown(rt);
+
+#ifdef jsworkers_h___
+    JS_CommenceRuntimeShutDown(rt);
+    DestroyContext(cx, true);
+#endif
 
     KillWatchdog();
 
@@ -178,3 +192,6 @@ main(int argc, char **argv, char **envp)
     JS_ShutDown();
     return result;
 }
+
+
+
