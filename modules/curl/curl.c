@@ -236,6 +236,32 @@ static size_t header_callback( void *ptr, size_t size, size_t nmemb, void *strea
   return len;
 }
 
+static int debug_callback(CURL *c, curl_infotype itype, char * buf, size_t len, void *userdata)
+{
+  jsval rval;
+  jsval argv[2];
+
+  // passback from the read/write/header operations
+  struct callback_data* cb = (struct callback_data*)(userdata);
+
+  // get private data from handle for context
+  JSContext* cx = cb->cx;
+  JSObject* obj = cb->obj;
+
+  // TODO: Donny; JS_ResumeRequest
+  argv[0] = INT_TO_JSVAL(itype);
+  JSObject* bthing = byteThing_fromCArray(cx, (const unsigned char *) buf, len);
+  argv[1] = OBJECT_TO_JSVAL(bthing);
+
+  // TODO: check function return value to see if we want to abort or not?
+  if (!JS_CallFunctionName(cx, obj, "debug", 2, argv, &rval)) {
+    // TBD?
+  }
+
+  // required
+  return 0;
+}
+
 /*******************************************************/
 /**
  * Helper function to determine what type of value curl_getinfo returns
@@ -250,7 +276,7 @@ static int info_expected_type(int opt)
     //  5*4 = 20;
     opt = opt >> 20;
     if (opt < 1 || opt > 4)
-	opt = 0;
+        opt = 0;
     return opt;
 }
 
@@ -317,8 +343,8 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
   case 4:
   {
       if (opt == CURLINFO_PRIVATE) {
-	  JS_ReportError(cx, "Sorry, that option isn't supported.");
-	  return JS_FALSE;
+          JS_ReportError(cx, "Sorry, that option isn't supported.");
+          return JS_FALSE;
       }
 
     struct curl_slist *list = NULL;
@@ -484,6 +510,9 @@ static JSBool jscurl_setupcallbacks(struct callback_data* cb)
 
   c = curl_easy_setopt(handle, CURLOPT_READFUNCTION, write_callback);
   c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
+
+  c = curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, debug_callback);
+  c = curl_easy_setopt(handle, CURLOPT_DEBUGDATA, cb);
 
   return JS_TRUE;
 }
