@@ -56,8 +56,11 @@
 static const char __attribute__((unused)) rcsid[]="$Id: $";
 
 // Forward declarations
-static JSClass easycurl_slist_class;
-static JSClass easycurl_class;
+static JSClass* easycurl_slist_class;
+static JSObject* easycurl_slist_proto;
+
+static JSClass* easycurl_class;
+static JSObject* easycurl_proto;
 
 struct callback_data {
   CURL* handle;
@@ -83,7 +86,7 @@ static JSBool easycurl_slist_toArray(JSContext* cx, JSObject* obj, uintN argc, j
   // slist is a bit weird since it can have a NULL value for private data
   // so can't use GetInstancePrivate.  Have to check instance and then get
   // private data
-  if (!JS_InstanceOf(cx, obj, &easycurl_slist_class, rval))
+  if (!JS_InstanceOf(cx, obj, easycurl_slist_class, NULL))
     return JS_FALSE;
 
   struct curl_slist *slist = (struct curl_slist *)(JS_GetPrivate(cx, obj));
@@ -110,7 +113,7 @@ static JSBool easycurl_slist_append(JSContext* cx, JSObject* obj, uintN argc, js
   // slist is a bit weird since it can have a NULL value for private data
   // so can't use GetInstancePrivate.  Have to check instance and then get
   // private data
-  if (!JS_InstanceOf(cx, obj, &easycurl_slist_class, rval))
+  if (!JS_InstanceOf(cx, obj, easycurl_slist_class, NULL))
     return JS_FALSE;
 
   slist = (struct curl_slist *)(JS_GetPrivate(cx, obj));
@@ -139,7 +142,7 @@ static JSBool easycurl_slist_append(JSContext* cx, JSObject* obj, uintN argc, js
 // just makes an empty slist
 static JSBool easycurl_slist_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp, jsval* rval)
 {
-  JSObject* newobj = JS_NewObject(cx, &easycurl_slist_class, NULL, NULL);
+  JSObject* newobj = JS_NewObject(cx, easycurl_slist_class, easycurl_slist_proto, NULL);
   *rval = OBJECT_TO_JSVAL(newobj);
   JS_SetPrivate(cx, newobj, (void*)0);
   return JS_TRUE;
@@ -152,28 +155,6 @@ static void easycurl_slist_finalize(JSContext* cx, JSObject* obj)
   if (list)
     curl_slist_free_all(list);
 }
-
-static JSFunctionSpec easycurl_slist_fn[] =
-{
-  JS_FS("append", easycurl_slist_append, 1, 0, 0),
-  JS_FS("toArray", easycurl_slist_toArray, 0, 0, 0),
-  JS_FS_END
-};
-
-static JSClass easycurl_slist_class =
-{
-  GPSEE_CLASS_NAME(easycurl_slist),
-  JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_EnumerateStub,
-  JS_ResolveStub,
-  JS_ConvertStub,
-  easycurl_slist_finalize,  /* FINALIZE */
-  JSCLASS_NO_OPTIONAL_MEMBERS
-};
 
 /**
  * CALLBACKS
@@ -283,7 +264,7 @@ static int info_expected_type(int opt)
 
 static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, easycurl_class, rval));
   if (!cb)
     return JS_FALSE;
   CURL* handle = cb->handle;
@@ -358,7 +339,7 @@ static JSBool jscurl_getinfo(JSContext* cx, JSObject* obj, uintN argc, jsval* ar
       return JS_FALSE;
     }
 
-    newobj = JS_NewObject(cx, &easycurl_slist_class, NULL, NULL);
+    newobj = JS_NewObject(cx, easycurl_slist_class, NULL, NULL);
     // TODO: Donny  OOM here?
     *rval = OBJECT_TO_JSVAL(newobj);
     JS_SetPrivate(cx, newobj, (void*) list);
@@ -393,7 +374,7 @@ static int option_expected_type(int opt)
 
 static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, easycurl_class, NULL));
   if (!cb)
     return JS_FALSE;
 
@@ -438,7 +419,7 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
         struct curl_slist* slist = NULL;
         JSObject* slistobj = JSVAL_TO_OBJECT(argv[1]);
 
-        if (!JS_InstanceOf(cx, slistobj, &easycurl_slist_class, rval))
+        if (!JS_InstanceOf(cx, slistobj, easycurl_slist_class, NULL))
           return JS_FALSE;
         slist = (struct curl_slist*) (JS_GetPrivate(cx, slistobj));
         // null is ok!
@@ -475,7 +456,7 @@ static JSBool jscurl_setopt(JSContext* cx, JSObject* obj, uintN argc, jsval* arg
 
 static JSBool jscurl_perform(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
-  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, &easycurl_class, rval));
+  struct callback_data* cb = (struct callback_data*)(JS_GetInstancePrivate(cx, obj, easycurl_class, rval));
   if (!cb)
     return JS_FALSE;
 
@@ -512,10 +493,9 @@ static JSBool jscurl_setupcallbacks(struct callback_data* cb)
   c = curl_easy_setopt(handle, CURLOPT_READFUNCTION, write_callback);
   c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
 
-  /*
   c = curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, debug_callback);
   c = curl_easy_setopt(handle, CURLOPT_DEBUGDATA, cb);
-  */
+
   return JS_TRUE;
 }
 
@@ -548,35 +528,14 @@ static void easycurl_finalize(JSContext* cx, JSObject* obj)
   struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
   if (cb)
   {
+    // On death, curl sends a "closing connection" debug message
+    // If we are in GC, we don't want to send a request back to JS
+    // (can occur only if verbose is 1)
+    curl_easy_setopt(cb->handle, CURLOPT_VERBOSE, 0);
     curl_easy_cleanup(cb->handle);
     JS_free(cx, cb);
   }
 }
-
-static JSFunctionSpec easycurl_fn[] =
-{
-  JS_FS("setopt", jscurl_setopt, 2, 0, 0),
-  JS_FS("getinfo", jscurl_getinfo, 1,0,0),
-  JS_FS("perform", jscurl_perform, 0, 0, 0),
-  JS_FS("getdate", jscurl_getdate, 1,0,0),
-  JS_FS("version", jscurl_version, 0,0,0),
-  JS_FS_END
-};
-
-static JSClass easycurl_class =
-{
-  GPSEE_CLASS_NAME(easycurl),
-  JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_PropertyStub,
-  JS_EnumerateStub,
-  JS_ResolveStub,
-  JS_ConvertStub,
-  easycurl_finalize,  /* FINALIZE */
-  JSCLASS_NO_OPTIONAL_MEMBERS
-};
 
 static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp, jsval* rval)
 {
@@ -589,7 +548,7 @@ static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp,
     JS_ReportError(cx, "Unable to initialize libcurl!");
     return JS_FALSE;
   }
-  newobj = JS_NewObject(cx, &easycurl_class, NULL, NULL);
+  newobj = JS_NewObject(cx, easycurl_class, easycurl_proto, NULL);
   if (!newobj)
     return JS_FALSE;
   *rval = OBJECT_TO_JSVAL(newobj);
@@ -622,13 +581,63 @@ static JSBool easycurl_ctor(JSContext* cx, JSObject* obj, uintN argc, jsval* vp,
 const char *curl_InitModule(JSContext *cx, JSObject *obj)
 {
 
+  static JSFunctionSpec easycurl_slist_fn[] =
+    {
+      JS_FS("append",  easycurl_slist_append,  1,0,0),
+      JS_FS("toArray", easycurl_slist_toArray, 0,0,0),
+      JS_FS_END
+    };
+
+  static JSClass slist_class =
+    {
+      GPSEE_CLASS_NAME(easycurl_slist),
+      JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_EnumerateStub,
+      JS_ResolveStub,
+      JS_ConvertStub,
+      easycurl_slist_finalize,  /* FINALIZE */
+      JSCLASS_NO_OPTIONAL_MEMBERS
+    };
+
+  static JSFunctionSpec easycurl_fn[] =
+    {
+      JS_FS("setopt",  jscurl_setopt,  2,0,0),
+      JS_FS("getinfo", jscurl_getinfo, 1,0,0),
+      JS_FS("perform", jscurl_perform, 0,0,0),
+      JS_FS("getdate", jscurl_getdate, 1,0,0),
+      JS_FS("version", jscurl_version, 0,0,0),
+      JS_FS_END
+    };
+
+  static JSClass easy_class =
+    {
+      GPSEE_CLASS_NAME(easycurl),
+      JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_PropertyStub,
+      JS_EnumerateStub,
+      JS_ResolveStub,
+      JS_ConvertStub,
+      easycurl_finalize,  /* FINALIZE */
+      JSCLASS_NO_OPTIONAL_MEMBERS
+    };
+
+  /* ----------------------------------- */
+
   if (!Memory_InitClass(cx, obj))
     return NULL;
 
-  JSObject* easycurl_proto =
+  easycurl_class = &easy_class;
+  easycurl_proto =
     JS_InitClass(cx, obj,
                  NULL,             /* prototype   */
-                 &easycurl_class,  /* class       */
+                 easycurl_class,  /* class       */
                  easycurl_ctor, 0, /* ctor, args  */
                  NULL,             /* properties  */
                  easycurl_fn,      /* functions   */
@@ -645,10 +654,11 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
   if (!JS_DefineConstDoubles(cx, easycurl_proto, easycurl_info))
     return NULL;
 
-  JSObject* easycurl_slist_proto =
+  easycurl_slist_class = &slist_class;
+  easycurl_slist_proto =
     JS_InitClass(cx, obj,
                  NULL,                   /* prototype   */
-                 &easycurl_slist_class,  /* class       */
+                 easycurl_slist_class,   /* class       */
                  easycurl_slist_ctor, 0, /* ctor, args  */
                  NULL,                   /* properties  */
                  easycurl_slist_fn,
