@@ -162,7 +162,8 @@ static JSFunctionSpec easycurl_slist_fn[] =
 
 static JSClass easycurl_slist_class =
 {
-  "easycurl_slist", JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
+  GPSEE_CLASS_NAME(easycurl_slist),
+  JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
   JS_PropertyStub,
   JS_PropertyStub,
   JS_PropertyStub,
@@ -511,9 +512,10 @@ static JSBool jscurl_setupcallbacks(struct callback_data* cb)
   c = curl_easy_setopt(handle, CURLOPT_READFUNCTION, write_callback);
   c = curl_easy_setopt(handle, CURLOPT_READDATA, cb);
 
+  /*
   c = curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, debug_callback);
   c = curl_easy_setopt(handle, CURLOPT_DEBUGDATA, cb);
-
+  */
   return JS_TRUE;
 }
 
@@ -563,7 +565,8 @@ static JSFunctionSpec easycurl_fn[] =
 
 static JSClass easycurl_class =
 {
-  "easycurl", JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
+  GPSEE_CLASS_NAME(easycurl),
+  JSCLASS_HAS_PRIVATE, // | JSCLASS_CONSTRUCT_PROTOTYPE,
   JS_PropertyStub,
   JS_PropertyStub,
   JS_PropertyStub,
