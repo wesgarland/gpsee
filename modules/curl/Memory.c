@@ -318,11 +318,10 @@ static void Memory_Finalize(JSContext *cx, JSObject *obj)
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj)
 {
   /** Description of this class: */
-  static JSExtendedClass byteThing_eclass =
+  static JSClass byteThing_class =
     {
-      {
         GPSEE_CLASS_NAME(Memory),     /**< its name is Memory */
-        JSCLASS_HAS_PRIVATE | JSCLASS_IS_EXTENDED,    /**< private slot in use, this is really a JSExtendedClass */
+        JSCLASS_HAS_PRIVATE,
         JS_PropertyStub,          /**< addProperty stub */
         JS_PropertyStub,          /**< deleteProperty stub */
         JS_PropertyStub,          /**< custom getProperty */
@@ -331,14 +330,15 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj)
         JS_ResolveStub,           /**< resolveProperty stub */
         JS_ConvertStub,           /**< convertProperty stub */
         Memory_Finalize,          /**< it has a custom finalizer */
-
-        JSCLASS_NO_OPTIONAL_MEMBERS
-      },                  /**< JSClass        base */
-      NULL,               /**< JSEqualityOp   equality */
-      NULL,               /**< JSObjectOp     outerObject */
-      NULL,               /**< JSObjectOp     innerObject */
-      NULL,               /**< JSIteratorOp   iteratorObject */
-      NULL,               /**< JSObjectOp     wrappedObject */
+        /* Optional members below instead of JSCLASS_NO_OPTIONAL_MEMBERS */
+        NULL,                     /**< getObjectOps */
+        NULL,                     /**< checkAccess */
+        NULL,                     /**< call */
+        NULL,                     /**< construct */
+        NULL,                     /**< xdrObject */
+        NULL,                     /**< hasInstance */
+        NULL,                     /**< GC Trace */
+        NULL                      /**< reserveSlots */
     };
 
   static JSPropertySpec memory_props[] =
@@ -354,9 +354,9 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj)
       JS_FS_END
     };
 
-  GPSEE_DECLARE_BYTETHING_EXTCLASS(byteThing);
+  GPSEE_DECLARE_BYTETHING_CLASS(byteThing);
 
-  memory_clasp = &byteThing_eclass.base;
+  memory_clasp = &byteThing_class;
 
   memory_proto =
     JS_InitClass(cx,              /* JS context from which to derive runtime information */

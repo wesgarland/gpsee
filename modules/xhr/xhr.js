@@ -48,17 +48,19 @@ var XMLHttpRequest = function() {
     this._method = null;
     this.headers_in = [];
 
-    var z = this.curl = new easycurl;
+    this.curl = new easycurl();
+
+    var z = this.curl;
     // CURL SETUP
 
 
     // COOKIES TBD
     // set where cookies should be stored
     // http://curl.haxx.se/libcurl/c/curl_easy_setopt.html#CURLOPTCOOKIE
-    z.setopt(z.CURLOPT_COOKIEFILE, '');
+    this.curl.setopt(z.CURLOPT_COOKIEFILE, '');
 
     // 0 or 1 for debuggig output
-    z.setopt(z.CURLOPT_VERBOSE, 1);
+    z.setopt(z.CURLOPT_VERBOSE, 0);
 
     // on redirect, follow it
     z.setopt(z.CURLOPT_FOLLOWLOCATION, 1);
@@ -259,7 +261,6 @@ XMLHttpRequest.prototype = {
         // step 6 -- resolve relative url
         //  Does not apply for server-side XHR
 
-        print("URL = " + url);
         this.curl.setopt(this.curl.CURLOPT_URL, url);
 
         if (false) {

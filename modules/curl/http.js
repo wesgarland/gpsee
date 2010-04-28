@@ -3,17 +3,17 @@
 //   see end for how to use
 //
 
-var curlmod = require('curl');
-var ByteArray = require('binary').ByteArray;
+const curlmod = require('curl');
+const ByteArray = require('binary').ByteArray;
 
 // Only two items exported.
-easycurl = curlmod.easycurl;
-easycurl_slist = curlmod.easycurl_slist;
+const easycurl = curlmod.easycurl;
+const easycurl_slist = curlmod.easycurl_slist;
 
 
-http = function()
+var http = function()
 {
-    this.curl = new easycurl;
+    this.curl = new easycurl();
 
     this.body = null;
     this.headers = null;
@@ -21,12 +21,10 @@ http = function()
     var z = this.curl;
 
     /* Basic options */
+
     // set where cookies should be stored
     // http://curl.haxx.se/libcurl/c/curl_easy_setopt.html#CURLOPTCOOKIE
-    z.setopt(z.CURLOPT_COOKIEFILE, '');
-
-    // 0 or 1 for debuggig output
-    z.setopt(z.CURLOPT_VERBOSE, 0);
+    this.curl.setopt(z.CURLOPT_COOKIEFILE, '');
 
     // on redirect, follow it
     z.setopt(z.CURLOPT_FOLLOWLOCATION, 1);
@@ -37,17 +35,42 @@ http = function()
 
     // SSL: don't bother with peer verification
     z.setopt(z.CURLOPT_SSL_VERIFYPEER, 0);
-
     // CALLBACKS FOR READS AND HEADERS
     z._blobs = [];
     z._header_list = [];
     z.write  = function(s) {
-	print("GOT CHUNK: ");
+        //print("GOT CHUNK: ");
         z.blobs.push(ByteArray(s));
     }
     z.header = function(s) {
-	print("GOT : " + s);
-	z.header_list.push(s);
+        //print("GOT : " + s);
+        z.header_list.push(s);
+    }
+
+    // 0 or 1 for debuggig output
+    z.setopt(z.CURLOPT_VERBOSE, 1);
+    z.debug = function(itype, data) {
+        switch (itype) {
+        case 0:
+            // informational messages
+            print(ByteArray(data).decodeToString('ascii').trim());
+            break;
+        case 1:
+            // response headers
+            break;
+        case 2:
+            // request headers
+            //print(ByteArray(data).decodeToString('ascii').trim());
+            break;
+        case 3:
+            // data in?
+            break;
+        case 4:
+            // data out?
+            break
+        default:
+            print("UNKNOWN");
+        }
     }
 
     // You'll want to define
@@ -130,7 +153,7 @@ http.prototype = {
         }
         this.headers = this.curl.header_list;
 
-	return {status:code, headers:this.headers,body:this.body}
+        return {status:code, headers:this.headers,body:this.body}
     },
 
     /*
@@ -148,16 +171,20 @@ http.prototype = {
 try {
     var h = new http;
     var code = h.get('http://www.google.com/');
-    for (var i = 0; i < h.headers.length; ++i) {
-        print(h.headers[i].trim());
+
+    print("DONE");
+    if (0) {
+        for (var i = 0; i < h.headers.length; ++i) {
+            print(h.headers[i].trim());
+        }
+
+        // charset algorithm for html is quite complicated
+        var s = h.body.decodeToString('utf8');
+
+        print(s);
+        print("LENGTH: " + s.length);
+        h.info();
     }
-
-    // charset algorithm for html is quite complicated
-    var s = h.body.decodeToString('utf8');
-
-    print(s);
-    print("LENGTH: " + s.length);
-    h.info();
 } catch (e) {
     for (var i in e) {
         print(i + ': ' + e[i]);
