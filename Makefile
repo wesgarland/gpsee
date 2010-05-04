@@ -168,7 +168,7 @@ install_js_components:
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
 $(TARGET_LIBEXEC_JSC):	install_js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
-	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
+	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || [ X = X ]
 
 show_modules:
 	@echo 
