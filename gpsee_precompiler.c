@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
   if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj) == JS_FALSE)
   {
     fprintf(stderr, "Could not compile %s (%s)\n", scriptFilename, errno ? strerror(errno) : "no system error");
-    GPSEE_ASSERT(errmsg);
     exitCode = 1;
   }
   else
