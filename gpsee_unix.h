@@ -71,7 +71,7 @@
 #else
 static inline gpsee_interpreter_t *_jsi(JSContext *cx)
 {
-  return JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  return (gpsee_interpreter_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
 }
 # define gpsee_printf(cx, a...)	        _jsi(cx)->user_io_printf(cx, a)
 # define gpsee_fprintf(cx, f, a...)     _jsi(cx)->user_io_fprintf(cx, f, a)
