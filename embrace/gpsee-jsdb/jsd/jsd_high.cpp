@@ -81,10 +81,33 @@ _validateUserCallbacks(JSD_UserCallbacks* callbacks)
 {
     return !callbacks ||
            (callbacks->size && callbacks->size <= sizeof(JSD_UserCallbacks));
-}    
+}
+
+void
+jsd_BeginRequest(JSDContext *jsdc)
+{
+    JSD_LOCK();
+    if (!jsdc->dumbLevel++)
+        JS_SetContextThread(jsdc->dumbContext);
+
+    JS_BeginRequest(jsdc->dumbContext);
+    JSD_UNLOCK();
+}
+
+void
+jsd_EndRequest(JSDContext *jsdc)
+{
+    JSD_LOCK();
+    JS_EndRequest(jsdc->dumbContext);
+
+    if (!--jsdc->dumbLevel)
+        JS_ClearContextThread(jsdc->dumbContext);
+    JSD_UNLOCK();
+}
 
 static JSDContext*
-_newJSDContext(JSRuntime*         jsrt, 
+_newJSDContext(JSRuntime*         jsrt,
+               JSContext*         jscx,
                JSD_UserCallbacks* callbacks, 
                void*              user)
 {
@@ -106,6 +129,8 @@ _newJSDContext(JSRuntime*         jsrt,
     JS_INIT_CLIST(&jsdc->links);
 
     jsdc->jsrt = jsrt;
+    jsdc->jscx = jscx;
+    jsdc->oldHooks = NULL;
 
     if( callbacks )
         memcpy(&jsdc->userCallbacks, callbacks, callbacks->size);
@@ -135,7 +160,7 @@ _newJSDContext(JSRuntime*         jsrt,
     if( ! jsdc->dumbContext )
         goto label_newJSDContext_failure;
 
-    JS_BeginRequest(jsdc->dumbContext);
+    jsd_BeginRequest(jsdc);
 
     jsdc->glob = JS_NewObject(jsdc->dumbContext, &global_class, NULL, NULL);
     if( ! jsdc->glob )
@@ -144,7 +169,7 @@ _newJSDContext(JSRuntime*         jsrt,
     if( ! JS_InitStandardClasses(jsdc->dumbContext, jsdc->glob) )
         goto label_newJSDContext_failure;
 
-    JS_EndRequest(jsdc->dumbContext);
+    jsd_EndRequest(jsdc);
 
     jsdc->data = NULL;
     jsdc->inited = JS_TRUE;
@@ -159,7 +184,7 @@ label_newJSDContext_failure:
     if( jsdc ) {
         jsd_DestroyObjectManager(jsdc);
         jsd_DestroyAtomTable(jsdc);
-        JS_EndRequest(jsdc->dumbContext);
+        jsd_EndRequest(jsdc);
         free(jsdc);
     }
     return NULL;
@@ -185,6 +210,7 @@ _destroyJSDContext(JSDContext* jsdc)
     *
     * XXX we also leak the locks
     */
+    JS_SetContextThread(jsdc->dumbContext);
     JS_DestroyContext(jsdc->dumbContext);
     jsdc->dumbContext = NULL;
 }
@@ -192,30 +218,79 @@ _destroyJSDContext(JSDContext* jsdc)
 /***************************************************************************/
 
 JSDContext*
+jsd_DebuggerOnForContext(JSContext*         jscx, 
+                         JSD_UserCallbacks* callbacks, 
+                         void*              user)
+{
+    JSDContext* jsdc;
+    JSRuntime* jsrt = JS_GetRuntime(jscx);
+    JSDebugHooks* hooks = (JSDebugHooks*)malloc(sizeof (JSDebugHooks));
+    if (!hooks)
+        return NULL;
+    
+    jsdc = _newJSDContext(jsrt, jscx, callbacks, user);
+    if (!jsdc) {
+        free(hooks);
+        return NULL;
+    }
+
+    JSDebugHooks hookTemplate = {
+        jsd_DebuggerHandler, 
+        jsdc,
+        jsd_NewScriptHookProc,
+        jsdc,
+        jsd_DestroyScriptHookProc, 
+        jsdc,
+        jsd_DebuggerHandler, 
+        jsdc,
+        NULL,
+        jsdc,
+        jsd_TopLevelCallHook,
+        jsdc,
+        jsd_FunctionCallHook,
+        jsdc,
+        jsd_ObjectHook,
+        jsdc,
+        jsd_ThrowHandler,
+        jsdc,
+        jsd_DebugErrorHook, 
+        jsdc
+    };
+
+    jsdc->hooks = hooks;
+    /* set hooks here */
+    *hooks = hookTemplate;
+    JSDebugHooks *oldHooks = JS_SetContextDebugHooks(jscx, hooks);
+    JSDebugHooks *globalHooks = JS_GetGlobalDebugHooks(jsrt);
+    if (oldHooks != globalHooks)
+        jsdc->oldHooks = oldHooks;
+
+    if( jsdc->userCallbacks.setContext )
+        jsdc->userCallbacks.setContext(jsdc, jsdc->user);
+    return jsdc;
+}
+
+JSDContext*
 jsd_DebuggerOnForUser(JSRuntime*         jsrt, 
                       JSD_UserCallbacks* callbacks, 
                       void*              user)
 {
     JSDContext* jsdc;
-    JSContext* iter = NULL;
 
-    jsdc = _newJSDContext(jsrt, callbacks, user);
+    jsdc = _newJSDContext(jsrt, NULL, callbacks, user);
     if( ! jsdc )
         return NULL;
 
-    /*
-     * Set hooks here.  The new/destroy script hooks are on even when
-     * the debugger is paused.  The destroy hook so we'll clean up
-     * internal data structures when scripts are destroyed, and the
-     * newscript hook for backwards compatibility for now.  We'd like
-     * to stop doing that.
-     */
+    jsdc->hooks = NULL;
+    /* set hooks here */
     JS_SetNewScriptHookProc(jsdc->jsrt, jsd_NewScriptHookProc, jsdc);
     JS_SetDestroyScriptHookProc(jsdc->jsrt, jsd_DestroyScriptHookProc, jsdc);
-    jsd_DebuggerUnpause(jsdc);
-    if (!(jsdc->flags & JSD_DISABLE_OBJECT_TRACE)) {
-        JS_SetObjectHook(jsdc->jsrt, jsd_ObjectHook, jsdc);
-    }
+    JS_SetDebuggerHandler(jsdc->jsrt, jsd_DebuggerHandler, jsdc);
+    JS_SetExecuteHook(jsdc->jsrt, jsd_TopLevelCallHook, jsdc);
+    JS_SetCallHook(jsdc->jsrt, jsd_FunctionCallHook, jsdc);
+    JS_SetObjectHook(jsdc->jsrt, jsd_ObjectHook, jsdc);
+    JS_SetThrowHook(jsdc->jsrt, jsd_ThrowHandler, jsdc);
+    JS_SetDebugErrorHook(jsdc->jsrt, jsd_DebugErrorHook, jsdc);
 #ifdef LIVEWIRE
     LWDBG_SetNewScriptHookProc(jsd_NewScriptHookProc, jsdc);
 #endif
@@ -235,16 +310,26 @@ jsd_DebuggerOn(void)
 void
 jsd_DebuggerOff(JSDContext* jsdc)
 {
-    jsd_DebuggerPause(jsdc, JS_TRUE);
     /* clear hooks here */
-    JS_SetNewScriptHookProc(jsdc->jsrt, NULL, NULL);
-    JS_SetDestroyScriptHookProc(jsdc->jsrt, NULL, NULL);
-    /* Have to unset these too, since jsd_DebuggerPause only unsets
-       them conditionally */
-    JS_SetObjectHook(jsdc->jsrt, NULL, NULL);
+    if (jsdc->jscx) {
+        JS_SetContextDebugHooks(jsdc->jscx,
+                                jsdc->oldHooks
+                                ? jsdc->oldHooks
+                                : JS_GetGlobalDebugHooks(jsdc->jsrt));
+        free(jsdc->hooks);
+    } else {
+        JS_SetNewScriptHookProc(jsdc->jsrt, NULL, NULL);
+        JS_SetDestroyScriptHookProc(jsdc->jsrt, NULL, NULL);
+        JS_SetDebuggerHandler(jsdc->jsrt, NULL, NULL);
+        JS_SetExecuteHook(jsdc->jsrt, NULL, NULL);
+        JS_SetCallHook(jsdc->jsrt, NULL, NULL);
+        JS_SetObjectHook(jsdc->jsrt, NULL, NULL);
+        JS_SetThrowHook(jsdc->jsrt, NULL, NULL);
+        JS_SetDebugErrorHook(jsdc->jsrt, NULL, NULL);
 #ifdef LIVEWIRE
-    LWDBG_SetNewScriptHookProc(NULL,NULL);
+        LWDBG_SetNewScriptHookProc(NULL,NULL);
 #endif
+    }
 
     /* clean up */
     JSD_LockScriptSubsystem(jsdc);
@@ -252,34 +337,16 @@ jsd_DebuggerOff(JSDContext* jsdc)
     JSD_UnlockScriptSubsystem(jsdc);
     jsd_DestroyAllSources(jsdc);
     
+    JSD_SetContextProc setContext = NULL;
+    void* user;
+    if (jsdc->userCallbacks.setContext) {
+        setContext = jsdc->userCallbacks.setContext;
+        user = jsdc->user;
+    }
     _destroyJSDContext(jsdc);
 
-    if( jsdc->userCallbacks.setContext )
-        jsdc->userCallbacks.setContext(NULL, jsdc->user);
-}
-
-void
-jsd_DebuggerPause(JSDContext* jsdc, JSBool forceAllHooksOff)
-{
-    JS_SetDebuggerHandler(jsdc->jsrt, NULL, NULL);
-    if (forceAllHooksOff ||
-        (!(jsdc->flags & JSD_COLLECT_PROFILE_DATA) &&
-         (jsdc->flags & JSD_DISABLE_OBJECT_TRACE))) {
-        JS_SetExecuteHook(jsdc->jsrt, NULL, NULL);
-        JS_SetCallHook(jsdc->jsrt, NULL, NULL);
-    }
-    JS_SetThrowHook(jsdc->jsrt, NULL, NULL);
-    JS_SetDebugErrorHook(jsdc->jsrt, NULL, NULL);
-}
-
-void
-jsd_DebuggerUnpause(JSDContext* jsdc)
-{
-    JS_SetDebuggerHandler(jsdc->jsrt, jsd_DebuggerHandler, jsdc);
-    JS_SetExecuteHook(jsdc->jsrt, jsd_TopLevelCallHook, jsdc);
-    JS_SetCallHook(jsdc->jsrt, jsd_FunctionCallHook, jsdc);
-    JS_SetThrowHook(jsdc->jsrt, jsd_ThrowHandler, jsdc);
-    JS_SetDebugErrorHook(jsdc->jsrt, jsd_DebugErrorHook, jsdc);
+    if (setContext)
+        setContext(NULL, user);
 }
 
 void
@@ -303,7 +370,7 @@ jsd_SetContextPrivate(JSDContext* jsdc, void *data)
 {
     void *rval = jsdc->data;
     jsdc->data = data;
-    return data;
+    return rval;
 }
 
 void*
@@ -350,7 +417,7 @@ jsd_JSDContextForJSContext(JSContext* context)
     return jsdc;
 }    
 
-static JSBool
+JSBool
 jsd_DebugErrorHook(JSContext *cx, const char *message,
                    JSErrorReport *report, void *closure)
 {

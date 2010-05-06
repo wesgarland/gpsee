@@ -470,7 +470,7 @@ jsd_AppendUCSourceText(JSDContext* jsdc,
     JSD_LOCK_SOURCE_TEXT(jsdc);
     if(!buf)
     {
-        buf = malloc(UNICODE_TRUNCATE_BUF_SIZE);
+        buf = (char*)malloc(UNICODE_TRUNCATE_BUF_SIZE);
         if(!buf)
         {
             JSD_UNLOCK_SOURCE_TEXT(jsdc);
