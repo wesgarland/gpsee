@@ -715,9 +715,9 @@ _isActiveHook(JSDContext* jsdc, JSScript *script, JSDExecHook* jsdhook)
 
 JSTrapStatus
 jsd_TrapHandler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval,
-                jsval closure)
+                void *closure)
 {
-    JSDExecHook* jsdhook = (JSDExecHook*) JSVAL_TO_PRIVATE(closure);
+    JSDExecHook* jsdhook = (JSDExecHook*) JSVAL_TO_PRIVATE(((jsval)closure));
     JSD_ExecutionHookProc hook;
     void* hookData;
     JSDContext*  jsdc;
@@ -799,8 +799,8 @@ jsd_SetExecutionHook(JSDContext*           jsdc,
     jsdhook->callerdata = callerdata;
 
     if( ! JS_SetTrap(jsdc->dumbContext, jsdscript->script, 
-                     (jsbytecode*)pc, jsd_TrapHandler,
-                     PRIVATE_TO_JSVAL(jsdhook)) )
+                     (jsbytecode*)pc, jsd_TrapHandler, 
+                     (void*) PRIVATE_TO_JSVAL(jsdhook)) )
     {
         free(jsdhook);
         JSD_UNLOCK();
