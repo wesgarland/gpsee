@@ -262,7 +262,7 @@ jsd_DebuggerOnForContext(JSContext*         jscx,
     /* set hooks here */
     *hooks = hookTemplate;
     JSDebugHooks *oldHooks = JS_SetContextDebugHooks(jscx, hooks);
-    JSDebugHooks *globalHooks = JS_GetGlobalDebugHooks(jsrt);
+    const JSDebugHooks *globalHooks = JS_GetGlobalDebugHooks(jsrt);
     if (oldHooks != globalHooks)
         jsdc->oldHooks = oldHooks;
 
