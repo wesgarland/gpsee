@@ -155,6 +155,10 @@ function execHook(type)
 
 function JSDScript(handle, url, funname, base, extent)
 {
+    if(!handle) {
+print("JSDScript: null handle?");
+        return null;
+    }
     this.handle = handle;
     this.url = url;
     this.funname = funname;
@@ -209,9 +213,20 @@ function ScriptAboutToBeDeletedHook(script) {}
 
 function JSDFrame(handle)
 {
+    if(!handle) {
+print("JSDFrame: null handle?");
+        return null;
+    }
     this.handle = handle;
+    this.pc = null; this.lineno = -1;
     this.script = JSDScript.find(jsd.GetScriptForStackFrame(handle));
+    /* oom */
+    if (!this.script)
+        return;
     this.pc = jsd.GetPCForStackFrame(handle);
+    /* oom */
+    if (!this.pc)
+        return;
     this.lineno = jsd.GetClosestLine(this.script.handle, this.pc);
 }
 
@@ -221,12 +236,21 @@ function buildStack()
     stack = new Array(count);
 
     var v = jsd.GetStackFrame();
+    if (!v)
+        print("no stack frame?!");
     var vv = new JSDFrame(v);
     stack[0] = vv;
 
 //    stack[0] = new JSDFrame(jsd.GetStackFrame());
-    for(var i = 0; i < count-1; i++)
-        stack[i+1] = new JSDFrame(jsd.GetCallingStackFrame(stack[i].handle));
+    for(var i = 0; i < count-1; i++) {
+        var callingFrame = jsd.GetCallingStackFrame(stack[i].handle);
+        /* oom */
+        if (!callingFrame)
+            break;
+        stack[i+1] = new JSDFrame(callingFrame);
+        if (i > 10)
+            break;
+    }
 }
 
 function where()
@@ -234,10 +258,20 @@ function where()
     if(! stack)
         print("no stack!");
 
+    var missingFrames = 0;
     for(var i = 0; i < stack.length; i++) {
+        if (!stack[i]) {
+            if (i != currentFrame) {
+                ++missingFrames;
+                continue;
+            }
+            print(" > [frame for "+i+" is not available]");
+        }
         print((i == currentFrame ? " >":"  ")+
-               "line "+lpad(""+stack[i].lineno, 2)+" of "+stack[i].script);
+                "line "+lpad(""+stack[i].lineno, 2)+" of "+stack[i].script);
     }
+    if (missingFrames)
+        print("missing "+missingFrames+" frames...");
     return "";
 }
 
@@ -465,7 +499,7 @@ function _revalToValue(args)
     for(var i = 0; i < args.length; i++)
         a[i+1] = args[i];
 
-    return new JSDValue(jsd.EvaluateScriptInStackFrameToValue.apply(this,a));
+    return JSDValue(jsd.EvaluateScriptInStackFrameToValue.apply(this,a));
 }
 
 function why()
@@ -487,7 +521,7 @@ function why()
             print("hit debugger keyword hook");
             break;
         case jsd.JSD_HOOK_THROW:
-            e = new JSDValue(jsd.GetException());
+            e = JSDValue(jsd.GetException());
             if(e)
                s = " => " + e.GetValueString();
             else
@@ -535,7 +569,9 @@ function list()
         filename = arguments[0];
     }
     else {
-        filename = stack[currentFrame].script.url;
+        filename = stack[currentFrame].script
+         ? stack[currentFrame].script.url
+         : '<unknown>';
         usingStack = true;
         baseArg = -1;
     }
@@ -764,7 +800,7 @@ function print()
 }
 
 var evalLoopLineno = 1;
-var evalLoopPrompt = "jsdb"+jsd.DebuggerDepth+">";
+var evalLoopPrompt = "jsdb"+jsd.DebuggerDepth+"> ";
 var evalLoopFilename = "jsdb_evalLoop"+jsd.DebuggerDepth;
 
 function doEvalLoop()
@@ -850,9 +886,9 @@ function JSDValueProto()
     this.GetValueString        = function() {return jsd.GetValueString(this.handle);}
     this.GetValueFunctionName  = function() {return jsd.GetValueFunctionName(this.handle);}
     this.GetCountOfProperties  = function() {return jsd.GetCountOfProperties(this.handle);}
-    this.GetValuePrototype     = function() {return new JSDValue(jsd.GetValuePrototype(this.handle));}
-    this.GetValueParent        = function() {return new JSDValue(jsd.GetValueParent(this.handle));}
-    this.GetValueConstructor   = function() {return new JSDValue(jsd.GetValueConstructor(this.handle));}
+    this.GetValuePrototype     = function() {return JSDValue(jsd.GetValuePrototype(this.handle));}
+    this.GetValueParent        = function() {return JSDValue(jsd.GetValueParent(this.handle));}
+    this.GetValueConstructor   = function() {return JSDValue(jsd.GetValueConstructor(this.handle));}
     this.GetValueClassName     = function() {return jsd.GetValueClassName(this.handle);}
     this.GetValueProperty      = function(name) {return new JSDProperty(jsd.GetValueProperty(this.handle, name));}
 
@@ -900,6 +936,8 @@ function JSDValue(handle)
 {
     if(!handle)
         return null;
+    if(!(this instanceof JSDValue))
+        return new JSDValue(handle);
     this.handle = handle;
 }
 JSDValue.prototype = new JSDValueProto;
@@ -916,9 +954,9 @@ function JSDPropertyProto()
     this.JSDPD_VARIABLE  = jsd.JSDPD_VARIABLE ;
     this.JSDPD_HINTED    = jsd.JSDPD_HINTED   ;
 
-    this.GetPropertyName       = function() {return new JSDValue(jsd.GetPropertyName(this.handle));}
-    this.GetPropertyValue      = function() {return new JSDValue(jsd.GetPropertyValue(this.handle));}
-    this.GetPropertyAlias      = function() {return new JSDValue(jsd.GetPropertyAlias(this.handle));}
+    this.GetPropertyName       = function() {return JSDValue(jsd.GetPropertyName(this.handle));}
+    this.GetPropertyValue      = function() {return JSDValue(jsd.GetPropertyValue(this.handle));}
+    this.GetPropertyAlias      = function() {return JSDValue(jsd.GetPropertyAlias(this.handle));}
     this.GetPropertyFlags      = function() {return jsd.GetPropertyFlags(this.handle);}
     this.GetPropertyVarArgSlot = function() {return jsd.GetPropertyVarArgSlot(this.handle);}
 
@@ -980,7 +1018,7 @@ function _localsOrArgs(loc)
 
     if(callObjHandle)
     {
-        var callObj = new JSDValue(callObjHandle);
+        var callObj = JSDValue(callObjHandle);
         if(callObj)
         {
             var props = callObj.GetProperties();
