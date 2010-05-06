@@ -33,6 +33,10 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
+#ifdef JSDEBUGGER
+#define JSDEBUGGER_C_UI
+#endif
+
 #include <gpsee.h>
 #undef offsetOf
 
@@ -68,6 +72,43 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 # warning Building without worker thread support
 #endif
 
+#ifdef JSDEBUGGER
+/*
+ * This facilitates sending source to JSD (the debugger system) in the shell
+ * where the source is loaded using the JSFILE hack in jsscan. The function
+ * below is used as a callback for the jsdbgapi JS_SetSourceHandler hook.
+ * A more normal embedding (e.g. mozilla) loads source itself and can send
+ * source directly to JSD without using this hook scheme.
+ */
+static void
+SendSourceToJSDebugger(const char *filename, uintN lineno,
+                       jschar *str, size_t length,
+                       void **listenerTSData, void *closure)
+{
+    JSDSourceText *jsdsrc = (JSDSourceText *) *listenerTSData;
+    JSDContext *jsdc  = (JSDContext *)closure;
+
+    if (!jsdsrc) {
+        if (!filename)
+            filename = "typein";
+        if (1 == lineno) {
+            jsdsrc = JSD_NewSourceText(jsdc, filename);
+        } else {
+            jsdsrc = JSD_FindSourceForURL(jsdc, filename);
+            if (jsdsrc && JSD_SOURCE_PARTIAL !=
+                JSD_GetSourceStatus(jsdc, jsdsrc)) {
+                jsdsrc = NULL;
+            }
+        }
+    }
+    if (jsdsrc) {
+        jsdsrc = JSD_AppendUCSourceText(jsdc,jsdsrc, str, length,
+                                        JSD_SOURCE_PARTIAL);
+    }
+    *listenerTSData = jsdsrc;
+}
+#endif
+
 int
 main(int argc, char **argv, char **envp)
 {
@@ -77,6 +118,10 @@ main(int argc, char **argv, char **envp)
     JSObject *glob, *it, *envobj;
     int result;
     gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, envp);
+#ifdef JSDEBUGGER
+    JSDContext *jsdc;
+    JSBool      jsdbc;
+#endif
 
     global_class = *gpsee_getGlobalClass();
     CheckHelpMessages();
@@ -155,6 +200,15 @@ main(int argc, char **argv, char **envp)
     if (!envobj || !JS_SetPrivate(cx, envobj, envp))
         return 1;
 
+#ifdef JSDEBUGGER
+    jsdc = JSD_DebuggerOnForUser(rt, NULL, NULL);
+    if (!jsdc)
+        return 1;
+    JSD_JSContextInUse(jsdc, cx);
+    JS_SetSourceHandler(rt, SendSourceToJSDebugger, jsdc);
+    jsdbc = JSDB_InitDebugger(rt, jsdc, 0);
+#endif
+
 #ifdef WORKERS
     class ShellWorkerHooks : public js::workers::WorkerHooks {
     public:
@@ -176,9 +230,15 @@ main(int argc, char **argv, char **envp)
         result = gExitCode;
 #endif
 
-    JS_EndRequest(cx);
+#ifdef JSDEBUGGER
+    if (jsdc) {
+        if (jsdbc)
+            JSDB_TermDebugger(jsdc);
+        JSD_DebuggerOff(jsdc);
+    }
+#endif
 
-    // JS_CommenceRuntimeShutDown(rt);
+    JS_EndRequest(cx);
 
 #ifdef jsworkers_h___
     JS_CommenceRuntimeShutDown(rt);
