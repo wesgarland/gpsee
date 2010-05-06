@@ -48,14 +48,18 @@
 #include <string.h>
 #include "jstypes.h"
 #include "jsutil.h" /* Added by JSIFY */
+#include "jsclist.h"
 #include "jsprf.h"
 #include "jsdbgapi.h"
 #include "jsdb.h"
+#include "prthread.h"
 
 /***************************************************************************/
 
 typedef struct JSDB_Data
 {
+    JSCList         links;
+    PRThread*       thread;
     JSDContext*     jsdcTarget;
     JSDContext*     jsdcDebugger;
     JSRuntime*      rtTarget;
@@ -68,7 +72,8 @@ typedef struct JSDB_Data
     jsval           jsErrorReporterHook;
     JSDThreadState* jsdthreadstate;
     int             debuggerDepth;
-
+    int             requestDepth;
+    int             nestLevel;
 } JSDB_Data;
 
 extern JSBool
@@ -125,7 +130,7 @@ jsdb_HandleValToPointer(JSContext *cx, jsval val, JSDBHandleType type);
 extern JSBool
 jsdb_SetThreadState(JSDB_Data* data, JSDThreadState* jsdthreadstate);
 
-extern uintN JS_DLL_CALLBACK
+extern uintN
 jsdb_ExecHookHandler(JSDContext*     jsdc,
                      JSDThreadState* jsdthreadstate,
                      uintN           type,

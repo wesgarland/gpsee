@@ -143,22 +143,36 @@ typedef struct JSDBHandle
 
 static const char _str_HandleNameString[]   = "handle_name";
 
-JS_STATIC_DLL_CALLBACK(void)
+extern JSDB_Data*
+jsdb_getData(JSDB_Data* data, JSBool primary);
+
+static void
+handle_finalize(JSContext *cx, JSObject *obj);
+
+JSClass jsdb_HandleClass = {
+    "JSDHandle",
+    JSCLASS_HAS_PRIVATE,
+    JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   handle_finalize,
+    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+static void
 handle_finalize(JSContext *cx, JSObject *obj)
 {
-    JSDBHandle* p;
-    JSObject* pobj;
-    JSDB_Data* data;
-    pobj = JS_GetParent(cx, obj);
-    if (!pobj)
+    JSDBHandle* p = (JSDBHandle*) JS_GetInstancePrivate(cx, obj, &jsdb_HandleClass, NULL);
+    if(!p)
         return;
-    data = (JSDB_Data*) JS_GetPrivate(cx, pobj);
-    if (!data)
-        return;
-
-    p = (JSDBHandle*) JS_GetPrivate(cx, obj);
-    if(p)
     {
+        JSObject* pobj;
+        JSDB_Data* data;
+        pobj = JS_GetParent(cx, obj);
+        if (!pobj)
+            return;
+        data = (JSDB_Data*) JS_GetPrivate(cx, pobj);
+        if (!data)
+            return;
+
         switch(p->type)
         {
           case JSDB_VALUE:
@@ -174,15 +188,7 @@ handle_finalize(JSContext *cx, JSObject *obj)
     }
 }
 
-JSClass jsdb_HandleClass = {
-    "JSDHandle",
-    JSCLASS_HAS_PRIVATE,
-    JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,
-    JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   handle_finalize,
-    JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 handle_toString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     if(!JS_InstanceOf(cx, obj, &jsdb_HandleClass, argv) ||
@@ -207,8 +213,7 @@ jsdb_HandleValToPointer(JSContext *cx, jsval val, JSDBHandleType type)
 
     if(!JSVAL_IS_OBJECT(val) ||
        !(obj = JSVAL_TO_OBJECT(val)) ||
-       !JS_InstanceOf(cx, obj, &jsdb_HandleClass, NULL) ||
-       !(p = (JSDBHandle*) JS_GetPrivate(cx, obj)))
+       !(p = (JSDBHandle*) JS_GetInstancePrivate(cx, obj, &jsdb_HandleClass, NULL)))
     {
 /*         JS_ASSERT(0); */
         return NULL;
@@ -232,9 +237,13 @@ jsdb_PointerToNewHandleVal(JSContext *cx, void* ptr, JSDBHandleType type)
     if(!ptr)
         return JSVAL_NULL;
 
+    if(!(obj = JS_NewObject(cx, &jsdb_HandleClass, NULL, NULL)))
+    {
+        return JSVAL_NULL;
+    }
+
     if(!(p = (JSDBHandle*)malloc(sizeof(JSDBHandle))))
     {
-        JS_ASSERT(0);
         return JSVAL_NULL;
     }
     JS_ASSERT(!(((int)p) & 1));    /* must be 2-byte-aligned */
@@ -242,10 +251,10 @@ jsdb_PointerToNewHandleVal(JSContext *cx, void* ptr, JSDBHandleType type)
     p->ptr = ptr;
     p->type = type;
 
-    if(!(obj = JS_NewObject(cx, &jsdb_HandleClass, NULL, NULL)) ||
-       !JS_SetPrivate(cx, obj, p))
+    if (!JS_SetPrivate(cx, obj, p))
     {
         JS_ASSERT(0);
+        free(p);
         return JSVAL_NULL;
     }
 
@@ -345,14 +354,14 @@ jsdb_EvalReturnExpression(JSDB_Data* data, jsval* rval)
 /***************************************************************************/
 /* High Level calls */
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetMajorVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     *rval = INT_TO_JSVAL(JSD_GetMajorVersion());
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetMinorVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     *rval = INT_TO_JSVAL(JSD_GetMinorVersion());
@@ -362,27 +371,36 @@ GetMinorVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 /***************************************************************************/
 /* Script functions */
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+#define GET_JSDB_DATA_AND_ASSERT(data, cx)                   \
+    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx); \
+    JS_ASSERT(data);                                         \
+    data = jsdb_getData((JSDB_Data*) data, JS_FALSE);        \
+    if (!data) {                                             \
+        JS_ReportError(cx, "failed to allocate pair");       \
+        return JS_FALSE;                                     \
+    }
+
+static JSBool
 LockScriptSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_LockScriptSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 UnlockScriptSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_UnlockScriptSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IterateScripts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *iterp = NULL;
@@ -390,8 +408,7 @@ IterateScripts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSFunction *fun;
     jsval argv0;
     int count = 0;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(fun = JS_ValueToFunction(cx, argv[0])))
     {
@@ -421,14 +438,12 @@ IterateScripts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsActiveScript(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -444,14 +459,12 @@ IsActiveScript(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptFilename(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -474,14 +487,12 @@ GetScriptFilename(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptFunctionName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -503,14 +514,12 @@ GetScriptFunctionName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptBaseLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -531,14 +540,12 @@ GetScriptBaseLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptLineExtent(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -559,12 +566,11 @@ GetScriptLineExtent(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SetScriptHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsval oldHook;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 ||
        !(JSVAL_IS_NULL(argv[0]) ||
@@ -581,25 +587,22 @@ SetScriptHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     *rval = data->jsScriptHook;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetClosestPC(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     int32 line;
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 2 || !(jsdscript = H2P_SCRIPT(cx, argv[0])) ||
        ! JS_ValueToInt32(cx, argv[1], &line))
@@ -622,14 +625,12 @@ GetClosestPC(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetClosestLine(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 2 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -651,12 +652,11 @@ GetClosestLine(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SetExecutionHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsval oldHook;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 ||
        !(JSVAL_IS_NULL(argv[0]) ||
@@ -673,24 +673,21 @@ SetExecutionHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetExecutionHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     *rval = data->jsExecutionHook;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SendInterrupt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsval val = JSVAL_TRUE;
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
-
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     success = JSD_SetInterruptHook(data->jsdcTarget, jsdb_ExecHookHandler, data);
     if(success)
@@ -699,13 +696,12 @@ SendInterrupt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return success;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 ClearInterrupt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsval val = JSVAL_FALSE;
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     success = JSD_ClearInterruptHook(data->jsdcTarget);
     if(success)
@@ -714,34 +710,37 @@ ClearInterrupt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return success;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetCountOfStackFrames(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     *rval = INT_TO_JSVAL(JSD_GetCountOfStackFrames(data->jsdcTarget,
                                                    data->jsdthreadstate));
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    JSDThreadState* jsdthreadstate;
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+    jsdthreadstate = data->jsdthreadstate;
+    /* XXX jsd is broken it uses a jsdc from the wrong thread.
+     *     for this purpose we do not use the standard magic.
+     */
+    data = jsdb_getData((JSDB_Data*) data, JS_TRUE);
 
     *rval = P2H_STACKFRAMEINFO(cx, JSD_GetStackFrame(data->jsdcTarget,
-                                                     data->jsdthreadstate));
+                                                     jsdthreadstate));
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetCallingStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -755,12 +754,11 @@ GetCallingStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScriptForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -774,12 +772,11 @@ GetScriptForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPCForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -793,7 +790,7 @@ GetPCForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 EvaluateScriptInStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     static char default_filename[] = "jsdb_show";
@@ -804,8 +801,7 @@ EvaluateScriptInStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
     char* filename;
     int32 lineno;
     JSBool retVal = JS_FALSE;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -872,7 +868,7 @@ EvaluateScriptInStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
 }
 
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 EvaluateScriptInStackFrameToValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     static char default_filename[] = "jsdb_show";
@@ -882,8 +878,7 @@ EvaluateScriptInStackFrameToValue(JSContext *cx, JSObject *obj, uintN argc, jsva
     char* filename;
     int32 lineno;
     JSBool retVal = JS_FALSE;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -939,16 +934,14 @@ EvaluateScriptInStackFrameToValue(JSContext *cx, JSObject *obj, uintN argc, jsva
     return retVal;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SetTrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
     jsuword pc;
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -977,16 +970,14 @@ SetTrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 ClearTrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
     jsuword pc;
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -1014,15 +1005,13 @@ ClearTrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 ClearAllTrapsForScript(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDScript *jsdscript;
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JSBool active;
-
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdscript = H2P_SCRIPT(cx, argv[0])))
     {
@@ -1044,24 +1033,22 @@ ClearAllTrapsForScript(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 ClearAllTraps(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSBool success;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     success = JSD_ClearAllExecutionHooks(data->jsdcTarget);
     *rval = success ? JSVAL_TRUE : JSVAL_FALSE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SetErrorReporterHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsval oldHook;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 ||
        !(JSVAL_IS_NULL(argv[0]) ||
@@ -1078,23 +1065,21 @@ SetErrorReporterHook(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetException(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     *rval = P2H_VALUE(cx, JSD_GetException(data->jsdcTarget,
                                            data->jsdthreadstate));
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SetException(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1108,11 +1093,10 @@ SetException(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 ClearException(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     *rval = BOOLEAN_TO_JSVAL(JSD_SetException(data->jsdcTarget,
                                               data->jsdthreadstate,
@@ -1123,27 +1107,27 @@ ClearException(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 /***************************************************************************/
 /* Source Text functions */
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 LockSourceTextSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_LockSourceTextSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 UnlockSourceTextSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_UnlockSourceTextSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IterateSources(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDSourceText *iterp = NULL;
@@ -1151,8 +1135,7 @@ IterateSources(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSFunction *fun;
     jsval argv0;
     int count = 0;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(fun = JS_ValueToFunction(cx, argv[0])))
     {
@@ -1181,12 +1164,11 @@ IterateSources(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 FindSourceForURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSString* jsstr;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsstr = JS_ValueToString(cx, argv[0])))
     {
@@ -1198,12 +1180,11 @@ FindSourceForURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetSourceURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDSourceText* jsdsrc;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdsrc = H2P_SOURCETEXT(cx, argv[0])))
     {
@@ -1216,15 +1197,14 @@ GetSourceURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetSourceText(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDSourceText* jsdsrc;
     const char* ptr;
     int len;
 
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdsrc = H2P_SOURCETEXT(cx, argv[0])))
     {
@@ -1239,13 +1219,11 @@ GetSourceText(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetSourceStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDSourceText* jsdsrc;
-
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdsrc = H2P_SOURCETEXT(cx, argv[0])))
     {
@@ -1257,13 +1235,11 @@ GetSourceStatus(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetSourceAlterCount(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDSourceText* jsdsrc;
-
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdsrc = H2P_SOURCETEXT(cx, argv[0])))
     {
@@ -1277,12 +1253,11 @@ GetSourceAlterCount(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 /***************************************************************************/
 /* Value and Property functions */
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetCallObjectForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -1296,12 +1271,11 @@ GetCallObjectForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetScopeChainForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -1315,12 +1289,11 @@ GetScopeChainForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetThisForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDStackFrameInfo* jsdframe;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdframe = H2P_STACKFRAMEINFO(cx, argv[0])))
     {
@@ -1334,12 +1307,11 @@ GetThisForStackFrame(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 RefreshValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1351,12 +1323,11 @@ RefreshValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1368,12 +1339,11 @@ IsValueObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1385,12 +1355,11 @@ IsValueNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueInt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1402,12 +1371,11 @@ IsValueInt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueDouble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1419,12 +1387,11 @@ IsValueDouble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1436,12 +1403,11 @@ IsValueString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueBoolean(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1453,12 +1419,11 @@ IsValueBoolean(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueNull(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1470,12 +1435,11 @@ IsValueNull(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueVoid(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1487,12 +1451,11 @@ IsValueVoid(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValuePrimitive(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1504,12 +1467,11 @@ IsValuePrimitive(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1521,12 +1483,11 @@ IsValueFunction(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IsValueNative(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1539,12 +1500,11 @@ IsValueNative(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueBoolean(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1556,12 +1516,11 @@ GetValueBoolean(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueInt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1573,12 +1532,11 @@ GetValueInt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueDouble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1590,12 +1548,12 @@ GetValueDouble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+    data = jsdb_getData((JSDB_Data*) data, JS_TRUE);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1607,12 +1565,11 @@ GetValueString(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueFunctionName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1620,16 +1577,29 @@ GetValueFunctionName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
         return JS_FALSE;
     }
 
-    *rval = STRING_TO_JSVAL(JSD_GetValueFunctionName(data->jsdcTarget, jsdval));
+    /* XXX we're cheating */
+    if (!JSD_IsValueFunction(data->jsdcTarget, jsdval)) {
+        *rval = JSVAL_VOID;
+        return JS_TRUE;
+    }
+    jsval wrapped = JSD_GetValueWrappedJSVal(data->jsdcTarget, jsdval);
+    JSFunction* fun;
+    JSExceptionState* exceptionState;
+        JS_BeginRequest(cx);
+        exceptionState = JS_SaveExceptionState(cx);
+        fun = JS_ValueToFunction(cx, wrapped);
+        JS_RestoreExceptionState(cx, exceptionState);
+        JS_EndRequest(cx);
+
+    *rval = STRING_TO_JSVAL(JS_GetFunctionId(fun));
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetCountOfProperties(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1641,7 +1611,7 @@ GetCountOfProperties(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IterateProperties(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* iterp = NULL;
@@ -1650,8 +1620,7 @@ IterateProperties(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     JSFunction *fun;
     jsval argv1;
     int count = 0;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1686,13 +1655,12 @@ IterateProperties(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueProperty(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
     JSString* name;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1710,12 +1678,11 @@ GetValueProperty(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValuePrototype(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1727,12 +1694,11 @@ GetValuePrototype(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueParent(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1744,12 +1710,11 @@ GetValueParent(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueConstructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1761,14 +1726,13 @@ GetValueConstructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueClassName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
     const char* name;
     JSString* nameStr;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -1784,12 +1748,11 @@ GetValueClassName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPropertyName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* jsdprop;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdprop = H2P_PROPERTY(cx, argv[0])))
     {
@@ -1801,12 +1764,11 @@ GetPropertyName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPropertyValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* jsdprop;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdprop = H2P_PROPERTY(cx, argv[0])))
     {
@@ -1818,12 +1780,11 @@ GetPropertyValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPropertyAlias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* jsdprop;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdprop = H2P_PROPERTY(cx, argv[0])))
     {
@@ -1835,12 +1796,11 @@ GetPropertyAlias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPropertyFlags(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* jsdprop;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdprop = H2P_PROPERTY(cx, argv[0])))
     {
@@ -1852,12 +1812,11 @@ GetPropertyFlags(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetPropertyVarArgSlot(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDProperty* jsdprop;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdprop = H2P_PROPERTY(cx, argv[0])))
     {
@@ -1871,27 +1830,27 @@ GetPropertyVarArgSlot(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 /***************************************************************************/
 /* Object functions */
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 LockObjectSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_LockObjectSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 UnlockObjectSubsystem(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
+
     JSD_UnlockObjectSubsystem(data->jsdcTarget);
     *rval = JSVAL_TRUE;
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 IterateObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* iterp = NULL;
@@ -1899,8 +1858,7 @@ IterateObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     JSFunction *fun;
     jsval argv0;
     int count = 0;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(fun = JS_ValueToFunction(cx, argv[0])))
     {
@@ -1928,14 +1886,13 @@ IterateObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectNewURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
     const char* str;
     JSString* strStr;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {
@@ -1951,12 +1908,11 @@ GetObjectNewURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectNewLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {
@@ -1968,14 +1924,13 @@ GetObjectNewLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectConstructorURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
     const char* str;
     JSString* strStr;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {
@@ -1991,12 +1946,11 @@ GetObjectConstructorURL(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, j
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectConstructorLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {
@@ -2008,14 +1962,13 @@ GetObjectConstructorLineNumber(JSContext *cx, JSObject *obj, uintN argc, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectConstructorName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
     const char* str;
     JSString* strStr;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {
@@ -2031,12 +1984,11 @@ GetObjectConstructorName(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetObjectForValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDValue* jsdval;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdval = H2P_VALUE(cx, argv[0])))
     {
@@ -2048,12 +2000,11 @@ GetObjectForValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GetValueForObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSDObject* jsdobj;
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
-    JS_ASSERT(data);
+    GET_JSDB_DATA_AND_ASSERT(data, cx);
 
     if(argc < 1 || !(jsdobj = H2P_OBJECT(cx, argv[0])))
     {

@@ -44,13 +44,39 @@
 #include <errno.h>
 
 #ifndef JS_THREADSAFE
-#define JS_BeginRequest(cx) (void)0
-#define JS_EndRequest(cx) (void)0
+#define JS_BeginRequest(cx) void(0)
+#define JS_EndRequest(cx) void(0)
 #endif
+
+JSDB_Data*
+jsdb_getData(JSDB_Data* data, JSBool primary);
+
+JSDB_Data*
+jsdb_BeginRequest(JSDB_Data* data) {
+#ifdef JS_THREADSAFE
+    data = jsdb_getData((JSDB_Data*) data, JS_FALSE);
+    if (!data)
+        return NULL;
+    if (!data->requestDepth++)
+        JS_SetContextThread(data->cxDebugger);
+
+    JS_BeginRequest(data->cxDebugger);
+#endif
+    return data;
+}
+
+void
+jsdb_EndRequest(JSDB_Data* data) {
+#ifdef JS_THREADSAFE
+    JS_EndRequest(data->cxDebugger);
+    if (!--data->requestDepth)
+         JS_ClearContextThread(data->cxDebugger);
+#endif
+}
 
 /***************************************************************************/
 
-JS_STATIC_DLL_CALLBACK(void)
+static void
 _ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
     int i, j, k, n;
@@ -85,16 +111,18 @@ _ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
     fputs("^\n", stderr);
 }
 
-JS_STATIC_DLL_CALLBACK(void)
+static void
 jsdb_ScriptHookProc(JSDContext* jsdc,
                     JSDScript*  jsdscript,
                     JSBool      creating,
                     void*       callerdata)
 {
-    JSDB_Data* data = (JSDB_Data*) callerdata;
+    JSDB_Data* data;
     JSFunction* fun;
 
-    JS_BeginRequest(data->cxDebugger);
+    data = jsdb_BeginRequest((JSDB_Data*) callerdata);
+    if (!data)
+        return;
     if(data->jsScriptHook &&
        NULL != (fun = JS_ValueToFunction(data->cxDebugger, data->jsScriptHook)))
     {
@@ -106,10 +134,10 @@ jsdb_ScriptHookProc(JSDContext* jsdc,
 
         JS_CallFunction(data->cxDebugger, NULL, fun, 2, args, &result);
     }
-    JS_EndRequest(data->cxDebugger);
+    jsdb_EndRequest(data);
 }
 
-uintN JS_DLL_CALLBACK
+uintN
 jsdb_ExecHookHandler(JSDContext*     jsdc,
                      JSDThreadState* jsdthreadstate,
                      uintN           type,
@@ -120,14 +148,17 @@ jsdb_ExecHookHandler(JSDContext*     jsdc,
     jsval result;
     JSFunction* fun;
     int answer;
-    JSDB_Data* data = (JSDB_Data*) callerdata;
-    JS_ASSERT(data);
+    JSDB_Data* data = (JSDB_Data*)callerdata;
+
+    JS_ASSERT(callerdata);
+    data = jsdb_BeginRequest((JSDB_Data*) callerdata);
+    if (!data)
+        return ourRetVal;
 
     /* if we're already stopped, then don't stop */
     if(data->jsdthreadstate)
-        return JSD_HOOK_RETURN_CONTINUE;
+        goto label_bail;
 
-    JS_BeginRequest(data->cxDebugger);
     if(!jsdb_SetThreadState(data, jsdthreadstate))
         goto label_bail;
 
@@ -158,7 +189,7 @@ jsdb_ExecHookHandler(JSDContext*     jsdc,
 
 label_bail:
     jsdb_SetThreadState(data, NULL);
-    JS_EndRequest(data->cxDebugger);
+    jsdb_EndRequest(data);
     return ourRetVal;
 }
 
@@ -172,7 +203,7 @@ typedef enum
     ARG_LIMIT
 } ER_ARGS;
 
-uintN JS_DLL_CALLBACK
+uintN
 jsdb_ErrorReporter(JSDContext*     jsdc,
                    JSContext*      cx,
                    const char*     message,
@@ -183,10 +214,12 @@ jsdb_ErrorReporter(JSDContext*     jsdc,
     jsval result;
     JSFunction* fun;
     int32 answer;
-    JSDB_Data* data = (JSDB_Data*) callerdata;
-    JS_ASSERT(data);
+    JSDB_Data* data;
+    JS_ASSERT(callerdata);
+    data = jsdb_BeginRequest((JSDB_Data*) callerdata);
+    if (!data)
+        return ourRetVal;
 
-    JS_BeginRequest(data->cxDebugger);
     if(data->jsErrorReporterHook &&
        NULL != (fun = JS_ValueToFunction(data->cxDebugger,
                                          data->jsErrorReporterHook)))
@@ -210,16 +243,17 @@ jsdb_ErrorReporter(JSDContext*     jsdc,
                     INT_TO_JSVAL((int)(report->tokenptr - report->linebuf));
 
         if(!JS_CallFunction(data->cxDebugger, NULL, fun, ARG_LIMIT, args, &result))
-            return ourRetVal;
+            goto label_bail;
 
         if(JS_ValueToInt32(data->cxDebugger, result, &answer))
             ourRetVal = (uintN) answer;
     }
-    JS_EndRequest(data->cxDebugger);
+label_bail:
+    jsdb_EndRequest(data);
     return ourRetVal;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 Load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN i;
@@ -256,7 +290,7 @@ Load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return ok;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 Write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSString *str = JS_ValueToString(cx, argv[0]);
@@ -267,7 +301,7 @@ Write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 Gets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     char buf[1024];
@@ -277,7 +311,7 @@ Gets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 GC(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     argc = 0;
@@ -288,20 +322,21 @@ GC(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 Version(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     if (argc > 0 && JSVAL_IS_INT(argv[0]))
-        *rval = INT_TO_JSVAL(JS_SetVersion(cx, JSVAL_TO_INT(argv[0])));
+        *rval = INT_TO_JSVAL(JS_SetVersion(cx, JSVersion(JSVAL_TO_INT(argv[0]))));
     else
         *rval = INT_TO_JSVAL(JS_GetVersion(cx));
     return JS_TRUE;
 }
 
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 SafeEval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+    JSExceptionState *estate = 0;
     static char default_filename[] = "jsdb_eval";
 /*     JSContext *cx2; */
     JSString* textJSString;
@@ -340,16 +375,30 @@ SafeEval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
         }
     }
 
+    if(JS_IsExceptionPending(cx)) {
+        JSString* str;
+        jsval jv;
+        JS_GetPendingException(cx, &jv);
+        str = JS_ValueToString(cx, jv);
+        if (str) {
+            char *bytes = JS_GetStringBytes(str);
+        }
+        JS_ClearPendingException (cx);
+    }
     if(! JS_EvaluateScript(cx, obj,
                            JS_GetStringBytes(textJSString),
                            JS_GetStringLength(textJSString),
                            filename, lineno, rval))
         *rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,""));
-
+    if (JS_IsExceptionPending(cx)) {
+        JS_DropExceptionState(cx, estate);
+    } else {
+        JS_RestoreExceptionState(cx, estate);
+    }
     return JS_TRUE;
 }
 
-JS_STATIC_DLL_CALLBACK(JSBool)
+static JSBool
 NativeBreak(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 #ifdef _WINDOWS
@@ -392,8 +441,9 @@ static JSClass debugger_global_class = {
 static void
 SendSourceToJSDebugger(const char *filename, uintN lineno,
                        jschar *str, size_t length,
-                       void **listenerTSData, JSDContext* jsdc)
+                       void **listenerTSData, void* thing)
 {
+    JSDContext *jsdc = (JSDContext *) thing;
     JSDSourceText *jsdsrc = (JSDSourceText *) *listenerTSData;
 
     if (!jsdsrc) {
@@ -444,14 +494,109 @@ _initReturn_cx(const char* str, JSBool retval, JSDB_Data* data)
     return _initReturn(str, retval);
 }
 
+static JSDB_Data*
+_initReturn_db(const char* str, JSDB_Data* data)
+{
+    _initReturn_cx(str, JS_FALSE, data);
+    return NULL;
+}
+
+JSDB_Data*
+jsdb_newCX(JSRuntime *rt, JSRuntime* rtDebugger, JSDContext* jsdc, JSContext* cx, JSObject* dbgObj, int depth)
+{
+    JSDB_Data* data = (JSDB_Data*) calloc(1, sizeof(JSDB_Data));
+    if(!data)
+        return _initReturn_db("memory alloc error", data);
+
+    data->thread     = PR_GetCurrentThread();
+    data->rtTarget   = rt;
+    data->rtDebugger = rtDebugger;
+    data->jsdcTarget = jsdc;
+    data->debuggerDepth = depth;
+
+    data->cxDebugger = cx;
+
+    JS_SetContextPrivate(cx, data);
+    JS_SetErrorReporter(cx, _ErrorReporter);
+
+    data->globDebugger = dbgObj;
+
+    if(!JS_InitStandardClasses(cx, dbgObj)) {
+        return _initReturn_db("debugger InitStandardClasses error", data);
+    }
+
+    if(!JS_DefineFunctions(cx, dbgObj, debugger_functions)) {
+        return _initReturn_db("debugger DefineFunctions error", data);
+    }
+
+    if(JS_InstanceOf(cx, dbgObj, &debugger_global_class, NULL) &&
+       !JS_SetPrivate(cx, dbgObj, data))
+        return _initReturn_db("debugger global set private failure", data);
+
+    if(!jsdb_ReflectJSD(data))
+        return _initReturn_db("debugger reflection of JSD API error", data);
+
+    return data;
+}
+
+JSDB_Data*
+jsdb_getData(JSDB_Data* data, JSBool primary)
+{
+    JSContext* cx;
+    JSDB_Data* iter = data;
+    PRThread * thr = PR_GetCurrentThread();
+/* XXX this needs to be done under a lock */
+    do {
+        if (primary ? !!iter->jsdcDebugger : thr == iter->thread) {
+            iter->jsExecutionHook = data->jsExecutionHook;
+            iter->jsErrorReporterHook = data->jsErrorReporterHook;
+/* XXX this needs unlock */
+            return iter;
+        }
+        iter = (JSDB_Data*)iter->links.next;
+    } while (iter != data);
+    JS_ASSERT(!primary);
+/* XXX this needs unlock */
+    if (primary)
+        return NULL;
+    cx = JS_NewContext(data->rtDebugger, 8192);
+/* XXX this needs unlock */
+    if (!cx)
+        return NULL;
+    JS_BeginRequest(cx);
+    {
+        JSDContext* local_jsdc;
+        JSObject* obj;
+        obj = JS_NewObject(cx, NULL, NULL, NULL);
+        if ((local_jsdc = JSD_DebuggerOnForContext(cx, NULL, NULL)))
+            JSD_JSContextInUse(local_jsdc, cx);
+        iter = obj && local_jsdc
+             ? jsdb_newCX(data->rtTarget, data->rtDebugger, local_jsdc, cx, obj, data->debuggerDepth)
+             : 0;
+    }
+    if (iter) {
+        iter->globDebugger = data->globDebugger;
+        iter->jsExecutionHook = data->jsExecutionHook;
+        iter->jsErrorReporterHook = data->jsErrorReporterHook;
+        JS_SetGlobalObject(cx, data->globDebugger);
+    }
+    JS_EndRequest(cx);
+    if (!iter)
+        return NULL;
+
+/* XXX this needs to be done under a lock */
+    JS_APPEND_LINK(&iter->links, &data->links);
+/* XXX this needs unlock */
+    return iter;
+}
+
 #define MAX_DEBUGGER_DEPTH 3
 
 void
 jsdb_TermDebugger(JSDB_Data* data, JSBool callDebuggerOff)
 {
-    JSObject* dbgObj;
-    jsval rvalIgnore;
     JSContext* cx;
+    JSDB_Data* next = data;
     if (!data)
         return;
 
@@ -461,6 +606,14 @@ jsdb_TermDebugger(JSDB_Data* data, JSBool callDebuggerOff)
         if (targetData)
             jsdb_TermDebugger(targetData, JS_TRUE);
     }
+    while ((next = (JSDB_Data*)data->links.next) != data) {
+        JS_REMOVE_LINK(&next->links);
+        JS_SetContextThread(next->cxDebugger);
+        JS_DestroyContext(next->cxDebugger);
+        JSD_DebuggerOff(next->jsdcTarget);
+        free(next);
+    }
+    JS_SetContextThread(data->cxDebugger);
     JS_DestroyContext(data->cxDebugger);
     if (callDebuggerOff)
         JSD_DebuggerOff(data->jsdcTarget);
@@ -481,50 +634,43 @@ JSDB_TermDebugger(JSDContext* jsdc)
 JS_EXPORT_API(JSBool)
 JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
 {
+    JSRuntime* rtDebugger;
     JSContext* cx;
     JSObject* dbgObj;
     jsval rvalIgnore;
+    JSDB_Data* data;
     static char load_deb[] = "load('debugger.js')";
 
-    JSDB_Data* data = (JSDB_Data*) calloc(1, sizeof(JSDB_Data));
-    if(!data)
-        return _initReturn("memory alloc error", JS_FALSE);
-
-    data->rtTarget   = rt;
-    data->jsdcTarget = jsdc;
-    data->debuggerDepth = depth+1;
-
-    if(!(data->rtDebugger = JS_NewRuntime(8L * 1024L * 1024L)))
+    rtDebugger = JS_NewRuntime(8L * 1024L * 1024L);
+    if(!rtDebugger)
         return _initReturn("debugger runtime creation error", JS_FALSE);
-    printf("NewRuntime: %p\n", data->rtDebugger);
-    if(!(data->cxDebugger = cx = JS_NewContext(data->rtDebugger, 8192))) {
-        JS_DestroyRuntime(data->rtDebugger);
-        free(data);
+
+    cx = JS_NewContext(rtDebugger, 8192);
+    if(!cx) {
+        JS_DestroyRuntime(rtDebugger);
         return _initReturn("debugger creation error", JS_FALSE);
     }
 
-    JS_SetContextPrivate(cx, data);
-
-    JSD_SetContextPrivate(jsdc, data);
-
-    JS_SetErrorReporter(cx, _ErrorReporter);
-
     JS_BeginRequest(cx);
-    if(!(data->globDebugger = dbgObj =
-            JS_NewObject(cx, &debugger_global_class, NULL, NULL)))
-        return _initReturn_cx("debugger global object creation error", JS_FALSE, data);
+    dbgObj = JS_NewObject(cx, &debugger_global_class, NULL, NULL);
+    if(!dbgObj) {
+        JS_EndRequest(cx);
+        JS_DestroyContext(cx);
+        JS_DestroyRuntime(rtDebugger);
+        return _initReturn("debugger global object creation error", JS_FALSE);
+    }
 
-    if(!JS_SetPrivate(cx, dbgObj, data))
-        return _initReturn_cx("debugger global set private failure", JS_FALSE, data);
+    printf("NewRuntime: %p\n", rtDebugger);
+    data = jsdb_newCX(rt, rtDebugger, jsdc, cx, dbgObj, depth+1);
+    if (!data) {
+        JS_EndRequest(cx);
+        JS_DestroyContext(cx);
+        JS_DestroyRuntime(rtDebugger);
+        return JS_FALSE;
+    }
 
-    if(!JS_InitStandardClasses(cx, dbgObj))
-        return _initReturn_cx("debugger InitStandardClasses error", JS_FALSE, data);
-
-    if(!JS_DefineFunctions(cx, dbgObj, debugger_functions))
-        return _initReturn_cx("debugger DefineFunctions error", JS_FALSE, data);
-
-    if(!jsdb_ReflectJSD(data))
-        return _initReturn_cx("debugger reflection of JSD API error", JS_FALSE, data);
+    JS_INIT_CLIST(&data->links);
+    JSD_SetContextPrivate(jsdc, data);
 
     if(data->debuggerDepth < MAX_DEBUGGER_DEPTH)
     {
