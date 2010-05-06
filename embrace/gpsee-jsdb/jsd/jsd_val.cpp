@@ -139,8 +139,14 @@ jsd_IsValuePrimitive(JSDContext* jsdc, JSDValue* jsdval)
 JSBool
 jsd_IsValueFunction(JSDContext* jsdc, JSDValue* jsdval)
 {
-    return !JSVAL_IS_PRIMITIVE(jsdval->val) &&
-           JS_ObjectIsFunction(jsdc->dumbContext, JSVAL_TO_OBJECT(jsdval->val));
+    JSBool b;
+
+    jsd_BeginRequest(jsdc);
+    b = !JSVAL_IS_PRIMITIVE(jsdval->val) &&
+        JS_ObjectIsFunction(jsdc->dumbContext, JSVAL_TO_OBJECT(jsdval->val));
+    jsd_EndRequest(jsdc);
+
+    return b;
 }
 
 JSBool
