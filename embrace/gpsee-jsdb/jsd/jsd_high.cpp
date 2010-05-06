@@ -183,8 +183,9 @@ _newJSDContext(JSRuntime*         jsrt,
 label_newJSDContext_failure:
     if( jsdc ) {
         jsd_DestroyObjectManager(jsdc);
-        jsd_DestroyAtomTable(jsdc);
-        jsd_EndRequest(jsdc);
+        jsd_DestroyAtomTable(jsdc);     
+        if (jsdc->dumbContext)
+          jsd_EndRequest(jsdc);
         free(jsdc);
     }
     return NULL;

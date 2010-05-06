@@ -844,6 +844,7 @@ extern void* _jsd_global_lock;
 
 #define JSD_LOCK()                    ((void)0)
 #define JSD_UNLOCK()                  ((void)0)
+#warning XXX Non-Thread safe build
 
 #define JSD_INIT_LOCKS(jsdc)          1
 

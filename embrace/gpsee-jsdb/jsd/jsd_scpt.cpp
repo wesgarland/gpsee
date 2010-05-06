@@ -493,13 +493,19 @@ uintN
 jsd_GetScriptLineExtent(JSDContext* jsdc, JSDScript *jsdscript)
 {
     if( NOT_SET_YET == (int)jsdscript->lineExtent )
+    {
+        jsd_BeginRequest(jsdc);
         jsdscript->lineExtent = JS_GetScriptLineExtent(jsdc->dumbContext, jsdscript->script);
+        jsd_EndRequest(jsdc);
+    }
     return jsdscript->lineExtent;
 }
 
 jsuword
 jsd_GetClosestPC(JSDContext* jsdc, JSDScript* jsdscript, uintN line)
 {
+  jsuword     pc;
+
 #ifdef LIVEWIRE
     if( jsdscript && jsdscript->lwscript )
     {
@@ -510,8 +516,11 @@ jsd_GetClosestPC(JSDContext* jsdc, JSDScript* jsdscript, uintN line)
     }
 #endif
 
-    return (jsuword) JS_LineNumberToPC(jsdc->dumbContext, 
-                                       jsdscript->script, line );
+    jsd_BeginRequest(jsdc);
+    pc = (jsuword) JS_LineNumberToPC(jsdc->dumbContext, jsdscript->script, line );
+    jsd_EndRequest(jsdc);
+
+    return pc;
 }
 
 uintN
@@ -519,11 +528,20 @@ jsd_GetClosestLine(JSDContext* jsdc, JSDScript* jsdscript, jsuword pc)
 {
     uintN first = jsdscript->lineBase;
     uintN last = first + jsd_GetScriptLineExtent(jsdc, jsdscript) - 1;
-    uintN line = pc
-        ? JS_PCToLineNumber(jsdc->dumbContext, 
-                            jsdscript->script,
-                            (jsbytecode*)pc)
-        : 0;
+    uintN line;
+
+    if (pc)
+    {
+        jsd_BeginRequest(jsdc);
+        line = JS_PCToLineNumber(jsdc->dumbContext, 
+                                 jsdscript->script,
+                                 (jsbytecode*)pc);
+        jsd_EndRequest(jsdc);
+    }
+    else
+    {
+        line = 0;
+    }
 
     if( line < first )
         return first;
@@ -798,15 +816,18 @@ jsd_SetExecutionHook(JSDContext*           jsdc,
     jsdhook->hook       = hook;
     jsdhook->callerdata = callerdata;
 
+    jsd_BeginRequest(jsdc);
     if( ! JS_SetTrap(jsdc->dumbContext, jsdscript->script, 
                      (jsbytecode*)pc, jsd_TrapHandler, 
                      (void*) PRIVATE_TO_JSVAL(jsdhook)) )
     {
         free(jsdhook);
+        jsd_EndRequest(jsdc);
         JSD_UNLOCK();
         return JS_FALSE;
     }
 
+    jsd_EndRequest(jsdc);
     JS_APPEND_LINK(&jsdhook->links, &jsdscript->hooks);
     JSD_UNLOCK();
 
@@ -829,8 +850,10 @@ jsd_ClearExecutionHook(JSDContext*           jsdc,
         return JS_FALSE;
     }
 
+    jsd_BeginRequest(jsdc);
     JS_ClearTrap(jsdc->dumbContext, jsdscript->script, 
                  (jsbytecode*)pc, NULL, NULL );
+    jsd_EndRequest(jsdc);
 
     JS_REMOVE_LINK(&jsdhook->links);
     free(jsdhook);
@@ -853,7 +876,10 @@ jsd_ClearAllExecutionHooksForScript(JSDContext* jsdc, JSDScript* jsdscript)
         free(jsdhook);
     }
 
+    jsd_BeginRequest(jsdc);
     JS_ClearScriptTraps(jsdc->dumbContext, jsdscript->script);
+    jsd_EndRequest(jsdc);
+
     JSD_UNLOCK();
 
     return JS_TRUE;
