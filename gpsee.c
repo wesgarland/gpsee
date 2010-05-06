@@ -793,7 +793,6 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
 #ifdef JS_HAS_CTYPES
     if (JS_InitCTypesClass(cx, obj) != JS_TRUE)
       return JS_FALSE;
-    printf("cgtypes ready\n");
 #endif
 
   if (JS_DefineProperty(cx, obj, "gpseeNamespace", 
