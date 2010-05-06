@@ -142,6 +142,9 @@ struct JSDContext
     JSD_ExecutionHookProc   interruptHook;
     void*                   interruptHookData;
     JSRuntime*              jsrt;
+    JSContext*              jscx;
+    JSDebugHooks*           hooks;
+    JSDebugHooks*           oldHooks;
     JSD_ErrorReporter       errorReporter;
     void*                   errorReporterData;
     JSCList                 threadsStates;
@@ -156,6 +159,7 @@ struct JSDContext
     JSD_CallHookProc        toplevelHook;
     void*                   toplevelHookData;
     JSContext*              dumbContext;
+    uintN                   dumbLevel;
     JSObject*               glob;
     JSD_UserCallbacks       userCallbacks;
     void*                   user;
@@ -342,16 +346,14 @@ jsd_DebuggerOnForUser(JSRuntime*         jsrt,
                       JSD_UserCallbacks* callbacks,
                       void*              user);
 extern JSDContext*
+jsd_DebuggerOnForContext(JSContext*         jscx,
+                         JSD_UserCallbacks* callbacks,
+                         void*              user);
+extern JSDContext*
 jsd_DebuggerOn(void);
 
 extern void
 jsd_DebuggerOff(JSDContext* jsdc);
-
-extern void
-jsd_DebuggerPause(JSDContext* jsdc, JSBool forceAllHooksOff);
-
-extern void
-jsd_DebuggerUnpause(JSDContext* jsdc);
 
 extern void
 jsd_SetUserCallbacks(JSRuntime* jsrt, JSD_UserCallbacks* callbacks, void* user);
@@ -378,9 +380,15 @@ jsd_GetErrorReporter(JSDContext*        jsdc,
                      JSD_ErrorReporter* reporter,
                      void**             callerdata);
 
-static JSBool
+extern JSBool
 jsd_DebugErrorHook(JSContext *cx, const char *message,
                    JSErrorReport *report, void *closure);
+
+extern void
+jsd_BeginRequest(JSDContext *jsdc);
+
+extern void
+jsd_EndRequest(JSDContext *jsdc);
 
 /***************************************************************************/
 /* Script functions */
@@ -789,20 +797,24 @@ jsd_SetException(JSDContext* jsdc, JSDThreadState* jsdthreadstate,
 
 #ifdef JSD_THREADSAFE
 
+#define jsd_ISLOCKED(lock) jsd_IsLocked((JSDStaticLock*)lock)
+#define jsd_LOCK(lock)     jsd_Lock((JSDStaticLock*)lock)
+#define jsd_UNLOCK(lock)   jsd_Unlock((JSDStaticLock*)lock)
+
 /* the system-wide lock */
 extern void* _jsd_global_lock;
-#define JSD_LOCK()                               \
-    JS_BEGIN_MACRO                               \
-        if(!_jsd_global_lock)                    \
-            _jsd_global_lock = jsd_CreateLock(); \
-        JS_ASSERT(_jsd_global_lock);             \
-        jsd_Lock(_jsd_global_lock);              \
+#define JSD_LOCK()                                  \
+    JS_BEGIN_MACRO                                  \
+        if(!_jsd_global_lock)                       \
+            _jsd_global_lock = jsd_CreateLock();    \
+        JS_ASSERT(_jsd_global_lock);                \
+        jsd_LOCK(_jsd_global_lock); \
     JS_END_MACRO
 
-#define JSD_UNLOCK()                             \
-    JS_BEGIN_MACRO                               \
-        JS_ASSERT(_jsd_global_lock);             \
-        jsd_Unlock(_jsd_global_lock);            \
+#define JSD_UNLOCK()                                  \
+    JS_BEGIN_MACRO                                    \
+        JS_ASSERT(_jsd_global_lock);                  \
+        jsd_UNLOCK(_jsd_global_lock); \
     JS_END_MACRO
 
 /* locks for the subsystems of a given context */
@@ -813,25 +825,26 @@ extern void* _jsd_global_lock;
       (NULL != (jsdc->objectsLock      = jsd_CreateLock())) &&  \
       (NULL != (jsdc->threadStatesLock = jsd_CreateLock())) )
 
-#define JSD_LOCK_SCRIPTS(jsdc)        jsd_Lock(jsdc->scriptsLock)
-#define JSD_UNLOCK_SCRIPTS(jsdc)      jsd_Unlock(jsdc->scriptsLock)
+#define JSD_LOCK_SCRIPTS(jsdc)        jsd_LOCK(jsdc->scriptsLock)
+#define JSD_UNLOCK_SCRIPTS(jsdc)      jsd_UNLOCK(jsdc->scriptsLock)
 
-#define JSD_LOCK_SOURCE_TEXT(jsdc)    jsd_Lock(jsdc->sourceTextLock)
-#define JSD_UNLOCK_SOURCE_TEXT(jsdc)  jsd_Unlock(jsdc->sourceTextLock)
+#define JSD_LOCK_SOURCE_TEXT(jsdc)    jsd_LOCK(jsdc->sourceTextLock)
+#define JSD_UNLOCK_SOURCE_TEXT(jsdc)  jsd_UNLOCK(jsdc->sourceTextLock)
 
-#define JSD_LOCK_ATOMS(jsdc)          jsd_Lock(jsdc->atomsLock)
-#define JSD_UNLOCK_ATOMS(jsdc)        jsd_Unlock(jsdc->atomsLock)
+#define JSD_LOCK_ATOMS(jsdc)          jsd_LOCK(jsdc->atomsLock)
+#define JSD_UNLOCK_ATOMS(jsdc)        jsd_UNLOCK(jsdc->atomsLock)
 
-#define JSD_LOCK_OBJECTS(jsdc)        jsd_Lock(jsdc->objectsLock)
-#define JSD_UNLOCK_OBJECTS(jsdc)      jsd_Unlock(jsdc->objectsLock)
+#define JSD_LOCK_OBJECTS(jsdc)        jsd_LOCK(jsdc->objectsLock)
+#define JSD_UNLOCK_OBJECTS(jsdc)      jsd_UNLOCK(jsdc->objectsLock)
 
-#define JSD_LOCK_THREADSTATES(jsdc)   jsd_Lock(jsdc->threadStatesLock)
-#define JSD_UNLOCK_THREADSTATES(jsdc) jsd_Unlock(jsdc->threadStatesLock)
+#define JSD_LOCK_THREADSTATES(jsdc)   jsd_LOCK(jsdc->threadStatesLock)
+#define JSD_UNLOCK_THREADSTATES(jsdc) jsd_UNLOCK(jsdc->threadStatesLock)
 
 #else  /* !JSD_THREADSAFE */
 
 #define JSD_LOCK()                    ((void)0)
 #define JSD_UNLOCK()                  ((void)0)
+#warning XXX Non-Thread safe build
 
 #define JSD_INIT_LOCKS(jsdc)          1
 
@@ -858,16 +871,16 @@ extern void* _jsd_global_lock;
  * without having to special case things in the code.
  */
 #if defined(JSD_THREADSAFE) && defined(DEBUG)
-#define JSD_SCRIPTS_LOCKED(jsdc)        (jsd_IsLocked(jsdc->scriptsLock))
-#define JSD_SOURCE_TEXT_LOCKED(jsdc)    (jsd_IsLocked(jsdc->sourceTextLock))
-#define JSD_ATOMS_LOCKED(jsdc)          (jsd_IsLocked(jsdc->atomsLock))
-#define JSD_OBJECTS_LOCKED(jsdc)        (jsd_IsLocked(jsdc->objectsLock))
-#define JSD_THREADSTATES_LOCKED(jsdc)   (jsd_IsLocked(jsdc->threadStatesLock))
-#define JSD_SCRIPTS_UNLOCKED(jsdc)      (!jsd_IsLocked(jsdc->scriptsLock))
-#define JSD_SOURCE_TEXT_UNLOCKED(jsdc)  (!jsd_IsLocked(jsdc->sourceTextLock))
-#define JSD_ATOMS_UNLOCKED(jsdc)        (!jsd_IsLocked(jsdc->atomsLock))
-#define JSD_OBJECTS_UNLOCKED(jsdc)      (!jsd_IsLocked(jsdc->objectsLock))
-#define JSD_THREADSTATES_UNLOCKED(jsdc) (!jsd_IsLocked(jsdc->threadStatesLock))
+#define JSD_SCRIPTS_LOCKED(jsdc)        (jsd_ISLOCKED(jsdc->scriptsLock))
+#define JSD_SOURCE_TEXT_LOCKED(jsdc)    (jsd_ISLOCKED(jsdc->sourceTextLock))
+#define JSD_ATOMS_LOCKED(jsdc)          (jsd_ISLOCKED(jsdc->atomsLock))
+#define JSD_OBJECTS_LOCKED(jsdc)        (jsd_ISLOCKED(jsdc->objectsLock))
+#define JSD_THREADSTATES_LOCKED(jsdc)   (jsd_ISLOCKED(jsdc->threadStatesLock))
+#define JSD_SCRIPTS_UNLOCKED(jsdc)      (!jsd_ISLOCKED(jsdc->scriptsLock))
+#define JSD_SOURCE_TEXT_UNLOCKED(jsdc)  (!jsd_ISLOCKED(jsdc->sourceTextLock))
+#define JSD_ATOMS_UNLOCKED(jsdc)        (!jsd_ISLOCKED(jsdc->atomsLock))
+#define JSD_OBJECTS_UNLOCKED(jsdc)      (!jsd_ISLOCKED(jsdc->objectsLock))
+#define JSD_THREADSTATES_UNLOCKED(jsdc) (!jsd_ISLOCKED(jsdc->threadStatesLock))
 #else
 #define JSD_SCRIPTS_LOCKED(jsdc)        1
 #define JSD_SOURCE_TEXT_LOCKED(jsdc)    1
@@ -998,9 +1011,6 @@ jsd_GetValueConstructor(JSDContext* jsdc, JSDValue* jsdval);
 extern const char*
 jsd_GetValueClassName(JSDContext* jsdc, JSDValue* jsdval);
 
-extern JSDScript*
-jsd_GetScriptForValue(JSDContext* jsdc, JSDValue* jsdval);
-
 /**************************************************/
 
 extern void
@@ -1040,9 +1050,6 @@ jsd_InitObjectManager(JSDContext* jsdc);
 
 extern void
 jsd_DestroyObjectManager(JSDContext* jsdc);
-
-extern void
-jsd_DestroyObjects(JSDContext* jsdc);
 
 extern void
 jsd_ObjectHook(JSContext *cx, JSObject *obj, JSBool isNew, void *closure);
