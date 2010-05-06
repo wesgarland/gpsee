@@ -42,6 +42,11 @@
 #ifndef jsd_lock_h___
 #define jsd_lock_h___
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* 
  * If you want to support threading and locking, define JSD_THREADSAFE and 
  * implement the functions below.
@@ -70,5 +75,9 @@ jsd_IsLocked(JSDStaticLock* lock);
 
 extern void*
 jsd_CurrentThread();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* jsd_lock_h___ */
