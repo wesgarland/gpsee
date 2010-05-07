@@ -39,7 +39,7 @@
 ## @date	May 2009
 ## @version	$Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
-top build: gpsee-js
+PRODUCT ?= gpsee-js
 
 GPSEE_CONFIG	?= ../../gpsee-config
 include $(shell $(GPSEE_CONFIG) --outside.mk)
@@ -49,29 +49,34 @@ SPIDERMONKEY_BUILD	?= $(shell $(GPSEE_CONFIG) --spidermonkey-build)
 SHELL_BUILD		= $(SPIDERMONKEY_BUILD)/shell
 EXTRA_CLEAN_RULE	= clean_shell_build
 GPSEE_JS_CXXFLAGS	+= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSEE_CONFIG) --cppflags)
-GPSEE_JS_LDFLAGS	+= $(shell $(GPSEE_CONFIG) --ldflags)
-EXPORT_PROGS		= gpsee-js
+GPSEE_JS_LDFLAGS	+= $(filter-out -lmozjs,$(filter-out -lgpsee,$(shell $(GPSEE_CONFIG) --ldflags))) $(GPSEE_SRC_DIR)/libgpsee.a
+EXPORT_PROGS		= $(PRODUCT)
 
-$(SHELL_BUILD)/gpsee-js.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-js.cpp
-	@echo " * Building $(SHELL_BUILD)/gpsee-js.mk"
-	@$(SED) -e 's/ js.cpp/gpsee-js.cpp/' -e 's/= js/= gpsee-js/' <$(SHELL_BUILD)/Makefile >$@
-	@echo "GARBAGE += gpsee-js.mk gpsee-js.cpp" >> $@
+top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+
+$(SHELL_BUILD)/$(PRODUCT).mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/$(PRODUCT).cpp
+	@echo " * Building $(SHELL_BUILD)/$(PRODUCT).mk"
+	@$(SED) -e 's/ js.cpp/$(PRODUCT).cpp/' -e 's/= js/= $(PRODUCT)/' <$(SHELL_BUILD)/Makefile >$@
+	@echo "GARBAGE += $(PRODUCT).mk $(PRODUCT).cpp" >> $@
 	@echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
 	@echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
 
-$(SHELL_BUILD)/gpsee-js.cpp: gpsee-js.cpp
-	$(CP) gpsee-js.cpp $@
+$(SHELL_BUILD)/$(PRODUCT).cpp: $(GPSEE_SRC_DIR)/embrace/gpsee-js/gpsee-js.cpp
+	$(CP) $^ $@
 
-gpsee-js: $(SHELL_BUILD)/gpsee-js.mk $(SHELL_BUILD)/gpsee-js.cpp
+$(GPSEE_SRC_DIR)/libgpsee.a:
+	cd $(GPSEE_SRC_DIR) && $(MAKE) libgpsee.a
+
+$(PRODUCT): $(GPSEE_SRC_DIR)/libgpsee.a $(SHELL_BUILD)/$(PRODUCT).mk $(SHELL_BUILD)/$(PRODUCT).cpp
 ifeq "$(STREAM)" "surelynx"
 	cd $(SHELL_BUILD) && $(MAKE) -f $(SURELYNX_SRC)/vars.mk surelynx_build_platform.h
 endif
 	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
-	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/gpsee-js.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
-	[ -f $(SHELL_BUILD)/gpsee-js ] && $(CP) $(SHELL_BUILD)/gpsee-js .
+	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/$(PRODUCT).mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
+	[ -f $(SHELL_BUILD)/$(PRODUCT) ] && $(CP) $(SHELL_BUILD)/$(PRODUCT) .
 
-clean_shell_build: $(SHELL_BUILD)/gpsee-js.mk
-	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-js.mk clean
+clean_shell_build: $(SHELL_BUILD)/$(PRODUCT).mk
+	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/$(PRODUCT).mk clean
 
 
 
