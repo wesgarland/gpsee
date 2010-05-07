@@ -266,6 +266,8 @@ invasive-bin-dist bin-dist:: install
 libgpsee.$(SOLIB_EXT): LDFLAGS += $(JSAPI_LIBS)
 libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
+libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
+
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o $(VERSION_O)
