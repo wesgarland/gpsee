@@ -41,21 +41,19 @@
 ## @date        May 2010
 ## @version     $Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
-top: build
+PRODUCT = gpsee-jsdb
+HERE		:= $(PWD)
+JSD		:= $(HERE)/jsd
+EXPORT_LIBS	+= $(LIBRARY)
 
-GPSEE_CONFIG    ?= ../../gpsee-config
-include $(shell $(GPSEE_CONFIG) --gpsee-src)/outside.mk
+include ../gpsee-js/Makefile
 
 LIBRARY			= libgpsee-jsdb.$(SOLIB_EXT)
-EXPORT_LIBS		+= $(LIBRARY)
-EXPORT_PROGS		+= gpsee-jsdb
-PROGS			+= js gpsee-jsdb
 
-build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+install install-nodeps: EXPORT_PROGS    += $(JSD)/jsdb/debugger.js
 
-SPIDERMONKEY_SRC	?= $(shell $(GPSEE_CONFIG) --spidermonkey-src)
-
-CPPSRCS         = \
+LIBSRCS         = \
                   jsdebug.cpp \
                   jsd_atom.cpp \
                   jsd_high.cpp \
@@ -71,41 +69,14 @@ CPPSRCS         = \
 		  jsdrefl.cpp \
                   $(NULL)
 
-OBJS 		= $(CPPSRCS:.cpp=.o) gpsee-jsdb.o jsworkers.o
-$(LIBRARY):	$(CPPSRCS:.cpp=.o) 
+OBJS 		+= $(LIBSRCS:.cpp=.o)
 
-HERE		:= $(PWD)
 JS		:= $(dir $(SPIDERMONKEY_SRC))
-JSD		:= $(HERE)/jsd
 EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
 CPPFLAGS	+= -I$(JSD)
 
-GPSEE_INCLUDE_DIR       ?= $(shell $(GPSEE_CONFIG) --includedir)
-SPIDERMONKEY_BUILD      ?= $(shell $(GPSEE_CONFIG) --spidermonkey-build)
-SHELL_BUILD             = $(SPIDERMONKEY_BUILD)/shell
-EXTRA_CLEAN_RULE        = clean_shell_build
-GPSEE_JS_CXXFLAGS       += -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSEE_CONFIG) --cppflags) -DJSDEBUGGER -I$(JSD) -I$(JSD)/jsdb
-GPSEE_JS_LDFLAGS        += $(shell $(GPSEE_CONFIG) --ldflags) -lgpsee-jsdb -L$(HERE)
-EXPORT_PROGS            = gpsee-jsdb $(JSD)/jsdb/debugger.js
+GPSEE_JS_CXXFLAGS       += -DGPSEE_NO_WORKERS -DJSDEBUGGER -I$(JSD) -I$(JSD)/jsdb
+GPSEE_JS_LDFLAGS        += $(addprefix $(HERE)/,$(OBJS))
 
-$(SHELL_BUILD)/gpsee-jsdb.mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/gpsee-jsdb.cpp
-	@echo " * Building $(SHELL_BUILD)/gpsee-jsdb.mk"
-	@$(SED) -e 's/ js.cpp/gpsee-jsdb.cpp/' -e 's/= js/= gpsee-jsdb/' <$(SHELL_BUILD)/Makefile >$@
-	@echo "GARBAGE += gpsee-jsdb.mk gpsee-jsdb.cpp" >> $@
-	@echo 'CXXFLAGS := $$(GPSEE_JS_CXXFLAGS) $$(CXXFLAGS)' >> $@
-	@echo 'LDFLAGS := $$(GPSEE_JS_LDFLAGS) $$(LDFLAGS)' >> $@
-
-$(SHELL_BUILD)/gpsee-jsdb.cpp: ../gpsee-js/gpsee-js.cpp
-	$(CP) ../gpsee-js/gpsee-js.cpp $@
-
-gpsee-jsdb: $(SHELL_BUILD)/gpsee-jsdb.mk $(SHELL_BUILD)/gpsee-jsdb.cpp
-ifeq "$(STREAM)" "surelynx"
-	cd $(SHELL_BUILD) && $(MAKE) -f $(SURELYNX_SRC)/vars.mk surelynx_build_platform.h
-endif
-	[ -d "$(SHELL_BUILD)/.deps" ] || mkdir "$(SHELL_BUILD)/.deps"
-	cd $(SHELL_BUILD) && $(MAKE) -f $(SHELL_BUILD)/gpsee-jsdb.mk "GPSEE_JS_CXXFLAGS=$(GPSEE_JS_CXXFLAGS)" "GPSEE_JS_LDFLAGS=$(GPSEE_JS_LDFLAGS)" $@
-	[ -f $(SHELL_BUILD)/gpsee-jsdb ] && $(CP) $(SHELL_BUILD)/gpsee-jsdb .
-
-clean_shell_build: $(SHELL_BUILD)/gpsee-jsdb.mk
-	cd $(SHELL_BUILD) && make -f $(SHELL_BUILD)/gpsee-jsdb.mk clean
+$(LIBRARY) $(PRODUCT):	$(OBJS)
