@@ -69,6 +69,12 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 #if defined(JS_THREADSAFE) && defined(jsworkers_h___) && !defined(GPSEE_NO_WORKERS)
 # define WORKERS
 #else
+# if defined(GPSEE_NO_WORKERS)
+#  undef WORKERS
+# endif
+#endif
+
+#ifndef WORKERS
 # warning Building without worker thread support
 #endif
 
