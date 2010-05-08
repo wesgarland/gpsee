@@ -41,17 +41,17 @@
 ## @date        May 2010
 ## @version     $Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
-PRODUCT = gpsee-jsdb
+PRODUCT 	= gpsee-jsdb
 HERE		:= $(PWD)
 JSD		:= $(HERE)/jsd
 EXPORT_LIBS	+= $(LIBRARY)
+EXPORT_PROGS	+= gpsee-jsdb.js
 
 include ../gpsee-js/Makefile
 
 LIBRARY			= libgpsee-jsdb.$(SOLIB_EXT)
 
 top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
-install install-nodeps: EXPORT_PROGS    += $(JSD)/jsdb/debugger.js
 
 LIBSRCS         = \
                   jsdebug.cpp \
@@ -80,3 +80,7 @@ GPSEE_JS_CXXFLAGS       += -DGPSEE_NO_WORKERS -DJSDEBUGGER -I$(JSD) -I$(JSD)/jsd
 GPSEE_JS_LDFLAGS        += $(addprefix $(HERE)/,$(OBJS))
 
 $(LIBRARY) $(PRODUCT):	$(OBJS)
+
+jsdb.o: CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('$(BIN_DIR)/gpsee-jsdb.js')\""
+gpsee-jsdb.js: $(JSD)/jsdb/debugger.js
+	$(CP) $^ $@

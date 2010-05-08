@@ -48,6 +48,10 @@
 #define JS_EndRequest(cx) void(0)
 #endif
 
+#ifndef JSDB_LOAD_DEBUGGER
+# define JSDB_LOAD_DEBUGGER "load('debugger.js')"
+#endif
+
 JSDB_Data*
 jsdb_getData(JSDB_Data* data, JSBool primary);
 
@@ -639,7 +643,7 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
     JSObject* dbgObj;
     jsval rvalIgnore;
     JSDB_Data* data;
-    static char load_deb[] = "load('debugger.js')";
+    static char load_deb[] = JSDB_LOAD_DEBUGGER;
 
     rtDebugger = JS_NewRuntime(8L * 1024L * 1024L);
     if(!rtDebugger)
