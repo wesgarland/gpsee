@@ -50,7 +50,7 @@ SHELL_BUILD		= $(SPIDERMONKEY_BUILD)/shell
 EXTRA_CLEAN_RULE	= clean_shell_build
 GPSEE_JS_CXXFLAGS	+= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSEE_CONFIG) --cppflags)
 GPSEE_JS_LDFLAGS	+= $(filter-out -lmozjs,$(filter-out -lgpsee,$(shell $(GPSEE_CONFIG) --ldflags))) $(GPSEE_SRC_DIR)/libgpsee.a
-EXPORT_PROGS		= $(PRODUCT)
+EXPORT_PROGS		+= $(PRODUCT)
 
 top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
 
