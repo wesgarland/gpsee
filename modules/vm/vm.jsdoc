@@ -1,0 +1,36 @@
+/**
+ * @namespace	gpsee.module.ca.page.vm
+ * @description Native module exposing deep interpreter interfaces to the JavaScript programmer.
+ *		Methods and properties in this module are not expected to be 
+ *		universally available.
+ * @author	Wes Garland, PageMail, Inc., wes@page.ca
+ */
+var VM = function()
+{
+/**
+ *  Dump statistics about the garbage collector to a file.
+ *  @param	filename	Filename in which to dump human-readable statistics.
+ *
+ *  @note	Only available when SpiderMonkey was built with -DJS_GCMETER.
+ */
+function dumpGCstats(filename){};
+
+/** human-readable, not-machine-parseable string describing interpreter version */
+var version = {};
+
+/**
+ * Determine if supplied arguments form valid JavaScript.
+ *
+ * Return false if the buffer might become a valid
+ * JavaScript statement with the addition of more lines.  Otherwise return
+ * true.  The intent is to support interactive compilation - accumulate
+ * lines in a buffer until JS_BufferIsCompilableUnit is true, then pass it to
+ * the compiler.
+ *
+ * @see JS_BufferIsCompilableUnit
+ *
+ * @param args	One or more arguments containing code segments
+ * @returns	true if concatenation of arguments makes a valid JS compilation unit 
+ */
+function isCompilableUnit(args){};
+};
