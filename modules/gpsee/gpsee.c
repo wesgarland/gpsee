@@ -48,6 +48,11 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee.c,v 1.9 2010/04/14
 #if defined(GPSEE_SUNOS_SYSTEM)
 # include <sys/loadavg.h>
 #endif
+
+#ifndef HAVE_APR
+# include <time.h>
+#endif
+
 #include <math.h>
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.gpsee"
@@ -187,7 +192,11 @@ static JSBool gpsee_sleep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 #if defined(HAVE_APR)
   apr_sleep((apr_interval_time_t)d * APR_USEC_PER_SEC);
 #else
-  sleep((time_t)round(d));
+  struct timespec rqtp;
+  time_t secs = (time_t) d;
+  rqtp.tv_sec = secs;
+  rqtp.tv_nsec = (long)( (d - secs) * 1000000000.0 );
+  nanosleep(&rqtp, NULL);
 #endif
 
   JS_ResumeRequest(cx, saveDepth);
