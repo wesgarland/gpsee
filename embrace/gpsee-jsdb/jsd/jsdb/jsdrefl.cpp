@@ -164,6 +164,13 @@ handle_finalize(JSContext *cx, JSObject *obj)
     if(!p)
         return;
     {
+#if 0
+/*
+ *  This is a huge GC hazard - there is no guarantee that the parent is still
+ *  around, it may have been collected already. Ditto with re-entering JSD.
+ *  We're actually better off leaking here than cleaning up, since this normally
+ *  only happens during debugger tear-down anyhow.
+ */
         JSObject* pobj;
         JSDB_Data* data;
         pobj = JS_GetParent(cx, obj);
@@ -184,6 +191,7 @@ handle_finalize(JSContext *cx, JSObject *obj)
           default:
             break;
         }
+#endif
         free(p);
     }
 }
