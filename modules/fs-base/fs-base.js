@@ -63,7 +63,7 @@ const _unlink		= new dl.CFunction(ffi.int,	"unlink",		ffi.pointer);
 const _utime		= new dl.CFunction(ffi.int,	"utime",		ffi.pointer, ffi.pointer);
 const _mkdir		= new dl.CFunction(ffi.int,	"mkdir",		ffi.pointer, ffi.int);
 const _rmdir		= new dl.CFunction(ffi.int,	"rmdir",		ffi.pointer);
-const _gpsee_resolvepath= new dl.CFunction(ffi.int, 	"gpsee_resolvepath", 	ffi.pointer, ffi.size_t);
+const _gpsee_resolvepath= new dl.CFunction(ffi.int, 	"gpsee_resolvepath", 	ffi.pointer, ffi.pointer, ffi.size_t);
 const _getcwd		= new dl.CFunction(ffi.pointer, "getcwd",		ffi.pointer, ffi.size_t);
 const _chdir		= new dl.CFunction(ffi.int,	"chdir",		ffi.pointer);
 const _getpwuid		= new dl.CFunction(ffi.pointer, "getpwuid",		ffi.uid_t);
@@ -329,10 +329,10 @@ exports.canonical = function canonical(path)
   var	i;
   var	buf = new ffi.Memory(dh.FILENAME_MAX);
 
-  if (_gpsee_resolvepath.call(path, buf.size) != 0)
+  if (_gpsee_resolvepath.call(path, buf, buf.size) == -1)
     throw new Error("Cannot resolve path '"+path+"'" + syserr());
 
-  return path.asString(-1);
+  return buf.asString(-1);
 };
 
 /** 
