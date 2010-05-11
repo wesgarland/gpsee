@@ -63,7 +63,7 @@ static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, js
   /* This implementation is a little funny in that it calls JS_EvaluateScript() on snprintf()d code.
    * It probably could be done another way, but this was the quickest, and I don't see any glaring
    * flaws with this course, other than a slightly bitter taste in my mouth. */
-  static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))file=require('fs-base');exports.%s=file.openDescriptor(%d,{'%s':true})";
+  static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))this.file=require('fs-base');exports.%s=this.file.openDescriptor(%d,{'%s':true})";
   char code[sizeof(codeTemplate)+9];
   const char *propName;
   int which;
@@ -82,15 +82,6 @@ static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, js
   moduleScope = JS_GetParent(cx, obj);
   if (!JS_EvaluateScript(cx, moduleScope, code, strlen(code), __FILE__, __LINE__, vp))
     return JS_FALSE;
-  return JS_TRUE;
-
-  propName = stdioStreams[which].name;
-  if (!JS_DeleteProperty(cx, obj, propName))
-    return JS_FALSE;
-
-  if (!JS_SetProperty(cx, obj, propName, vp))
-    return JS_FALSE;
-
   return JS_TRUE;
 }
 
