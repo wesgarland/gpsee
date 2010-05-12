@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.31 2010/04/14 00:37:54 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.32 2010/05/12 01:12:50 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.32  2010/05/12 01:12:50  wes
+ *  gpsee-core: Changed context private id to const pointer type
+ *
  *  Revision 1.31  2010/04/14 00:37:54  wes
  *  Synchronize with Mercurial
  *
@@ -332,7 +335,7 @@ JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, 
 JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
 JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
-JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSContextCallback cb);
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
 JS_EXTERN_API(JSBool)               gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
 							const char *scriptCode, JSScript **script, JSObject *scope, JSObject **scriptObject);
