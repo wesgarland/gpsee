@@ -644,7 +644,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
   }
 
-  jsi = gpsee_createInterpreter(script_argv, script_environ);
+  jsi = gpsee_createInterpreter();
   gpsee_setThreadStackLimit(jsi->cx, &jsi);
 
   processFlags(jsi, flags, &verbosity);
@@ -759,7 +759,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
     else /* noRunScript is false; run the program */
     {
-      if (!gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile))
+      if (!gpsee_runProgramModule(jsi->cx, scriptFilename, NULL, scriptFile, script_argv, script_environ))
       {
         int code = gpsee_getExceptionExitCode(jsi->cx);
         if (code >= 0)

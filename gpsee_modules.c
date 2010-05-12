@@ -403,7 +403,8 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   dpDepth(+1);
 
   GPSEE_ASSERT(module->exports == NULL || isVolatileScope);
-  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || moduleScope == jsi->globalObj);
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope)->flags & JSCLASS_IS_GLOBAL);
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope)->flags & JSCLASS_HAS_PRIVATE);
 
   setModuleHandle_forScope(cx, moduleScope, module);
 
@@ -439,6 +440,20 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   require = JS_DefineFunction(cx, moduleScope, "require", gpsee_loadModule, 1, JSPROP_ENUMERATE | jsProp_permanentReadOnly);
   if (!require)
     goto fail;
+
+  if (!jsi->userModulePath)
+  {
+    /* This is the first module scope we've initialized; set up the storage
+     * required for the user module path (require.paths). This path is global
+     * across ALL contexts associated with the interpreter instance.
+     *
+     * @todo    per-worker require.paths
+     */
+    JS_AddNamedRoot(cx, &jsi->userModulePath, "User Module Path");
+    jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
+    if (!jsi->userModulePath)
+      goto fail;
+  }
 
   if (JS_DefineProperty(cx, (JSObject *)require, "paths", 
 			OBJECT_TO_JSVAL(jsi->userModulePath), NULL, NULL,
@@ -542,8 +557,8 @@ static moduleHandle_t *findModuleHandle(gpsee_interpreter_t *jsi, const char *cn
  *  Any module handle returned from this routine is guaranteed to have a cname, so that it
  *  can be identified.
  *
- *  @param cx			JavaScript context
- *  @param cname                Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
+ *  @param      cx	        JavaScript context
+ *  @param      cname           Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
  *                              or name an internal module.
  *  @param     	moduleScope	Scope object to be used instead of a brand-new one if we need to create a module handle.
  *  @returns 			A module handle, possibly one already initialized, or NULL if an exception has been thrown.
@@ -1105,16 +1120,19 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
     return JS_TRUE;
 
   /* Search require.paths */
-  if (JSArray_toModulePath(cx, jsi->userModulePath, &requirePaths) == JS_FALSE)
-    return JS_FALSE;
-  if (requirePaths)
+  if (jsi->userModulePath)
   {
-    JSBool b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
-    freeModulePath_fromJSArray(cx, requirePaths);
-    if (b == JS_FALSE)
+    if (JSArray_toModulePath(cx, jsi->userModulePath, &requirePaths) == JS_FALSE)
       return JS_FALSE;
-    if (*module_p)
-      return JS_TRUE;
+    if (requirePaths)
+    {
+      JSBool b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
+      freeModulePath_fromJSArray(cx, requirePaths);
+      if (b == JS_FALSE)
+        return JS_FALSE;
+      if (*module_p)
+        return JS_TRUE;
+    }
   }
 
   return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: Error loading top-level module '%s': module not found", 
@@ -1338,7 +1356,8 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
  *
  *  @returns    JS_TRUE on success, otherwise JS_FALSE
  */
-JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile)
+JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile,
+                              char * const script_argv[], char * const script_environ[])
 {
   moduleHandle_t 	*module;
   char			cnBuf[PATH_MAX];
@@ -1450,6 +1469,16 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
     goto fail;
 
   JS_SetGlobalObject(cx, jsi->globalObj);
+
+  if (script_argv)
+    gpsee_createJSArray_fromVector(cx, jsi->globalObj, "arguments", script_argv);
+
+  if (script_environ)
+    gpsee_createJSArray_fromVector(cx, jsi->globalObj, "environ", script_environ);
+
+  /* For the CommonJS system module's "args" property */
+  jsi->script_argv = script_argv;
+
   return JS_TRUE;
 
   fail:
@@ -1558,7 +1587,6 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   char			*envpath = getenv("GPSEE_PATH");
   char			*path;
   modulePathEntry_t	pathEl;
-  moduleHandle_t	*module;
 
   /* Initialize basic module system data structures */
   jsi->moduleJail = rc_value(rc, "gpsee_module_jail");
@@ -1593,28 +1621,6 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     JS_free(cx, envpath);
   }
 
-  /* Create stub for user module path (require.paths) */
-  JS_AddNamedRoot(cx, &jsi->userModulePath, "User Module Path");
-  jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
-  if (!jsi->userModulePath)
-    goto fail;
-
-  /* Prepare a module handle for preload, etc, environment where
-   *  program module has not run.
-   */
-  module = acquireModuleHandle(cx, "__internal__", jsi->globalObj);
-  if (!module)
-  {
-    dprintf("Could not acquire module handle for preload code\n");
-    goto fail;
-  }
-
-  if (initializeModuleScope(cx, module, jsi->globalObj, JS_TRUE) == JS_FALSE)
-  {
-    dprintf("Could not initialize module scope for module at %p\n", module);
-    goto fail;
-  }
-
   dpDepth(-1);
   return JS_TRUE;
 
@@ -1645,16 +1651,90 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   }
 
   /* Clean up module paths */
-  JS_RemoveRoot(cx, &jsi->userModulePath);
-
-  for (node = jsi->modulePath; node; node = nextNode)
+  if (jsi->userModulePath)
   {
-    nextNode = node->next;
-    JS_free(cx, (char *)node->dir);
+    JS_RemoveRoot(cx, &jsi->userModulePath);
+
+    for (node = jsi->modulePath; node; node = nextNode)
+    {
+      nextNode = node->next;
+      JS_free(cx, (char *)node->dir);
+    }
+
+    JS_free(cx, jsi->modulePath);
   }
 
-  JS_free(cx, jsi->modulePath);
   dpDepth(-1);
+}
+
+/**
+ * Adjust an arbitrary global object to look like a program module so
+ * that require() can run.  This is intended to hook GPSEE into unusual
+ * environments where the concept of "program module" doesn't really apply, 
+ * but we want to be able to use the module facilities nevertheless.
+ *
+ * This is also used to provide the preload module environment which is 
+ * eventually overwritten by runProgramModule, if that's in use.
+ *
+ * @param       cx      JavaScript context
+ * @param       glob    Object to modulize
+ * @param       label   Label describing the object, used to generate a module cname, or NULL
+ * @param       id      Number describing the object instance, used to generate a module cname, or 0
+ *
+ * @note        The pair (label, id) must be unique across the JS Runtime. If id is unspecified, the
+ *              value of glob's pointer will be used.  If this happens, it is imperative that no 
+ *              other global object be created at that address. The best way to do that is to never
+ *              collect the initial one.
+ *
+ * @note        label may not being with the / character, otherwise the module memo may get confused
+ *              and think this pseudo-anon-program module is in fact a real module that exists on disk.
+ *
+ * @returns     JS_TRUE on success;
+ */
+JSBool gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, size_t id)
+{
+  moduleHandle_t	*module;
+  JSBool                b = JS_FALSE;
+  char                  *cname;
+  size_t                cnameLen;
+
+  if (!label)
+    label = "internal";
+  if (label[0] == '/')
+    return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".modulizeGlobal: invalid label");
+
+  if (!id)
+    id = (size_t)glob;
+
+  dprintf("Modulizing global for %s module\n");
+  dpDepth(+1);
+
+  cnameLen = snprintf(NULL, 0, "__%s:" GPSEE_SIZET_FMT "__", label, id);
+  cname = JS_malloc(cx, cnameLen + 1);
+  if (!cname)
+    goto out;
+  sprintf(cname, "__%s:" GPSEE_SIZET_FMT "__", label, id);
+  module = acquireModuleHandle(cx, cname, glob);
+  if (!module)
+  {
+    dprintf("Could not acquire module handle for modulization of %s module\n", label);
+    goto out;
+  }
+
+  if (initializeModuleScope(cx, module, glob, JS_TRUE) == JS_FALSE)
+  {
+    dprintf("Could not initialize module scope for module at %p\n", module);
+    goto out;
+  }
+
+  b = JS_TRUE;
+
+  out:
+  if (cname)
+    JS_free(cx, cname);
+  dpDepth(-1);
+
+  return b;
 }
 
 /** Perform final clean-up on module system which must be done
