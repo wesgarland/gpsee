@@ -36,9 +36,12 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.31 2010/04/14 00:37:54 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.32 2010/05/12 01:12:50 wes Exp $
  *
  *  $Log: gpsee.h,v $
+ *  Revision 1.32  2010/05/12 01:12:50  wes
+ *  gpsee-core: Changed context private id to const pointer type
+ *
  *  Revision 1.31  2010/04/14 00:37:54  wes
  *  Synchronize with Mercurial
  *
@@ -323,7 +326,7 @@ JS_EXTERN_API(void)                 gpsee_removeAsyncCallbacks(gpsee_interpreter
 JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 
 /* core routines */
-JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
+JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter();
 JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack);
@@ -332,7 +335,7 @@ JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, 
 JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
 JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
 JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
-JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSContextCallback cb);
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
 JS_EXTERN_API(JSBool)               gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
 							const char *scriptCode, JSScript **script, JSObject *scope, JSObject **scriptObject);
@@ -345,9 +348,10 @@ JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj
 JS_EXTERN_API(const char *)	    gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename);
 JS_EXTERN_API(const char *)  	    gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi);
 JS_EXTERN_API(JSObject*)            gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
-JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile);
+JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile, char * const argv[], char * const script_environ[]);
+JS_EXTERN_API(JSBool)               gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, size_t id);
 JS_EXTERN_API(const char *)	    gpsee_getModuleCName(moduleHandle_t *module);
-JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
+JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj);
 JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 
 /* support routines */
