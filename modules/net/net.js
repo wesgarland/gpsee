@@ -65,6 +65,16 @@ const _inet_pton	= new dl.CFunction(ffi.int,	"inet_pton",		ffi.int, ffi.pointer,
 const _inet_ntop	= new dl.CFunction(ffi.pointer,	"inet_ntop",		ffi.int, ffi.pointer, ffi.pointer, ffi.size_t);
 const _shutdown         = new dl.CFunction(ffi.int,     "shutdown",             ffi.int, ffi.int);
 
+// @todo this should be cleaned up. it was needed because ffi.std did not have SHUT_RDWR on Ubuntu
+const SHUT_RDWR = (function(){
+  if (ffi.std.hasOwnProperty('SHUT_RDWR'))
+    return ffi.std.SHUT_RDWR;
+  else if (ffi.gpsee.hasOwnProperty('SHUT_RDWR'))
+    return ffi.gpsee.SHUT_RDWR;
+  else
+    throw "no ffi.std.SHUT_RDWR or ffi.gpsee.SHUT_RDWR";
+})();
+
 /**
  *  Return a string documenting the most recent OS-level error, if there was one.
  *  @param 	force	Always return an error, even if it's (No Error)
@@ -110,14 +120,14 @@ exports.IP_Address = function IP_Address(address)
   switch(typeof address)
   {
     case "number":
-      this.in4_addr = htonl(address);
+      this.in4_addr = htonl(address)+0;
       break;
     case "object":
       address = address.toString();
     case "string":
       if (_inet_pton.call(dh.AF_INET, address, addrBuf) != 1)
 	throw new Error("Cannot convert input string to IP address" + syserr());
-      this.in4_addr = htonl(addrBuf.valueOf());
+      this.in4_addr = htonl(addrBuf.valueOf()) + 0;
       break;
   }
 }
@@ -183,6 +193,21 @@ var ntohs = function ntohs_thunk(num)
   return ntohs(num);
 }
 
+/**
+ *  Constructor to create a new Stream object representing a TCP connection.
+ */
+function Stream(fd) {
+  this.fd = fd;
+}
+Stream.prototype.close = function Stream_close() {
+  if (_shutdown.call(this.fd, SHUT_RDWR) != 0)
+    if (ffi.errno != dh.ENOTCONN)
+      throw new Error("Could not shutdown socket on fd " + (0+this.fd) + syserr());
+}
+
+/**
+ *  Method table for listening socket.
+ */
 var sockStream_methods = 
 {
   bind: function bind(reuse)
@@ -231,7 +256,7 @@ var sockStream_methods =
     if (fd == -1)
       throw new Error("Could not accept connection on " + this.address + ":" + this.port + syserr());
 
-    sockStream = require("fs-base").openDescriptor(fd, "r+");
+    sockStream = new Stream(fd);
     return sockStream;
   },
 
@@ -247,7 +272,7 @@ var sockStream_methods =
  * 
  *  @param	ipv6		Truey if we want an IPV6 socket
  */
-exports.socketStream = function (port, address, ipv6)
+exports.socketStream = function socketStream(port, address, ipv6)
 {
   var sockfd;
   var sockStream;
@@ -454,6 +479,7 @@ Server.prototype.listen = function Server_listen(port, host, backlog)
   this.socket.onReadable = reactorConnectEvent;
 }
 
+// hdon: @todo untested, doesn't seem to fit the intended behavior
 Server.prototype.close = function Server_close()
 {
   delete this.socket.onReadable;
@@ -547,7 +573,7 @@ function reactorConnectEvent(socket)
   graft(new_socket, new EventSystem());
 
   new_socket.readyState = "open";
-  new_socket.addListener("end", reactSocketEnd);
+  //new_socket.addListener("end", reactSocketEnd);
 
   socket.server.connections.push(new_socket);
   socket.server.emit("connection", new_socket);
@@ -567,6 +593,7 @@ function reactorRead(socket)
   {
     case 0:
       socket.emit("end");
+      reactSocketEnd.call(socket);
       break;
     case -1:
       socket.emit("error");
@@ -592,9 +619,9 @@ function reactorWrite(data)
       break;
     case "object":
       if (data instanceof binary.Binary)
-	break;
+        throw new Error("writing binary data to socket unimplemented");
     default:
-	throw("Cannot write data; invalid type");
+      throw new Error("Cannot write data; invalid type");
   }
 
   if (this.pendingWrites.length)
@@ -621,16 +648,11 @@ function reactorWrite(data)
   }
 }
 
+// socket method
 function reactSocketEnd()
 {
-  var socket = this;
-
   delete this.onReadable;
   delete this.onWriteable;
-
-  if (_shutdown.call(this.fd, dh.O_RDWR) != 0)
-    if (ffi.errno != dh.ENOTCONN)
-      throw new Error("Could not shutdown socket on fd " + (0+this.fd) + syserr());
 
   if (_close.call(this.fd) != 0)
     throw new Error("Could not close socket on fd " + (0+this.fd) + syserr());
