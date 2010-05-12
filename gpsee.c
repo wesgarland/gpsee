@@ -779,13 +779,10 @@ JSClass *gpsee_getGlobalClass(void)
  *
  *  @param	cx		JavaScript context
  *  @param	obj		The object to modify
- *  @param	script_argv	Argument vector for the script (not the interpreter)
- *  @param	script_env	Environment variables for the script (often, but not always, 
- *  				the same as the interpreter)
  *
  *  @returns	JS_TRUE on success.  Failure may leave obj partially initialized.
  */
-JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[])
+JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj)
 {
   if (JS_InitStandardClasses(cx, obj) != JS_TRUE)
     return JS_FALSE;
@@ -800,18 +797,9 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
     return JS_FALSE;
 
   if (JS_DefineFunction(cx, obj, "print", gpsee_global_print, 0, 0) == NULL)
-    return JS_FALSE;
+    return JS_FALSE;  
 
-  if (script_argv)
-    gpsee_createJSArray_fromVector(cx, obj, "arguments", script_argv);
-
-  if (script_environ)
-    gpsee_createJSArray_fromVector(cx, obj, "environ", script_environ);
-
-  if (JS_DefineFunction(cx, obj, "loadModule", gpsee_loadModule, 0, 0) == NULL)
-    return JS_FALSE;
-
-  return JS_TRUE;
+  return gpsee_modulizeGlobal(cx, obj, __func__, 0);
 }
 
 /**
@@ -853,7 +841,7 @@ void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
  *
  *  @returns	A handle to the interpreter, ready for use.
  */
-gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * const script_environ[])
+gpsee_interpreter_t *gpsee_createInterpreter()
 {
   JSClass		*global_class = gpsee_getGlobalClass();
   const char		*jsVersion;
@@ -905,14 +893,11 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
 
   JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Usually unnecessary but JS_SetOptions can change that */
   
-  if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
-
   if (gpsee_initializeModuleSystem(interpreter, cx) == JS_FALSE)
     panic("Unable to initialize module system");
 
-  /* Primarily to support the system module's "args" property */
-  interpreter->script_argv = script_argv;
+  if (gpsee_initGlobalObject(cx, interpreter->globalObj) == JS_FALSE)
+    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
 
 #if !defined(MAKEDEPEND) && !defined(DOXYGEN)
 # if defined(JS_THREADSAFE)

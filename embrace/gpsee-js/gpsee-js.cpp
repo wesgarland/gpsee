@@ -41,7 +41,6 @@
 #undef offsetOf
 
 static const char rcsid[]="$Id: gpsee-js.cpp,v 1.4 2010/04/28 12:45:52 wes Exp $";
-static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
 
 #undef JS_GetContextPrivate
 #undef JS_SetContextPrivate
@@ -123,7 +122,7 @@ main(int argc, char **argv, char **envp)
     JSContext *cx;
     JSObject *glob, *it, *envobj;
     int result;
-    gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, envp);
+    gpsee_interpreter_t *jsi = gpsee_createInterpreter();
 #ifdef JSDEBUGGER
     JSDContext *jsdc;
     JSBool      jsdbc;
