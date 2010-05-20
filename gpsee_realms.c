@@ -175,7 +175,7 @@ JSBool gpsee_setRealm(JSContext *cx, gpsee_realm_t *realm)
 gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
 {
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  gpsee_realm_t         *realm; 
+  gpsee_realm_t         *realm = NULL;
 
   if (getRealm(cx))
   {
