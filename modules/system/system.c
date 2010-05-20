@@ -123,9 +123,12 @@ static JSBool system_platform_getter(JSContext *cx, JSObject *obj, jsval id, jsv
 
 static JSBool system_global_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+  
+  if (!realm)
+    return JS_FALSE;
 
-  *vp = OBJECT_TO_JSVAL(jsi->globalObj);
+  *vp = OBJECT_TO_JSVAL(realm->globalObject);
 
   return JS_TRUE;
 }
@@ -143,7 +146,8 @@ static JSBool system_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
 
 const char *system_InitModule(JSContext *cx, JSObject *module)
 {
-  gpsee_interpreter_t 	*jsi;
+  gpsee_realm_t *realm;
+
   static JSPropertySpec properties[] = 
   {
     { "stdin",  	0, JSPROP_ENUMERATE, system_stdioGetProperty, 	system_stdioSetProperty },
@@ -166,13 +170,20 @@ const char *system_InitModule(JSContext *cx, JSObject *module)
   if (JS_DefineFunctions(cx, module, methods) != JS_TRUE)
     return NULL;
 
-  jsi = (gpsee_interpreter_t*)JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  realm = gpsee_getRealm(cx);
+  if (!realm)
+    return NULL;
 
   if (!system_InitEnv(cx, module))
     return NULL;
 
-  if (!gpsee_createJSArray_fromVector(cx, module, "args", jsi->script_argv))
+  gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
+  if (!gpsee_createJSArray_fromVector(cx, module, "args", realm->mutable.script_argv))
+  {
+    gpsee_leaveAutoMonitor(realm->monitors.script_argv);
     return NULL;
+  }
+  gpsee_leaveAutoMonitor(realm->monitors.script_argv);
 
   return MODULE_ID; 
 }

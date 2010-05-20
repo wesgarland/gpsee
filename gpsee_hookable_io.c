@@ -68,9 +68,10 @@ static JSBool uio_fwrite_callback(JSContext *cx, void *vdata)
 static size_t uio_fwrite_hook(const void *ptr, size_t size, size_t nitems, FILE *file, JSContext *cx)
 {
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
   int                   fd = fileno(file);
 
-  if (jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
     return fwrite(ptr, size, nitems, file);
 
   if (JS_IsExceptionPending(cx) == JS_TRUE)
@@ -106,7 +107,7 @@ static size_t uio_fwrite_hook(const void *ptr, size_t size, size_t nitems, FILE 
       panic(GPSEE_GLOBAL_NAMESPACE_NAME ".user_io.fwrite: Out of Memory");
     argv[0] = STRING_TO_JSVAL(str);
 
-    if (JS_CallFunctionValue(cx, jsi->globalObj, jsi->user_io_hooks[fd].output, 1, argv, &rval) == JS_FALSE)
+    if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].output, 1, argv, &rval) == JS_FALSE)
     {
       JS_ReportPendingException(cx);
       JS_ClearPendingException(cx);
@@ -188,14 +189,15 @@ static char *uio_fgets_hook(char *buf, size_t len, FILE *file, JSContext *cx)
   jsval                 rval;
   jsval                 argv[2];
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   argv[0] = JSVAL_TRUE;         /* Read line */
   argv[1] = INT_TO_JSVAL(len);  /* Do not exceed len characters */
 
-  if (jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
     return fgets(buf, len, file);
 
-  if (JS_CallFunctionValue(cx, jsi->globalObj, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);
@@ -217,6 +219,7 @@ static int uio_fgetc_hook(FILE *file, JSContext *cx)
   jsval                 rval;
   jsval                 argv[2];
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
   char                  c;
 
   argv[0] = JSVAL_FALSE;         /* Read exactly */
@@ -225,7 +228,7 @@ static int uio_fgetc_hook(FILE *file, JSContext *cx)
   if (jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
     return fgetc(file);
 
-  if (JS_CallFunctionValue(cx, jsi->globalObj, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);
@@ -246,14 +249,15 @@ static size_t uio_fread_hook(char *buf, size_t size, size_t nitems, FILE *file, 
   jsval                 rval;
   jsval                 argv[2];
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   argv[0] = JSVAL_FALSE;                         /* Read exactly */
   argv[1] = INT_TO_JSVAL(size * nitems);         /* size * nitems bytes */
 
-  if (jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
     return fread(buf, size, nitems, file);
 
-  if (JS_CallFunctionValue(cx, jsi->globalObj, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);

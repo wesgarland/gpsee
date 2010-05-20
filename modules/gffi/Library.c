@@ -67,7 +67,8 @@ JSClass *library_clasp;
  */
 static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  library_handle_t    *hnd;
+  library_handle_t      *hnd;
+  JSObject              *cFunction_proto;
 
   /* Require we are constructing a new object instance with 'new' */
   if (!JS_IsConstructing(cx))
@@ -145,8 +146,11 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
       break;
   }
 
-  if (!CFunction_InitClass(cx, obj, CFunction_proto))
-    return gpsee_throw(cx, CLASS_ID ".error: could not CFunction_InitClass()");
+  if (gpsee_getModuleData(cx, cFunction_clasp, (void **)&cFunction_proto, CLASS_ID ".init") == JS_FALSE)
+    return JS_FALSE;
+
+  if (!CFunction_InitClass(cx, obj, cFunction_proto))
+    return gpsee_throw(cx, CLASS_ID ".error: could not cFunction_InitClass()");
 
   return JS_TRUE;
 }

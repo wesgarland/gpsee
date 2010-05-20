@@ -60,7 +60,7 @@ typedef struct
   struct
   {
     JSContext 		*cx;
-    void		*id;
+    const void		*id;
     JSContextCallback	cb;
     void 		*storage;
   } *list;
@@ -207,7 +207,7 @@ void *gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSCont
   i = hnd->listSize++;
   hnd->list = JS_realloc(cx, hnd->list, hnd->listSize * sizeof(hnd->list[0]));
   if (!hnd->list)
-    goto out;
+    panic("Out of memory in " __FILE__);
   
   if (id)
     hnd->list[i].cx	= cx;
@@ -215,7 +215,7 @@ void *gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSCont
     hnd->list[i].cx	= (JSContext *)JS_GetRuntime(cx);	/* simulating JS_SetContextCallback */
   hnd->list[i].id	= id;
   hnd->list[i].cb	= cb;
-  hnd->list[i].storage 	= size?JS_malloc(cx, size):NULL;
+  hnd->list[i].storage 	= size ? JS_malloc(cx, size) : NULL;
 
   if (hnd->list[i].storage)
     memset(hnd->list[i].storage, 0, size);

@@ -47,6 +47,7 @@ int main (int argc, char *argv[])
 {
   jsval			rval;
   gpsee_interpreter_t	*jsi;
+  gpsee_realm_t         *realm;
   const char            *scriptCode;
 
 #if defined(__SURELYNX__) 
@@ -56,9 +57,10 @@ int main (int argc, char *argv[])
   gpsee_openlog("minimal");
 
   jsi = gpsee_createInterpreter();
+  realm = jsi->primordialRealm;
 
   scriptCode = "print('Hello, World!');";
-  JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
+  JS_EvaluateScript(realm->cx, realm->globalObject, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
 
   gpsee_destroyInterpreter(jsi);
   gpsee_closelog();

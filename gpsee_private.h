@@ -44,11 +44,13 @@
 #define GPSEE_PRIVATE_H
 
 #include "jsapi.h"
-int 			gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
-void 			gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
-void			gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi);
+JSBool                  gpsee_initializeModuleSystem    (gpsee_realm_t *realm, JSContext *cx);
+void 			gpsee_shutdownModuleSystem      (gpsee_realm_t *realm, JSContext *cx);
+void			gpsee_moduleSystemCleanup       (gpsee_realm_t *realm);
+JSBool                  gpsee_initializeMonitorSystem   (JSContext *cx, gpsee_interpreter_t *jsi);      
+void                    gpsee_shutdownMonitorSystem     (gpsee_interpreter_t *jsi);
 #define AT_STRINGIFY_HELPER_1(s) #s
 #define AT_STRINGIFY_HELPER_2(s) AT_STRINGIFY_HELPER_1(s)
 #define AT __FILE__ ":" AT_STRINGIFY_HELPER_2(__LINE__) ": "
 
-#endif/*GPSEE_PRIVATE_H*/
+#endif /*GPSEE_PRIVATE_H*/
