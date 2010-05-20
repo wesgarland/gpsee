@@ -240,7 +240,10 @@ JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, 
   JSString		*jsstr;
 
   if (JSVAL_IS_NULL(*vp))
+  {
     str = NULL;
+    jsstr = NULL;
+  }
   else
   {
     jsstr = JSVAL_IS_STRING(*vp) ? JSVAL_TO_STRING(*vp) : JS_ValueToString(cx, *vp);
@@ -262,7 +265,7 @@ JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, 
   }
   else /* Pointer to Chars */
   {
-    if (!JSVAL_IS_NULL(*vp) && !JSVAL_IS_STRING(*vp))
+    if (jsstr && !JSVAL_IS_NULL(*vp) && !JSVAL_IS_STRING(*vp))
     {
       /* Root the string which was derived via .toString() */
       *vp = STRING_TO_JSVAL(jsstr);
