@@ -227,6 +227,10 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   const char  *scriptFilename;
   JSString    *scriptFilename_jsstr;
   JSBool      success;
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+
+  if (!realm)
+    return JS_FALSE;
 
   switch(argc)
   {
@@ -234,7 +238,7 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
       return gpsee_throw(cx, MODULE_ID ".include.arguments.count");
       break;
     case 1:
-      thisObj = ((gpsee_interpreter_t *)(JS_GetRuntimePrivate(JS_GetRuntime(cx))))->globalObj;
+      thisObj = realm->globalObject;
       fnArg = argv + 0;
       break;
     case 2:
@@ -357,7 +361,7 @@ static JSBool gpsee_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 {
   gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-  if (jsi->primordialThread != PR_GetCurrentThread())
+  if (jsi->primordialRealm->primordialThread != PR_GetCurrentThread())
   {
     return gpsee_throw(cx, MODULE_ID ".exit.thread: gpsee.exit() may not be called by any other thread "
 		       "than the thread which created the run time!");

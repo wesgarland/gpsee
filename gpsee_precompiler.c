@@ -66,9 +66,10 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
 int main(int argc, char *argv[])
 {
   gpsee_interpreter_t	*jsi;				/* Handle describing JS interpreter */
+  gpsee_realm_t         *realm;                         /* The interpreter's primordial realm */
+  JSContext             *cx;                            /* The realm's primordial context */
   const char		*scriptFilename;		/* Filename with JavaScript program in it */
   FILE			*scriptFile;
-  const char      	*errmsg;
   JSScript        	*script;
   JSObject        	*scrobj;
   int			exitCode;
@@ -80,8 +81,11 @@ int main(int argc, char *argv[])
   gpsee_verbosity(2);
 
   jsi = gpsee_createInterpreter(NULL, NULL);
-  jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;	/* match GSR baseline */
-  JS_SetOptions(jsi->cx, jsOptions | JSOPTION_WERROR);
+  realm = jsi->primordialRealm;
+  cx = realm->cx;
+
+  jsOptions = JS_GetOptions(cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;	/* match GSR baseline */
+  JS_SetOptions(realm->cx, jsOptions | JSOPTION_WERROR);
 
   scriptFilename = argv[1];
   scriptFile = fopen(scriptFilename, "r");
@@ -94,7 +98,7 @@ int main(int argc, char *argv[])
   }
 
   printf(" * Precompiling %s\n", scriptFilename);
-  if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj) == JS_FALSE)
+  if (gpsee_compileScript(cx, scriptFilename, scriptFile, NULL, &script, realm->globalObject, &scrobj) == JS_FALSE)
   {
     fprintf(stderr, "Could not compile %s (%s)\n", scriptFilename, errno ? strerror(errno) : "no system error");
     exitCode = 1;

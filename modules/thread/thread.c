@@ -817,7 +817,7 @@ static JSBool th_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
   gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread 		*callingThread = PR_GetCurrentThread();
 
-  if (callingThread == jsi->primordialThread)
+  if (callingThread == jsi->primordialRealm->primordialThread)
   {
     if (argc)
       jsi->exitCode = JSVAL_TO_INT(argv[0]);

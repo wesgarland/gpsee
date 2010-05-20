@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   JSContext *cx;
   GPSEEAsyncCallback *cb;
 
-  jsi = gpsee_createInterpreter(NULL, NULL);
+  jsi = gpsee_createInterpreter();
   if (!jsi)
     panic("UNEXPECTED: could not instantiate gpsee_interpreter_t\n");
   cx = JS_NewContext(jsi->rt, 65536);

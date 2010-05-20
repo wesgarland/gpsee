@@ -284,7 +284,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     er_filename[0] = (char)0;
 
   if (report->lineno)
-    snprintf(er_lineno, sizeof(er_lineno), "line %u ", report->lineno + (jsi ? jsi->linenoOffset : 0));
+    snprintf(er_lineno, sizeof(er_lineno), "line %u ", report->lineno);
   else
     er_lineno[0] = (char)0;
 
@@ -375,6 +375,8 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     gpsee_printf(cx, "%s%s%s", i ? " " : "", JS_GetStringBytes(str), i+1==argc?"\n":"");
     JS_ResumeRequest(cx, depth);
   }
+
+  *rval = JSVAL_VOID;
   return JS_TRUE;
 }
 
@@ -685,11 +687,15 @@ JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
   }
   return JS_TRUE;
 }
-/** Deletes all gpsee_addAsyncCallback() registrations */
-void gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi)
+
+/** Deletes all gpsee_addAsyncCallback() registrations. This routine
+ *  runs unlocked and reuses the primordial context of the primordial realm;
+ *  intend as a shutdown-helper function and not an API entry point.
+ */
+static void removeAllAsyncCallbacks_unlocked(gpsee_interpreter_t *jsi)
 {
   GPSEEAsyncCallback *cb, *d;
-  JSContext *cx = jsi->cx;
+  JSContext *cx = jsi->primordialRealm->cx;
   /* Delete everything! */
   cb = jsi->asyncCallbacks;
   while (cb)
@@ -706,6 +712,13 @@ static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
   return JS_TRUE;
 }
 #endif
+
+static JSBool destroyRealm_cb(JSContext *cx, void *key, void *value, void *private)
+{
+  gpsee_realm_t *realm = (void *)key;  
+  return gpsee_destroyRealm(cx, realm);
+}
+
 /**
  *  @note	If this is the LAST interpreter in the application,
  *		the API user should call JS_Shutdown() to avoid
@@ -713,9 +726,11 @@ static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
  */
 int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
 {
+  JSContext *cx = interpreter->primordialRealm->cx;
+
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   GPSEEAsyncCallback * cb;
-
+  
   /* Clean up "operation callback" stuff */
   /* Cut off the head of the linked list to ensure that the "operation callback" trigger thread doesn't begin a new
    * run over its contents */
@@ -727,27 +742,28 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
   PR_Unlock(interpreter->asyncCallbacks_lock);
   /* Interrupt the trigger thread in case it is in */
   if (PR_Interrupt(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(cx, SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
   /* Wait for the trigger thread to see this */
   if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(cx, SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
   interpreter->asyncCallbackTriggerThread = NULL;
   /* Destroy mutex */
   PR_DestroyLock(interpreter->asyncCallbacks_lock);
   /* Now we can free the contents of the list */
   interpreter->asyncCallbacks = cb;
-  gpsee_removeAsyncCallbacks(interpreter);
+  removeAllAsyncCallbacks_unlocked(interpreter);
 #endif
 
-  gpsee_shutdownModuleSystem(interpreter, interpreter->cx);
-  gpsee_initIOHooks(interpreter->cx, interpreter); 
+  gpsee_initIOHooks(cx, interpreter);
 
-  JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
-  JS_EndRequest(interpreter->cx);
-  JS_DestroyContext(interpreter->cx);
+  JS_EndRequest(cx);
+
+  if (gpsee_ds_forEach(cx, interpreter->realms, destroyRealm_cb, NULL) == JS_FALSE)
+    panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyInterpreter: Error destroying realm");
+
+  gpsee_shutdownMonitorSystem(interpreter);
   JS_DestroyRuntime(interpreter->rt);
   
-  gpsee_moduleSystemCleanup(interpreter);
   free(interpreter);
   return 0;
 }
@@ -805,20 +821,20 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj)
 /**
  *  Set the maximum (or minimum, depending on arch) address which JSAPI is allowed to use on the C stack.
  *  Any attempted use beyond this address will cause an exception to be thrown, rather than risking a
- *  segfault.
+ *  segfault.  The value used will be noted in gpsee_interpreter_t::threadStackLimit, so it can be
+ *  reused by code which creates new contexts (including gpsee_newContext()).
  *
  *  If rc.gpsee_thread_stack_limit is zero this check is disabled.
  *
  *  @param	cx		JS Context to set - must be set before any JS code runs
  *  @param	stackBase	An address near the top (bottom) of the stack
  *
- *  @note	This routine should be called every time JS_NewContext() is called for this protection
- *  		to extend universally.
+ *  @see gpsee_newContext();
  */
-void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
+void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackSize)
 {
-  jsuword 	stackLimit;
-  jsuword	maxStackSize = strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0);
+  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  jsuword 	        stackLimit;
 
   if (maxStackSize == 0)     /* Disable checking for stack overflow if limit is zero. */
   {
@@ -833,7 +849,10 @@ void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
     stackLimit = (jsuword)stackBase - maxStackSize;
 #endif
   }
+
   JS_SetThreadStackLimit(cx, stackLimit);
+  jsi->threadStackLimit = stackLimit;
+  return;
 }
 
 /** Instanciate a JavaScript interpreter -- i.e. a runtime,
@@ -843,7 +862,6 @@ void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
  */
 gpsee_interpreter_t *gpsee_createInterpreter()
 {
-  JSClass		*global_class = gpsee_getGlobalClass();
   const char		*jsVersion;
   JSRuntime		*rt;
   JSContext 		*cx;
@@ -871,6 +889,9 @@ gpsee_interpreter_t *gpsee_createInterpreter()
   if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript context!");
 
+  if (gpsee_initializeMonitorSystem(cx, interpreter) == JS_FALSE)
+    panic(__FILE__ ": Unable to intialize monitor subsystem");
+
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))
   {
@@ -884,31 +905,14 @@ gpsee_interpreter_t *gpsee_createInterpreter()
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
   JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
-  gpsee_initIOHooks(interpreter->cx, interpreter); 
+  gpsee_initIOHooks(cx, interpreter); 
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
-  interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
-  if (!interpreter->globalObj)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create global object!");
+  interpreter->primordialRealm = gpsee_createRealm(cx, "primordial");
+  if (!interpreter->primordialRealm)
+    panic(__FILE__ ": Unable to create primoridal realm!");
 
-  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Usually unnecessary but JS_SetOptions can change that */
-  
-  if (gpsee_initializeModuleSystem(interpreter, cx) == JS_FALSE)
-    panic("Unable to initialize module system");
-
-  if (gpsee_initGlobalObject(cx, interpreter->globalObj) == JS_FALSE)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
-
-#if !defined(MAKEDEPEND) && !defined(DOXYGEN)
-# if defined(JS_THREADSAFE)
-  interpreter->primordialThread	= PR_GetCurrentThread();
-# else
-#  error "We need threads"
-# endif
-  interpreter->cx	 	= cx;
   interpreter->rt 	 	= rt;
-#endif
-  
   interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)

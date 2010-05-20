@@ -256,13 +256,16 @@ typedef enum
   et_successMask	= et_finished | et_requested
 } exitType_t;
 
-typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
-typedef struct moduleHandle moduleHandle_t; 		/**< Handle describing a loaded module */
-typedef struct moduleMemo moduleMemo_t; 		/**< Handle to module system's interpreter-wide memo */
+typedef struct dataStore *      gpsee_dataStore_t;      /**< Handle describing a GPSEE data store */
+typedef struct moduleHandle     moduleHandle_t; 	/**< Handle describing a loaded module */
+typedef struct moduleMemo       moduleMemo_t; 		/**< Handle to module system's interpreter-wide memo */
 typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
+typedef void *                  gpsee_monitor_t;        /**< Synchronization primitive */
+typedef void *                  gpsee_autoMonitor_t; /**< Synchronization primitive */
 
 /** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
+
 /** Data struct for entries in the asynchronous callback multiplexor */
 typedef struct GPSEEAsyncCallback
 {
@@ -272,29 +275,53 @@ typedef struct GPSEEAsyncCallback
   struct GPSEEAsyncCallback   *next;      /**< Linked-list link! */
 } GPSEEAsyncCallback;
 
-/** Handle describing a gpsee interpreter important details and state */
+/** Handle describing a GPSEE Realm */
 typedef struct
 {
-  JSRuntime 		*rt;			/**< Handle for this interpreter's JavaScript runtime */
+#ifdef GPSEE_DEBUG_BUILD
+  const char            *name;                  /**< Name of the realm */
+#endif
   JSContext 		*cx;			/**< Context for use by primoridial thread. */
-  JSObject		*globalObj;		/**< Global object, for binding things like parseInt() */
-  size_t		stackChunkSize;		/**< For calls to JS_NewContext() */
-
-  signed int		linenoOffset;		/**< Added line number in error reports, in case script doesn't start at top of file. */
-  int 			exitCode;		/**< Exit Code from System.exit() etc */
-  exitType_t		exitType;		/**< Why the script stopped running */
-  errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
-  void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
-
+  PRThread	        *primordialThread;      /**< Primordial thread for this realm */
+  JSObject		*globalObject;		/**< Global object ("super-global") */
   moduleMemo_t 		*modules;		/**< List of loaded modules and their shutdown requirements etc */
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
-  char * const *         script_argv;           /**< argv from main() */
+  gpsee_dataStore_t     moduleData;             /**< Scratch-pad for modules; keys are unique pointers */
+  struct
+  {
+    moduleHandle_t      *programModule;
+    const char          *programModuleDir;        
+    char * const *      script_argv;            /**< argv from main() */
+  } mutable;                                    /**< In order to read/write a member of volatile, you must enter the similarly-named monitor */
+#ifdef JS_THREADSAFE
+  struct
+  {
+    gpsee_autoMonitor_t     programModule;
+    gpsee_autoMonitor_t     programModuleDir;
+    gpsee_autoMonitor_t     script_argv;
+  } monitors;                                   /**< Monitors for mutable members */
+#endif
+} gpsee_realm_t;
+
+/** Handle describing a gpsee interpreter important details and state */
+typedef struct
+{
+  JSRuntime 		*rt;			/**< Handle for this interpreter's JavaScript runtime */
+  gpsee_realm_t         *primordialRealm;       /**< Primodrial GPSEE Realm */
+  gpsee_dataStore_t	realms;	                /**< Key-value index; key = realm, value = NULL */
+  gpsee_dataStore_t	realmsByContext;	/**< Key-value index; key = context, value = realm */
+  gpsee_dataStore_t     monitorList;            /**< Key-value index; key = monitor, value = NULL */
+  size_t		stackChunkSize;		/**< For calls to JS_NewContext() */
+  jsuint                threadStackLimit;       /**< Upper bound on C stack bounds per context */
+  int 			exitCode;		/**< Exit Code from System.exit() etc */
+  exitType_t		exitType;		/**< Why the script stopped running */
+  errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
+  void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
 
 #if defined(JS_THREADSAFE)
-  PRThread	*primordialThread;
   PRThread	*requireLockThread;		/**< Matches NULL or PR_GetCurrentThread if we are allowed to require; change must be atomic */
   size_t	requireLockDepth;
 #endif
@@ -319,10 +346,17 @@ typedef struct
   /** Per-fd hooks */
   size_t                                user_io_hooks_len;
   struct { jsval input; jsval output; } *user_io_hooks;
+
+
+#ifdef JS_THREADSAFE
+  struct
+  {
+    gpsee_monitor_t     monitor;        /** Monitor for use by the monitor subsystem */
+  } monitors;
+#endif
 } gpsee_interpreter_t;
 
 JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
-JS_EXTERN_API(void)                 gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi);
 JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 
 /* core routines */
@@ -330,10 +364,8 @@ JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter();
 JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack);
-JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase);
+JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackSize);
 JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
-JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
-JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
 JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
 JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSContextCallback cb);
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
@@ -345,14 +377,40 @@ JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj
                                                     JSPropertySpec *ps, JSFunctionSpec *fs,
                                                     JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
                                                     const char *moduleID);
-JS_EXTERN_API(const char *)	    gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename);
-JS_EXTERN_API(const char *)  	    gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi);
+JS_EXTERN_API(const char *)         gpsee_programRelativeFilename(JSContext *cx, const char *long_filename);
 JS_EXTERN_API(JSObject*)            gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
 JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile, char * const argv[], char * const script_environ[]);
 JS_EXTERN_API(JSBool)               gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, size_t id);
 JS_EXTERN_API(const char *)	    gpsee_getModuleCName(moduleHandle_t *module);
+JS_EXTERN_API(JSBool)               gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p);
+JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, void *key, void **data_p, const char *throwPrefix);
+JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, void *key, void *data);
 JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj);
 JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
+JS_EXTERN_API(JSContext *)          gpsee_newContext(gpsee_realm_t *realm);
+JS_EXTERN_API(gpsee_realm_t *)      gpsee_createRealm(JSContext *cx, const char *name);
+JS_EXTERN_API(JSBool)               gpsee_setRealm(JSContext *cx, gpsee_realm_t *realm);
+JS_EXTERN_API(gpsee_realm_t *)      gpsee_getRealm(JSContext *cx);
+JS_EXTERN_API(JSBool)               gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm);
+
+/* GPSEE data stores */
+typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, void *key, void * value, void *private);
+gpsee_dataStore_t       gpsee_ds_create                 (JSContext *cx, size_t initialSizeHint);
+void *                  gpsee_ds_get                    (JSContext *cx, gpsee_dataStore_t store, const void *key);
+JSBool                  gpsee_ds_put                    (JSContext *cx, gpsee_dataStore_t store, const void *key, void *value);
+void *                  gpsee_ds_remove                 (JSContext *cx, gpsee_dataStore_t store, const void *key, void *value);
+JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *private);
+void                    gpsee_ds_destroy                (JSContext *cx, gpsee_dataStore_t store);
+gpsee_dataStore_t       gpsee_ds_create_unlocked        (JSContext *cx, size_t initialSizeHint);
+
+/* GPSEE monitors */
+void                    gpsee_enterAutoMonitor          (JSContext *cx, gpsee_autoMonitor_t *monitor_p);
+void                    gpsee_leaveAutoMonitor          (gpsee_autoMonitor_t monitor);
+gpsee_monitor_t         gpsee_getNilMonitor             (void);
+gpsee_monitor_t         gpsee_createMonitor             (JSContext *cx);
+void                    gpsee_enterMonitor              (gpsee_monitor_t monitor);
+void                    gpsee_leaveMonitor              (gpsee_monitor_t monitor);
+void                    gpsee_destroyMonitor            (gpsee_monitor_t *monitor);
 
 /* support routines */
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
@@ -440,9 +498,9 @@ void __attribute__((noreturn)) panic(const char *message);
  */
 static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
 { 
-  GPSEE_STATIC_ASSERT(sizeof(jsval) == 4);
+  GPSEE_STATIC_ASSERT(sizeof(jsval) == sizeof(void *));
   /* jslock.c code: return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE; */
-  return (atomic_cas_32((uint32_t  *)vp, oldv, newv) == (uint32_t)oldv) ? JS_TRUE : JS_FALSE;
+  return (atomic_cas_ptr((void  *)vp, oldv, newv) == (void *)oldv) ? JS_TRUE : JS_FALSE;
 }
 #else
 /** Compare-And-Swap jsvals using code lifted from jslock.c ca. Spidermonkey 1.8.
