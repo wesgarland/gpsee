@@ -352,6 +352,8 @@ typedef struct
   struct
   {
     gpsee_monitor_t     monitor;        /** Monitor for use by the monitor subsystem */
+    gpsee_autoMonitor_t realms;         /** Held during realm creation once the realm is visible but before it's completely initialized, 
+                                            and whenever jsi->realms or jsi->realmsByContext pointers need synchronization. */
   } monitors;
 #endif
 } gpsee_interpreter_t;
@@ -383,8 +385,8 @@ JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const 
 JS_EXTERN_API(JSBool)               gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, size_t id);
 JS_EXTERN_API(const char *)	    gpsee_getModuleCName(moduleHandle_t *module);
 JS_EXTERN_API(JSBool)               gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p);
-JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, void *key, void **data_p, const char *throwPrefix);
-JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, void *key, void *data);
+JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix);
+JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, const void *key, void *data);
 JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj);
 JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
 JS_EXTERN_API(JSContext *)          gpsee_newContext(gpsee_realm_t *realm);
@@ -394,7 +396,7 @@ JS_EXTERN_API(gpsee_realm_t *)      gpsee_getRealm(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm);
 
 /* GPSEE data stores */
-typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, void *key, void * value, void *private);
+typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, const void *key, void * value, void *private);
 gpsee_dataStore_t       gpsee_ds_create                 (JSContext *cx, size_t initialSizeHint);
 void *                  gpsee_ds_get                    (JSContext *cx, gpsee_dataStore_t store, const void *key);
 JSBool                  gpsee_ds_put                    (JSContext *cx, gpsee_dataStore_t store, const void *key, void *value);

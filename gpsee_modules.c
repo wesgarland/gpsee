@@ -572,7 +572,7 @@ static moduleHandle_t *findModuleHandle(gpsee_realm_t *realm, const char *cname)
  */
 static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSObject *moduleScope)
 {
-  moduleHandle_t	*module;
+  moduleHandle_t	*module = NULL;
   gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   GPSEE_ASSERT(cname != NULL);
@@ -1381,7 +1381,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
 JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile,
                               char * const script_argv[], char * const script_environ[])
 {
-  moduleHandle_t 	*module;
+  moduleHandle_t 	*module = NULL;
   char			cnBuf[PATH_MAX];
   char			fnBuf[PATH_MAX];
   int			i;
@@ -1881,7 +1881,7 @@ JSBool gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p)
  *  @param      throwPrefix             Exception message prefix if we throw because the data was not found (or the found data was NULL).
  *  @returns    JS_TRUE on success, JS_FALSE if we threw an exception.
  */
-JSBool gpsee_getModuleData(JSContext *cx, void *key, void **data_p, const char *throwPrefix)
+JSBool gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix)
 {
   gpsee_dataStore_t     ds;
 
@@ -1909,7 +1909,7 @@ JSBool gpsee_getModuleData(JSContext *cx, void *key, void **data_p, const char *
  *  @param      throwPrefix             Exception message prefix if we throw because the data was not found (or the found data was NULL).
  *  @returns    JS_TRUE on success, JS_FALSE if we threw an exception.
  */
-JSBool gpsee_setModuleData(JSContext *cx, void *key, void *data)
+JSBool gpsee_setModuleData(JSContext *cx, const void *key, void *data)
 {
   gpsee_dataStore_t     ds;
 

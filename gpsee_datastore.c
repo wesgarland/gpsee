@@ -60,7 +60,7 @@ struct dataStore /* Completes forward declaration in gpsee.h */
 };
 
 /**
- *  Retrieve a value from a GPSEE Data Store.
+ *  Retrieve a value from a GPSEE Data Store. 
  *
  *  @param      cx      Context for allocating memory of/in the store.
  *  @param      store   The data store
@@ -73,8 +73,9 @@ void *gpsee_ds_get(JSContext *cx, gpsee_dataStore_t store, const void *key)
   size_t i;
   void          *ret = NULL;
 
+  GPSEE_ASSERT(store != NULL);
   GPSEE_ASSERT(JS_GetRuntime(cx) == store->rt);
-  GPSEE_ASSERT(store->monitor);
+  GPSEE_ASSERT(store->monitor != NULL);
 
   gpsee_enterMonitor(store->monitor);
   for (i=0; i < store->size; i++)

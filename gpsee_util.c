@@ -720,12 +720,15 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 
       nl = strchr(longerror, '\n');
       if (nl)
-	tok = (char *)rev_strchr(nl, '\t', longerror);
-      if (nl && tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
       {
-	tok--;
-	memmove(tok, tok + 1, strlen(tok + 1) + 1);
-	memcpy(tok, "\t\t\n", 3);
+	tok = (char *)rev_strchr(nl, '\t', longerror);
+
+        if (tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
+        {
+          tok--;
+          memmove(tok, tok + 1, strlen(tok + 1) + 1);
+          memcpy(tok, "\t\t\n", 3);
+        }
       }
     }
 
