@@ -191,7 +191,7 @@ void gpsee_destroyMonitor(gpsee_monitor_t *monitor_p)
 }
 
 #ifdef JS_THREADSAFE
-static JSBool destroyMonitor(JSContext *nullcx, void *key, void *value, void *private)
+static JSBool destroyMonitor(JSContext *nullcx, const void *key, void *value, void *private)
 {
   gpsee_monitor_t monitor = (void *)key;
 

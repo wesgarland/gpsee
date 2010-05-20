@@ -713,7 +713,7 @@ static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
 }
 #endif
 
-static JSBool destroyRealm_cb(JSContext *cx, void *key, void *value, void *private)
+static JSBool destroyRealm_cb(JSContext *cx, const void *key, void *value, void *private)
 {
   gpsee_realm_t *realm = (void *)key;  
   return gpsee_destroyRealm(cx, realm);
@@ -891,6 +891,9 @@ gpsee_interpreter_t *gpsee_createInterpreter()
 
   if (gpsee_initializeMonitorSystem(cx, interpreter) == JS_FALSE)
     panic(__FILE__ ": Unable to intialize monitor subsystem");
+
+  interpreter->realms = gpsee_ds_create(cx, 1);
+  interpreter->realmsByContext = gpsee_ds_create(cx, 1);
 
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))

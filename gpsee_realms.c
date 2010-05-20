@@ -80,6 +80,29 @@
 #include "gpsee.h"
 #include "gpsee_private.h"
 
+static gpsee_realm_t *getRealm(JSContext *cx)
+{
+  JSObject              *global = JS_GetGlobalObject(cx);
+  gpsee_interpreter_t   *jsi;
+  gpsee_realm_t         *realm = NULL;
+
+  if (global && JS_GET_CLASS(cx, global) == gpsee_getGlobalClass())
+  {
+    realm = JS_GetPrivate(cx, global);
+    GPSEE_ASSERT(realm);
+    if (realm)
+      return realm;
+  }
+
+  jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_enterAutoMonitor(cx, &jsi->monitors.realms);
+  if (jsi && jsi->realmsByContext)
+    realm = gpsee_ds_get(cx, jsi->realmsByContext, cx);
+  gpsee_leaveAutoMonitor(jsi->monitors.realms);
+
+  return realm;
+}
+
 /**
  *  Retrieve the GPSEE Realm data structure for the supplied context.
  *
@@ -92,20 +115,7 @@
  */
 gpsee_realm_t *gpsee_getRealm(JSContext *cx)
 {
-  JSObject              *global = JS_GetGlobalObject(cx);
-  gpsee_interpreter_t   *jsi;
-  gpsee_realm_t         *realm;
-
-  if (global && JS_GET_CLASS(cx, global) == gpsee_getGlobalClass())
-  {
-    realm = JS_GetPrivate(cx, global);
-    GPSEE_ASSERT(realm);
-    if (realm)
-      return realm;
-  }
-
-  jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  realm = gpsee_ds_get(cx, jsi->realmsByContext, cx);
+  gpsee_realm_t *realm = getRealm(cx);
 
   GPSEE_ASSERT(realm);
 
@@ -167,7 +177,7 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_realm_t         *realm; 
 
-  if (gpsee_getRealm(cx))
+  if (getRealm(cx))
   {
     (void)gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".createRealm.create: Context already associated with a realm");
     goto err_out;
@@ -195,6 +205,10 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
 
   JS_AddNamedRoot(cx, &realm->globalObject, "super-global");
 
+  gpsee_enterAutoMonitor(cx, &jsi->monitors.realms);
+  if (gpsee_ds_put(cx, jsi->realms, realm, NULL) == JS_FALSE)
+    goto err_out;
+
   if (gpsee_initializeModuleSystem(realm, cx) == JS_FALSE)
     panic("Unable to initialize module system");
 
@@ -204,10 +218,7 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
   if (gpsee_setRealm(cx, realm) == JS_FALSE)
     goto err_out;
 
-  if (gpsee_ds_put(cx, jsi->realms, realm, NULL) == JS_FALSE)
-    goto err_out;
-
-  return realm;
+  goto out;
 
   err_out:
   if (realm)
@@ -215,14 +226,18 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
     JS_free(cx, realm);
     if (realm->name)
       JS_free(cx, (char *)realm->name);
+
+    realm = NULL;
   }
 
-  return NULL;
+  out:
+  gpsee_leaveAutoMonitor(jsi->monitors.realms);
+  return realm;
 }
 
-static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, const void *value, void *private)
+static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, void *value, void *private)
 {
-  JSContext     *context = key;
+  JSContext     *context = (void *)key;
   gpsee_realm_t *realm = value;
   gpsee_realm_t *dying_realm = private;
 
