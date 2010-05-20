@@ -185,7 +185,7 @@ fail:
 static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 {
   JSBool                ret;
-  jsrefcount            depth;
+  jsrefcount            depth = 0;
   cFunction_closure_t   *clos;
   JSObject              *obj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
@@ -214,7 +214,7 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSBool                ret;
-  jsrefcount            depth;
+  jsrefcount            depth = 0;
   cFunction_closure_t   *clos;
   
   obj = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
