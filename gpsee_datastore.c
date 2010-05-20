@@ -135,7 +135,7 @@ JSBool gpsee_ds_put(JSContext *cx, gpsee_dataStore_t store, const void *key, voi
   if (store->size < 100)
   {
     if (store->size)
-      newSize *= 2;
+      newSize = store->size * 2;
     else
       newSize = 1;
   }
@@ -215,6 +215,8 @@ static gpsee_dataStore_t ds_create(JSContext *cx, size_t initialSizeHint)
   store = JS_malloc(cx, sizeof(*store));
   if (!store)
     return NULL;
+
+  memset(store, 0, sizeof(*store));
 
   if (initialSizeHint)
   {
