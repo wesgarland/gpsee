@@ -119,6 +119,10 @@ JSXDRState * gpsee_XDRNewFile(JSContext *cx, JSXDRMode mode, const char *filenam
     case JSXDR_FREE:
       fopen_mode = "w+";
       break;
+    default:
+      gpsee_throw(cx, "gpsee_XDRNewFile() error: invalid mode argument (%d as opposed to %d, %d, or %d)",
+                  mode, JSXDR_ENCODE, JSXDR_DECODE, JSXDR_FREE);
+      return NULL;
   }
 
   if (!f)
