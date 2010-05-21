@@ -1093,6 +1093,8 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
     /* Mutable ByteArray result means we must return a new instance */
     mustBeNew = 1;
   }
+  else
+    return gpsee_throw(cx, MODULE_ID ".internalerror: byteThing_toByteThing() misused: classOfResult argument not ByteString nor ByteArray");
 
   /* Deduce our source class */
   if (JS_InstanceOf(cx, self, byteString_clasp, NULL))
