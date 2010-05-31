@@ -86,19 +86,17 @@ static gpsee_realm_t *getRealm(JSContext *cx)
   gpsee_interpreter_t   *jsi;
   gpsee_realm_t         *realm = NULL;
 
-  if (global && JS_GET_CLASS(cx, global) == gpsee_getGlobalClass())
-  {
-    realm = JS_GetPrivate(cx, global);
-    GPSEE_ASSERT(realm);
-    if (realm)
-      return realm;
-  }
+  if ((realm = gpsee_getModuleScopeRealm(cx, NULL)))
+    return realm;
 
   jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_enterAutoMonitor(cx, &jsi->monitors.realms);
   if (jsi && jsi->realmsByContext)
-    realm = gpsee_ds_get(cx, jsi->realmsByContext, cx);
+    realm = gpsee_ds_get(jsi->realmsByContext, cx);
   gpsee_leaveAutoMonitor(jsi->monitors.realms);
+
+  if (global && JS_GET_CLASS(cx, global) == gpsee_getGlobalClass())
+    GPSEE_ASSERT(realm);
 
   return realm;
 }
@@ -143,21 +141,10 @@ gpsee_realm_t *gpsee_getRealm(JSContext *cx)
 JSBool gpsee_setRealm(JSContext *cx, gpsee_realm_t *realm)
 {
   gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  JSObject *global = JS_GetGlobalObject(cx);
 
-  if (global && JS_GET_CLASS(cx, global) == gpsee_getGlobalClass())
-  {
-    /* Found a super-global */
-    gpsee_realm_t       *other_realm = JS_GetPrivate(cx, global);
-    
-    if (other_realm && other_realm != realm)
-      return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".setRealm: Passed context already has a GPSEE Realm!");
-  }
+  GPSEE_ASSERT(!realm || realm != gpsee_getModuleScopeRealm(cx, JS_GetGlobalObject(cx)));
 
-  if (global)
-    JS_SetPrivate(cx, global, realm);
-
-  return gpsee_ds_put(cx, jsi->realmsByContext, cx, realm);
+  return gpsee_ds_put(jsi->realmsByContext, cx, realm);
 }
 
 /**
@@ -206,7 +193,10 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
   JS_AddNamedRoot(cx, &realm->globalObject, "super-global");
 
   gpsee_enterAutoMonitor(cx, &jsi->monitors.realms);
-  if (gpsee_ds_put(cx, jsi->realms, realm, NULL) == JS_FALSE)
+  if (gpsee_ds_put(jsi->realms, realm, NULL) == JS_FALSE)
+    goto err_out;
+
+  if (gpsee_ds_put(jsi->realmsByContext, cx, realm) == JS_FALSE)
     goto err_out;
 
   if (gpsee_initializeModuleSystem(realm, cx) == JS_FALSE)
@@ -215,8 +205,9 @@ gpsee_realm_t *gpsee_createRealm(JSContext *cx, const char *name)
   if (gpsee_initGlobalObject(cx, realm->globalObject) == JS_FALSE)
     goto err_out;
 
-  if (gpsee_setRealm(cx, realm) == JS_FALSE)
-    goto err_out;
+//  if (gpsee_setRealm(cx, realm) == JS_FALSE)
+//    goto err_out;
+#warning setRealm needs adjusting 
 
   goto out;
 
@@ -243,19 +234,17 @@ static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, void *value
 
   GPSEE_ASSERT(realm == gpsee_getRealm(context));
 
-  if ((cx != context) && realm == dying_realm)
+  if ((realm == dying_realm) && (context != cx))
     JS_DestroyContext((JSContext *)context);
 
   return JS_TRUE;
 }
 
 /**
- *   Destroy a GPSEE realm.  Destroys all resources in the realm. The primordial
- *   context and the super-global's root will be the among first resources destroyed,
- *   possibly destroying other contexts in their wake (such as might occur during
- *   finalization of objects in a thread class).
+ *   Destroy a GPSEE realm.  Destroys all resources in the realm. 
  *
- *   @param     cx      A context in the same runtime as the realm
+ *   @param     cx      A context in the same runtime as the realm. This will be
+ *                      the last context destroyed.
  *   @param     realm   The realm to destroy
  *
  *   @returns JS_TRUE on success
@@ -266,19 +255,16 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 
   gpsee_shutdownModuleSystem(realm, cx);
 
-  JS_BeginRequest(cx);
   JS_RemoveRoot(cx, &realm->globalObject);
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
   realm->mutable.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
-  JS_EndRequest(cx);
 
-  if (realm->cx != cx)
-    JS_DestroyContext(realm->cx);
-
-  if (gpsee_ds_forEach(cx, jsi->realmsByContext, destroyRealmContext_cb, realm))
+  if (gpsee_ds_forEach(cx, jsi->realmsByContext, destroyRealmContext_cb, realm) == JS_FALSE)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRealmContext");
 
+  JS_DestroyContext(cx);
+ 
   gpsee_moduleSystemCleanup(realm);
   return JS_TRUE;
 }

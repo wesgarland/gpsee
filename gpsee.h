@@ -37,101 +37,6 @@
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
  *  @version	$Id: gpsee.h,v 1.32 2010/05/12 01:12:50 wes Exp $
- *
- *  $Log: gpsee.h,v $
- *  Revision 1.32  2010/05/12 01:12:50  wes
- *  gpsee-core: Changed context private id to const pointer type
- *
- *  Revision 1.31  2010/04/14 00:37:54  wes
- *  Synchronize with Mercurial
- *
- *  Revision 1.30  2010/04/01 13:43:19  wes
- *  Improved uncaught exception handling & added tests
- *
- *  Revision 1.29  2010/03/06 18:39:51  wes
- *  Merged with upstream
- *
- *  Revision 1.28  2010/03/06 18:17:13  wes
- *  Synchronize Mercurial and CVS Repositories
- *
- *  Revision 1.27  2010/02/17 15:59:33  wes
- *  Module Refactor checkpoint: switched modules array to a splay tree
- *
- *  Revision 1.26  2010/02/13 20:33:43  wes
- *  Module system refactor checkpoint
- *
- *  Revision 1.25  2010/02/12 21:37:25  wes
- *  Module system refactor check-point
- *
- *  Revision 1.24  2010/02/08 20:24:54  wes
- *  Forced singled-thread/spin-lock behaviour on module loading
- *
- *  Revision 1.23  2010/02/08 18:28:40  wes
- *  Re-enabled GPSEE Async Callback facility & fixed test
- *
- *  Revision 1.22  2010/02/05 21:32:40  wes
- *  Added C Stack overflow protection facility to GPSEE-core
- *
- *  Revision 1.21  2010/01/24 04:46:54  wes
- *  Deprecated mozfile, mozshell and associated libgpsee baggage
- *
- *  Revision 1.20  2009/10/29 18:35:05  wes
- *  ByteThing casting, apply(), call() mutability fixes
- *
- *  Revision 1.19  2009/09/21 21:33:41  wes
- *  Implemented Memory equality operator in gffi module
- *
- *  Revision 1.18  2009/09/17 20:57:11  wes
- *  Fixed %m support for gpsee_log in surelynx stream
- *
- *  Revision 1.17  2009/08/06 14:17:51  wes
- *  Corrected comment-in-comment false warning
- *
- *  Revision 1.16  2009/08/05 18:40:26  wes
- *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/\* easier
- *
- *  Revision 1.15  2009/08/04 20:22:38  wes
- *  Work towards resolving build-system circular dependencies et al
- *
- *  Revision 1.14  2009/07/31 16:08:20  wes
- *  C99
- *
- *  Revision 1.13  2009/07/31 14:56:08  wes
- *  Removed printf formats, now in gpsee_formats.h
- *
- *  Revision 1.11  2009/07/28 15:52:27  wes
- *  Updated isByteThing functions
- *
- *  Revision 1.10  2009/07/28 15:21:52  wes
- *  byteThing memoryOwner patch
- *
- *  Revision 1.9  2009/07/27 21:05:37  wes
- *  Corrected gpsee_getInstancePrivate macro
- *
- *  Revision 1.8  2009/07/23 21:19:01  wes
- *  Added ByteString_Cast
- *
- *  Revision 1.7  2009/07/23 19:00:40  wes
- *  Merged with upstream
- *
- *  Revision 1.6  2009/07/23 18:35:13  wes
- *  Added *gpsee_getInstancePrivateNTN
- *
- *  Revision 1.5  2009/06/12 17:01:20  wes
- *  Merged with upstream
- *
- *  Revision 1.4  2009/05/27 04:38:44  wes
- *  Improved build configuration for out-of-tree GPSEE embeddings
- *
- *  Revision 1.3  2009/05/08 18:18:38  wes
- *  Added fieldSize, offsetOf and gpsee_isFalsy()
- *
- *  Revision 1.2  2009/04/01 22:30:55  wes
- *  Bugfixes for getopt, linux build, and module-case in tests
- *
- *  Revision 1.1  2009/03/30 23:55:43  wes
- *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
- *
  */
 
 #ifndef GPSEE_H
@@ -313,7 +218,7 @@ typedef struct
   gpsee_realm_t         *primordialRealm;       /**< Primodrial GPSEE Realm */
   gpsee_dataStore_t	realms;	                /**< Key-value index; key = realm, value = NULL */
   gpsee_dataStore_t	realmsByContext;	/**< Key-value index; key = context, value = realm */
-  gpsee_dataStore_t     monitorList;            /**< Key-value index; key = monitor, value = NULL */
+  gpsee_dataStore_t     monitorList_unlocked;   /**< Key-value index; key = monitor, value = NULL. Must hold jsi->monitors.monitor to use. */
   size_t		stackChunkSize;		/**< For calls to JS_NewContext() */
   jsuint                threadStackLimit;       /**< Upper bound on C stack bounds per context */
   int 			exitCode;		/**< Exit Code from System.exit() etc */
@@ -347,7 +252,6 @@ typedef struct
   size_t                                user_io_hooks_len;
   struct { jsval input; jsval output; } *user_io_hooks;
 
-
 #ifdef JS_THREADSAFE
   struct
   {
@@ -362,7 +266,7 @@ JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEA
 JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
 
 /* core routines */
-JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter();
+JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter() __attribute__((malloc));
 JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack);
@@ -388,31 +292,31 @@ JS_EXTERN_API(JSBool)               gpsee_getModuleDataStore(JSContext *cx, gpse
 JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix);
 JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, const void *key, void *data);
 JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj);
-JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
+JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void) __attribute__((const));
 JS_EXTERN_API(JSContext *)          gpsee_newContext(gpsee_realm_t *realm);
-JS_EXTERN_API(gpsee_realm_t *)      gpsee_createRealm(JSContext *cx, const char *name);
+JS_EXTERN_API(gpsee_realm_t *)      gpsee_createRealm(JSContext *cx, const char *name) __attribute__((malloc));
 JS_EXTERN_API(JSBool)               gpsee_setRealm(JSContext *cx, gpsee_realm_t *realm);
 JS_EXTERN_API(gpsee_realm_t *)      gpsee_getRealm(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm);
 
 /* GPSEE data stores */
 typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, const void *key, void * value, void *private);
-gpsee_dataStore_t       gpsee_ds_create                 (JSContext *cx, size_t initialSizeHint);
-void *                  gpsee_ds_get                    (JSContext *cx, gpsee_dataStore_t store, const void *key);
-JSBool                  gpsee_ds_put                    (JSContext *cx, gpsee_dataStore_t store, const void *key, void *value);
-void *                  gpsee_ds_remove                 (JSContext *cx, gpsee_dataStore_t store, const void *key, void *value);
+gpsee_dataStore_t       gpsee_ds_create                 (gpsee_interpreter_t *jsi, size_t initialSizeHint) __attribute__((malloc));
+void *                  gpsee_ds_get                    (gpsee_dataStore_t store, const void *key);
+JSBool                  gpsee_ds_put                    (gpsee_dataStore_t store, const void *key, void *value);
+void *                  gpsee_ds_remove                 (gpsee_dataStore_t store, const void *key);
 JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *private);
-void                    gpsee_ds_destroy                (JSContext *cx, gpsee_dataStore_t store);
-gpsee_dataStore_t       gpsee_ds_create_unlocked        (JSContext *cx, size_t initialSizeHint);
+void                    gpsee_ds_destroy                (gpsee_dataStore_t store);
+gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint) __attribute__((malloc));
 
 /* GPSEE monitors */
 void                    gpsee_enterAutoMonitor          (JSContext *cx, gpsee_autoMonitor_t *monitor_p);
 void                    gpsee_leaveAutoMonitor          (gpsee_autoMonitor_t monitor);
-gpsee_monitor_t         gpsee_getNilMonitor             (void);
-gpsee_monitor_t         gpsee_createMonitor             (JSContext *cx);
+gpsee_monitor_t         gpsee_getNilMonitor             (void) __attribute__((const));
+gpsee_monitor_t         gpsee_createMonitor             (gpsee_interpreter_t *jsi) __attribute__((malloc));
 void                    gpsee_enterMonitor              (gpsee_monitor_t monitor);
 void                    gpsee_leaveMonitor              (gpsee_monitor_t monitor);
-void                    gpsee_destroyMonitor            (gpsee_monitor_t *monitor);
+void                    gpsee_destroyMonitor            (gpsee_interpreter_t *jsi, gpsee_monitor_t monitor);
 
 /* support routines */
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);

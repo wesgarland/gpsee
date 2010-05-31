@@ -68,7 +68,8 @@ JSBool gpsee_initializeMonitorSystem(JSContext *cx, gpsee_interpreter_t *jsi)
   if (!jsi->monitors.monitor)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".monitors.initialize: Could not initialize monitor subsystem");
 
-  jsi->monitorList = gpsee_ds_create_unlocked(cx, 5);
+  /* Access to monitorList_unlocked is guarded by jsi->monitors.monitor henceforth */
+  jsi->monitorList_unlocked = gpsee_ds_create_unlocked(5);
 #endif
 
   return JS_TRUE;
@@ -77,24 +78,21 @@ JSBool gpsee_initializeMonitorSystem(JSContext *cx, gpsee_interpreter_t *jsi)
 /**
  *  Create a monitor. Infallible.
  *
- *  @param      cx              A context belonging to the current interpreter. Used to locate the interpreter's
- *                              gpsee_interpreter_t and subsequently the interpreter's monitor monitor. Not used
- *                              to execute JSAPI code.
+ *  @param      jsi             The GPSEE interpreter runtime that owns the monitor
  *  @param      monitor_p       A pointer to the monitor. This address must stay valid for the lifetime of the interpreter.
  *
  *  @returns    The new monitor, or NULL if this was not a JS_THREADSAFE build.
  */
-gpsee_monitor_t gpsee_createMonitor(JSContext *cx)
+gpsee_monitor_t gpsee_createMonitor(gpsee_interpreter_t *jsi)
 {
 #ifdef JS_THREADSAFE
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_monitor_t       monitor;
 
   GPSEE_ASSERT(jsi->monitors.monitor);
 
   PR_EnterMonitor(jsi->monitors.monitor);
   monitor = PR_NewMonitor();
-  gpsee_ds_put(cx, jsi->monitorList, monitor, NULL);
+  gpsee_ds_put(jsi->monitorList_unlocked, monitor, NULL);
   PR_ExitMonitor(jsi->monitors.monitor);
 
   return monitor;
@@ -119,7 +117,7 @@ gpsee_monitor_t gpsee_getNilMonitor()
  *  Enter an auto-monitor (RAII). Infallible. Creates the monitor as-needed. 
  *
  *  @param      cx              A context belonging to the current interpreter. Only used if we need to create
- *                              the monitor.
+ *                              the monitor, to find the GPSEE interpreter pointer.
  *  @param      monitor_p       A pointer to the monitor. This address must stay valid for the lifetime of the interpreter.
  *
  *  @see gpsee_createMonitor()
@@ -127,14 +125,13 @@ gpsee_monitor_t gpsee_getNilMonitor()
 void gpsee_enterAutoMonitor(JSContext *cx, gpsee_autoMonitor_t *monitor_p)
 {
 #ifdef JS_THREADSAFE
-  GPSEE_ASSERT(((gpsee_interpreter_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx)))->monitors.monitor);
+  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  GPSEE_ASSERT(jsi->monitors.monitor);
 
   if (!*monitor_p)
-    *monitor_p = gpsee_createMonitor(cx);
+    *monitor_p = gpsee_createMonitor(jsi);
 
-  if (*monitor_p == nilMonitor)
-    return;
-  
   gpsee_enterMonitor(*monitor_p);
 #endif
 }
@@ -146,6 +143,9 @@ void gpsee_enterAutoMonitor(JSContext *cx, gpsee_autoMonitor_t *monitor_p)
  */
 void gpsee_enterMonitor(gpsee_monitor_t monitor)
 {
+  if (monitor == nilMonitor)
+    return;
+
   PR_EnterMonitor(monitor);
 }
 
@@ -181,24 +181,31 @@ void gpsee_leaveAutoMonitor(gpsee_autoMonitor_t monitor)
 }
 
 /**
- *  Destroy a monitor that was created by gpsee_createMonitor().
+ *  Destroy a monitor that was created by gpsee_createMonitor(). It is the caller's
+ *  responsibility to insure that no other threads may want to use the monitor while
+ *  this routine is running.
+ *
+ *  @param      jsi             The GPSEE interpreter which owns the monitor
+ *  @param      monitor         The monitor to destroy
  */
-void gpsee_destroyMonitor(gpsee_monitor_t *monitor_p)
+void gpsee_destroyMonitor(gpsee_interpreter_t *jsi, gpsee_monitor_t monitor)
 {
-  gpsee_enterMonitor(monitor_p);
-  gpsee_leaveMonitor(*monitor_p);
-  PR_DestroyMonitor(*monitor_p);
+  if (monitor == nilMonitor)
+    return;
+
+  PR_EnterMonitor(jsi->monitors.monitor);
+  gpsee_ds_remove(jsi->monitorList_unlocked, monitor);
+  PR_ExitMonitor(jsi->monitors.monitor);
+  PR_DestroyMonitor(monitor);
 }
 
 #ifdef JS_THREADSAFE
-static JSBool destroyMonitor(JSContext *nullcx, const void *key, void *value, void *private)
+static JSBool destroyMonitor_cb(JSContext *nullcx, const void *key, void *value, void *private)
 {
   gpsee_monitor_t monitor = (void *)key;
 
   GPSEE_ASSERT(monitor && monitor != nilMonitor);
 
-  gpsee_enterMonitor(monitor);
-  gpsee_leaveMonitor(monitor);
   PR_DestroyMonitor(monitor);
 
   return JS_TRUE;
@@ -206,30 +213,15 @@ static JSBool destroyMonitor(JSContext *nullcx, const void *key, void *value, vo
 #endif
 
 /**
- *  Shut down the monitor system.
- *  Resets monitors to NULL as they are destroyed.
+ *  Shut down the monitor system.  It is the caller's responsibility to insure
+ *  that no monitors are held when this routine is called.
  */
 void gpsee_shutdownMonitorSystem(gpsee_interpreter_t *jsi)
 {
 #ifdef JS_THREADSAFE
-  PRMonitor     *monitorMonitor;
-
-  if (jsi->monitors.monitor)
-  {
-#warning Monitor system shutdown is far from optimal
-    JSContext *cx = JS_NewContext(jsi->rt, 0x4000);
-    JS_BeginRequest(cx);
-
-    PR_EnterMonitor(jsi->monitors.monitor);
-    monitorMonitor = jsi->monitors.monitor;
-    jsi->monitors.monitor = NULL;
-    gpsee_ds_forEach(NULL, jsi->monitorList, destroyMonitor, NULL);
-    gpsee_ds_destroy(cx, jsi->monitors.monitor);
-    PR_ExitMonitor(monitorMonitor);
-
-    JS_EndRequest(cx);
-    JS_DestroyContext(cx);
-  }
+  gpsee_ds_forEach(NULL, jsi->monitorList_unlocked, destroyMonitor_cb, NULL);
+  gpsee_ds_destroy(jsi->monitorList_unlocked);
+  PR_DestroyMonitor(jsi->monitors.monitor);
 #endif
 
   return;
