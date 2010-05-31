@@ -32,7 +32,7 @@
  *
  * ***** END LICENSE BLOCK ***** 
  *
- * @file        gpsee_datastore.c       Arbitrary per-runtime data stores for GPSEE. 
+ * @file        gpsee_datastores.c      Arbitrary per-runtime data stores for GPSEE. 
  *                                      Stores key/value pairs where each is a
  *                                      pointer-sized value.
  * @author      Wes Garland
@@ -52,29 +52,23 @@ struct dataStore /* Completes forward declaration in gpsee.h */
     void                *value;         /**<< Value */
   }                     *data;          /**<< Slots in which data is stored */
   gpsee_monitor_t       monitor;        /**<< Monitor we must be in to read/write the data store internals */
-
-#ifdef GPSEE_DEBUG_BUILD
-  JSRuntime     *rt;                    /**<< Runtime associated with data store. 
-                                              Used only for runtime assertions in debug builds. */
-#endif
+  gpsee_interpreter_t   *jsi;           /**<< Interpreter which owns data store (monitor) */
 };
 
 /**
  *  Retrieve a value from a GPSEE Data Store. 
  *
- *  @param      cx      Context for allocating memory of/in the store.
  *  @param      store   The data store
  *  @param      key     The key describing the value to retrieve
  *
  *  @returns    The value stored, or NULL
  */
-void *gpsee_ds_get(JSContext *cx, gpsee_dataStore_t store, const void *key)
+void *gpsee_ds_get(gpsee_dataStore_t store, const void *key)
 {
   size_t i;
   void          *ret = NULL;
 
   GPSEE_ASSERT(store != NULL);
-  GPSEE_ASSERT(JS_GetRuntime(cx) == store->rt);
   GPSEE_ASSERT(store->monitor != NULL);
 
   gpsee_enterMonitor(store->monitor);
@@ -96,19 +90,17 @@ void *gpsee_ds_get(JSContext *cx, gpsee_dataStore_t store, const void *key)
  *  Put a value into a GPSEE Data Store. Failure to insert does not corrupt 
  *  existing data.
  *  
- *  @param      cx      Context for allocating memory of/in the store.
  *  @param      store   The data store
  *  @param      key     The key describing the value to store
  *  @param      value   The value to store
  *
  *  @returns    JS_FALSE on OOM.
  */
-JSBool gpsee_ds_put(JSContext *cx, gpsee_dataStore_t store, const void *key, void *value)
+JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
 {
   size_t        i, newSize, emptySlot = 0;
   void          *newData;
 
-  GPSEE_ASSERT(JS_GetRuntime(cx) == store->rt);
   GPSEE_ASSERT(store->monitor);
 
   gpsee_enterMonitor(store->monitor);
@@ -141,11 +133,11 @@ JSBool gpsee_ds_put(JSContext *cx, gpsee_dataStore_t store, const void *key, voi
   }
   else
   {
-    newSize += 128;
+    newSize = store->size + 128;
     newSize -= newSize % 128;
   }
 
-  newData = JS_realloc(cx, store->data, newSize * sizeof(store->data[0]));
+  newData = realloc(store->data, newSize * sizeof(store->data[0]));
   if (!newData)
   {
     gpsee_leaveMonitor(store->monitor);
@@ -167,18 +159,17 @@ JSBool gpsee_ds_put(JSContext *cx, gpsee_dataStore_t store, const void *key, voi
 /**
  *  Remove a key/value from a GPSEE Data Store.
  *
- *  @param      cx      Context for allocating memory of/in the store.
  *  @param      store   The data store
  *  @param      key     The key describing the value to store
- *  @param      value   If non-NULL, only remove the key/value if it has this value.
  *
- *  @return      returns The value removed
+ *  @return      returns The value removed, or NULL if not found
+ *
+ *  @note       It is not possible to differentiate between not-found and NULL-valued success.
  */
-void *gpsee_ds_remove(JSContext *cx, gpsee_dataStore_t store, const void *key, void *value)
+void *gpsee_ds_remove(gpsee_dataStore_t store, const void *key)
 {
   size_t        i;
-  void          *ret = NULL;
-  GPSEE_ASSERT(JS_GetRuntime(cx) == store->rt);
+  void          *value = NULL;
 
   gpsee_enterMonitor(store->monitor);
 
@@ -186,25 +177,21 @@ void *gpsee_ds_remove(JSContext *cx, gpsee_dataStore_t store, const void *key, v
   {
     if (store->data[i].key == key)
     {
-      if (value && (store->data[i].value != value))
-        goto out;
-
       value = store->data[i].value;
       memset(&store->data[i], 0, sizeof(store->data[0]));
-      ret = value;
       goto out;
     }
   }
 
   out:
   gpsee_leaveMonitor(store->monitor);
-  return ret;
+  return value;
 }
 
 /** 
  *  @see        gpsee_ds_create(), gpsee_ds_create_unlocked()
  */
-static gpsee_dataStore_t ds_create(JSContext *cx, size_t initialSizeHint)
+static gpsee_dataStore_t ds_create(size_t initialSizeHint)
 {
   gpsee_dataStore_t     store;
 
@@ -212,26 +199,21 @@ static gpsee_dataStore_t ds_create(JSContext *cx, size_t initialSizeHint)
   initialSizeHint = min(initialSizeHint, 1);      /* Draw out realloc errors */
 #endif
 
-  store = JS_malloc(cx, sizeof(*store));
+  store = calloc(sizeof(*store), 1);
   if (!store)
     return NULL;
 
-  memset(store, 0, sizeof(*store));
-
   if (initialSizeHint)
   {
-    store->data = JS_malloc(cx, sizeof(store->data[0]) * initialSizeHint);
+    store->data = calloc(sizeof(store->data[0]), initialSizeHint);
     if (!store->data)
     {
-      JS_free(cx, store);
+      free(store);
       return NULL;
     }
   }
 
   store->size = initialSizeHint;
-#ifdef GPSEE_DEBUG_BUILD
-  store->rt = JS_GetRuntime(cx);
-#endif
 
   return store;
 }
@@ -239,20 +221,21 @@ static gpsee_dataStore_t ds_create(JSContext *cx, size_t initialSizeHint)
 /**
  *  Create a new GPSEE Data Store.
  *
- *  @param      cx                      Context for allocating memory of/in the store.
+ *  @param      jsi                     GPSEE interpreter runtime to which data store belongs
  *  @param      initialSizeHint         How many slots to allocate immediately. Engine 
  *                                      is free to ignore. Used to give hint as to how
  *                                      many values will be immediately inserted.
  *  @return     The new data store, or NULL on failure.
  */
-gpsee_dataStore_t gpsee_ds_create(JSContext *cx, size_t initialSizeHint)
+gpsee_dataStore_t gpsee_ds_create(gpsee_interpreter_t *jsi, size_t initialSizeHint)
 {
-  gpsee_dataStore_t     store = ds_create(cx, initialSizeHint);
+  gpsee_dataStore_t     store = ds_create(initialSizeHint);
 
   if (!store)
     return NULL;
 
-  store->monitor = gpsee_createMonitor(cx);
+  store->monitor = gpsee_createMonitor(jsi);
+  store->jsi = jsi;     /* Cached for delete */
   return store;
 }
 
@@ -262,15 +245,14 @@ gpsee_dataStore_t gpsee_ds_create(JSContext *cx, size_t initialSizeHint)
  *  use data stores to build synchronization primitives. If you are not sure
  *  that you need the unlocked version of this function, then you don't.
  *  
- *  @param      cx                      Context for allocating memory of/in the store.
  *  @param      initialSizeHint         How many slots to allocate immediately. Engine 
  *                                      is free to ignore. Used to give hint as to how
  *                                      many values will be immediately inserted.
  *  @return     The new data store, or NULL on failure.
  */
-gpsee_dataStore_t gpsee_ds_create_unlocked(JSContext *cx, size_t initialSizeHint)
+gpsee_dataStore_t gpsee_ds_create_unlocked(size_t initialSizeHint)
 {
-  gpsee_dataStore_t     store = ds_create(cx, initialSizeHint);
+  gpsee_dataStore_t     store = ds_create(initialSizeHint);
 
   if (!store)
     return NULL;
@@ -284,26 +266,24 @@ gpsee_dataStore_t gpsee_ds_create_unlocked(JSContext *cx, size_t initialSizeHint
  *  one used for this routine) must be cleaned up or otherwise invalidated before this
  *  routine is called.
  *
- *  @param      cx                      Context used to call JS_free(); not into JSAPI or other GPSEE APIs.
  *  @param      store                   The data store to destroy
  */
-void gpsee_ds_destroy(JSContext *cx, gpsee_dataStore_t store)
+void gpsee_ds_destroy(gpsee_dataStore_t store)
 {
   gpsee_monitor_t       monitor = store->monitor;
-
-  GPSEE_ASSERT(JS_GetRuntime(cx) == store->rt);
+  gpsee_interpreter_t   *jsi    = store->jsi;
 
   gpsee_enterMonitor(monitor);
 #ifdef GPSEE_DEBUG_BUILD
   memset(store->data, 0xdb, sizeof(store->data) * store->size);
 #endif
-  JS_free(cx, store->data);
+  free(store->data);
 #ifdef GPSEE_DEBUG_BUILD
   memset(store, 0xdc, sizeof(*store));
 #endif
-  JS_free(cx, store);
+  free(store);
   gpsee_leaveMonitor(monitor);
-  gpsee_destroyMonitor(&monitor);
+  gpsee_destroyMonitor(jsi, monitor);
 
   return;
 }
@@ -313,7 +293,7 @@ void gpsee_ds_destroy(JSContext *cx, gpsee_dataStore_t store)
  *  If any invocation of cb returns JS_FALSE, we immediately return JS_FALSE. If no 
  *  invocation of cb returns JS_FALSE, we return JS_TRUE.
  *
- *  @param      cx      JavaScript Context in which to call into JSAPI.
+ *  @param      cx      JavaScript Context passed to callback
  *  @param      store   The GPSEE data store
  *  @param      cb      The function to call for each (key, value) pair
  *  @param      private A private pointer to pass to the callback function cb

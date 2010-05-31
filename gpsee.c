@@ -307,7 +307,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
       snprintf(er_warning, sizeof(er_warning), "%swarning ", (JSREPORT_IS_STRICT(report->flags) ? "strict " : ""));
   }
 
-  if (report->errorNumber)
+  if (report->errorNumber)     
     snprintf(er_number, sizeof(er_number), "#%i ", report->errorNumber);
   else
     er_number[0] = (char)0;
@@ -706,12 +706,13 @@ static void removeAllAsyncCallbacks_unlocked(gpsee_interpreter_t *jsi)
   }
   jsi->asyncCallbacks = NULL;
 }
+#endif
+
 static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
 {
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
-#endif
 
 static JSBool destroyRealm_cb(JSContext *cx, const void *key, void *value, void *private)
 {
@@ -755,8 +756,6 @@ int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
 #endif
 
   gpsee_initIOHooks(cx, interpreter);
-
-  JS_EndRequest(cx);
 
   if (gpsee_ds_forEach(cx, interpreter->realms, destroyRealm_cb, NULL) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyInterpreter: Error destroying realm");
@@ -892,8 +891,8 @@ gpsee_interpreter_t *gpsee_createInterpreter()
   if (gpsee_initializeMonitorSystem(cx, interpreter) == JS_FALSE)
     panic(__FILE__ ": Unable to intialize monitor subsystem");
 
-  interpreter->realms = gpsee_ds_create(cx, 1);
-  interpreter->realmsByContext = gpsee_ds_create(cx, 1);
+  interpreter->realms = gpsee_ds_create(interpreter, 1);
+  interpreter->realmsByContext = gpsee_ds_create(interpreter, 1);
 
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))

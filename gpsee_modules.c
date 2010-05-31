@@ -744,6 +744,8 @@ static moduleScopeInfo_t *getModuleScopeInfo(JSContext *cx, JSObject *moduleScop
 {
   dprintf("Retrieving info for module with scope 0x%p\n", moduleScope);
 
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || JS_GET_CLASS(cx, moduleScope) == gpsee_getGlobalClass());
+
   return JS_GetPrivate(cx, moduleScope);
 }
 
@@ -757,6 +759,7 @@ static JSBool setModuleScopeInfo(JSContext *cx, JSObject *moduleScope, moduleHan
 
   dprintf("Noting module with scope 0x%p\n", moduleScope);
   GPSEE_ASSERT(realm == gpsee_getRealm(cx));
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || JS_GET_CLASS(cx, moduleScope) == gpsee_getGlobalClass());
 
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
@@ -768,6 +771,42 @@ static JSBool setModuleScopeInfo(JSContext *cx, JSObject *moduleScope, moduleHan
   JS_SetPrivate(cx, moduleScope, hnd);
 
   return JS_TRUE;
+}
+
+/**
+ *  Attempt to extract the current GPSEE realm from the given moduleScope.
+ *  Passing NULL for the moduleScope instructs this function to use 
+ *  the context's current global object.  This function will not cause
+ *  a JS exception to be thrown. The current global object is normally the module's
+ *  scope during module load/initialization, and the program module's scope
+ *  otherwise.
+ *
+ *  @param      cx              The current JS context (belonging to the current realm)
+ *  @param      moduleScope     The scope to search for the realm in, or NULL to select the global object.
+ *  @returns    The realm or NUL.
+ *
+ *  @note       This routine is called by gpsee_getRealm().
+ */
+gpsee_realm_t *gpsee_getModuleScopeRealm(JSContext *cx, JSObject *moduleScope)
+{
+  moduleScopeInfo_t     *hnd;
+  JSClass               *class;
+
+  if (!moduleScope)
+    moduleScope = JS_GetGlobalObject(cx);
+
+  if (!moduleScope)
+    return NULL;
+
+  class = JS_GET_CLASS(cx, moduleScope);
+  if (class != &module_scope_class && class != gpsee_getGlobalClass())
+    return NULL;
+
+  hnd = JS_GetPrivate(cx, moduleScope);
+  if (!hnd)
+    return NULL;
+
+  return hnd->realm;
 }
 
 static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
@@ -1888,7 +1927,7 @@ JSBool gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const 
   if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
     return JS_FALSE;
 
-  *data_p = gpsee_ds_get(cx, ds, key);
+  *data_p = gpsee_ds_get(ds, key);
   if (!*data_p)
     return gpsee_throw(cx, "%s.moduleData.notFound: Data for key " GPSEE_PTR_FMT " was not found.", throwPrefix, key);
 
@@ -1916,6 +1955,6 @@ JSBool gpsee_setModuleData(JSContext *cx, const void *key, void *data)
   if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
     return JS_FALSE;
 
-  return gpsee_ds_put(cx, ds, key, data);
+  return gpsee_ds_put(ds, key, data);
 }
 
