@@ -585,6 +585,9 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
+  if (gpsee_setModuleData(cx, cFunction_clasp, proto) == JS_FALSE)
+    return NULL;
+
   GPSEE_ASSERT(proto);
 
   return proto;
