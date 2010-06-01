@@ -91,14 +91,14 @@ void *gpsee_ds_get(gpsee_dataStore_t store, const void *key)
  *  existing data.
  *  
  *  @param      store   The data store
- *  @param      key     The key describing the value to store
+ *  @param      key     The key describing the value to store. Cannot use NULL as a key.
  *  @param      value   The value to store
  *
  *  @returns    JS_FALSE on OOM.
  */
 JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
 {
-  size_t        i, newSize, emptySlot = 0;
+  size_t        i, newSize;
   void          *newData;
 
   GPSEE_ASSERT(store->monitor);
@@ -108,19 +108,19 @@ JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
   {
     if (store->data[i].key == key)
     {
+      /* Slot already had same key: overwrite */
       store->data[i].value = value;
+      gpsee_leaveMonitor(store->monitor);
       return JS_TRUE;
     }
     else if (store->data[i].key == NULL)
-      emptySlot = i;
-  }
-
-  if (!((emptySlot == 0) && (store->data[i].key != NULL)))
-  {
-    store->data[emptySlot].key   = key;
-    store->data[emptySlot].value = value;
-    gpsee_leaveMonitor(store->monitor);
-    return JS_TRUE;
+    {
+      /* Found empty slot */
+      store->data[i].key   = key;
+      store->data[i].value = value;
+      gpsee_leaveMonitor(store->monitor);
+      return JS_TRUE;
+    }
   }
 
   /* No overwrite, no empty slot */
@@ -178,7 +178,10 @@ void *gpsee_ds_remove(gpsee_dataStore_t store, const void *key)
     if (store->data[i].key == key)
     {
       value = store->data[i].value;
-      memset(&store->data[i], 0, sizeof(store->data[0]));
+#ifdef GPSEE_DEBUG_BUILD
+      memset(&store->data[i], 0xdd, sizeof(store->data[0]));
+#endif
+      store->data[i].key = NULL;
       goto out;
     }
   }
@@ -315,6 +318,9 @@ JSBool gpsee_ds_forEach(JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach
   gpsee_enterMonitor(store->monitor);
   for (i=0; i < store->size; i++)
   {
+    if (!store->data[i].key)
+      continue;
+
     if (cb(cx, store->data[i].key, store->data[i].value, private) == JS_FALSE)
     {
       gpsee_leaveMonitor(store->monitor);

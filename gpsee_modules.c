@@ -1675,7 +1675,15 @@ static const char *libexecDir(void)
 
 /**
  *  Module system bootstapping code.  Modules are singletons and memoized
- *  per GPSEE Realm, but may span contexts when multithreaded.
+ *  per GPSEE Realm, but may span contexts when multithreaded. 
+ * 
+ *  This routine is intended to be called during realm-creation. As such, it
+ *  is the caller's responsibility to insure it is only called once per realm.
+ *
+ *  @param      realm   The GPSEE Realm to which we are adding module capability
+ *  @param      cx      The current JavaScript context; must belong to the passed realm.
+ *
+ *  @returns    JS_TRUE on success; JS_FALSE if we have thrown an exception.
  */
 JSBool gpsee_initializeModuleSystem(gpsee_realm_t *realm, JSContext *cx)
 {
@@ -1715,6 +1723,8 @@ JSBool gpsee_initializeModuleSystem(gpsee_realm_t *realm, JSContext *cx)
 
     JS_free(cx, envpath);
   }
+
+  realm->moduleData = gpsee_ds_create(JS_GetRuntimePrivate(JS_GetRuntime(cx)), 5);
 
   dpDepth(-1);
   return JS_TRUE;
