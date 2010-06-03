@@ -1592,11 +1592,17 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 /** Callback from the garbage collector, which marks all
  *  module objects so that they are not collected before
  *  their Fini functions are called.
+ *
+ *  @param      cx      Any context in the current runtime
+ *  @param      realm   The realm upon which the callback should operate
+ *  @param      status  Phase the garbage collector is operating in
+ *
+ *  @see        JS_SetGCCallback(), gpsee_addGCCallback()
+ *
+ *  @returns    JS_TRUE on success, or JS_FALSE if we threw a JS exception
  */
-static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
+static JSBool moduleGCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCStatus status)
 {
-  gpsee_realm_t         *realm = gpsee_getRealm(cx);
-  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   moduleHandle_t	*module;
 
   /* Finalize all modules on the unreachable list now that main GC has finished */
@@ -1608,19 +1614,6 @@ static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
 
   if (status != JSGC_MARK_END)
     return JS_TRUE;
-
-#warning Need general purpose GC callback hook - calling IO hook code from module GC handler
-  {
-    size_t i;
-
-    for (i = 0; i < grt->user_io_hooks_len; i++)
-    {
-      if (grt->user_io_hooks[i].input != JSVAL_VOID)
-        JS_MarkGCThing(cx, (void *)grt->user_io_hooks[i].input, "input hook", NULL);
-      if (grt->user_io_hooks[i].output != JSVAL_VOID)
-        JS_MarkGCThing(cx, (void *)grt->user_io_hooks[i].output, "output hook", NULL);
-    }
-  }
 
   dprintf("Adding roots from GC Callback\n");
   dpDepth(+1);
@@ -1698,9 +1691,6 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
   dprintf("Initializing module system; jail starts at %s\n", realm->moduleJail ?: "/");
   dpDepth(+1);
 
-#warning Better GC Callback APIs needed
-  JS_SetGCCallback(cx, moduleGCCallback);       /* actually per rt, we may overwrite here */
-
   realm->modulePath = JS_malloc(cx, sizeof(*realm->modulePath));
   if (!realm->modulePath)
     goto fail;
@@ -1728,11 +1718,22 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
   }
 
   realm->moduleData = gpsee_ds_create(realm->grt, 4);
+  if (!realm->moduleData)
+    goto fail;
+
+  if (gpsee_addGCCallback(realm->grt, realm, moduleGCCallback) == JS_FALSE)
+    goto fail;
 
   dpDepth(-1);
   return JS_TRUE;
 
   fail:
+  if (realm->modulePath)
+    JS_free(cx, realm->modulePath);
+
+  if (realm->moduleData)
+    gpsee_ds_destroy(realm->moduleData);
+
   dpDepth(-1);
   return JS_FALSE;
 }

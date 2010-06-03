@@ -208,6 +208,7 @@ typedef struct
   gpsee_dataStore_t	realms;	                /**< Key-value index; key = realm, value = NULL */
   gpsee_dataStore_t	realmsByContext;	/**< Key-value index; key = context, value = realm */
   gpsee_dataStore_t     monitorList_unlocked;   /**< Key-value index; key = monitor, value = NULL. Must hold grt->monitors.monitor to use. */
+  gpsee_dataStore_t     gcCallbackList;         /**< List of GC callback functions and their invocation realms */
   size_t		stackChunkSize;		/**< For calls to JS_NewContext() */
   jsuint                threadStackLimit;       /**< Upper bound on C stack bounds per context */
   int 			exitCode;		/**< Exit Code from System.exit() etc */
@@ -294,12 +295,14 @@ typedef struct
   JSObject              *globalObject;  /**< The global object for the realm */
 } gpsee_interpreter_t;
 
-/** @addtogroup realms
+/** @addtogroup core
  *  @{
  */
-GPSEEAsyncCallback*gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
-void   gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
-JSBool gpsee_operationCallback(JSContext *cx);
+typedef JSBool (* gpsee_gcCallback_fn)(JSContext *cx, gpsee_realm_t *, JSGCStatus); /**< GPSEE GC Callback function type */
+JSBool                  gpsee_addGCCallback             (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
+JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, gpsee_gcCallback_fn cb);
+GPSEEAsyncCallback *    gpsee_addAsyncCallback          (JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
+void                    gpsee_removeAsyncCallback       (JSContext *cx, GPSEEAsyncCallback *c);
 /** @} */
 
 /* core routines */
@@ -338,7 +341,7 @@ JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void) __attribute__((co
 gpsee_realm_t *      gpsee_createRealm(gpsee_runtime_t *grt, const char *name) __attribute__((malloc));
 gpsee_realm_t *      gpsee_getRealm(JSContext *cx);
 JSBool               gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm);
-JSContext *          gpsee_newContext(gpsee_realm_t *realm);
+JSContext *          gpsee_createContext(gpsee_realm_t *realm);
 void                 gpsee_destroyContext(JSContext *cx);
 /** @} */
 

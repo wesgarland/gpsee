@@ -659,10 +659,14 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
   if (gpsee_ds_forEach(cx, grt->realms, destroyRealm_cb, NULL) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRuntime: Error destroying realm");
 
+  gpsee_ds_destroy(grt->realms);
+  gpsee_ds_destroy(grt->realmsByContext);
+  gpsee_ds_destroy(grt->gcCallbackList);
+  
   gpsee_shutdownMonitorSystem(grt);
   JS_DestroyContext(cx);
   JS_DestroyRuntime(grt->rt);
-  
+
   free(grt);
   return 0;
 }
@@ -722,14 +726,14 @@ JSBool gpsee_initGlobalObject(JSContext *cx, gpsee_realm_t *realm, JSObject *obj
  *  Set the maximum (or minimum, depending on arch) address which JSAPI is allowed to use on the C stack.
  *  Any attempted use beyond this address will cause an exception to be thrown, rather than risking a
  *  segfault.  The value used will be noted in gpsee_runtime_t::threadStackLimit, so it can be
- *  reused by code which creates new contexts (including gpsee_newContext()).
+ *  reused by code which creates new contexts (including gpsee_createContext()).
  *
  *  If rc.gpsee_thread_stack_limit is zero this check is disabled.
  *
  *  @param	cx		JS Context to set - must be set before any JS code runs
  *  @param	stackBase	An address near the top (bottom) of the stack
  *
- *  @see gpsee_newContext();
+ *  @see gpsee_createContext();
  */
 void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackSize)
 {
@@ -795,6 +799,8 @@ gpsee_runtime_t *gpsee_createRuntime()
   grt->coreCx           = cx;
   grt->realms           = gpsee_ds_create(grt, 1);
   grt->realmsByContext  = gpsee_ds_create(grt, 1);
+  grt->gcCallbackList   = gpsee_ds_create(grt, 1);
+
   grt->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
   /* Set the JavaScript version for compatibility reasons if required. */
@@ -827,6 +833,8 @@ gpsee_runtime_t *gpsee_createRuntime()
   gpsee_addAsyncCallback(cx, gpsee_maybeGC, NULL);
   /* Add a context callback to remove any async callbacks associated with the context */
 #endif
+
+  JS_SetGCCallback(cx, gpsee_gcCallback);       
   return grt;
 }
 
@@ -940,7 +948,7 @@ gpsee_interpreter_t *gpsee_createInterpreter()
   if (!jsi->grt)
     goto out;
   
-  jsi->cx = gpsee_newContext(jsi->realm);
+  jsi->cx = gpsee_createContext(jsi->realm);
   if (!jsi->cx)
     goto out;
 
