@@ -32,6 +32,7 @@
  *
  * ***** END LICENSE BLOCK ***** 
  *
+ * @addtogroup  datastores @{
  * @file        gpsee_datastores.c      Arbitrary per-runtime data stores for GPSEE. 
  *                                      Stores key/value pairs where each is a
  *                                      pointer-sized value.
@@ -45,14 +46,14 @@
 /** Internal structure storing the data. Subject to change without notice. */
 struct dataStore /* Completes forward declaration in gpsee.h */
 {
-  size_t                size;           /**<< Number of slots allocated for data */
+  size_t                size;           /**< Number of slots allocated for data */
   struct
   {
-    const void          *key;           /**<< Key */
-    void                *value;         /**<< Value */
-  }                     *data;          /**<< Slots in which data is stored */
-  gpsee_monitor_t       monitor;        /**<< Monitor we must be in to read/write the data store internals */
-  gpsee_interpreter_t   *jsi;           /**<< Interpreter which owns data store (monitor) */
+    const void          *key;           /**< Key */
+    void                *value;         /**< Value */
+  }                     *data;          /**< Slots in which data is stored */
+  gpsee_monitor_t       monitor;        /**< Monitor we must be in to read/write the data store internals */
+  gpsee_runtime_t   *grt;               /**< GPSEE Runtime which owns data store (monitor) */
 };
 
 /**
@@ -224,21 +225,21 @@ static gpsee_dataStore_t ds_create(size_t initialSizeHint)
 /**
  *  Create a new GPSEE Data Store.
  *
- *  @param      jsi                     GPSEE interpreter runtime to which data store belongs
+ *  @param      grt                     GPSEE runtime to which data store belongs
  *  @param      initialSizeHint         How many slots to allocate immediately. Engine 
  *                                      is free to ignore. Used to give hint as to how
  *                                      many values will be immediately inserted.
  *  @return     The new data store, or NULL on failure.
  */
-gpsee_dataStore_t gpsee_ds_create(gpsee_interpreter_t *jsi, size_t initialSizeHint)
+gpsee_dataStore_t gpsee_ds_create(gpsee_runtime_t *grt, size_t initialSizeHint)
 {
   gpsee_dataStore_t     store = ds_create(initialSizeHint);
 
   if (!store)
     return NULL;
 
-  store->monitor = gpsee_createMonitor(jsi);
-  store->jsi = jsi;     /* Cached for delete */
+  store->monitor = gpsee_createMonitor(grt);
+  store->grt = grt;     /* Cached for delete */
   return store;
 }
 
@@ -274,7 +275,7 @@ gpsee_dataStore_t gpsee_ds_create_unlocked(size_t initialSizeHint)
 void gpsee_ds_destroy(gpsee_dataStore_t store)
 {
   gpsee_monitor_t       monitor = store->monitor;
-  gpsee_interpreter_t   *jsi    = store->jsi;
+  gpsee_runtime_t   *grt    = store->grt;
 
   gpsee_enterMonitor(monitor);
 #ifdef GPSEE_DEBUG_BUILD
@@ -286,7 +287,7 @@ void gpsee_ds_destroy(gpsee_dataStore_t store)
 #endif
   free(store);
   gpsee_leaveMonitor(monitor);
-  gpsee_destroyMonitor(jsi, monitor);
+  gpsee_destroyMonitor(grt, monitor);
 
   return;
 }
@@ -331,3 +332,5 @@ JSBool gpsee_ds_forEach(JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach
   gpsee_leaveMonitor(store->monitor);
   return JS_TRUE;
 }
+
+/** @} */

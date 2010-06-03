@@ -465,7 +465,7 @@ const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filena
  */
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   const char		*filename = gpsee_programRelativeFilename(cx, report->filename);
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
@@ -486,10 +486,10 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
-  if (jsi->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
+  if (grt->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
-    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
-    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
+    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, grt->pendingErrorMessage, bold?VT_UNBOLD:"");
+    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
   }
 
   if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
@@ -550,7 +550,7 @@ static const char *rev_strchr(const char *start, char search, const char *limit)
  */
 JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval                	v;
   char 			*longerror = NULL;
   JSErrorReporter 	reporter;
@@ -580,7 +580,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
         error = JS_GetStringBytes(JSVAL_TO_STRING(v));
 
         /* This makes the message available to gpsee_reportErrorSourceCode() */
-        jsi->pendingErrorMessage = error;
+        grt->pendingErrorMessage = error;
       }
     }
 
@@ -605,7 +605,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
   reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
   JS_ReportPendingException(cx);
   JS_SetErrorReporter(cx, reporter);
-  jsi->pendingErrorMessage = NULL;
+  grt->pendingErrorMessage = NULL;
 
   if (!dumpStack)
     return JS_TRUE;

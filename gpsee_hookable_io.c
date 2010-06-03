@@ -67,11 +67,11 @@ static JSBool uio_fwrite_callback(JSContext *cx, void *vdata)
 
 static size_t uio_fwrite_hook(const void *ptr, size_t size, size_t nitems, FILE *file, JSContext *cx)
 {
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_realm_t         *realm = gpsee_getRealm(cx);
   int                   fd = fileno(file);
 
-  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || grt->user_io_hooks_len <= fd || grt->user_io_hooks[fd].output == JSVAL_VOID)
     return fwrite(ptr, size, nitems, file);
 
   if (JS_IsExceptionPending(cx) == JS_TRUE)
@@ -107,7 +107,7 @@ static size_t uio_fwrite_hook(const void *ptr, size_t size, size_t nitems, FILE 
       panic(GPSEE_GLOBAL_NAMESPACE_NAME ".user_io.fwrite: Out of Memory");
     argv[0] = STRING_TO_JSVAL(str);
 
-    if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].output, 1, argv, &rval) == JS_FALSE)
+    if (JS_CallFunctionValue(cx, realm->globalObject, grt->user_io_hooks[fd].output, 1, argv, &rval) == JS_FALSE)
     {
       JS_ReportPendingException(cx);
       JS_ClearPendingException(cx);
@@ -138,11 +138,11 @@ static int uio_printf_hook(JSContext *cx, const char *fmt, ...)
 {
   va_list               ap;
   int                   ret;
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   va_start(ap, fmt);
 
-  if (jsi->user_io_hooks == NULL)
+  if (grt->user_io_hooks == NULL)
     ret = vprintf(fmt, ap);
   else
     ret = uio_vfprintf_hook(cx, stdout, fmt, ap);
@@ -155,11 +155,11 @@ static int uio_fprintf_hook(JSContext *cx, FILE *file, const char *fmt, ...)
 {
   va_list               ap;
   int                   ret;
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   va_start(ap, fmt);
 
-  if (jsi->user_io_hooks == NULL)
+  if (grt->user_io_hooks == NULL)
     ret = vfprintf(file, fmt, ap);
   else
     ret = uio_vfprintf_hook(cx, file, fmt, ap);
@@ -188,16 +188,16 @@ static char *uio_fgets_hook(char *buf, size_t len, FILE *file, JSContext *cx)
   int                   fd = fileno(file);
   jsval                 rval;
   jsval                 argv[2];
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   argv[0] = JSVAL_TRUE;         /* Read line */
   argv[1] = INT_TO_JSVAL(len);  /* Do not exceed len characters */
 
-  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || grt->user_io_hooks_len <= fd || grt->user_io_hooks[fd].output == JSVAL_VOID)
     return fgets(buf, len, file);
 
-  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, grt->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);
@@ -218,17 +218,17 @@ static int uio_fgetc_hook(FILE *file, JSContext *cx)
   int                   fd = fileno(file);
   jsval                 rval;
   jsval                 argv[2];
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_realm_t         *realm = gpsee_getRealm(cx);
   char                  c;
 
   argv[0] = JSVAL_FALSE;         /* Read exactly */
   argv[1] = INT_TO_JSVAL(1);     /* 1 byte */
 
-  if (jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (grt->user_io_hooks_len <= fd || grt->user_io_hooks[fd].output == JSVAL_VOID)
     return fgetc(file);
 
-  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, grt->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);
@@ -248,16 +248,16 @@ static size_t uio_fread_hook(char *buf, size_t size, size_t nitems, FILE *file, 
   int                   fd = fileno(file);
   jsval                 rval;
   jsval                 argv[2];
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   argv[0] = JSVAL_FALSE;                         /* Read exactly */
   argv[1] = INT_TO_JSVAL(size * nitems);         /* size * nitems bytes */
 
-  if (!realm || jsi->user_io_hooks_len <= fd || jsi->user_io_hooks[fd].output == JSVAL_VOID)
+  if (!realm || grt->user_io_hooks_len <= fd || grt->user_io_hooks[fd].output == JSVAL_VOID)
     return fread(buf, size, nitems, file);
 
-  if (JS_CallFunctionValue(cx, realm->globalObject, jsi->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
+  if (JS_CallFunctionValue(cx, realm->globalObject, grt->user_io_hooks[fd].input, 0, NULL, &rval) == JS_FALSE)
   {
     JS_ReportPendingException(cx);
     JS_ClearPendingException(cx);
@@ -276,41 +276,41 @@ static size_t uio_fread_hook(char *buf, size_t size, size_t nitems, FILE *file, 
  *  metal as possible, freeing any previously-allocated 
  *  resources as we do so.
  */
-void gpsee_initIOHooks(JSContext *cx, gpsee_interpreter_t *jsi)
+void gpsee_initIOHooks(JSContext *cx, gpsee_runtime_t *grt)
 {
-  jsi->user_io_printf   = uio_printf_hook;
-  jsi->user_io_fprintf  = uio_fprintf_hook;
-  jsi->user_io_vfprintf = uio_vfprintf_hook;
-  jsi->user_io_fwrite   = (void *)fwrite;
-  jsi->user_io_fread    = (void *)fread;
-  jsi->user_io_fgets    = (void *)fgets;
-  jsi->user_io_fputs    = (void *)fputs;
-  jsi->user_io_fputc    = (void *)fputc;
-  jsi->user_io_puts     = (void *)puts;
+  grt->user_io_printf   = uio_printf_hook;
+  grt->user_io_fprintf  = uio_fprintf_hook;
+  grt->user_io_vfprintf = uio_vfprintf_hook;
+  grt->user_io_fwrite   = (void *)fwrite;
+  grt->user_io_fread    = (void *)fread;
+  grt->user_io_fgets    = (void *)fgets;
+  grt->user_io_fputs    = (void *)fputs;
+  grt->user_io_fputc    = (void *)fputc;
+  grt->user_io_puts     = (void *)puts;
 
-  jsi->user_io_hooks_len = 0;
-  if (jsi->user_io_hooks)
-    JS_free(cx, jsi->user_io_hooks);
-  jsi->user_io_hooks = NULL;
+  grt->user_io_hooks_len = 0;
+  if (grt->user_io_hooks)
+    JS_free(cx, grt->user_io_hooks);
+  grt->user_io_hooks = NULL;
 
   return;
 }
 
 static JSBool hookFileDescriptor(JSContext *cx, int fd, jsval ihook, jsval ohook)
 {
-  gpsee_interpreter_t *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-  if (jsi->user_io_hooks_len <= min(fd, STDERR_FILENO))
+  if (grt->user_io_hooks_len <= min(fd, STDERR_FILENO))
   {
-    void *old = jsi->user_io_hooks;
+    void *old = grt->user_io_hooks;
 
-#warning Need jsi mutex here
-    jsi->user_io_hooks_len = 1 + min(fd, STDERR_FILENO);
-    jsi->user_io_hooks = JS_realloc(cx, jsi->user_io_hooks, sizeof(jsi->user_io_hooks[0]) * jsi->user_io_hooks_len);
+#warning Need grt mutex here
+    grt->user_io_hooks_len = 1 + min(fd, STDERR_FILENO);
+    grt->user_io_hooks = JS_realloc(cx, grt->user_io_hooks, sizeof(grt->user_io_hooks[0]) * grt->user_io_hooks_len);
 
-    if (jsi->user_io_hooks == NULL)
+    if (grt->user_io_hooks == NULL)
     {
-      jsi->user_io_hooks = old;
+      grt->user_io_hooks = old;
       return JS_FALSE;
     }
 
@@ -318,22 +318,22 @@ static JSBool hookFileDescriptor(JSContext *cx, int fd, jsval ihook, jsval ohook
     {
       size_t fd;
 
-      for (fd = 0; fd < jsi->user_io_hooks_len; fd++)
-        jsi->user_io_hooks[fd].input = jsi->user_io_hooks[fd].output = JSVAL_VOID;
+      for (fd = 0; fd < grt->user_io_hooks_len; fd++)
+        grt->user_io_hooks[fd].input = grt->user_io_hooks[fd].output = JSVAL_VOID;
     }
   }
 
-  jsi->user_io_hooks[fd].input = ihook;
-  jsi->user_io_hooks[fd].output = ohook;
+  grt->user_io_hooks[fd].input = ihook;
+  grt->user_io_hooks[fd].output = ohook;
 
-  jsi->user_io_printf   = uio_printf_hook;
-  jsi->user_io_fprintf  = uio_fprintf_hook;
-  jsi->user_io_vfprintf = uio_vfprintf_hook;
-  jsi->user_io_fwrite   = uio_fwrite_hook;
-  jsi->user_io_fread    = uio_fread_hook;
-  jsi->user_io_fgets    = uio_fgets_hook;
-  jsi->user_io_fputs    = uio_fputs_hook;
-  jsi->user_io_fputc    = uio_fputc_hook;
+  grt->user_io_printf   = uio_printf_hook;
+  grt->user_io_fprintf  = uio_fprintf_hook;
+  grt->user_io_vfprintf = uio_vfprintf_hook;
+  grt->user_io_fwrite   = uio_fwrite_hook;
+  grt->user_io_fread    = uio_fread_hook;
+  grt->user_io_fgets    = uio_fgets_hook;
+  grt->user_io_fputs    = uio_fputs_hook;
+  grt->user_io_fputc    = uio_fputc_hook;
 
   return JS_TRUE;
 }
