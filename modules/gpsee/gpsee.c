@@ -359,20 +359,20 @@ static JSBool gpsee_underscoreExit(JSContext *cx, JSObject *obj, uintN argc, jsv
 
 static JSBool gpsee_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-  if (jsi->primordialRealm->primordialThread != PR_GetCurrentThread())
+  if (grt->primordialThread != PR_GetCurrentThread())
   {
     return gpsee_throw(cx, MODULE_ID ".exit.thread: gpsee.exit() may not be called by any other thread "
 		       "than the thread which created the run time!");
   }
 
   if (argc)
-    jsi->exitCode = JSVAL_TO_INT(argv[0]);
+    grt->exitCode = JSVAL_TO_INT(argv[0]);
   else
-    jsi->exitCode = 0;
+    grt->exitCode = 0;
 
-  jsi->exitType = et_requested;
+  grt->exitType = et_requested;
 
   return JS_FALSE; /* not reached */
 }

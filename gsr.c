@@ -258,7 +258,7 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
   int			gcZeal = 0;
   int			jsOptions;
   const char 		*f;
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   jsOptions = JS_GetOptions(cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;
   *verbosity_p = 0;
@@ -270,7 +270,7 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
     {
       /* 'C' flag disables compiler cache */
       case 'C':
-        jsi->useCompilerCache = 0;
+        grt->useCompilerCache = 0;
         break;
 
       case 'a':	/* Handled in prmain() */
@@ -287,7 +287,7 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
 	break;
 
       case 'W':	/* Suppress JS Warnings */
-	jsi->errorReport |= er_noWarnings;
+	grt->errorReport |= er_noWarnings;
 	break;
 
       case 'e':	/* Allow regexps that are more than O(n^3) */
@@ -492,8 +492,9 @@ void loadRuntimeConfig(const char *scriptFilename, const char *flags, int argc, 
 PRIntn prmain(PRIntn argc, char **argv)
 {
   void                  *stackBasePtr;
-  gpsee_interpreter_t	*jsi;				/* Handle describing JS interpreter */
+  gpsee_interpreter_t   *jsi;                           /* Handle describing a GPSEE/JavaScript Interpreter */
   gpsee_realm_t         *realm;                         /* Interpreter's primordial realm */
+  JSContext             *cx;                            /* A context in realm */
   const char		*scriptCode = NULL;		/* String with JavaScript program in it */
   const char		*scriptFilename = NULL;		/* Filename with JavaScript program in it */
   char * const		*script_argv;			/* Becomes arguments array in JS program */
@@ -648,10 +649,12 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   jsi = gpsee_createInterpreter();
-  realm = jsi->primordialRealm;
-  gpsee_setThreadStackLimit(realm->cx, &stackBasePtr, strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));
+  realm = jsi->realm;
+  cx = jsi->cx;
 
-  processFlags(realm->cx, flags, &verbosity);
+  gpsee_setThreadStackLimit(cx, &stackBasePtr, strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));
+
+  processFlags(cx, flags, &verbosity);
   free(flags);
 
 #if defined(__SURELYNX__)
@@ -669,7 +672,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   if (scriptCode) 
   {
     jsval v;
-    if (JS_EvaluateScript(realm->cx, realm->globalObject, scriptCode, strlen(scriptCode), "command_line", 1, &v) == JS_FALSE)
+    if (JS_EvaluateScript(cx, realm->globalObject, scriptCode, strlen(scriptCode), "command_line", 1, &v) == JS_FALSE)
       goto out;
   }
 
@@ -685,7 +688,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     i = snprintf(preloadScriptFilename, sizeof(preloadScriptFilename), "%s/.%s_preload", gpsee_dirname(argv[0], mydir, sizeof(mydir)), 
 		 gpsee_basename(argv[0]));
     if ((i == 0) || (i == (sizeof(preloadScriptFilename) -1)))
-      gpsee_log(realm->cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
+      gpsee_log(cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
     else
       errno = 0;
 
@@ -695,9 +698,9 @@ PRIntn prmain(PRIntn argc, char **argv)
       JSScript		*script;
       JSObject		*scrobj;
 
-      if (!gpsee_compileScript(realm->cx, preloadScriptFilename, NULL, NULL, &script, realm->globalObject, &scrobj))
+      if (!gpsee_compileScript(cx, preloadScriptFilename, NULL, NULL, &script, realm->globalObject, &scrobj))
       {
-	gpsee_log(realm->cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
+	gpsee_log(cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
 	goto out;
       }
 
@@ -706,24 +709,24 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!noRunScript)
       {
-        JS_AddNamedRoot(realm->cx, &scrobj, "preload_scrobj");
-        if (JS_ExecuteScript(realm->cx, realm->globalObject, script, &v) == JS_FALSE)
+        JS_AddNamedRoot(cx, &scrobj, "preload_scrobj");
+        if (JS_ExecuteScript(cx, realm->globalObject, script, &v) == JS_FALSE)
         {
-	  if (JS_IsExceptionPending(realm->cx))
-	    jsi->exitType = et_exception;
-          JS_ReportPendingException(realm->cx);
+	  if (JS_IsExceptionPending(cx))
+	    jsi->grt->exitType = et_exception;
+          JS_ReportPendingException(cx);
         }
-        JS_RemoveRoot(realm->cx, &scrobj);
+        JS_RemoveRoot(cx, &scrobj);
       }
     }
 
-    if (jsi->exitType & et_exception)
+    if (jsi->grt->exitType & et_exception)
       goto out;
   }
 
   /* Setup for main-script running -- cancel preprogram verbosity and use our own error reporting system in gsr that does not use error reporter */
   gpsee_setVerbosity(verbosity);
-  JS_SetOptions(realm->cx, JS_GetOptions(realm->cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
+  JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_DONT_REPORT_UNCAUGHT);
 
   if (!scriptFilename)
   {
@@ -731,16 +734,16 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
   else
   {
-    FILE 	*scriptFile = openScriptFile(realm->cx, scriptFilename, skipSheBang || (fiArg != 0));
+    FILE 	*scriptFile = openScriptFile(cx, scriptFilename, skipSheBang || (fiArg != 0));
 
     if (!scriptFile)
     {
-      gpsee_log(realm->cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
+      gpsee_log(cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       exitCode = 1;
       goto out;
     }
 
-    processInlineFlags(realm->cx, scriptFile, &verbosity);
+    processInlineFlags(cx, scriptFile, &verbosity);
     gpsee_setVerbosity(verbosity);
 
     /* Just compile and exit? */
@@ -749,9 +752,9 @@ PRIntn prmain(PRIntn argc, char **argv)
       JSScript        *script;
       JSObject        *scrobj;
 
-      if (!gpsee_compileScript(realm->cx, scriptFilename, scriptFile, NULL, &script, realm->globalObject, &scrobj))
+      if (!gpsee_compileScript(cx, scriptFilename, scriptFile, NULL, &script, realm->globalObject, &scrobj))
       {
-        gpsee_reportUncaughtException(realm->cx, JSVAL_NULL, 
+        gpsee_reportUncaughtException(cx, JSVAL_NULL, 
 				      (gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
 				      ((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
 	exitCode = 1;
@@ -763,16 +766,16 @@ PRIntn prmain(PRIntn argc, char **argv)
     }
     else /* noRunScript is false; run the program */
     {
-      if (!gpsee_runProgramModule(realm->cx, scriptFilename, NULL, scriptFile, script_argv, script_environ))
+      if (!gpsee_runProgramModule(cx, scriptFilename, NULL, scriptFile, script_argv, script_environ))
       {
-        int code = gpsee_getExceptionExitCode(realm->cx);
+        int code = gpsee_getExceptionExitCode(cx);
         if (code >= 0)
         {
           exitCode = code;
         }
         else
         {
-	  gpsee_reportUncaughtException(realm->cx, JSVAL_NULL, 
+	  gpsee_reportUncaughtException(cx, JSVAL_NULL, 
 					(gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
 					((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
 	  exitCode = 1;
