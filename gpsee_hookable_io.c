@@ -44,6 +44,32 @@
 
 #include "gpsee.h"
 
+/** GC Callback for hookable user I/O.  Insure the GC does not collect functions
+ *  which are unreferenced in script, but used by the user io hooks.
+ *
+ *  @param      cx      Any context in the runtime
+ *  @param      realm   Unused (hookable I/O is per-runtime, not per-realm)
+ *  @param      status  Which phase of the GC tracer we are in
+ */
+static JSBool uio_GCCallback(JSContext *cx, gpsee_realm_t *unused, JSGCStatus status)
+{
+  size_t                i;
+  gpsee_runtime_t       *grt = (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+  if (status != JSGC_MARK_END)
+    return JS_TRUE;
+
+  for (i = 0; i < grt->user_io_hooks_len; i++)
+  {
+    if (grt->user_io_hooks[i].input != JSVAL_VOID)
+      JS_MarkGCThing(cx, (void *)grt->user_io_hooks[i].input, "input hook", NULL);
+    if (grt->user_io_hooks[i].output != JSVAL_VOID)
+      JS_MarkGCThing(cx, (void *)grt->user_io_hooks[i].output, "output hook", NULL);
+  }
+
+  return JS_TRUE;
+}
+
 struct fwrite_callback_data
 {
   char          *buf;
@@ -293,6 +319,7 @@ void gpsee_initIOHooks(JSContext *cx, gpsee_runtime_t *grt)
     JS_free(cx, grt->user_io_hooks);
   grt->user_io_hooks = NULL;
 
+  gpsee_addGCCallback(grt, NULL, uio_GCCallback);
   return;
 }
 
@@ -337,4 +364,6 @@ static JSBool hookFileDescriptor(JSContext *cx, int fd, jsval ihook, jsval ohook
 
   return JS_TRUE;
 }
+
+
 

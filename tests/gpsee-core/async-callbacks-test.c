@@ -23,7 +23,7 @@ int main(int argc, char **argv)
   if (!jsi)
     panic("UNEXPECTED: could not instantiate gpsee_interpreter_t\n");
 
-  cx = gpsee_newContext(jsi->realm);
+  cx = gpsee_createContext(jsi->realm);
   if (!cx)
     panic("UNEXPECTED: could not instantiate JSContext\n");
 

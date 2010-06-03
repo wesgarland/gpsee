@@ -56,7 +56,7 @@
  *     gpsee_getGlobalClass();
  *   - A list of gpsee realms in the grt->realmsByContext data store, indexed
  *     by context (context creator is responsible for adding; 
- *     gpsee_newContext() knows about it.
+ *     gpsee_createContext() knows about it.
  *   - Potentially elsewhere
  *
  *  All pointers stored in the gpsee_realm_t are valid for the lifetime of
@@ -252,9 +252,11 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
  *  on the current thread. The following context initializations will be performed:
  *  - JS Request will be entered
  *  - JS Options inherited from grt->coreCx
+ *  - JS version inherited from grt->coreCx
+ *  - Thread stack limit will be initialized
  *  - Global variable will be set to realm's global
  *  - Error reporter will be set to gpsee_errorReporter
- *  - Operation callback will be initialized to all this context to use the muxed async facility
+ *  - Operation callback will be initialized to use the muxed async facility
  *
  *  @param      realm           The realm to which the new context belongs.
  *  @returns    A pointer to a new JSContext, or NULL if we threw an exception or realm was NULL.
@@ -262,7 +264,7 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
  *  @note       If NULL is passed for realm, we return NULL without throwing a
  *              new exception. This is to allow chaining with gpsee_createRealm().
  */
-JSContext *gpsee_newContext(gpsee_realm_t *realm)
+JSContext *gpsee_createContext(gpsee_realm_t *realm)
 {
   JSContext             *cx;
 
@@ -286,11 +288,12 @@ JSContext *gpsee_newContext(gpsee_realm_t *realm)
   JS_SetGlobalObject(cx, realm->globalObject);
   JS_SetErrorReporter(cx, gpsee_errorReporter);
   JS_SetOperationCallback(cx, gpsee_operationCallback);
+  JS_SetVersion(cx, JS_GetVersion(realm->grt->coreCx));
 
   return cx;
 }
 
-/** Destroy the passed JS context, closing the request opened during gpsee_newContext(), 
+/** Destroy the passed JS context, closing the request opened during gpsee_createContext(), 
  *  and removing the context from the relevant runtime/realm book-keeping memos.
  *
  *  @param      cx      The context to destroy
