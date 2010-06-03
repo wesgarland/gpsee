@@ -181,7 +181,9 @@ typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module pat
 typedef void *                  gpsee_monitor_t;        /**< Synchronization primitive */
 typedef void *                  gpsee_autoMonitor_t; /**< Synchronization primitive */
 
-/** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
+/** Signature for callback functions that can be registered by gpsee_addAsyncCallback() 
+ *  @ingroup async
+ */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
 
 /** Data struct for entries in the asynchronous callback multiplexor.
@@ -292,8 +294,13 @@ typedef struct
   JSObject              *globalObject;  /**< The global object for the realm */
 } gpsee_interpreter_t;
 
-JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
-JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
+/** @addtogroup realms
+ *  @{
+ */
+GPSEEAsyncCallback*gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
+void   gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
+JSBool gpsee_operationCallback(JSContext *cx);
+/** @} */
 
 /* core routines */
 JS_EXTERN_API(void)                 gpsee_destroyInterpreter(gpsee_interpreter_t *jsi);

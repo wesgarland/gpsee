@@ -148,6 +148,7 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
     return NULL;
 
   JS_BeginRequest(cx);
+  JS_SetOptions(cx, JS_GetOptions(grt->coreCx));
   gpsee_enterAutoMonitor(cx, &grt->monitors.realms);
 
   realm = JS_malloc(cx, sizeof(*realm));
@@ -248,13 +249,18 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 
 /**
  *  Create a new JS Context, initialized as a member of the passed realm, with an active JS request
- *  on the current thread.
+ *  on the current thread. The following context initializations will be performed:
+ *  - JS Request will be entered
+ *  - JS Options inherited from grt->coreCx
+ *  - Global variable will be set to realm's global
+ *  - Error reporter will be set to gpsee_errorReporter
+ *  - Operation callback will be initialized to all this context to use the muxed async facility
  *
  *  @param      realm           The realm to which the new context belongs.
  *  @returns    A pointer to a new JSContext, or NULL if we threw an exception or realm was NULL.
  *
  *  @note       If NULL is passed for realm, we return NULL without throwing a
- *              new exception. This is to allow chaining with gpsee_newRealm().
+ *              new exception. This is to allow chaining with gpsee_createRealm().
  */
 JSContext *gpsee_newContext(gpsee_realm_t *realm)
 {
@@ -276,7 +282,10 @@ JSContext *gpsee_newContext(gpsee_realm_t *realm)
   }
 
   JS_BeginRequest(cx);
+  JS_SetOptions(cx, JS_GetOptions(realm->grt->coreCx));
   JS_SetGlobalObject(cx, realm->globalObject);
+  JS_SetErrorReporter(cx, gpsee_errorReporter);
+  JS_SetOperationCallback(cx, gpsee_operationCallback);
 
   return cx;
 }
@@ -298,4 +307,3 @@ void gpsee_destroyContext(JSContext *cx)
   realm2 = gpsee_ds_remove(realm->grt->realmsByContext, cx);
   GPSEE_ASSERT(realm == realm2);
 }
-

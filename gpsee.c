@@ -430,7 +430,7 @@ static void gpsee_asyncCallbackTriggerThreadFunc(void *grt_vp)
 }
 /** Our "Operation Callback" multiplexes this Spidermonkey facility. It is called automatically by Spidermonkey, and is
  *  triggered on a regular interval by gpsee_asyncCallbackTriggerThreadFunc() */
-static JSBool gpsee_operationCallback(JSContext *cx)
+JSBool gpsee_operationCallback(JSContext *cx)
 {
   gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback *cb;
@@ -819,7 +819,6 @@ gpsee_runtime_t *gpsee_createRuntime()
   /* Create mutex to protect access to 'asyncCallbacks' */
   grt->asyncCallbacks_lock = PR_NewLock();
   /* Start the "operation callback" trigger thread */
-  JS_SetOperationCallback(cx, gpsee_operationCallback);
   grt->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
         grt, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 0);
   if (!grt->asyncCallbackTriggerThread)
