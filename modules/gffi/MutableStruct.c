@@ -200,6 +200,7 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
   byteThing_handle_t	*srcHnd;
   struct_handle_t	*newHnd;
   JSClass 		*clasp;
+  JSObject              *mutableStruct_proto;
 
   if (argc != 2)
     return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
@@ -229,6 +230,9 @@ JSBool MutableStruct_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 
     return gpsee_throw(cx, CLASS_ID ".cast.type: %s objects are not castable to MutableStruct", className);
   }
+
+  if (gpsee_getModuleData(cx, mutableStruct_clasp, (void **)&mutableStruct_proto, CLASS_ID ".cast") == JS_FALSE)
+    return JS_FALSE;
 
   obj = JS_NewObject(cx, mutableStruct_clasp, mutableStruct_proto, srcHnd->memoryOwner);
   if (!obj)
@@ -285,8 +289,8 @@ JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
     return MutableStruct_Constructor(cx, obj, argc, argv, rval);
 }
 
+
 JSClass *mutableStruct_clasp = NULL;
-JSObject *mutableStruct_proto = NULL;
 JSClass *immutableStruct_clasp = NULL;
 #warning need immutable struct class
 /**
@@ -299,6 +303,8 @@ JSClass *immutableStruct_clasp = NULL;
  */
 JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 {
+  JSObject *mutableStruct_proto;
+
   /** Description of this class: */
   static JSClass mutableStruct_class =
   {
@@ -333,6 +339,9 @@ JSObject *MutableStruct_InitClass(JSContext *cx, JSObject *obj, JSObject *parent
 		   NULL, 		/* fs - functions struct for parent_proto (normal "this" methods) */
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
+
+  if (gpsee_setModuleData(cx, mutableStruct_clasp, mutableStruct_proto) == JS_FALSE)
+    return NULL;
 
   GPSEE_ASSERT(mutableStruct_proto);
 

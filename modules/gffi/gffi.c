@@ -76,8 +76,6 @@ JSObject *CFunction_proto = NULL;
 /** Initialize the module */
 const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
-  JSObject *proto;
-
   static JSPropertySpec gffi_props[] =
   {
     { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, gffi_errno_getter, gffi_errno_setter },
@@ -89,26 +87,23 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
     JS_FS_END
   };
 
-  proto = MutableStruct_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (MutableStruct_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
   CFunction_proto = CFunction_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (CFunction_proto == NULL)
     return NULL;
 
-  proto = Memory_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (Memory_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  if (!Library_InitClass(cx, moduleObject, NULL))
+  if (Library_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  if (!WillFinalize_InitClass(cx, moduleObject, NULL))
+  if (WillFinalize_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  proto = CType_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (CType_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
   if (JS_DefineProperty(cx, moduleObject, "pointerSize", INT_TO_JSVAL(sizeof(void *)), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 

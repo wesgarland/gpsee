@@ -46,7 +46,7 @@
  * worth knowing about a module -- it's scope (var object), init and fini functions,
  * exports object, etc.
  *
- * Module handles are stored in a splay tree, jsi->modules. Splay trees are
+ * Module handles are stored in a splay tree, realm->modules. Splay trees are
  * automatically balanced binary search trees that slightly re-balance on 
  * every read to improve to locality of reference, moving recent search results
  * closer to the head.
@@ -103,6 +103,11 @@ extern rc_list rc;
 
 typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	/**< Module initializer function type */
 typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *);		/**< Module finisher function type */
+typedef struct
+{
+  moduleHandle_t        *module;
+  gpsee_realm_t         *realm;
+} moduleScopeInfo_t;
 
 /* Generate Init/Fini function prototypes for all internal modules */
 #define InternalModule(a) const char *a ## _InitModule(JSContext *, JSObject *);\
@@ -125,24 +130,24 @@ struct modulePathEntry
 typedef JSBool(*moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
-static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module);
-static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *moduleScope);
+static JSBool setModuleScopeInfo(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleScope, moduleHandle_t *module);
+static moduleScopeInfo_t *getModuleScopeInfo(JSContext *cx, JSObject *moduleScope);
 static void markModuleUnused(JSContext *cx, moduleHandle_t *module);
 
 /** Module-scope getter which retrieves properties from the true global */
 static JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t 	*realm = gpsee_getRealm(cx);
 
-  return JS_GetPropertyById(cx, jsi->globalObj, id, vp);
+  return realm ? JS_GetPropertyById(cx, realm->globalObject, id, vp) : JS_FALSE;
 }
 
 /** Module-scope setter which sets properties on the true global */
 static JSBool setGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t 	*realm = gpsee_getRealm(cx);
 
-  return JS_SetPropertyById(cx, jsi->globalObj, id, vp);
+  return realm ? JS_SetPropertyById(cx, realm->globalObject, id, vp) : JS_FALSE;
 }
 
 /** Module-scope resolver which resolves properties on the scope by looking them
@@ -151,7 +156,7 @@ static JSBool setGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *v
  */
 static JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uintN flags, JSObject **objp)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
   jsval			v;
 
   if (flags & JSRESOLVE_DECLARING)	/* Don't walk up scope to global when making new vars */
@@ -159,7 +164,7 @@ static JSBool resolveGlobalProperty(JSContext *cx, JSObject *obj, jsval id, uint
     return JS_TRUE;
   }
 
-  if (JS_GetPropertyById(cx, jsi->globalObj, id, &v) == JS_FALSE)
+  if (!realm || JS_GetPropertyById(cx, realm->globalObject, id, &v) == JS_FALSE)
     return JS_FALSE;
 
   if (v == JSVAL_VOID)
@@ -276,17 +281,17 @@ static void requireLock(JSContext *cx)
 {
   dpDepth(+1);
 #if defined(JS_THREADSAFE)
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread		*thisThread = PR_GetCurrentThread();
 
-  if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, (jsval)thisThread) == JS_TRUE)  /* membar */
+  if (jsval_CompareAndSwap((jsval *)&grt->requireLockThread, (jsval)thisThread, (jsval)thisThread) == JS_TRUE)  /* membar */
     goto haveLock;
 
   do
   {
     jsrefcount depth;
 
-    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, JSVAL_NULL, (jsval)thisThread) == JS_TRUE)
+    if (jsval_CompareAndSwap((jsval *)&grt->requireLockThread, JSVAL_NULL, (jsval)thisThread) == JS_TRUE)
       goto haveLock;
 
     depth = JS_SuspendRequest(cx);
@@ -295,7 +300,7 @@ static void requireLock(JSContext *cx)
   } while(1);
 
   haveLock:
-  jsi->requireLockDepth++;
+  grt->requireLockDepth++;
 #endif
   return;
 }
@@ -306,16 +311,16 @@ static void requireLock(JSContext *cx)
 static void requireUnlock(JSContext *cx)
 {
 #if defined(JS_THREADSAFE)
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread		*thisThread = PR_GetCurrentThread();
 
-  GPSEE_ASSERT(jsi->requireLockDepth);
-  GPSEE_ASSERT(jsi->requireLockThread == thisThread);
+  GPSEE_ASSERT(grt->requireLockDepth);
+  GPSEE_ASSERT(grt->requireLockThread == thisThread);
 
-  jsi->requireLockDepth--;
-  if (jsi->requireLockDepth == 0)
+  grt->requireLockDepth--;
+  if (grt->requireLockDepth == 0)
   {
-    if (jsval_CompareAndSwap((jsval *)&jsi->requireLockThread, (jsval)thisThread, JSVAL_NULL) != JS_TRUE) /* membar */
+    if (jsval_CompareAndSwap((jsval *)&grt->requireLockThread, (jsval)thisThread, JSVAL_NULL) != JS_TRUE) /* membar */
     {
       GPSEE_NOT_REACHED("bug in require-locking code");
     }
@@ -357,9 +362,9 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
 /**
  *  Initialize a "fresh" module scope ("global") to have all the correct properties 
  *  and methods. This includes a require function which "knows" its path information
- *  by virtue of the module handle stored in private slot 0.
+ *  by virtue of the module handle stored in reserved slot 0.
  *
- *  If the module global is not the interpreter's global, we also copy through
+ *  If the module global is not the realm's global ("super-global"), we also copy through
  *  the standard classes.
  *
  *  @param	cx			Current JavaScript context
@@ -379,14 +384,16 @@ static JSObject *newModuleExports(JSContext *cx, JSObject *moduleScope)
  *
  *  @returns	JS_TRUE or JS_FALSE if an exception was thrown
  */
-static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObject *moduleScope, JSBool isVolatileScope)
+static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module, JSObject *moduleScope, JSBool isVolatileScope)
 {
   JSFunction 		*require;
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   JSObject      	*modDotModObj;
   JSString      	*moduleId;
   int			jsProp_permanentReadOnly;
   int			jsProp_permanent;
+
+  if (!realm)
+    return JS_FALSE;
 
   if (isVolatileScope == JS_TRUE)
   {
@@ -406,9 +413,10 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope)->flags & JSCLASS_IS_GLOBAL);
   GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope)->flags & JSCLASS_HAS_PRIVATE);
 
-  setModuleHandle_forScope(cx, moduleScope, module);
+  if (setModuleScopeInfo(cx, realm, moduleScope, module) == JS_FALSE)
+    return JS_FALSE;
 
-  if (moduleScope != jsi->globalObj)
+  if (moduleScope != realm->globalObject)
   {
     JSProtoKey	key;
 
@@ -419,7 +427,7 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
     {
       jsval v;
 
-      if (JS_GetReservedSlot(cx, jsi->globalObj, key, &v) == JS_FALSE)
+      if (JS_GetReservedSlot(cx, realm->globalObject, key, &v) == JS_FALSE)
 	return JS_FALSE;
 
       if (JS_SetReservedSlot(cx, moduleScope, key, v) == JS_FALSE)
@@ -441,22 +449,20 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
   if (!require)
     goto fail;
 
-  if (!jsi->userModulePath)
+  if (!realm->userModulePath)
   {
     /* This is the first module scope we've initialized; set up the storage
      * required for the user module path (require.paths). This path is global
-     * across ALL contexts associated with the interpreter instance.
-     *
-     * @todo    per-worker require.paths
+     * across ALL contexts in the realm.
      */
-    JS_AddNamedRoot(cx, &jsi->userModulePath, "User Module Path");
-    jsi->userModulePath = JS_NewArrayObject(cx, 0, NULL);
-    if (!jsi->userModulePath)
+    JS_AddNamedRoot(cx, &realm->userModulePath, "User Module Path");
+    realm->userModulePath = JS_NewArrayObject(cx, 0, NULL);
+    if (!realm->userModulePath)
       goto fail;
   }
 
   if (JS_DefineProperty(cx, (JSObject *)require, "paths", 
-			OBJECT_TO_JSVAL(jsi->userModulePath), NULL, NULL,
+			OBJECT_TO_JSVAL(realm->userModulePath), NULL, NULL,
 			JSPROP_ENUMERATE | jsProp_permanentReadOnly) != JS_TRUE)
     goto fail;
 
@@ -501,31 +507,31 @@ static JSBool initializeModuleScope(JSContext *cx, moduleHandle_t *module, JSObj
  *
  *  The private slot for this object is reserved for (and contains) the module handle.
  *
- *  @param cx             JavaScript context
- *  @param      module    The handle describing the module we are building
+ *  @param      cx      JavaScript context in the current realm
+ *  @param      realm   The GPSEE Realm in which to create the module scope        
+ *  @param      module  The handle describing the module we are building
  *  @returns	NULL on failure, or an object which is in unrooted
  *		but in the recently-created slot. 
  */
-static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
+static JSObject *newModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   JSObject 		*moduleScope;
 
   GPSEE_ASSERT(module);
 
-  if (JS_EnterLocalRootScope(cx) != JS_TRUE)
+  if (!realm || JS_EnterLocalRootScope(cx) != JS_TRUE)
     return NULL;
 
   dpDepth(+1);
 
-  moduleScope = JS_NewObjectWithGivenProto(cx, &module_scope_class, JS_GetPrototype(cx, jsi->globalObj), NULL);
+  moduleScope = JS_NewObjectWithGivenProto(cx, &module_scope_class, JS_GetPrototype(cx, realm->globalObject), NULL);
   if (!moduleScope)
       goto fail;
 
-  if (JS_SetParent(cx, moduleScope, JS_GetParent(cx, jsi->globalObj)) == JS_FALSE)
+  if (JS_SetParent(cx, moduleScope, JS_GetParent(cx, realm->globalObject)) == JS_FALSE)
     goto fail;
 
-  if (initializeModuleScope(cx, module, moduleScope, JS_FALSE) == JS_FALSE)
+  if (initializeModuleScope(cx, realm, module, moduleScope, JS_FALSE) == JS_FALSE)
     goto fail;
 
   JS_LeaveLocalRootScopeWithResult(cx, OBJECT_TO_JSVAL(moduleScope));
@@ -539,41 +545,44 @@ static JSObject *newModuleScope(JSContext *cx, moduleHandle_t *module)
   return NULL;
 }
 
-static moduleHandle_t *findModuleHandle(gpsee_interpreter_t *jsi, const char *cname)
+static moduleHandle_t *findModuleHandle(gpsee_realm_t *realm, const char *cname)
 {
   moduleHandle_t tmp;
 
   tmp.cname = cname;
 
-  return SPLAY_FIND(moduleMemo, jsi->modules, &tmp);
+  return SPLAY_FIND(moduleMemo, realm->modules, &tmp);
 }
 
 /** Find existing or create new module handle.
  *
  *  Module handles are used to 
- *  - track shutdown requirements over the lifetime of  the interpreter
+ *  - track shutdown requirements over the lifetime of the realm
  *  - track module objects so they don't get garbage collected
  *
  *  Any module handle returned from this routine is guaranteed to have a cname, so that it
  *  can be identified.
  *
- *  @param      cx	        JavaScript context
+ *  @param      cx	        JavaScript context in the current realm
+ *  @param      realm           The GPSEE realm in which to acquire the module handle 
  *  @param      cname           Canonical name of the module we're interested in; may contain slashses, relative ..s etc,
  *                              or name an internal module.
  *  @param     	moduleScope	Scope object to be used instead of a brand-new one if we need to create a module handle.
  *  @returns 			A module handle, possibly one already initialized, or NULL if an exception has been thrown.
  */
-static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSObject *moduleScope)
+static moduleHandle_t *acquireModuleHandle(JSContext *cx, gpsee_realm_t *realm, const char *cname, JSObject *moduleScope)
 {
-  moduleHandle_t	*module;
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  moduleHandle_t	*module = NULL;
 
   GPSEE_ASSERT(cname != NULL);
 
   dprintf("Acquiring module handle for %s\n", cname);
   dpDepth(+1);
 
-  module = findModuleHandle(jsi, cname);
+  if (!realm)
+    goto fail;
+
+  module = findModuleHandle(realm, cname);
   if (module)
   {
     dprintf("Returning used module handle at %p with scope %p and exports %p\n", module, module->scope, module->exports);
@@ -595,7 +604,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
   if (!moduleScope)
   {
     dprintf("Creating new module scope\n");
-    module->scope = newModuleScope(cx, module);
+    module->scope = newModuleScope(cx, realm, module);
     if (!module->scope)
     {
       dprintf("Could not create new module scope\n");
@@ -609,7 +618,7 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, const char *cname, JSO
     GPSEE_ASSERT(module->scope);
   }
   
-  SPLAY_INSERT(moduleMemo, jsi->modules, module);	/* module->scope becomes a root here */
+  SPLAY_INSERT(moduleMemo, realm->modules, module);	/* module->scope becomes a root here */
   dprintf("Memoized module at %p with scope %p\n", module, module->scope);
 
   success:
@@ -695,12 +704,12 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
  *  underlying resources allocators. 
  *
  *  This routine should only be called from the scope finalizer. Once
- *  a module has been 'released', it is removed from the jsi->modules
+ *  a module has been 'released', it is removed from the realm->modules
  *  memo, meaning that reloading the same module will result in a new
  *  instance even if the module handle has not yet been finalized.
  *
- *  Once the module is out of the jsi->modules memo, it is inserted
- *  into the jsi->unreachableModules_llist linked list.  This list is
+ *  Once the module is out of the realm->modules memo, it is inserted
+ *  into the realm->unreachableModules_llist linked list.  This list is
  *  traversed at the very end of the garbaged collector cycle, 
  *  finalizing all modules handles in the list as it prunes the list.
  *  This two-phase garbage collection process is necessary because
@@ -708,16 +717,13 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
  *  during finalization of the module handle.
  *
  *  @param	cx	JavaScript context handle
- *  @param	jsi	Script interpreter handle
  *  @param	module	Handle to destroy
  */
-static void releaseModuleHandle(JSContext *cx, moduleHandle_t *module)
+static void releaseModuleHandle(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-
   dprintf("Releasing module at 0x%p\n", module);
 
-  SPLAY_REMOVE(moduleMemo, jsi->modules, module);
+  SPLAY_REMOVE(moduleMemo, realm->modules, module);
   markModuleUnused(cx, module);
 
   /* Actually release OS resources after everything on JS
@@ -725,17 +731,20 @@ static void releaseModuleHandle(JSContext *cx, moduleHandle_t *module)
    * for DSO modules, as dlclosing() before JS object finalizer
    * has read clasp is disastrous 
    */
-  module->next = jsi->unreachableModule_llist;
-  jsi->unreachableModule_llist = module;
+  module->next = realm->unreachableModule_llist;
+  realm->unreachableModule_llist = module;
 }
 
 /**
  *  Retrieve the module handle associated with the scope.
  *  Safe to run in a finalizer.
  */
-static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *moduleScope)
+static moduleScopeInfo_t *getModuleScopeInfo(JSContext *cx, JSObject *moduleScope)
 {
-  dprintf("Retrieving module with scope 0x%p\n", moduleScope);
+  dprintf("Retrieving info for module with scope 0x%p\n", moduleScope);
+
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || JS_GET_CLASS(cx, moduleScope) == gpsee_getGlobalClass());
+
   return JS_GetPrivate(cx, moduleScope);
 }
 
@@ -743,25 +752,75 @@ static moduleHandle_t *getModuleHandle_fromScope(JSContext *cx, JSObject *module
  *  Note the module handle associated with the scope.
  *  Safe to run in a finalizer.
  */
-static void setModuleHandle_forScope(JSContext *cx, JSObject *moduleScope, moduleHandle_t *module)
+static JSBool setModuleScopeInfo(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleScope, moduleHandle_t *module)
 {
+  moduleScopeInfo_t     *hnd;
+
   dprintf("Noting module with scope 0x%p\n", moduleScope);
-  JS_SetPrivate(cx, moduleScope, module);
+  GPSEE_ASSERT(JS_GET_CLASS(cx, moduleScope) == &module_scope_class || JS_GET_CLASS(cx, moduleScope) == gpsee_getGlobalClass());
+
+  hnd = JS_malloc(cx, sizeof(*hnd));
+  if (!hnd)
+    return JS_FALSE;
+
+  memset(hnd, 0, sizeof(*hnd));
+  hnd->module = module;
+  hnd->realm = realm;
+  JS_SetPrivate(cx, moduleScope, hnd);
+
+  return JS_TRUE;
+}
+
+/**
+ *  Attempt to extract the current GPSEE realm from the given moduleScope.
+ *  Passing NULL for the moduleScope instructs this function to use 
+ *  the context's current global object.  This function will not cause
+ *  a JS exception to be thrown. The current global object is normally the module's
+ *  scope during module load/initialization, and the program module's scope
+ *  otherwise.
+ *
+ *  @param      cx              The current JS context (belonging to the current realm)
+ *  @param      moduleScope     The scope to search for the realm in, or NULL to select the global object.
+ *  @returns    The realm or NUL.
+ *
+ *  @note       This routine is called by gpsee_getRealm().
+ */
+gpsee_realm_t *gpsee_getModuleScopeRealm(JSContext *cx, JSObject *moduleScope)
+{
+  moduleScopeInfo_t     *hnd;
+  JSClass               *class;
+
+  if (!moduleScope)
+    moduleScope = JS_GetGlobalObject(cx);
+
+  if (!moduleScope)
+    return NULL;
+
+  class = JS_GET_CLASS(cx, moduleScope);
+  if (class != &module_scope_class && class != gpsee_getGlobalClass())
+    return NULL;
+
+  hnd = JS_GetPrivate(cx, moduleScope);
+  if (!hnd)
+    return NULL;
+
+  return hnd->realm;
 }
 
 static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
 {
-  moduleHandle_t	*module;
+  moduleScopeInfo_t     *hnd;
 
   dprintf("begin finalizing module scope\n");
   dpDepth(+1);
 
-  module = getModuleHandle_fromScope(cx, moduleScope);
-  GPSEE_ASSERT(module != NULL);
-  GPSEE_ASSERT(module->fini == NULL);
+  hnd = getModuleScopeInfo(cx, moduleScope);
+  GPSEE_ASSERT(hnd && hnd->module);
+  GPSEE_ASSERT(hnd->module->fini == NULL);      /* Should not be finalizing if fini handler is unrun */
 
-  dprintf("module is %s, %p\n", moduleShortName(module->cname), module);
-  releaseModuleHandle(cx, module);
+  dprintf("module is %s, %p\n", moduleShortName(hnd->module->cname), hnd->module);
+  releaseModuleHandle(cx, hnd->realm, hnd->module);
+  JS_free(cx, hnd);
 
   dpDepth(-1);
   dprintf("done finalizing module scope\n");
@@ -967,7 +1026,7 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
  *  loading a module, without any loader returning a failure message, counts as loading
  *  the module.
  *
- *  @param	jsi		Current GPSEE context
+ *  @param	realm		Current GPSEE realm
  *  @param	cx		Current JS context
  *  @param	moduleName	Name of the module (argument to require)
  *  @param	directory	Directory in which to find the module
@@ -976,7 +1035,7 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
  *
  *  @returns	JS_TRUE on success, or JS_FALSE if an exception was thrown.
  */
-static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, const char *directory,
+static JSBool loadDiskModule_inDir(gpsee_realm_t *realm, JSContext *cx, const char *moduleName, const char *directory,
 				   moduleHandle_t **module_p)
 {
   const char    **ext_p, *extensions[]  = { DSO_EXTENSION, "js", NULL };
@@ -1009,14 +1068,14 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
           return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk.canonicalize.overflow: "
               "Error canonicalizing '%s' (buffer overflow)", fnBuf);
 
-        if (!checkJail(cnBuf, jsi->moduleJail))
+        if (!checkJail(cnBuf, realm->moduleJail))
           break;
 
         if ((s = strchr(cnBuf, '.')))
           if (strcmp(s + 1, *ext_p) == 0)
             *s = (char)0;
 
-        module = acquireModuleHandle(cx, cnBuf, NULL);
+        module = acquireModuleHandle(cx, realm, cnBuf, NULL);
         if (!module)
           return JS_FALSE;
         if (module->flags & mhf_loaded)	/* Saw this module previously but cache missed: different relative name? */
@@ -1040,7 +1099,7 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
 
 /** Iterate over a modulePath, try to find an appropriate module on disk, and load it.
  *
- *  @param	jsi		Current GPSEE context
+ *  @param	realm		Current GPSEE Realm
  *  @param	cx		Current JS context
  *  @param	moduleName	Name of the module (argument to require)
  *  @param	modulePath	Linked list of module paths to try, in order
@@ -1049,7 +1108,7 @@ static JSBool loadDiskModule_inDir(gpsee_interpreter_t *jsi, JSContext *cx, cons
  *
  *  @returns	JS_TRUE on success, or JS_FALSE if an exception was thrown.
  */
-static JSBool loadDiskModule_onPath(gpsee_interpreter_t *jsi, JSContext *cx, const char *moduleName, modulePathEntry_t modulePath, 
+static JSBool loadDiskModule_onPath(gpsee_realm_t *realm, JSContext *cx, const char *moduleName, modulePathEntry_t modulePath, 
 				     moduleHandle_t **module_p)
 {
   modulePathEntry_t	pathEl;
@@ -1060,7 +1119,7 @@ static JSBool loadDiskModule_onPath(gpsee_interpreter_t *jsi, JSContext *cx, con
        pathEl && 		*module_p == NULL; 
        pathEl = pathEl->next)
   {
-    if (loadDiskModule_inDir(jsi, cx, moduleName, pathEl->dir, module_p) == JS_FALSE)
+    if (loadDiskModule_inDir(realm, cx, moduleName, pathEl->dir, module_p) == JS_FALSE)
     {
       dpDepth(-1);
       return JS_FALSE;
@@ -1082,7 +1141,7 @@ static JSBool loadDiskModule_onPath(gpsee_interpreter_t *jsi, JSContext *cx, con
  */
 static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const char *moduleName, moduleHandle_t **module_p)
 { 
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
   modulePathEntry_t	requirePaths;
 
   *module_p = NULL;
@@ -1095,7 +1154,7 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
 
     currentModulePath = gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf));
 
-    if (loadDiskModule_inDir(jsi, cx, moduleName, currentModulePath, module_p) == JS_FALSE)
+    if (loadDiskModule_inDir(realm, cx, moduleName, currentModulePath, module_p) == JS_FALSE)
       return JS_FALSE;
     if (!*module_p)
       return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: Error loading relative module '%s': "
@@ -1106,7 +1165,7 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
   /* Handle absolute module names */
   if (moduleName[0] == '/')
   {
-    if (loadDiskModule_inDir(jsi, cx, moduleName, "", module_p) == JS_FALSE)
+    if (loadDiskModule_inDir(realm, cx, moduleName, "", module_p) == JS_FALSE)
       return JS_FALSE;
     if (!*module_p)
       return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.disk: Error loading absolute module '%s': module not found",
@@ -1114,19 +1173,19 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
   }
 
   /* Search GPSEE module path */
-  if (loadDiskModule_onPath(jsi, cx, moduleName, jsi->modulePath, module_p) == JS_FALSE)
+  if (loadDiskModule_onPath(realm, cx, moduleName, realm->modulePath, module_p) == JS_FALSE)
     return JS_FALSE;
   if (*module_p)
     return JS_TRUE;
 
   /* Search require.paths */
-  if (jsi->userModulePath)
+  if (realm->userModulePath)
   {
-    if (JSArray_toModulePath(cx, jsi->userModulePath, &requirePaths) == JS_FALSE)
+    if (JSArray_toModulePath(cx, realm->userModulePath, &requirePaths) == JS_FALSE)
       return JS_FALSE;
     if (requirePaths)
     {
-      JSBool b = loadDiskModule_onPath(jsi, cx, moduleName, requirePaths, module_p);
+      JSBool b = loadDiskModule_onPath(realm, cx, moduleName, requirePaths, module_p);
       freeModulePath_fromJSArray(cx, requirePaths);
       if (b == JS_FALSE)
         return JS_FALSE;
@@ -1166,8 +1225,12 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
 
   unsigned int 		i;
   moduleHandle_t	*module;
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   *module_p = NULL;
+
+  if (!realm)
+    return JS_FALSE;
 
   /* First, see if the module is actually in the list of internal modules */
   for (i=0; i < (sizeof internalModules/sizeof internalModules[0]); i++)
@@ -1176,7 +1239,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
   if (i == (sizeof internalModules/sizeof internalModules[0]))
     return JS_TRUE;	/* internal module not found */
 
-  module = acquireModuleHandle(cx, moduleName, NULL);
+  module = acquireModuleHandle(cx, realm, moduleName, NULL);
   if (module->flags & mhf_loaded)
   {
     dprintf("no reload internal singleton %s\n", moduleShortName(moduleName));
@@ -1208,7 +1271,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
  */
 static JSBool initializeModule(JSContext *cx, moduleHandle_t *module)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   dprintf("initializeModule(%s)\n", module->cname);
 
@@ -1236,7 +1299,7 @@ static JSBool initializeModule(JSContext *cx, moduleHandle_t *module)
     module->script = NULL;
     JS_SetGlobalObject(cx, module->scope);
     b = JS_ExecuteScript(cx, module->scope, script, &dummyval);
-    JS_SetGlobalObject(cx, jsi->globalObj);
+    JS_SetGlobalObject(cx, realm->globalObject);
 
     module->scrobj	 = NULL;	/* No longer needed */
 
@@ -1337,7 +1400,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   return JS_TRUE;
 }
 
-#define RUNPROERR "error in gpsee_runProgramModule(\"%s\"): "
+#define RUNPROERR GPSEE_GLOBAL_NAMESPACE_NAME ".runProgramModule: error running %s: "
 /** Run a program as if it were a module. Interface differs from gpsee_loadModule()
  *  to reflect things like that the source of the program module may be stdin rather
  *  than a module file, may not be in the libexec dir, etc.
@@ -1359,12 +1422,13 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
 JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile,
                               char * const script_argv[], char * const script_environ[])
 {
-  moduleHandle_t 	*module;
+  moduleHandle_t 	*module = NULL;
   char			cnBuf[PATH_MAX];
   char			fnBuf[PATH_MAX];
   int			i;
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
   char			*s;
+  JSBool                b;
 
   if (scriptFilename[0] == '/')
   {
@@ -1390,7 +1454,6 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   else
     cnBuf[i] = (char)0;
 
-  // Is this change ok?
   dprintf("Running program module \"%s\"\n", scriptFilename);
   dpDepth(+1);
 
@@ -1439,14 +1502,30 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
       *s = (char)0;
   }
 
-  module = acquireModuleHandle(cx, cnBuf, jsi->globalObj);
+  /* realm->mutable->programModuleDir stores a copy of the program module's directory, 
+   * which we can use to generate nicer error output, or posssible program-relative
+   * resource names.
+   */
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
+  if (realm->mutable.programModuleDir)
+    JS_free(cx, (char *)realm->mutable.programModuleDir);
+  i = strlen(cnBuf) + 1;
+  realm->mutable.programModuleDir = gpsee_dirname(cnBuf, JS_malloc(cx, i), i);
+  if (!realm->monitors.programModuleDir)
+  {
+    gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
+    goto fail;
+  }
+  gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
+
+  module = acquireModuleHandle(cx, realm, cnBuf, realm->globalObject);
   if (!module)
   {
     dprintf("Could not acquire module handle for program module\n");
     goto fail;
   }
 
-  if (initializeModuleScope(cx, module, jsi->globalObj, JS_FALSE) == JS_FALSE)
+  if (initializeModuleScope(cx, realm, module, realm->globalObject, JS_FALSE) == JS_FALSE)
   {
     dprintf("Could not initialize module scope for module at %p\n", module);
     goto fail;
@@ -1462,28 +1541,45 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
     goto fail;
   }
 
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
+  realm->mutable.programModule = module;
+  gpsee_leaveAutoMonitor(realm->monitors.programModule);
+
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
   module->flags |= mhf_loaded;	
 
-  if (initializeModule(cx, module) == JS_FALSE)
-    goto fail;
-
-  JS_SetGlobalObject(cx, jsi->globalObj);
+  JS_SetGlobalObject(cx, realm->globalObject);
 
   if (script_argv)
-    gpsee_createJSArray_fromVector(cx, jsi->globalObj, "arguments", script_argv);
+    gpsee_createJSArray_fromVector(cx, realm->globalObject, "arguments", script_argv);
 
   if (script_environ)
-    gpsee_createJSArray_fromVector(cx, jsi->globalObj, "environ", script_environ);
+    gpsee_createJSArray_fromVector(cx, realm->globalObject, "environ", script_environ);
 
   /* For the CommonJS system module's "args" property */
-  jsi->script_argv = script_argv;
+  gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
+  realm->mutable.script_argv = script_argv;
+  gpsee_leaveAutoMonitor(realm->monitors.script_argv);
+
+  /* Run the program (initializing the module also runs the script code) */
+  b = initializeModule(cx, module);
+
+  gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
+  realm->mutable.script_argv = NULL;  /* We do not know anything about script_argv's lifetime */
+  gpsee_leaveAutoMonitor(realm->monitors.script_argv);
+
+  if (b == JS_FALSE)
+    goto fail;
 
   return JS_TRUE;
 
   fail:
 
   dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
+
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
+  realm->mutable.programModule = NULL;
+  gpsee_leaveAutoMonitor(realm->monitors.programModule);
 
   if (module)
     markModuleUnused(cx, module);
@@ -1496,39 +1592,33 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 /** Callback from the garbage collector, which marks all
  *  module objects so that they are not collected before
  *  their Fini functions are called.
+ *
+ *  @param      cx      Any context in the current runtime
+ *  @param      realm   The realm upon which the callback should operate
+ *  @param      status  Phase the garbage collector is operating in
+ *
+ *  @see        JS_SetGCCallback(), gpsee_addGCCallback()
+ *
+ *  @returns    JS_TRUE on success, or JS_FALSE if we threw a JS exception
  */
-static JSBool moduleGCCallback(JSContext *cx, JSGCStatus status)
+static JSBool moduleGCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCStatus status)
 {
-  gpsee_interpreter_t   *jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   moduleHandle_t	*module;
 
   /* Finalize all modules on the unreachable list now that main GC has finished */
   if (status == JSGC_FINALIZE_END)
   {
-    while (jsi->unreachableModule_llist)
-      jsi->unreachableModule_llist = finalizeModuleHandle(cx, jsi->unreachableModule_llist);
+    while (realm->unreachableModule_llist)
+      realm->unreachableModule_llist = finalizeModuleHandle(cx, realm->unreachableModule_llist);
   }
 
   if (status != JSGC_MARK_END)
     return JS_TRUE;
 
-#warning Need general purpose GC callback hook - calling IO hook code from module GC handler
-  {
-    size_t i;
-
-    for (i = 0; i < jsi->user_io_hooks_len; i++)
-    {
-      if (jsi->user_io_hooks[i].input != JSVAL_VOID)
-        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].input, "input hook", NULL);
-      if (jsi->user_io_hooks[i].output != JSVAL_VOID)
-        JS_MarkGCThing(cx, (void *)jsi->user_io_hooks[i].output, "output hook", NULL);
-    }
-  }
-
   dprintf("Adding roots from GC Callback\n");
   dpDepth(+1);
 
-  SPLAY_FOREACH(module, moduleMemo, jsi->modules)
+  SPLAY_FOREACH(module, moduleMemo, realm->modules)
   {
     dprintf("GC Callback considering module %s at %p\n", moduleShortName(module->cname), module);
     /* Modules which have an un-run fini method, or are not loaded, 
@@ -1580,38 +1670,44 @@ static const char *libexecDir(void)
 
 /**
  *  Module system bootstapping code.  Modules are singletons and memoized
- *  per gpsee interpreter (~ JS Runtime), but may span contexts when multithreaded.
+ *  per GPSEE Realm, but may span contexts when multithreaded. 
+ * 
+ *  This routine is intended to be called during realm-creation. As such, it
+ *  is the caller's responsibility to insure it is only called once per realm.
+ *
+ *  @param      cx      A JS Context in the same runtime as the realm
+ *  @param      realm   The GPSEE Realm to which we are adding module capability
+ *
+ *  @returns    JS_TRUE on success; JS_FALSE if we have thrown an exception.
  */
-JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
+JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 {
   char			*envpath = getenv("GPSEE_PATH");
   char			*path;
   modulePathEntry_t	pathEl;
 
   /* Initialize basic module system data structures */
-  jsi->moduleJail = rc_value(rc, "gpsee_module_jail");
-  dprintf("Initializing module system; jail starts at %s\n", jsi->moduleJail ?: "/");
+  realm->moduleJail = rc_value(rc, "gpsee_module_jail");
+  dprintf("Initializing module system; jail starts at %s\n", realm->moduleJail ?: "/");
   dpDepth(+1);
 
-  JS_SetGCCallback(cx, moduleGCCallback);
-
-  jsi->modulePath = JS_malloc(cx, sizeof(*jsi->modulePath));
-  if (!jsi->modulePath)
+  realm->modulePath = JS_malloc(cx, sizeof(*realm->modulePath));
+  if (!realm->modulePath)
     goto fail;
-  memset(jsi->modulePath, 0, sizeof(*jsi->modulePath));
+  memset(realm->modulePath, 0, sizeof(*realm->modulePath));
 
-  jsi->modules = malloc(sizeof *jsi->modules);
-  SPLAY_INIT(jsi->modules);
+  realm->modules = malloc(sizeof *realm->modules);
+  SPLAY_INIT(realm->modules);
 
   /* Populate the GPSEE module path */
-  jsi->modulePath->dir = JS_strdup(cx, libexecDir());
+  realm->modulePath->dir = JS_strdup(cx, libexecDir());
   if (envpath)
   {
     envpath = JS_strdup(cx, envpath);
     if (!envpath)
       goto fail;
 
-    for (pathEl = jsi->modulePath, path = strtok(envpath, ":"); path; pathEl = pathEl->next, path = strtok(NULL, ":"))
+    for (pathEl = realm->modulePath, path = strtok(envpath, ":"); path; pathEl = pathEl->next, path = strtok(NULL, ":"))
     {
       pathEl->next = JS_malloc(cx, sizeof(*pathEl));
       memset(pathEl->next, 0, sizeof(*pathEl->next));
@@ -1621,15 +1717,37 @@ JSBool gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
     JS_free(cx, envpath);
   }
 
+  realm->moduleData = gpsee_ds_create(realm->grt, 4);
+  if (!realm->moduleData)
+    goto fail;
+
+  if (gpsee_addGCCallback(realm->grt, realm, moduleGCCallback) == JS_FALSE)
+    goto fail;
+
   dpDepth(-1);
   return JS_TRUE;
 
   fail:
+  if (realm->modulePath)
+    JS_free(cx, realm->modulePath);
+
+  if (realm->moduleData)
+    gpsee_ds_destroy(realm->moduleData);
+
   dpDepth(-1);
   return JS_FALSE;
 }
 
-void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
+/**
+ *  Shut downt he module system for the given, cleaning up 
+ *  all module-related resources which can be cleaned up at
+ *  this time. gpsee_moduleSystemClean() will clean up the
+ *  remaining resources.
+ *
+ *  @param      cx      A context in the referenced realm
+ *  @param      realm   The realm for which we are shutting down the module system
+ */
+void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 {
   modulePathEntry_t	node, nextNode;
   moduleHandle_t	*module;
@@ -1638,7 +1756,7 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   dpDepth(+1);
 
   /* Clean up modules by traversing the module memo tree */
-  SPLAY_FOREACH(module, moduleMemo, jsi->modules)
+  SPLAY_FOREACH(module, moduleMemo, realm->modules)
   {
     dprintf("Fini'ing module at 0x%p\n", module);
     if (module->fini)
@@ -1651,17 +1769,17 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
   }
 
   /* Clean up module paths */
-  if (jsi->userModulePath)
+  if (realm->userModulePath)
   {
-    JS_RemoveRoot(cx, &jsi->userModulePath);
+    JS_RemoveRoot(cx, &realm->userModulePath);
 
-    for (node = jsi->modulePath; node; node = nextNode)
+    for (node = realm->modulePath; node; node = nextNode)
     {
       nextNode = node->next;
       JS_free(cx, (char *)node->dir);
     }
 
-    JS_free(cx, jsi->modulePath);
+    JS_free(cx, realm->modulePath);
   }
 
   dpDepth(-1);
@@ -1677,6 +1795,7 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
  * eventually overwritten by runProgramModule, if that's in use.
  *
  * @param       cx      JavaScript context
+ * @param       realm   The realm the global object belongs in
  * @param       glob    Object to modulize
  * @param       label   Label describing the object, used to generate a module cname, or NULL
  * @param       id      Number describing the object instance, used to generate a module cname, or 0
@@ -1691,7 +1810,7 @@ void gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx)
  *
  * @returns     JS_TRUE on success;
  */
-JSBool gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, size_t id)
+JSBool gpsee_modulizeGlobal(JSContext *cx, gpsee_realm_t *realm, JSObject *glob, const char *label, size_t id)
 {
   moduleHandle_t	*module;
   JSBool                b = JS_FALSE;
@@ -1714,14 +1833,14 @@ JSBool gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, si
   if (!cname)
     goto out;
   sprintf(cname, "__%s:" GPSEE_SIZET_FMT "__", label, id);
-  module = acquireModuleHandle(cx, cname, glob);
+  module = acquireModuleHandle(cx, realm, cname, glob);
   if (!module)
   {
     dprintf("Could not acquire module handle for modulization of %s module\n", label);
     goto out;
   }
 
-  if (initializeModuleScope(cx, module, glob, JS_TRUE) == JS_FALSE)
+  if (initializeModuleScope(cx, realm, module, glob, JS_TRUE) == JS_FALSE)
   {
     dprintf("Could not initialize module scope for module at %p\n", module);
     goto out;
@@ -1739,29 +1858,121 @@ JSBool gpsee_modulizeGlobal(JSContext *cx, JSObject *glob, const char *label, si
 
 /** Perform final clean-up on module system which must be done
  *  after all the JavaScript objects have been finalized and
- *  the JavaScript runtime is destroyed. 
+ *  the realm's contexts have all been destroyed. 
  *
  *  @note	This is why the module memo tree is allocated 
  *		with malloc rather than JS_malloc.
  */
-void gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi)
+void gpsee_moduleSystemCleanup(gpsee_realm_t *realm)
 {
   moduleHandle_t	*module, *nextModule;
 
-  for (module = SPLAY_MIN(moduleMemo, jsi->modules);
+  for (module = SPLAY_MIN(moduleMemo, realm->modules);
        module != NULL;
        module = nextModule)
   {
-    nextModule = SPLAY_NEXT(moduleMemo, jsi->modules, module);
-    SPLAY_REMOVE(moduleMemo, jsi->modules, module);
+    nextModule = SPLAY_NEXT(moduleMemo, realm->modules, module);
+    SPLAY_REMOVE(moduleMemo, realm->modules, module);
     free(module);
   }
   
-  free(jsi->modules);
+  free(realm->modules);
 }
 
 const char *gpsee_getModuleCName(moduleHandle_t *module)
 {
   return module ? module->cname : NULL;
+}
+
+/**
+ *  Find the GPSEE Data Store for the current realm which 
+ *  exists to allow modules to store arbitrary memos. The
+ *  Data store index is a unique pointer. This data store
+ *  allows us to avoid using global variables in DSO modules
+ *  to store information which may not be shared across
+ *  across runtimes. 
+ *
+ *  By convention, the class pointer (which IS safe to share)
+ *  is used as an index in this data store to look up the
+ *  prototype generated by JS_InitClass() for the current
+ *  context. These prototypes are expected to have a lifetime
+ *  matching the visibility of the class pointer.
+ *
+ *  @param      cx                      Any context in the current realm.
+ *  @param      dataStore_p     [out]   The module data store if we are successful.
+ *  @returns    JS_TRUE on success, JS_FALSE if we threw an exception.
+ *
+ *  @note       While the module data store can be queried 
+ *              safely in multithreaded coded due to internal
+ *              synchronization, the lifetime of the value
+ *              is defined by the code putting the data into
+ *              the data store.  If the data is volatile, 
+ *              a monitor surround use of the table and the
+ *              extracted data should be used to insure consistency.
+ */
+JSBool gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p)
+{
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+
+  if (!realm)
+    return JS_FALSE;
+
+  if (!realm->moduleData)
+    return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".realm.getModuleDataStore.notFound: module data store missing for realm " GPSEE_PTR_FMT "!", realm);
+
+  *dataStore_p = realm->moduleData;
+  return JS_TRUE;
+}
+
+/**
+ *  Extract data from the module data store for the current realm, matching 
+ *  the passed key. This is a helper function; using lower-level gpsee_dataStore_t
+ *  APIs to access the data store does not violate the API.
+ *
+ *  @see gpsee_getModuleDataStore()
+ *  @see gpsee_ds_get()
+ *
+ *  @param      cx                      Any context in the current realm.
+ *  @param      key                     The describing the data to get
+ *  @param      *value_p        [out]   The stored value
+ *  @param      throwPrefix             Exception message prefix if we throw because the data was not found (or the found data was NULL).
+ *  @returns    JS_TRUE on success, JS_FALSE if we threw an exception.
+ */
+JSBool gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix)
+{
+  gpsee_dataStore_t     ds;
+
+  if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
+    return JS_FALSE;
+
+  *data_p = gpsee_ds_get(ds, key);
+  if (!*data_p)
+    return gpsee_throw(cx, "%s.moduleData.notFound: Data for key " GPSEE_PTR_FMT " was not found.", throwPrefix, key);
+
+  return JS_TRUE;
+}
+
+/**
+ *  Add/change data in the module data store for the current realm, matching 
+ *  the passed key. This is a helper function; using lower-level gpsee_dataStore_t
+ *  APIs to access the data store does not violate the API.
+ *
+ *  @see gpsee_getModuleDataStore()
+ *  @see gpsee_ds_set()
+ *
+ *  @param      cx                      Any context in the current realm.
+ *  @param      key                     The describing the data to get
+ *  @param      value                   The value to store
+ *  @param      throwPrefix             Exception message prefix if we throw because the data was not found (or the found data was NULL).
+ *  @returns    JS_TRUE on success, JS_FALSE if we threw an exception.
+ */
+JSBool gpsee_setModuleData(JSContext *cx, const void *key, void *data)
+{
+  gpsee_dataStore_t     ds;
+
+  if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
+    return JS_FALSE;
+
+  return gpsee_ds_put(ds, key, data);
 }
 

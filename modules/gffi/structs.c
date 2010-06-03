@@ -240,7 +240,10 @@ JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, 
   JSString		*jsstr;
 
   if (JSVAL_IS_NULL(*vp))
+  {
     str = NULL;
+    jsstr = NULL;
+  }
   else
   {
     jsstr = JSVAL_IS_STRING(*vp) ? JSVAL_TO_STRING(*vp) : JS_ValueToString(cx, *vp);
@@ -262,7 +265,7 @@ JSBool struct_setString(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, 
   }
   else /* Pointer to Chars */
   {
-    if (!JSVAL_IS_NULL(*vp) && !JSVAL_IS_STRING(*vp))
+    if (jsstr && !JSVAL_IS_NULL(*vp) && !JSVAL_IS_STRING(*vp))
     {
       /* Root the string which was derived via .toString() */
       *vp = STRING_TO_JSVAL(jsstr);
@@ -300,6 +303,10 @@ JSBool struct_getArray(JSContext *cx, JSObject *thisObj, int memberIdx, jsval *v
   struct_handle_t	*structHnd = gpsee_getInstancePrivate(cx, thisObj, mutableStruct_clasp, immutableStruct_clasp);
   memory_handle_t	*memHnd;
   jsval 		argv[] = { JSVAL_TO_INT(0), JSVAL_FALSE };
+  JSObject              *memory_proto;
+
+  if (gpsee_getModuleData(cx, memory_clasp, (void **)&memory_proto, throwLabel) == JS_FALSE)
+    return JS_FALSE;
 
   robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
   if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, vp) == JS_FALSE)

@@ -814,17 +814,17 @@ static JSBool th_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
  */
 static JSBool th_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread 		*callingThread = PR_GetCurrentThread();
 
-  if (callingThread == jsi->primordialThread)
+  if (callingThread == grt->primordialThread)
   {
     if (argc)
-      jsi->exitCode = JSVAL_TO_INT(argv[0]);
+      grt->exitCode = JSVAL_TO_INT(argv[0]);
     else
-      jsi->exitCode = 0;
+      grt->exitCode = 0;
 
-    jsi->exitType = et_requested;
+    grt->exitType = et_requested;
 
     return JS_FALSE;
   }

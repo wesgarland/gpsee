@@ -414,64 +414,47 @@ haveint:
   return -1;
 }
 
-/** Get the current (as indicated by jsi->globalObj) program module's directory,
- *  and return a copy allocated with JS_malloc().
+/**
+ *  Return a pointer to the relative filename of the passed long_filename. The returned
+ *  filename will be in relation to the realm's program module, and will always be
+ *  a substring of long_filename (pointing inside it - no copying).
  *
- *  @param	cx	The JavaScript context
- *  @param	jsi	The GPSEE context
- *  @returns	A copy of the directory, including the trailing slash, or a copy of an empty buffer,
- *		or NULL on OOM.
+ *  @param      cx              Any context in the current realm
+ *  @param      long_filename   The filename to shorten
+ * 
+ *  @returns    The shortened filename, or long_filename.
  */
-const char *gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi)
+const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filename)
 {
-  const char *cname;
-  const char *bname;
-  char *dircopy;
+  moduleHandle_t        *programModule;
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
+  const char            *cname;
+  const char            *bname;
 
-  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
+  if (!realm)
+    return long_filename;
+
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
+  programModule = realm->mutable.programModule;
   if (!programModule)
-    goto err;
+    goto out;
 
   cname = gpsee_getModuleCName(programModule);
   if (!cname)
-    goto err;
+    goto out;
 
   bname = strrchr(cname, '/');
   if (!bname)
-    goto err;
-
-  dircopy = JS_malloc(cx, (bname-cname) + 2);
-  if (!dircopy)
-    goto err;
-
-  strncpy(dircopy, cname, (bname-cname) + 1);
-  dircopy[(bname-cname) + 1] = (char)0;
-  return dircopy;
-  
-  err:
-  return JS_strdup(cx, "");
-}
-
-const char *gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename)
-{
-  const char *cname;
-  const char *bname;
-
-  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
-  if (!programModule)
-    return long_filename;
-
-  cname = gpsee_getModuleCName(programModule);
-  if (!cname)
-    return long_filename;
-
-  bname = strrchr(cname, '/');
-  if (!bname)
-    return long_filename;
+    goto out;
 
   if (strncmp(long_filename, cname, (bname-cname) + 1) == 0)
+  {
+    gpsee_leaveAutoMonitor(realm->monitors.programModule);
     return long_filename + (bname-cname) + 1;
+  }
 
+  out:
+  gpsee_leaveAutoMonitor(realm->monitors.programModule);
   return long_filename;
 }
 
@@ -482,8 +465,8 @@ const char *gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *js
  */
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  const char		*filename = gpsee_programRelativeFilename(cx, jsi, report->filename);
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  const char		*filename = gpsee_programRelativeFilename(cx, report->filename);
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
   int			bold = isatty(STDERR_FILENO);
@@ -503,10 +486,10 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
-  if (jsi->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
+  if (grt->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
-    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
-    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
+    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, grt->pendingErrorMessage, bold?VT_UNBOLD:"");
+    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
   }
 
   if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
@@ -567,7 +550,7 @@ static const char *rev_strchr(const char *start, char search, const char *limit)
  */
 JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval                	v;
   char 			*longerror = NULL;
   JSErrorReporter 	reporter;
@@ -597,7 +580,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
         error = JS_GetStringBytes(JSVAL_TO_STRING(v));
 
         /* This makes the message available to gpsee_reportErrorSourceCode() */
-        jsi->pendingErrorMessage = error;
+        grt->pendingErrorMessage = error;
       }
     }
 
@@ -622,7 +605,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
   reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
   JS_ReportPendingException(cx);
   JS_SetErrorReporter(cx, reporter);
-  jsi->pendingErrorMessage = NULL;
+  grt->pendingErrorMessage = NULL;
 
   if (!dumpStack)
     return JS_TRUE;
@@ -634,13 +617,18 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
     size_t		pm_dir_len;
     char		*nl, *line_start, *tok;
     size_t		extraBytes = 0;
+    gpsee_realm_t       *realm = gpsee_getRealm(cx);
 
     /* Look for filenames which can be shortened */
-    pm_dir = gpsee_programModuleDirCopy(cx, jsi);
+    gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
+    pm_dir = realm->mutable.programModuleDir;
     if (!pm_dir)
       panic("Out of memory reporting an uncaught exception in " __FILE__);
     if (!pm_dir[0])
+    {
+      gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
       goto done;
+    }
     pm_dir_len = strlen(pm_dir);
 
     for (line_start = longerror, nl=strchr(line_start, '\n'); 
@@ -657,6 +645,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 	extraBytes += pm_dir_len;
       }
     }
+    gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
 
     /* Lines beginning with @ need a fake function name for the table to render right */
     for (nl = strchr(longerror, '\n'); 
@@ -731,12 +720,15 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 
       nl = strchr(longerror, '\n');
       if (nl)
-	tok = (char *)rev_strchr(nl, '\t', longerror);
-      if (nl && tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
       {
-	tok--;
-	memmove(tok, tok + 1, strlen(tok + 1) + 1);
-	memcpy(tok, "\t\t\n", 3);
+	tok = (char *)rev_strchr(nl, '\t', longerror);
+
+        if (tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
+        {
+          tok--;
+          memmove(tok, tok + 1, strlen(tok + 1) + 1);
+          memcpy(tok, "\t\t\n", 3);
+        }
       }
     }
 
@@ -912,3 +904,4 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
   }
   gpsee_fprintf(cx, out, "\n");
 }
+
