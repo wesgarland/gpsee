@@ -130,8 +130,6 @@ extern JSClass *mutableStruct_clasp;
 extern JSClass *immutableStruct_clasp;
 extern JSClass *cFunction_clasp;
 extern JSClass *memory_clasp;
-extern JSObject *memory_proto;
-extern JSObject *mutableStruct_proto;
 
 /** Magic numbers used in argument passing */
 typedef enum
@@ -177,7 +175,6 @@ void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
 /* The function that invokes a cFunction_closure_t */
 void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
 void *findPreDefFunction(const char *functionName);
-extern JSObject *CFunction_proto;
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);

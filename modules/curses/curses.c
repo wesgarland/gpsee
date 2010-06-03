@@ -88,7 +88,7 @@ void cursesStdScrErrorLogger(JSContext *cx, const char *prefix, const char *mess
 const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   /** Classes & objects provided by module */
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   if (Window_InitClass(cx, moduleObject) == NULL)
     return NULL;
@@ -101,7 +101,7 @@ const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
 
   initscr();
   raise(SIGWINCH);
-  jsi->errorLogger = cursesStdScrErrorLogger;
+  grt->errorLogger = cursesStdScrErrorLogger;
   noecho();
   raw();
   nonl();

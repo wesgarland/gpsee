@@ -58,7 +58,7 @@ int main (int argc, char *argv[])
   jsi = gpsee_createInterpreter();
 
   scriptCode = "print('Hello, World!');";
-  JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
+  JS_EvaluateScript(jsi->cx, jsi->globalObject, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
 
   gpsee_destroyInterpreter(jsi);
   gpsee_closelog();

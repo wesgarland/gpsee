@@ -38,17 +38,23 @@
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
  *  @version	$Id: gpsee_private.h,v 1.8 2010/04/14 00:38:02 wes Exp $
+ *  @ingroup    internal
  */
 
 #ifndef GPSEE_PRIVATE_H
 #define GPSEE_PRIVATE_H
 
 #include "jsapi.h"
-int 			gpsee_initializeModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
-void 			gpsee_shutdownModuleSystem(gpsee_interpreter_t *jsi, JSContext *cx);
-void			gpsee_moduleSystemCleanup(gpsee_interpreter_t *jsi);
+JSBool                  gpsee_initializeModuleSystem    (JSContext *cx, gpsee_realm_t *realm);
+void 			gpsee_shutdownModuleSystem      (JSContext *cx, gpsee_realm_t *realm);
+void			gpsee_moduleSystemCleanup       (gpsee_realm_t *realm);
+JSBool                  gpsee_initializeMonitorSystem   (JSContext *cx, gpsee_runtime_t *grt);      
+void                    gpsee_shutdownMonitorSystem     (gpsee_runtime_t *grt);
+gpsee_realm_t *         gpsee_getModuleScopeRealm       (JSContext *cx, JSObject *moduleScope);
+JSBool                  gpsee_operationCallback         (JSContext *cx);
+JSBool                  gpsee_gcCallback                (JSContext *cx, JSGCStatus status);
 #define AT_STRINGIFY_HELPER_1(s) #s
 #define AT_STRINGIFY_HELPER_2(s) AT_STRINGIFY_HELPER_1(s)
 #define AT __FILE__ ":" AT_STRINGIFY_HELPER_2(__LINE__) ": "
 
-#endif/*GPSEE_PRIVATE_H*/
+#endif /*GPSEE_PRIVATE_H*/

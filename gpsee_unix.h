@@ -69,19 +69,19 @@
 # define gpsee_fputc(cx, c, f)          fputc(c, f)
 # define gpsee_puts(cx, s)              puts(s)
 #else
-static inline gpsee_interpreter_t *_jsi(JSContext *cx)
+static inline gpsee_runtime_t *_grt(JSContext *cx)
 {
-  return (gpsee_interpreter_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  return (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
 }
-# define gpsee_printf(cx, a...)	        _jsi(cx)->user_io_printf(cx, a)
-# define gpsee_fprintf(cx, f, a...)     _jsi(cx)->user_io_fprintf(cx, f, a)
-# define gpsee_vfprintf(cx, f, s, a)    _jsi(cx)->user_io_vfprintf(cx, f, s, a)
-# define gpsee_fwrite(cx, p, s, n, f)   _jsi(cx)->user_io_fwrite(p, s, n, f, cx)
-# define gpsee_fread(cx, p, s, n, f)    _jsi(cx)->user_io_fread(p, s, n, f, cx)
-# define gpsee_fgets(cx, s, n, f)       _jsi(cx)->user_io_fgets(s, n, f, cx)
-# define gpsee_fputs(cx, s, f)          _jsi(cx)->user_io_fputs(s, f, cx)
-# define gpsee_fputc(cx, c, f)          _jsi(cx)->user_io_fputc(c, f, cx)
-# define gpsee_puts(cx, s)              _jsi(cx)->user_io_puts(s, f, cx)
+# define gpsee_printf(cx, a...)	        _grt(cx)->user_io_printf(cx, a)
+# define gpsee_fprintf(cx, f, a...)     _grt(cx)->user_io_fprintf(cx, f, a)
+# define gpsee_vfprintf(cx, f, s, a)    _grt(cx)->user_io_vfprintf(cx, f, s, a)
+# define gpsee_fwrite(cx, p, s, n, f)   _grt(cx)->user_io_fwrite(p, s, n, f, cx)
+# define gpsee_fread(cx, p, s, n, f)    _grt(cx)->user_io_fread(p, s, n, f, cx)
+# define gpsee_fgets(cx, s, n, f)       _grt(cx)->user_io_fgets(s, n, f, cx)
+# define gpsee_fputs(cx, s, f)          _grt(cx)->user_io_fputs(s, f, cx)
+# define gpsee_fputc(cx, c, f)          _grt(cx)->user_io_fputc(c, f, cx)
+# define gpsee_puts(cx, s)              _grt(cx)->user_io_puts(s, f, cx)
 #endif
 
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)
