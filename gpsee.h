@@ -50,7 +50,8 @@
  *  @}
  *  @defgroup   internal        GPSEE Internals
  *  @defgroup   modules         GPSEE Modules - Modules which ship with GPSEE
- */
+ *  @defgroup   utility         Utility / Portability functions: system-level functions provided for/by GPSEE 
+*/
 
 #ifndef GPSEE_H
 #define GPSEE_H
@@ -64,7 +65,7 @@
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
 #else
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	1024
-const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
+const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup utility */
 #endif
 
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
@@ -347,6 +348,9 @@ JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, const
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
 JS_EXTERN_API(JSBool)               gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
 							const char *scriptCode, JSScript **script, JSObject *scope, JSObject **scriptObject);
+/** @addtogroup modules
+ *  @{
+ */
 JS_EXTERN_API(JSBool)               gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
 JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
                                                     JSClass *clasp, JSNative constructor, uintN nargs,
@@ -361,6 +365,7 @@ JS_EXTERN_API(const char *)	    gpsee_getModuleCName(moduleHandle_t *module);
 JS_EXTERN_API(JSBool)               gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p);
 JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix);
 JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, const void *key, void *data);
+/** @} */
 JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, gpsee_realm_t *realm, JSObject *obj);
 JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void) __attribute__((const));
 /** @addtogroup realms
@@ -400,6 +405,9 @@ gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint)
 /** @} */
 
 /* GPSEE monitors */
+/** @addtogroup monitors
+ *  @{
+ */
 void                    gpsee_enterAutoMonitor          (JSContext *cx, gpsee_autoMonitor_t *monitor_p);
 void                    gpsee_leaveAutoMonitor          (gpsee_autoMonitor_t monitor);
 gpsee_monitor_t         gpsee_getNilMonitor             (void) __attribute__((const));
@@ -407,19 +415,25 @@ gpsee_monitor_t         gpsee_createMonitor             (gpsee_runtime_t *grt) _
 void                    gpsee_enterMonitor              (gpsee_monitor_t monitor);
 void                    gpsee_leaveMonitor              (gpsee_monitor_t monitor);
 void                    gpsee_destroyMonitor            (gpsee_runtime_t *grt, gpsee_monitor_t monitor);
+/** @} */
 
 /* support routines */
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
 JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
 JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
 JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
+JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+
+/** @addtogroup utils
+ *  @{
+ */
 JS_EXTERN_API(char*)                gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
 JS_EXTERN_API(size_t)               gpsee_catstrn(char *dst, const char *src, size_t dst_size);
 JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
-JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+/** @} */
 
 /* Hookable I/O routines */
 JS_EXTERN_API(void)                 gpsee_resetIOHooks(JSContext *cx, gpsee_runtime_t *grt);
@@ -429,16 +443,36 @@ void gpsee_uio_dumpPendingWrites(JSContext *cx, gpsee_realm_t *realm);
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
 #define                             gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
-JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
+JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj); /**< @ingroup bytethings */
 
+/** Determine if JSClass instaciates bytethings or not.
+ *  @ingroup    bytethings
+ *  @param      cx      The current JS context
+ *  @param      clasp   The class pointer to test
+ *  @returns    0 if it is not
+ */
 static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
 {
   return clasp ? (clasp->mark == (JSMarkOp)gpsee_byteThingTracer) : 0;
 }
+
+/** Determine if an object is a bytething or not.
+ *  @ingroup    bytethings
+ *  @param      cx      The current JS context
+ *  @param      obj     The object to test
+ *  @returns    0 if it is not
+ */
 static inline int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
 {
   return gpsee_isByteThingClass(cx, JS_GET_CLASS(cx, obj));
 }
+
+/** Determine if a jsval is falsey (null, void, false, zero).
+ *  @ingroup    utils
+ *  @param      cx      The current JS context
+ *  @param      v       The value to test
+ *  @returns    1 if the value is falsey, 0 otherwise
+ */
 static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
@@ -487,12 +521,14 @@ void __attribute__((noreturn)) panic(const char *message);
 /** Compare-And-Swap jsvals using fast, unportable routines in Solaris 10's atomic.h
  *  which take advantage of hardware optimizations on supported platforms.
  *
+ *  <tt><i>example:</i></tt>	if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
+ *
+ *  @ingroup    utils
  *  @param	vp	jsval to change
  *  @param	oldv	Only change vp if it matches oldv
  *  @param	newv	Value for new vp to become
  *  @returns	JS_TRUE when values are swapped
  *
- *  @example	if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
  */
 static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
 { 
@@ -503,12 +539,13 @@ static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, 
 #else
 /** Compare-And-Swap jsvals using code lifted from jslock.c ca. Spidermonkey 1.8.
  *
+ *  <tt><i>example:<i/></tt>    if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
+ *
+ *  @ingroup    utils
  *  @param      vp      jsval to change
  *  @param      oldv    Only change vp if it matches oldv
  *  @param      newv    Value for new vp to become
  *  @returns    JS_TRUE when values are swapped
- *
- *  @example    if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
  */
 #include <gpsee_lock.c>
 static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
@@ -592,7 +629,9 @@ GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
 cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 
-
+/** @ingroup bytethings
+ *  @see GPSEE_DECLARE_BYTETHING_CLASS
+ */
 #define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls); ecls ## _eclass.base = ecls ##_class; }
 
 #define GPSEE_ERROR_OUTPUT_VERBOSITY   0
