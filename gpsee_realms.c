@@ -164,6 +164,10 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
     goto err_out; 
 #endif
 
+  realm->user_io_pendingWrites = gpsee_ds_create(grt, GPSEE_DS_OTM_KEYS, 0);
+  if (!realm->user_io_pendingWrites)
+    return JS_FALSE;
+
   realm->globalObject = JS_NewObject(cx, gpsee_getGlobalClass(), NULL, NULL);
   if (!realm->globalObject)
     goto err_out;
@@ -202,6 +206,7 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   return realm;
 }
 
+/** Callback which destroys context for a particular realm */
 static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, void *value, void *private)
 {
   JSContext     *context = (void *)key;
@@ -225,20 +230,34 @@ static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, void *value
  */
 JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 {
+  size_t                fd;
+  gpsee_runtime_t       *grt = realm->grt;
+
+  gpsee_uio_dumpPendingWrites(cx, realm);
   gpsee_shutdownModuleSystem(cx, realm);
+
+  /** Clean up any user I/O hooks belonging to the current realm */
+  for (fd = 0; fd < grt->user_io.hooks_len; fd++)
+  {
+    gpsee_enterAutoMonitor(cx, &grt->monitors.user_io);
+    memset(&grt->user_io.hooks[fd], 0, sizeof(grt->user_io.hooks[0]));
+    gpsee_leaveAutoMonitor(grt->monitors.user_io);
+  }
 
   JS_RemoveRoot(cx, &realm->globalObject);
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
   realm->mutable.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
 
-  if (gpsee_ds_forEach(cx, realm->grt->realmsByContext, destroyRealmContext_cb, realm) == JS_FALSE)
+  if (gpsee_ds_forEach(cx, grt->realmsByContext, destroyRealmContext_cb, realm) == JS_FALSE)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRealmContext");
 
   gpsee_moduleSystemCleanup(realm);
 
   if (realm->cachedCx)
     JS_DestroyContext(realm->cachedCx);
+  
+  gpsee_ds_destroy(realm->user_io_pendingWrites);
 
 #ifdef GPSEE_DEBUG_BUILD
   memset(realm, 0xde, sizeof(*realm));

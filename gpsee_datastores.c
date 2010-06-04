@@ -32,7 +32,6 @@
  *
  * ***** END LICENSE BLOCK ***** 
  *
- * @addtogroup  datastores @{
  * @file        gpsee_datastores.c      Arbitrary per-runtime data stores for GPSEE. 
  *                                      Stores key/value pairs where each is a
  *                                      pointer-sized value.
@@ -42,6 +41,10 @@
  */
 
 #include "gpsee.h"
+
+/** @addtogroup  datastores 
+ *  @{
+ */
 
 /** Internal structure storing the data. Subject to change without notice. */
 struct dataStore /* Completes forward declaration in gpsee.h */
@@ -53,7 +56,9 @@ struct dataStore /* Completes forward declaration in gpsee.h */
     void                *value;         /**< Value */
   }                     *data;          /**< Slots in which data is stored */
   gpsee_monitor_t       monitor;        /**< Monitor we must be in to read/write the data store internals */
-  gpsee_runtime_t   *grt;               /**< GPSEE Runtime which owns data store (monitor) */
+  gpsee_runtime_t       *grt;           /**< GPSEE Runtime which owns data store (monitor) */
+
+  uint32                flags;          /**< Per-store flags (e.g. GPSEE_DS_BINARY_KEYS) */
 };
 
 /**
@@ -61,8 +66,10 @@ struct dataStore /* Completes forward declaration in gpsee.h */
  *
  *  @param      store   The data store
  *  @param      key     The key describing the value to retrieve
- *
  *  @returns    The value stored, or NULL
+ *
+ *  @note       When used on data stores created with GPSEE_DS_OTM_KEYS, this routine will
+ *              return the first key match it happens to find; order is not guaranteed.
  */
 void *gpsee_ds_get(gpsee_dataStore_t store, const void *key)
 {
@@ -89,7 +96,8 @@ void *gpsee_ds_get(gpsee_dataStore_t store, const void *key)
 
 /**
  *  Put a value into a GPSEE Data Store. Failure to insert does not corrupt 
- *  existing data.
+ *  existing data.  Unless the GPSEE_DS_OTM_KEYS flag is used, inserting a value
+ *  which exists will overwrite the existing value.
  *  
  *  @param      store   The data store
  *  @param      key     The key describing the value to store. Cannot use NULL as a key.
@@ -105,22 +113,26 @@ JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
   GPSEE_ASSERT(store->monitor);
 
   gpsee_enterMonitor(store->monitor);
-  for (i=0; i < store->size; i++)
+
+  if (!(store->flags & GPSEE_DS_OTM_KEYS))
   {
-    if (store->data[i].key == key)
+    for (i=0; i < store->size; i++)
     {
-      /* Slot already had same key: overwrite */
-      store->data[i].value = value;
-      gpsee_leaveMonitor(store->monitor);
-      return JS_TRUE;
-    }
-    else if (store->data[i].key == NULL)
-    {
-      /* Found empty slot */
-      store->data[i].key   = key;
-      store->data[i].value = value;
-      gpsee_leaveMonitor(store->monitor);
-      return JS_TRUE;
+      if (store->data[i].key == key)
+      {
+        /* Slot already had same key: overwrite */
+        store->data[i].value = value;
+        gpsee_leaveMonitor(store->monitor);
+        return JS_TRUE;
+      }
+      else if (store->data[i].key == NULL)
+      {
+        /* Found empty slot */
+        store->data[i].key   = key;
+        store->data[i].value = value;
+        gpsee_leaveMonitor(store->monitor);
+        return JS_TRUE;
+      }
     }
   }
 
@@ -161,7 +173,7 @@ JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
  *  Remove a key/value from a GPSEE Data Store.
  *
  *  @param      store   The data store
- *  @param      key     The key describing the value to store
+ *  @param      key     The key describing the value to remove
  *
  *  @return      returns The value removed, or NULL if not found
  *
@@ -192,8 +204,20 @@ void *gpsee_ds_remove(gpsee_dataStore_t store, const void *key)
   return value;
 }
 
+/**
+ *  Remove all key/value pairs from a GPSEE Data Store.
+ *
+ *  @param      store   The data store to empty.
+ */
+void gpsee_ds_empty(gpsee_dataStore_t store)
+{
+  gpsee_enterMonitor(store->monitor);
+  memset(store->data, 0, sizeof(store->data[0]) * store->size);
+  gpsee_leaveMonitor(store->monitor);
+}
+
 /** 
- *  @see        gpsee_ds_create(), gpsee_ds_create_unlocked()
+ *  @see        gpsee_ds_create()
  */
 static gpsee_dataStore_t ds_create(size_t initialSizeHint)
 {
@@ -225,43 +249,31 @@ static gpsee_dataStore_t ds_create(size_t initialSizeHint)
 /**
  *  Create a new GPSEE Data Store.
  *
- *  @param      grt                     GPSEE runtime to which data store belongs
+ *  @param      grt                     GPSEE runtime to which data store belongs. It is 
+ *                                      permissible to specify a NULL grt if the GPESE_DS_UNLOCKED
+ *                                      flag is specified.
  *  @param      initialSizeHint         How many slots to allocate immediately. Engine 
  *                                      is free to ignore. Used to give hint as to how
  *                                      many values will be immediately inserted.
+ *  @params     flags                   A bitmask describing data store capabilities
  *  @return     The new data store, or NULL on failure.
+ *
+ *  @see GPSEE_DS_UNLOCKED, GPSEE_DS_OTM_KEYS
  */
-gpsee_dataStore_t gpsee_ds_create(gpsee_runtime_t *grt, size_t initialSizeHint)
+gpsee_dataStore_t gpsee_ds_create(gpsee_runtime_t *grt, uint32 flags, size_t initialSizeHint)
 {
   gpsee_dataStore_t     store = ds_create(initialSizeHint);
 
   if (!store)
     return NULL;
 
-  store->monitor = gpsee_createMonitor(grt);
+  if (flags & GPSEE_DS_UNLOCKED)
+    store->monitor = gpsee_getNilMonitor();
+  else
+    store->monitor = gpsee_createMonitor(grt);
   store->grt = grt;     /* Cached for delete */
-  return store;
-}
+  store->flags = flags;
 
-/**
- *  Create a new unlocked GPSEE Data Store.  An unlocked data store requires
- *  external synchronization for read/write access.  Provided so that we can
- *  use data stores to build synchronization primitives. If you are not sure
- *  that you need the unlocked version of this function, then you don't.
- *  
- *  @param      initialSizeHint         How many slots to allocate immediately. Engine 
- *                                      is free to ignore. Used to give hint as to how
- *                                      many values will be immediately inserted.
- *  @return     The new data store, or NULL on failure.
- */
-gpsee_dataStore_t gpsee_ds_create_unlocked(size_t initialSizeHint)
-{
-  gpsee_dataStore_t     store = ds_create(initialSizeHint);
-
-  if (!store)
-    return NULL;
-
-  store->monitor = gpsee_getNilMonitor();
   return store;
 }
 

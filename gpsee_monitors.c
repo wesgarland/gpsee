@@ -69,7 +69,7 @@ JSBool gpsee_initializeMonitorSystem(JSContext *cx, gpsee_runtime_t *grt)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".monitors.initialize: Could not initialize monitor subsystem");
 
   /* Access to monitorList_unlocked is guarded by grt->monitors.monitor henceforth */
-  grt->monitorList_unlocked = gpsee_ds_create_unlocked(5);
+  grt->monitorList_unlocked = gpsee_ds_create(NULL, GPSEE_DS_UNLOCKED, 5);
 #endif
 
   return JS_TRUE;

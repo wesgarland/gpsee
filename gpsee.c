@@ -457,7 +457,7 @@ JSBool gpsee_operationCallback(JSContext *cx)
       /* Save the 'next' link in case the callback deletes itself */
       next = cb->next;
       /* Invoke callback */
-      if (!((*(cb->callback))(cb->cx, cb->userdata)))
+      if (!((*(cb->callback))(cb->cx, cb->userdata, cb)))
         /* Propagate exceptions */
         return JS_FALSE;
     }
@@ -522,8 +522,12 @@ GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunc
  *  you are deleting, but not from within a different one. You must not call this function if you are not in the
  *  JSContext associated with the callback you are removing.
  *
- *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
-void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *d)
+ *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. 
+ *
+ *  @param      cx      Current context; does not need to be a the context the callback was registered with.
+ *  @param      cbHnd   Handle for the callback we are deleting
+ */
+void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *cbHnd)
 {
   gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback *cb;
@@ -531,24 +535,38 @@ void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *d)
   /* Acquire mutex protecting grt->asyncCallbacks */
   PR_Lock(grt->asyncCallbacks_lock);
   /* Locate the entry we want */
-  for (cb = grt->asyncCallbacks; cb && cb->next != d; cb = cb->next);
+  for (cb = grt->asyncCallbacks; cb && cb->next != cbHnd; cb = cb->next);
   /* Remove the entry from the linked list */
   cb->next = cb->next->next;
   /* Relinquish mutex */
   PR_Unlock(grt->asyncCallbacks_lock);
   /* Free the memory */
-  JS_free(cx, d);
+  JS_free(cx, cbHnd);
 }
-/** Deletes any number of gpsee_addAsyncCallback() registrations for a given JSContext. This is NOT SAFE to call from
- *  within such a callback. You must not call this function if you are not in the JSContext associated with the
+/** Deletes all async callbacks associated with the current context. Suitable for use as as JSContextCallback.
+ *  This is NOT SAFE to call from within an async callback.
+ *  You must not call this function if you are not in the JSContext associated with the
  *  callback you are removing. This function is intended for being called during the finalization of a JSContext (ie.
  *  during the context callback, gpsee_contextCallback().)
  *
- *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
+ *  @note This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. 
+ *
+ *  @param      cx              The state of the JS context if used as a JSContextCallback. If calling directly, pass JSCONTEXT_DESTROY.
+ *  @param      contextOp       
+ *  @returns    JS_TRUE
+ *
+ *  @todo Investigate using gpsee_removeAsyncCallbackContext() to clean up async callbacks on context shutdown.
+ */
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
 {
   gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback **cb, **cc, *freeme = NULL;
+
+#ifdef GPSEE_DEBUG_BUILD
+  /* Assert that cx is on current thread */
+  JS_BeginRequest(cx);
+  JS_EndRequest(cx);
+#endif
 
   if (contextOp != JSCONTEXT_DESTROY)
     return JS_TRUE;
@@ -606,7 +624,7 @@ static void removeAllAsyncCallbacks_unlocked(JSContext *cx, gpsee_runtime_t *grt
 }
 #endif
 
-static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
+static JSBool gpsee_maybeGC(JSContext *cx, void *ignored, GPSEEAsyncCallback *cb)
 {
   JS_MaybeGC(cx);
   return JS_TRUE;
@@ -653,7 +671,7 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
   removeAllAsyncCallbacks_unlocked(cx, grt);
 #endif
 
-  gpsee_initIOHooks(cx, grt);
+  gpsee_resetIOHooks(cx, grt);
   JS_SetGCCallback(cx, NULL);
 
   if (gpsee_ds_forEach(cx, grt->realms, destroyRealm_cb, NULL) == JS_FALSE)
@@ -797,9 +815,9 @@ gpsee_runtime_t *gpsee_createRuntime()
 
   grt->rt               = rt;
   grt->coreCx           = cx;
-  grt->realms           = gpsee_ds_create(grt, 1);
-  grt->realmsByContext  = gpsee_ds_create(grt, 1);
-  grt->gcCallbackList   = gpsee_ds_create(grt, 1);
+  grt->realms           = gpsee_ds_create(grt, 0, 1);
+  grt->realmsByContext  = gpsee_ds_create(grt, 0, 1);
+  grt->gcCallbackList   = gpsee_ds_create(grt, GPSEE_DS_OTM_KEYS, 1);
 
   grt->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
@@ -816,7 +834,8 @@ gpsee_runtime_t *gpsee_createRuntime()
 
   JS_BeginRequest(cx);	/* Request stays alive as long as the grt does */
   JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
-  gpsee_initIOHooks(cx, grt); 
+  if (gpsee_initIOHooks(cx, grt) == JS_FALSE)
+    panic(__FILE__ ": Unable to initialized hookable I/O subsystem");
   JS_SetErrorReporter(cx, gpsee_errorReporter);
 
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)

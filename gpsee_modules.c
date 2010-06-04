@@ -1717,7 +1717,7 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
     JS_free(cx, envpath);
   }
 
-  realm->moduleData = gpsee_ds_create(realm->grt, 4);
+  realm->moduleData = gpsee_ds_create(realm->grt, 0, 4);
   if (!realm->moduleData)
     goto fail;
 
