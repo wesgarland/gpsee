@@ -331,6 +331,7 @@ JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, g
 GPSEEAsyncCallback *    gpsee_addAsyncCallback          (JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
 void                    gpsee_removeAsyncCallback       (JSContext *cx, GPSEEAsyncCallback *c);
 #endif
+/** @} */
 
 /* core routines */
 JS_EXTERN_API(void)                 gpsee_destroyInterpreter(gpsee_interpreter_t *jsi);
