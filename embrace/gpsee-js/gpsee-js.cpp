@@ -171,7 +171,7 @@ main(int argc, char **argv, char **envp)
 
     JS_BeginRequest(cx);
 
-    glob = jsi->globalObj;
+    glob = jsi->globalObject;
     if (!glob)
         return 1;
 

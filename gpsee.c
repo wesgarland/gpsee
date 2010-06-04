@@ -971,7 +971,8 @@ gpsee_interpreter_t *gpsee_createInterpreter()
   if (!jsi->cx)
     goto out;
 
-  jsi->globalObject = jsi->realm->globalObject;
+  jsi->globalObject     = jsi->realm->globalObject;
+  jsi->rt               = jsi->grt->rt;
 
   return jsi;
 

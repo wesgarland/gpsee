@@ -801,4 +801,3 @@ int main(int argc, char *argv[])
 {
   return PR_Initialize(prmain, argc, argv, 0);
 }
-
