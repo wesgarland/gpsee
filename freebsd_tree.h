@@ -30,9 +30,12 @@
 #ifndef	_SYS_TREE_H_
 #define	_SYS_TREE_H_
 
-/*
- * This file defines data structures for different types of trees:
- * splay trees and red-black trees.
+/**
+ * @file	freebsd_tree.h
+ * @author 	Niels Provos <provos@citi.umich.edu>
+ * 
+ * @brief       This file defines data structures for different types of trees:
+ *              splay trees and red-black trees.
  *
  * A splay tree is a self-organizing data structure.  Every operation
  * on the tree causes a splay to happen.  The splay moves the requested
