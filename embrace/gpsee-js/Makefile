@@ -39,6 +39,8 @@
 ## @date	May 2009
 ## @version	$Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
+top:	build
+
 PRODUCT ?= gpsee-js
 
 GPSEE_CONFIG	?= ../../gpsee-config
@@ -52,7 +54,7 @@ GPSEE_JS_CXXFLAGS	+= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSE
 GPSEE_JS_LDFLAGS	+= $(filter-out -lmozjs,$(filter-out -lgpsee,$(shell $(GPSEE_CONFIG) --ldflags))) $(GPSEE_SRC_DIR)/libgpsee.a
 EXPORT_PROGS		+= $(PRODUCT)
 
-top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+build: $(EXPORT_LIBS) $(EXPORT_PROGS)
 
 $(SHELL_BUILD)/$(PRODUCT).mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/$(PRODUCT).cpp
 	@echo " * Building $(SHELL_BUILD)/$(PRODUCT).mk"
