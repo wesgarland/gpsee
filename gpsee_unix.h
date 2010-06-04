@@ -73,15 +73,16 @@ static inline gpsee_runtime_t *_grt(JSContext *cx)
 {
   return (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
 }
-# define gpsee_printf(cx, a...)	        _grt(cx)->user_io_printf(cx, a)
-# define gpsee_fprintf(cx, f, a...)     _grt(cx)->user_io_fprintf(cx, f, a)
-# define gpsee_vfprintf(cx, f, s, a)    _grt(cx)->user_io_vfprintf(cx, f, s, a)
-# define gpsee_fwrite(cx, p, s, n, f)   _grt(cx)->user_io_fwrite(p, s, n, f, cx)
-# define gpsee_fread(cx, p, s, n, f)    _grt(cx)->user_io_fread(p, s, n, f, cx)
-# define gpsee_fgets(cx, s, n, f)       _grt(cx)->user_io_fgets(s, n, f, cx)
-# define gpsee_fputs(cx, s, f)          _grt(cx)->user_io_fputs(s, f, cx)
-# define gpsee_fputc(cx, c, f)          _grt(cx)->user_io_fputc(c, f, cx)
-# define gpsee_puts(cx, s)              _grt(cx)->user_io_puts(s, f, cx)
+# define gpsee_printf(cx, a...)	        _grt(cx)->user_io.printf(cx, a)
+# define gpsee_fprintf(cx, f, a...)     _grt(cx)->user_io.fprintf(cx, f, a)
+# define gpsee_vfprintf(cx, f, s, a)    _grt(cx)->user_io.vfprintf(cx, f, s, a)
+# define gpsee_fwrite(cx, p, s, n, f)   _grt(cx)->user_io.fwrite(p, s, n, f, cx)
+# define gpsee_fread(cx, p, s, n, f)    _grt(cx)->user_io.fread(p, s, n, f, cx)
+# define gpsee_fgets(cx, s, n, f)       _grt(cx)->user_io.fgets(s, n, f, cx)
+# define gpsee_fputs(cx, s, f)          _grt(cx)->user_io.fputs(s, f, cx)
+# define gpsee_fputc(cx, c, f)          _grt(cx)->user_io.fputc(c, f, cx)
+# define gpsee_puts(cx, s)              _grt(cx)->user_io.puts(s, cx)
+# define gpsee_fgetc(cx, s)             _grt(cx)->user_io.fgetc(s, cx)
 #endif
 
 #define gpsee_openlog(ident)		openlog(ident, LOG_ODELAY | LOG_PID, GPSEE_LOG_FACILITY)

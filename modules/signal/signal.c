@@ -119,7 +119,7 @@ static signal_hnd_t signalEvents[OS_MAX_SIGNAL + 1];
  *  @param	cx	JS context to use to find and execute JS event code
  *  @returns	JS_FALSE 
  */
-static JSBool signal_runHandlers(JSContext *cx, void *ignored)
+static JSBool signal_runHandlers(JSContext *cx, void *ignored, GPSEEAsyncCallback *cb)
 {
   JSBool 		b, ret = JS_TRUE;
   jsval			v;
@@ -152,7 +152,7 @@ static JSBool signal_contextCallback(JSContext *cx, uintN contextOp)
   int sig;
 
   if (contextOp == JSCONTEXT_DESTROY)
-    signal_runHandlers(cx, NULL);
+    signal_runHandlers(cx, NULL, NULL);
 
   for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
   {
@@ -205,7 +205,7 @@ static const char *signal_changeSignalHandler(JSContext *cx, JSContext *sighndCx
     if (signalEvents[sig].cx != cx)
       JS_YieldRequest(cx);	/* Other thread might be stuck waiting for us so it can GC */
     else
-      signal_runHandlers(cx, NULL);	/* Clear pending signal by handling it */
+      signal_runHandlers(cx, NULL, NULL );	/* Clear pending signal by handling it */
 
     if (signalEvents[sig].pending == JSVAL_TRUE)
       return pendingException;
@@ -499,7 +499,7 @@ JSBool signal_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
   int sig;
 
-  signal_runHandlers(cx, NULL);
+  signal_runHandlers(cx, NULL, NULL);
 
   for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
   {

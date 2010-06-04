@@ -485,14 +485,14 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
   return retval;
 }
 
-JSBool Thread_SweepBCB(JSContext *cx, void *private)
+JSBool Thread_SweepBCB(JSContext *cx, void *private, GPSEEAsyncCallback *cb)
 {
   JSObject	*Thread_prototype = (JSObject *)private;
   
   return Thread_Sweep(cx, Thread_prototype);
 }
 
-JSBool Thread_YieldBCB(JSContext *cx, void *unused)
+JSBool Thread_YieldBCB(JSContext *cx, void *unused, GPSEEAsyncCallback *cb)
 {
   return thread_yield(cx);
 }

@@ -86,7 +86,7 @@ JSBool gpsee_removeGCCallback(gpsee_runtime_t *grt, gpsee_gcCallback_fn cb)
  *
  *  @see gpsee_ds_forEach_fn.
  */
-static JSBool gcCallback_cb(JSContext *cx, void *key, void *value, void *private)
+static JSBool gcCallback_cb(JSContext *cx, const void *key, void *value, void *private)
 {
   gpsee_gcCallback_fn   fn      = key;
   gpsee_realm_t         *realm  = value;
