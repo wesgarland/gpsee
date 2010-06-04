@@ -312,6 +312,7 @@ typedef struct
 {
   gpsee_runtime_t       *grt;           /**< A new GPSEE Runtime */
   gpsee_realm_t         *realm;         /**< A GPSEE Realm in the grt runtime */
+  JSRuntime             *rt;            /**< The JS runtime associated with the GPSEE Runtime */
   JSContext             *cx;            /**< A JS Context for the realm */
   JSObject              *globalObject;  /**< The global object for the realm */
 } gpsee_interpreter_t;
@@ -374,13 +375,13 @@ void                 gpsee_destroyContext(JSContext *cx);
 /** @addtogroup datastores
  *  @{
  */
-typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, const void *key, void * value, void *private); /**< Iterator function for gpsee_ds_forEach() */
+typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, const void *key, void * value, void *_private); /**< Iterator function for gpsee_ds_forEach() */
 gpsee_dataStore_t       gpsee_ds_create                 (gpsee_runtime_t *grt, uint32 flags, size_t initialSizeHint) __attribute__((malloc));
 void *                  gpsee_ds_get                    (gpsee_dataStore_t store, const void *key);
 JSBool                  gpsee_ds_put                    (gpsee_dataStore_t store, const void *key, void *value);
 void *                  gpsee_ds_remove                 (gpsee_dataStore_t store, const void *key);
 void                    gpsee_ds_empty                  (gpsee_dataStore_t store);
-JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *private);
+JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *_private);
 void                    gpsee_ds_destroy                (gpsee_dataStore_t store);
 gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint) __attribute__((malloc));
 
