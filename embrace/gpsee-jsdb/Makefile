@@ -43,7 +43,7 @@
 
 PRODUCT 	= gpsee-jsdb
 HERE		:= $(PWD)
-JSD		:= $(HERE)/jsd
+JSD		= $(GPSEE_SRC_DIR)/extras/gsrdb/jsd
 EXPORT_LIBS	+= $(LIBRARY)
 EXPORT_PROGS	+= gpsee-jsdb.js
 
@@ -76,7 +76,7 @@ EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
 CPPFLAGS	+= -I$(JSD)
 
-GPSEE_JS_CXXFLAGS       += -DGPSEE_NO_WORKERS -DJSDEBUGGER -I$(JSD) -I$(JSD)/jsdb
+GPSEE_JS_CXXFLAGS       += -DGPSEE_NO_WORKERS -DGPSEE_JSDB -I$(JSD) -I$(JSD)/jsdb -D"PRODUCT_SHORTNAME=gpsee-jsdb"
 GPSEE_JS_LDFLAGS        += $(addprefix $(HERE)/,$(OBJS))
 
 $(LIBRARY) $(PRODUCT):	$(OBJS)

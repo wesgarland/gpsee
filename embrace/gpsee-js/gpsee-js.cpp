@@ -11,12 +11,12 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Initial Developer of the Original Code is PageMail, Inc.
+ * The Initial Developer of the Original Code is Mozilla.
  *
- * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Portions created by PageMail, Inc. are 
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
- * Contributor(s): 
+ * Contributor(s): Wes Garland, wes@page.ca, PageMail, Inc.
  * 
  * Alternatively, the contents of this file may be used under the terms of
  * either of the GNU General Public License Version 2 or later (the "GPL"),
@@ -33,32 +33,18 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
-#ifdef JSDEBUGGER
-#define JSDEBUGGER_C_UI
-#endif
-
 #include <gpsee.h>
+#ifdef GPSEE_JSDB
+# include "jsdebug.h"
+# include "jsdb.h"
+#endif
 #undef offsetOf
 
 static const char rcsid[]="$Id: gpsee-js.cpp,v 1.4 2010/04/28 12:45:52 wes Exp $";
 
-#undef JS_GetContextPrivate
-#undef JS_SetContextPrivate
-#undef JS_GetGlobalObject
-#undef main
-
-#define PRODUCT_SHORTNAME	"gpsee-js"
-
-JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSObject *parent)
-{
-  extern JSClass global_class;
-
-  if (clasp == &global_class)
-    clasp = gpsee_getGlobalClass();
-
-  return JS_NewObject(cx, clasp, proto, parent);
-}
-//#define JS_NewObject(cx, clasp, proto, parent)	gpseejs_NewObject(cx, clasp, proto, parent)
+#ifndef PRODUCT_SHORTNAME
+# define PRODUCT_SHORTNAME	"gpsee-js"
+#endif
 
 #undef main
 #define main(a,b,c) notMain(a,b,c)
@@ -77,7 +63,7 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 # warning Building without worker thread support
 #endif
 
-#ifdef JSDEBUGGER
+#ifdef GPSEE_JSDB
 /*
  * This facilitates sending source to JSD (the debugger system) in the shell
  * where the source is loaded using the JSFILE hack in jsscan. The function
@@ -123,7 +109,7 @@ main(int argc, char **argv, char **envp)
     JSObject *glob, *it, *envobj;
     int result;
     gpsee_interpreter_t *jsi = gpsee_createInterpreter();
-#ifdef JSDEBUGGER
+#ifdef GPSEE_JSDB
     JSDContext *jsdc;
     JSBool      jsdbc;
 #endif
@@ -205,8 +191,8 @@ main(int argc, char **argv, char **envp)
     if (!envobj || !JS_SetPrivate(cx, envobj, envp))
         return 1;
 
-#ifdef JSDEBUGGER
-    jsdc = JSD_DebuggerOnForUser(rt, NULL, NULL);
+#ifdef GPSEE_JSDB
+    jsdc = JSD_DebuggerOnForUser(rt, jsi->realm, NULL, NULL);
     if (!jsdc)
         return 1;
     JSD_JSContextInUse(jsdc, cx);
@@ -235,7 +221,7 @@ main(int argc, char **argv, char **envp)
         result = gExitCode;
 #endif
 
-#ifdef JSDEBUGGER
+#ifdef GPSEE_JSDB
     if (jsdc) {
         if (jsdbc)
             JSDB_TermDebugger(jsdc);
