@@ -40,8 +40,17 @@
 * JSDB public and callback functions
 */
 
+#ifdef GPSEE
+const void *jsdbContextPrivateID = "JSDB GPSEE Context Private ID: this pointer is unique";
+#endif
+
 #include "jsdbpriv.h"
 #include <errno.h>
+#ifdef GPSEE
+# include <gpsee.h>
+#else
+# warning Building without GPSEE Support
+#endif
 
 #ifndef JS_THREADSAFE
 #define JS_BeginRequest(cx) void(0)
@@ -346,8 +355,12 @@ SafeEval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSString* textJSString;
     char* filename;
     int32 lineno;
+#ifdef GPSEE
+    JSDB_Data* data = (JSDB_Data*) gpsee_getContextPrivate(cx, jsdbContextPrivateID, 0 /* read, not alloc */, NULL);
+#else
     JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx);
     JS_ASSERT(data);
+#endif
 
     if(argc < 1 || !(textJSString = JS_ValueToString(cx, argv[0])))
     {
@@ -426,7 +439,7 @@ static JSFunctionSpec debugger_functions[] = {
 };
 
 static JSClass debugger_global_class = {
-    "debugger_global", JSCLASS_HAS_PRIVATE,
+    "debugger_global", JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS,
     JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
@@ -489,10 +502,16 @@ static JSBool
 _initReturn_cx(const char* str, JSBool retval, JSDB_Data* data)
 {
     JSContext* cx = data->cxDebugger;
+
     JS_EndRequest(cx);
     if (!retval) {
+#ifdef GPSEE
+	JS_BeginRequest(cx);
+        gpsee_destroyRuntime(gpsee_getRuntime(cx));
+#else
         JS_DestroyContext(cx);
         JS_DestroyRuntime(data->rtDebugger);
+#endif
         free(data);
     }
     return _initReturn(str, retval);
@@ -506,28 +525,46 @@ _initReturn_db(const char* str, JSDB_Data* data)
 }
 
 JSDB_Data*
+#ifdef GPSEE
+jsdb_newCX(JSRuntime *rt, JSRuntime* rtDebugger, gpsee_realm_t *realmDebugger, JSDContext* jsdc, JSContext* cx, JSObject* dbgObj, int depth)
+#else
 jsdb_newCX(JSRuntime *rt, JSRuntime* rtDebugger, JSDContext* jsdc, JSContext* cx, JSObject* dbgObj, int depth)
+#endif
 {
+#ifdef GPSEE
+    JSDB_Data* data = (JSDB_Data*) gpsee_getContextPrivate(cx, jsdbContextPrivateID, sizeof(*data), NULL);
+#else
     JSDB_Data* data = (JSDB_Data*) calloc(1, sizeof(JSDB_Data));
+#endif
     if(!data)
         return _initReturn_db("memory alloc error", data);
 
     data->thread     = PR_GetCurrentThread();
     data->rtTarget   = rt;
     data->rtDebugger = rtDebugger;
+#ifdef GPSEE
+    data->realmDebugger = realmDebugger;
+#endif
     data->jsdcTarget = jsdc;
     data->debuggerDepth = depth;
 
     data->cxDebugger = cx;
 
+#ifndef GPSEE
     JS_SetContextPrivate(cx, data);
+#endif
     JS_SetErrorReporter(cx, _ErrorReporter);
 
     data->globDebugger = dbgObj;
 
+#ifdef GPSEE
+    if (gpsee_initGlobalObject(cx, realmDebugger, dbgObj) == JS_FALSE)
+        return _initReturn_db("debugger GPSEE global/InitStandardClasses error", data);    
+#else
     if(!JS_InitStandardClasses(cx, dbgObj)) {
         return _initReturn_db("debugger InitStandardClasses error", data);
     }
+#endif
 
     if(!JS_DefineFunctions(cx, dbgObj, debugger_functions)) {
         return _initReturn_db("debugger DefineFunctions error", data);
@@ -572,10 +609,18 @@ jsdb_getData(JSDB_Data* data, JSBool primary)
         JSDContext* local_jsdc;
         JSObject* obj;
         obj = JS_NewObject(cx, NULL, NULL, NULL);
+#ifdef GPSEE
+        if ((local_jsdc = JSD_DebuggerOnForContext(cx, data->realmDebugger, NULL, NULL)))
+#else
         if ((local_jsdc = JSD_DebuggerOnForContext(cx, NULL, NULL)))
+#endif
             JSD_JSContextInUse(local_jsdc, cx);
         iter = obj && local_jsdc
+#ifdef GPSEE
+             ? jsdb_newCX(data->rtTarget, data->rtDebugger, data->realmDebugger, local_jsdc, cx, obj, data->debuggerDepth)
+#else
              ? jsdb_newCX(data->rtTarget, data->rtDebugger, local_jsdc, cx, obj, data->debuggerDepth)
+#endif
              : 0;
     }
     if (iter) {
@@ -613,16 +658,27 @@ jsdb_TermDebugger(JSDB_Data* data, JSBool callDebuggerOff)
     while ((next = (JSDB_Data*)data->links.next) != data) {
         JS_REMOVE_LINK(&next->links);
         JS_SetContextThread(next->cxDebugger);
+#ifdef GPSEE
+        gpsee_destroyRuntime(gpsee_getRuntime(cx));
+#else
         JS_DestroyContext(next->cxDebugger);
+#endif
         JSD_DebuggerOff(next->jsdcTarget);
         free(next);
     }
     JS_SetContextThread(data->cxDebugger);
+#ifdef GPSEE
+    if (callDebuggerOff)
+        JSD_DebuggerOff(data->jsdcTarget);
+    JS_BeginRequest(cx);
+    gpsee_destroyRuntime(gpsee_getRuntime(cx));
+#else
     JS_DestroyContext(data->cxDebugger);
     if (callDebuggerOff)
         JSD_DebuggerOff(data->jsdcTarget);
     JS_DestroyRuntime(data->rtDebugger);
-    free(data);
+    free(data); /* data is the context private storage */
+#endif
 }
 
 JS_EXPORT_API(void)
@@ -644,7 +700,22 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
     jsval rvalIgnore;
     JSDB_Data* data;
     static char load_deb[] = JSDB_LOAD_DEBUGGER;
+    gpsee_realm_t* realmDebugger;
+    gpsee_runtime_t* grt;
 
+#ifdef GPSEE
+    grt = gpsee_createRuntime();
+    rtDebugger = grt->rt;
+    realmDebugger = gpsee_createRealm(grt, "debugger");
+    if (realmDebugger)
+      cx = gpsee_createContext(realmDebugger);
+
+    if (!realmDebugger || !cx)
+    {
+      gpsee_destroyRuntime(grt);
+      return _initReturn("debugger GPSEE initialization error", JS_FALSE);
+    }      
+#else
     rtDebugger = JS_NewRuntime(8L * 1024L * 1024L);
     if(!rtDebugger)
         return _initReturn("debugger runtime creation error", JS_FALSE);
@@ -654,8 +725,13 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
         JS_DestroyRuntime(rtDebugger);
         return _initReturn("debugger creation error", JS_FALSE);
     }
+#endif
 
+#ifdef GPSEE
+    dbgObj = realmDebugger->globalObject;
+#else
     JS_BeginRequest(cx);
+
     dbgObj = JS_NewObject(cx, &debugger_global_class, NULL, NULL);
     if(!dbgObj) {
         JS_EndRequest(cx);
@@ -663,13 +739,22 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
         JS_DestroyRuntime(rtDebugger);
         return _initReturn("debugger global object creation error", JS_FALSE);
     }
+#endif
 
     printf("NewRuntime: %p\n", rtDebugger);
+#ifdef GPSEE
+    data = jsdb_newCX(rt, rtDebugger, realmDebugger, jsdc, cx, dbgObj, depth+1);
+#else
     data = jsdb_newCX(rt, rtDebugger, jsdc, cx, dbgObj, depth+1);
+#endif
     if (!data) {
+#ifdef GPSEE
+        gpsee_destroyRuntime(grt);
+#else
         JS_EndRequest(cx);
         JS_DestroyContext(cx);
         JS_DestroyRuntime(rtDebugger);
+#endif
         return JS_FALSE;
     }
 
@@ -679,7 +764,7 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
     if(data->debuggerDepth < MAX_DEBUGGER_DEPTH)
     {
         JSDContext* local_jsdc;
-        if(!(local_jsdc = JSD_DebuggerOnForUser(data->rtDebugger, NULL, NULL)))
+        if(!(local_jsdc = JSD_DebuggerOnForUser(data->rtDebugger, data->realmDebugger, NULL, NULL)))
             return _initReturn_cx("failed to create jsdc for nested debugger",
                                JS_FALSE, data);
         JSD_JSContextInUse(local_jsdc, cx);

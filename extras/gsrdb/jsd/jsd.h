@@ -42,6 +42,10 @@
 #ifndef jsd_h___
 #define jsd_h___
 
+#ifdef GPSEE
+typedef struct gpsee_realm gpsee_realm_t;
+#endif
+
 /*
 * NOTE: This is a *private* header file and should only be included by
 * the sources in js/jsd. Defining EXPORT_JSD_API in an outside module
@@ -343,14 +347,20 @@ extern void JSD_ASSERT_VALID_OBJECT(JSDObject* jsdobj);
 
 extern JSDContext*
 jsd_DebuggerOnForUser(JSRuntime*         jsrt,
+#ifdef GPSEE
+                      gpsee_realm_t*     realm,
+#endif
                       JSD_UserCallbacks* callbacks,
                       void*              user);
 extern JSDContext*
 jsd_DebuggerOnForContext(JSContext*         jscx,
+#ifdef GPSEE
+                         gpsee_realm_t*     realm,
+#endif
                          JSD_UserCallbacks* callbacks,
                          void*              user);
 extern JSDContext*
-jsd_DebuggerOn(void);
+jsd_DebuggerOn(gpsee_realm_t *realm);
 
 extern void
 jsd_DebuggerOff(JSDContext* jsdc);

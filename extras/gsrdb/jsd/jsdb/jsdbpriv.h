@@ -56,6 +56,10 @@
 
 /***************************************************************************/
 
+#ifdef GPSEE
+typedef struct gpsee_realm gpsee_realm_t;
+#endif
+
 typedef struct JSDB_Data
 {
     JSCList         links;
@@ -64,6 +68,9 @@ typedef struct JSDB_Data
     JSDContext*     jsdcDebugger;
     JSRuntime*      rtTarget;
     JSRuntime*      rtDebugger;
+#ifdef GPSEE
+    gpsee_realm_t * realmDebugger;
+#endif
     JSContext*      cxDebugger;
     JSObject*       globDebugger;
     JSObject*       jsdOb;
@@ -140,4 +147,7 @@ jsdb_ExecHookHandler(JSDContext*     jsdc,
 extern JSBool
 jsdb_EvalReturnExpression(JSDB_Data* data, jsval* rval);
 
+#ifdef GPSEE
+extern const void *jsdbContextPrivateID;
+#endif
 #endif /* jsdbpriv_h___ */
