@@ -46,24 +46,30 @@
 
 JSD_PUBLIC_API(JSDContext*)
 JSD_DebuggerOnForUser(JSRuntime*         jsrt,
+#ifdef GPSEE
+                      gpsee_realm_t     *realm,
+#endif
                       JSD_UserCallbacks* callbacks,
                       void*              user)
 {
-    return jsd_DebuggerOnForUser(jsrt, callbacks, user);
+    return jsd_DebuggerOnForUser(jsrt, realm, callbacks, user);
 }
 
 JSD_PUBLIC_API(JSDContext*)
 JSD_DebuggerOnForContext(JSContext*         jscx,
+#ifdef GPSEE
+                         gpsee_realm_t*     realm,
+#endif
                          JSD_UserCallbacks* callbacks,
                          void*              user)
 {
-    return jsd_DebuggerOnForContext(jscx, callbacks, user);
+    return jsd_DebuggerOnForContext(jscx, realm, callbacks, user);
 }
 
 JSD_PUBLIC_API(JSDContext*)
-JSD_DebuggerOn(void)
+JSD_DebuggerOn(gpsee_realm_t *realm)
 {
-    return jsd_DebuggerOn();
+    return jsd_DebuggerOn(realm);
 }
 
 JSD_PUBLIC_API(void)

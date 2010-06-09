@@ -40,6 +40,9 @@
  */
 
 #include "jsd.h"
+#ifdef GPSEE
+#include <gpsee.h>
+#endif
 
 /***************************************************************************/
 
@@ -70,7 +73,12 @@ void JSD_ASSERT_VALID_CONTEXT(JSDContext* jsdc)
 #endif
 
 static JSClass global_class = {
-    "JSDGlobal", 0,
+    "JSDGlobal", 
+#ifdef GPSEE
+    JSCLASS_GLOBAL_FLAGS | JSCLASS_HAS_PRIVATE,
+#else
+    JSCLASS_GLOBAL_FLAGS,
+#endif
     JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
@@ -108,6 +116,9 @@ jsd_EndRequest(JSDContext *jsdc)
 static JSDContext*
 _newJSDContext(JSRuntime*         jsrt,
                JSContext*         jscx,
+#ifdef GPSEE
+               gpsee_realm_t*     realm,
+#endif
                JSD_UserCallbacks* callbacks, 
                void*              user)
 {
@@ -156,18 +167,28 @@ _newJSDContext(JSRuntime*         jsrt,
     if( ! jsd_InitScriptManager(jsdc) )
         goto label_newJSDContext_failure;
 
+#ifdef GPSEE
+    jsdc->dumbContext = gpsee_createContext(realm);
+    if (jsdc->dumbContext)
+      JS_EndRequest(jsdc->dumbContext);
+#else
     jsdc->dumbContext = JS_NewContext(jsdc->jsrt, 256);
+#endif
     if( ! jsdc->dumbContext )
         goto label_newJSDContext_failure;
 
     jsd_BeginRequest(jsdc);
 
+#ifdef GPSEE
+    jsdc->glob = realm->globalObject;
+#else
     jsdc->glob = JS_NewObject(jsdc->dumbContext, &global_class, NULL, NULL);
     if( ! jsdc->glob )
         goto label_newJSDContext_failure;
 
     if( ! JS_InitStandardClasses(jsdc->dumbContext, jsdc->glob) )
         goto label_newJSDContext_failure;
+#endif
 
     jsd_EndRequest(jsdc);
 
@@ -212,7 +233,12 @@ _destroyJSDContext(JSDContext* jsdc)
     * XXX we also leak the locks
     */
     JS_SetContextThread(jsdc->dumbContext);
+#ifdef GPSEE
+    JS_BeginRequest(jsdc->dumbContext);
+    gpsee_destroyContext(jsdc->dumbContext);
+#else
     JS_DestroyContext(jsdc->dumbContext);
+#endif
     jsdc->dumbContext = NULL;
 }
 
@@ -220,6 +246,9 @@ _destroyJSDContext(JSDContext* jsdc)
 
 JSDContext*
 jsd_DebuggerOnForContext(JSContext*         jscx, 
+#ifdef GPSEE
+                         gpsee_realm_t*     realm,
+#endif
                          JSD_UserCallbacks* callbacks, 
                          void*              user)
 {
@@ -229,7 +258,7 @@ jsd_DebuggerOnForContext(JSContext*         jscx,
     if (!hooks)
         return NULL;
     
-    jsdc = _newJSDContext(jsrt, jscx, callbacks, user);
+    jsdc = _newJSDContext(jsrt, jscx, realm, callbacks, user);
     if (!jsdc) {
         free(hooks);
         return NULL;
@@ -273,12 +302,15 @@ jsd_DebuggerOnForContext(JSContext*         jscx,
 
 JSDContext*
 jsd_DebuggerOnForUser(JSRuntime*         jsrt, 
+#ifdef GPSEE
+                      gpsee_realm_t*     realm,
+#endif
                       JSD_UserCallbacks* callbacks, 
                       void*              user)
 {
     JSDContext* jsdc;
 
-    jsdc = _newJSDContext(jsrt, NULL, callbacks, user);
+    jsdc = _newJSDContext(jsrt, NULL, realm, callbacks, user);
     if( ! jsdc )
         return NULL;
 
@@ -301,11 +333,11 @@ jsd_DebuggerOnForUser(JSRuntime*         jsrt,
 }
 
 JSDContext*
-jsd_DebuggerOn(void)
+jsd_DebuggerOn(gpsee_realm_t *realm)
 {
     JS_ASSERT(_jsrt);
     JS_ASSERT(_validateUserCallbacks(&_callbacks));
-    return jsd_DebuggerOnForUser(_jsrt, &_callbacks, _user);
+    return jsd_DebuggerOnForUser(_jsrt, realm, &_callbacks, _user);
 }
 
 void

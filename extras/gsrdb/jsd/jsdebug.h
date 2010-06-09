@@ -42,6 +42,12 @@
 #ifndef jsdebug_h___
 #define jsdebug_h___
 
+#ifdef GPSEE
+#ifndef GPSEE_H
+typedef struct gpsee_realm gpsee_realm_t;
+#endif
+#endif
+
 /* Get jstypes.h included first. After that we can use PR macros for doing
 *  this extern "C" stuff!
 */
@@ -141,6 +147,9 @@ JSD_DebuggerOn(void);
 */
 extern JSD_PUBLIC_API(JSDContext*)
 JSD_DebuggerOnForUser(JSRuntime*         jsrt,
+#ifdef GPSEE
+                      gpsee_realm_t*     realm,
+#endif
                       JSD_UserCallbacks* callbacks,
                       void*              user);
 
@@ -149,6 +158,9 @@ JSD_DebuggerOnForUser(JSRuntime*         jsrt,
  */
 extern JSD_PUBLIC_API(JSDContext*)
 JSD_DebuggerOnForContext(JSContext*         jscx,
+#ifdef GPSEE
+                         gpsee_realm_t*     realm,
+#endif
                          JSD_UserCallbacks* callbacks,
                          void*              user);
 

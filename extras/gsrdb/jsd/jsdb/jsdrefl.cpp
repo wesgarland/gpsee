@@ -41,6 +41,8 @@
 */
 
 #include "jsdbpriv.h"
+#include <gpsee.h>
+#undef JS_InitClass
 
 /***************************************************************************/
 /* Non-const Properties */
@@ -379,8 +381,14 @@ GetMinorVersion(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 /***************************************************************************/
 /* Script functions */
 
+#ifdef GPSEE
+# define GET_CX_PRIVATE gpsee_getContextPrivate(cx, jsdbContextPrivateID, 0, NULL)
+#else
+# define GET_CX_PRIVATE JS_GetContextPrivate(cx)
+#endif
+
 #define GET_JSDB_DATA_AND_ASSERT(data, cx)                   \
-    JSDB_Data* data = (JSDB_Data*) JS_GetContextPrivate(cx); \
+    JSDB_Data* data = (JSDB_Data*) GET_CX_PRIVATE;           \
     JS_ASSERT(data);                                         \
     data = jsdb_getData((JSDB_Data*) data, JS_FALSE);        \
     if (!data) {                                             \
