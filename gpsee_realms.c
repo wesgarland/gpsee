@@ -128,10 +128,10 @@ gpsee_realm_t *gpsee_getRealm(JSContext *cx)
 
 /**
  *  Create a new GPSEE Realm. New realm will be initialized to have all members NULL, except
- *   - the context and name provided
- *   - an initialized module system
- *   - an initialized data store
- *   - an initialized global object (if no global set in cx)
+ *   - the context and name provided (name only present in debug build)
+ *   - an initialized module system (and hence module data store)
+ *   - an initialized I/O hooks data store
+ *   - an initialized global object
  *
  *  @param      grt     The GPSEE runtime to which the new realm will belong
  *  @param      name    A symbolic name, for use in debugging, to describe this realm. Does not need to be unique.
@@ -282,6 +282,10 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
  *
  *  @note       If NULL is passed for realm, we return NULL without throwing a
  *              new exception. This is to allow chaining with gpsee_createRealm().
+ *
+ *  @note       The grt->monitors.cx monitor is used to insure that we don't churn the cx pointer
+ *              in/out of the grt->realmsByContext list if we happen to call create/destroy at 
+ *              nearly the exact same time on two threads.
  */
 JSContext *gpsee_createContext(gpsee_realm_t *realm)
 {
@@ -290,6 +294,8 @@ JSContext *gpsee_createContext(gpsee_realm_t *realm)
   if (!realm)
     return NULL;
   
+  gpsee_enterAutoMonitorRT(realm->grt, &realm->grt->monitors.cx);
+
   cx = realm->cachedCx;
   if ((cx == NULL) || (jsval_CompareAndSwap((jsval *)&realm->cachedCx, (jsval)cx, (jsval)NULL) == JS_FALSE))
     cx = JS_NewContext(realm->grt->rt, 8192);
@@ -299,8 +305,11 @@ JSContext *gpsee_createContext(gpsee_realm_t *realm)
   if (gpsee_ds_put(realm->grt->realmsByContext, cx, realm) == JS_FALSE)
   {
     JS_DestroyContext(cx);
+    gpsee_leaveAutoMonitor(realm->grt->monitors.cx);
     return NULL;
   }
+
+  gpsee_leaveAutoMonitor(realm->grt->monitors.cx);
 
   JS_BeginRequest(cx);
   JS_SetOptions(cx, JS_GetOptions(realm->grt->coreCx));
@@ -320,12 +329,14 @@ JSContext *gpsee_createContext(gpsee_realm_t *realm)
  */
 void gpsee_destroyContext(JSContext *cx)
 {       
-  gpsee_realm_t *realm = gpsee_getRealm(cx);
-  gpsee_realm_t *realm2;
+  gpsee_runtime_t       *grt = gpsee_getRuntime(cx);
+  gpsee_realm_t         *realm;
 
   JS_EndRequest(cx);
+  gpsee_enterAutoMonitor(cx, &grt->monitors.cx);
   JS_DestroyContext(cx);
 
-  realm2 = gpsee_ds_remove(realm->grt->realmsByContext, cx);
-  GPSEE_ASSERT(realm == realm2);
+  realm = gpsee_ds_remove(grt->realmsByContext, cx);
+  GPSEE_ASSERT(realm);
+  gpsee_leaveMonitor(grt->monitors.cx);
 }

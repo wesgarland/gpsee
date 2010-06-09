@@ -120,20 +120,33 @@ gpsee_monitor_t gpsee_getNilMonitor()
  *                              the monitor, to find the GPSEE runtime pointer.
  *  @param      monitor_p       A pointer to the monitor. This address must stay valid for the lifetime of the runtime.
  *
- *  @see gpsee_createMonitor()
+ *  @see gpsee_createMonitor(), gpsee_enterAutoMonitorRT();
  */
 void gpsee_enterAutoMonitor(JSContext *cx, gpsee_autoMonitor_t *monitor_p)
 {
 #ifdef JS_THREADSAFE
   gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
+  gpsee_enterAutoMonitorRT(grt, monitor_p);
+#endif
+}
+
+/** 
+ *  Enter an auto-monitor (RAII). Infallible. Creates the monitor as-needed. 
+ *
+ *  @param      grt             A pointer to the current GPSEE runtime.
+ *  @param      monitor_p       A pointer to the monitor. This address must stay valid for the lifetime of the runtime.
+ *
+ *  @see gpsee_createMonitor(), gpsee_enterAutoMonitor();
+ */
+void gpsee_enterAutoMonitorRT(gpsee_runtime_t *grt, gpsee_autoMonitor_t *monitor_p)
+{
   GPSEE_ASSERT(grt->monitors.monitor);
 
   if (!*monitor_p)
     *monitor_p = gpsee_createMonitor(grt);
 
   gpsee_enterMonitor(*monitor_p);
-#endif
 }
 
 /**

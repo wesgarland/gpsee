@@ -241,6 +241,7 @@ typedef struct
     gpsee_autoMonitor_t realms;         /** Held during realm creation once the realm is visible but before it's completely initialized, 
                                             and whenever grt->realms or grt->realmsByContext pointers need synchronization. */
     gpsee_autoMonitor_t user_io;        /**< Monitor which must be held to read/write user_io */
+    gpsee_autoMonitor_t cx;             /**< Monitor which is held during gpsee_createContext() and gpsee_destroyContext() */
   } monitors;
 #endif
 
@@ -338,6 +339,7 @@ void                    gpsee_removeAsyncCallback       (JSContext *cx, GPSEEAsy
 JS_EXTERN_API(void)                 gpsee_destroyInterpreter(gpsee_interpreter_t *jsi);
 JS_EXTERN_API(gpsee_interpreter_t *)gpsee_createInterpreter() __attribute__((malloc));
 JS_EXTERN_API(gpsee_runtime_t *)    gpsee_createRuntime() __attribute__((malloc));
+gpsee_runtime_t *                   gpsee_getRuntime(JSContext *cx);
 JS_EXTERN_API(int)                  gpsee_destroyRuntime(gpsee_runtime_t *grt);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack);
@@ -408,6 +410,7 @@ gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint)
 /** @addtogroup monitors
  *  @{
  */
+void                    gpsee_enterAutoMonitorRT        (gpsee_runtime_t *grt, gpsee_autoMonitor_t *monitor_p);
 void                    gpsee_enterAutoMonitor          (JSContext *cx, gpsee_autoMonitor_t *monitor_p);
 void                    gpsee_leaveAutoMonitor          (gpsee_autoMonitor_t monitor);
 gpsee_monitor_t         gpsee_getNilMonitor             (void) __attribute__((const));

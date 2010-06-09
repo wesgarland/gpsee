@@ -988,3 +988,12 @@ void gpsee_destroyInterpreter(gpsee_interpreter_t *jsi)
 {
   gpsee_destroyRuntime(jsi->grt);
 }
+
+/** Return the GPSEE runtime associated with the current JS Context.
+ *  @param      cx      The current JS context
+ *  @returns    A pointer to the GPSEE runtime
+ */
+gpsee_runtime_t *gpsee_getRuntime(JSContext *cx)
+{
+  return (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx)); 
+}
