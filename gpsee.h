@@ -38,9 +38,8 @@
  *  @author	Wes Garland, wes@page.ca
  *  @version	$Id: gpsee.h,v 1.32 2010/05/12 01:12:50 wes Exp $
  *
- *  @defgroup   core            GPSEE Core
+ *  @defgroup   core            GPSEE Core API
  *  @{
- *  @defgroup   api             GPSEE API
  *  @defgroup   realms          GPSEE Realms
  *  @defgroup   module_system   GPSEE Module System - implementation of Modules
  *  @defgroup   async           GPSEE Async Callbacks
@@ -51,10 +50,21 @@
  *  @defgroup   internal        GPSEE Internals
  *  @defgroup   modules         GPSEE Modules - Modules which ship with GPSEE
  *  @defgroup   utility         Utility / Portability functions: system-level functions provided for/by GPSEE 
-*/
+ *  @defgroup   debugger        GPSEE Debugger Facilities
+ */
 
 #ifndef GPSEE_H
 #define GPSEE_H
+
+/* Forward declarations & primitive typedefs */
+typedef struct gpsee_realm gpsee_realm_t;               /**< @ingroup realms */
+typedef struct dataStore *      gpsee_dataStore_t;      /**< Handle describing a GPSEE data store */
+typedef struct moduleHandle     moduleHandle_t; 	/**< Handle describing a loaded module */
+typedef struct moduleMemo       moduleMemo_t; 		/**< Handle to module system's realm-wide memo */
+typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
+typedef void *                  gpsee_monitor_t;        /**< Synchronization primitive */
+typedef void *                  gpsee_autoMonitor_t;    /**< Synchronization primitive */
+typedef struct GPSEEAsyncCallback GPSEEAsyncCallback;   /**< @ingroup async */
 
 #include "gpsee_config.h" /* MUST BE INCLUDED FIRST */
 #include <prthread.h>
@@ -96,6 +106,11 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup ut
 #endif
 
 #include <jsapi.h>
+#ifdef GPSEE_DEBUGGER
+# include "jsdebug.h"
+# include "jsdb.h"
+#endif
+
 #if !defined(INT_TO_JSVAL) && defined(JSVAL_ZERO) /* Bug workaround for tracemonkey, introduced Aug 18 2009, patched here Sep 25 2009 - xxx wg  */
 #undef JSVAL_ZERO
 #undef JSVAL_ONE
@@ -175,18 +190,10 @@ typedef enum
   et_successMask	= et_finished | et_requested
 } exitType_t;
 
-typedef struct dataStore *      gpsee_dataStore_t;      /**< Handle describing a GPSEE data store */
-typedef struct moduleHandle     moduleHandle_t; 	/**< Handle describing a loaded module */
-typedef struct moduleMemo       moduleMemo_t; 		/**< Handle to module system's realm-wide memo */
-typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
-typedef void *                  gpsee_monitor_t;        /**< Synchronization primitive */
-typedef void *                  gpsee_autoMonitor_t;    /**< Synchronization primitive */
-
 #ifndef GPSEE_NO_ASYNC_CALLBACKS
 /** addtogroup async
  *  @{
  */
-typedef struct GPSEEAsyncCallback GPSEEAsyncCallback;
 /** Signature for callback functions that can be registered by gpsee_addAsyncCallback()  */
 typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*, GPSEEAsyncCallback *);
 
@@ -200,8 +207,6 @@ struct GPSEEAsyncCallback
 }; 
 /** @} */
 #endif
-
-typedef struct gpsee_realm gpsee_realm_t;
 
 /** Handle describing a gpsee runtime important details and state
  *  @ingroup core
@@ -418,6 +423,14 @@ gpsee_monitor_t         gpsee_createMonitor             (gpsee_runtime_t *grt) _
 void                    gpsee_enterMonitor              (gpsee_monitor_t monitor);
 void                    gpsee_leaveMonitor              (gpsee_monitor_t monitor);
 void                    gpsee_destroyMonitor            (gpsee_runtime_t *grt, gpsee_monitor_t monitor);
+
+/** @addtogroup debugger
+ *  @{
+ */
+#ifdef GPSEE_DEBUGGER
+JSDContext *            gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm);
+void                    gpsee_finiDebugger(JSDContext *jsdc);
+#endif
 /** @} */
 
 /* support routines */
@@ -646,4 +659,5 @@ cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 #define GSR_FORCE_STACK_DUMP_VERBOSITY 2
 #define GSR_PREPROGRAM_TTY_VERBOSITY   2
 #define GSR_PREPROGRAM_NOTTY_VERBOSITY 0
+
 #endif /* GPSEE_H */

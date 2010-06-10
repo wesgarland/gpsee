@@ -1,3 +1,5 @@
+#!gmake
+#
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -14,7 +16,7 @@
 # The Initial Developer of the Original Code is PageMail, Inc.
 #
 # Portions created by the Initial Developer are 
-# Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
 #
 # Contributor(s):
 # 
@@ -32,19 +34,47 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
+## @file        Makefile        Makefile to build an updated jsd/jsdb and gsrdb.
+##                              Requires that GPSEE already be built and installed.
+## @author      Wes Garland, PageMail, Inc., wes@page.ca
+## @date        May 2010
+## @version     $Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
-DEFAULT_GPSEE_PREFIX_DIR = /opt/local/gpsee
-EXTRA_CPPFLAGS		+= -D_GNU_SOURCE
-SOLIB_EXT	 	 = dylib
-LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
-LINKER		 	 = $(GCC) -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
-CC			 = $(GCC)
+top: build
 
-GPSEE_C_DEFINES         += HAVE_NDBM
-lib%.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
+GPSEE_CONFIG    ?= ../../gpsee-config
+EXPORT_PROGS	= gsrdb
+EXPORT_HEADERS	= jsd/jsdebug.h jsd/jsdb/jsdb.h
+EXPORT_LIBS	= $(LIBRARY)
+AUTOGEN_SRC	= gsrdb.c
 
-clean: DEBUG_DUMP_DIRS += $(wildcard $(foreach PROG, $(notdir $(PROGS)), ./$(PROG).dSYM))
+include $(shell $(GPSEE_CONFIG) --outside.mk)
 
-# Prefer Apple iconv over Macports/Fink
-ICONV_LDFLAGS   	=	/usr/lib/libiconv.dylib
-ICONV_HEADER    	=       /usr/include/iconv.h
+HERE		:= $(PWD)
+JSD		:= $(HERE)/jsd
+LIBRARY		= libgpsee-jsdb.$(SOLIB_EXT)
+
+build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+
+LIBOBJS 	+= jsdebug.o jsd_atom.o jsd_high.o jsd_hook.o jsd_lock.o jsd_obj.o jsd_scpt.o jsd_stak.o jsd_step.o \
+		   jsd_text.o jsd_val.o jsdb.o jsdrefl.o gpsee_debugger.o
+
+JS		:= $(dir $(SPIDERMONKEY_SRC))
+VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
+CPPFLAGS	+= -I$(JSD) -I$(JSD)/jsdb
+
+$(LIBRARY):	$(LIBOBJS)
+OBJS		+= $(LIBOBJS) gsrdb.o gsr.o
+
+jsdb.o: 	CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('debugger.js')\""
+$(LIBOBJS):	EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
+
+gsrdb: 		EXTRA_LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
+gsrdb.o:	EXTRA_CPPFLAGS += -DGPSEE_DEBUGGER -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\""
+gsrdb.c:	
+		ln -s $(GPSEE_SRC_DIR)/gsr.c $@
+
+install:	gsrdb-link
+
+gsrdb-link:
+	        [ -h "$(GSR_SHEBANG_LINK)db" ] || ln -s "$(BIN_DIR)/gsrdb" "$(GSR_SHEBANG_LINK)db"
