@@ -56,8 +56,19 @@
  
 static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.24 2010/04/14 00:38:11 wes Exp $";
 
-#define PRODUCT_SHORTNAME	"gsr"
-#define PRODUCT_VERSION		"1.0-pre2"
+#define PRODUCT_VERSION		"1.0-pre3"
+
+#if !defined(GPSEE_DEBUGGER)
+# define PRODUCT_SUMMARY        "Script Runner for GPSEE"
+# define PRODUCT_SHORTNAME	"gsr"
+#else
+# define PRODUCT_SUMMARY        "Script Debugger for GPSEE"
+# define PRODUCT_SHORTNAME	"gsrdb"
+#endif
+
+#if !defined(SYSTEM_GSR)
+#define	SYSTEM_GSR	"/usr/bin/" PRODUCT_SHORTNAME
+#endif
 
 #include <prinit.h>
 #include "gpsee.h"
@@ -145,7 +156,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
 #if defined(__SURELYNX__)
                   "SureLynx "
 #endif
-                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
+                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - " PRODUCT_SUMMARY " " GPSEE_CURRENT_VERSION_STRING "\n"
                   "Copyright (c) 2007-2010 PageMail, Inc. All Rights Reserved.\n"
                   "\n"
                   "As an interpreter: #! %s {-/*flags*/}\n"
@@ -208,7 +219,7 @@ static void __attribute__((noreturn)) moreHelp(const char *argv_zero)
 #if defined(__SURELYNX__)
                   "SureLynx "
 #endif
-                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - GPSEE Script Runner for GPSEE " GPSEE_CURRENT_VERSION_STRING "\n"
+                  PRODUCT_SHORTNAME " " PRODUCT_VERSION " - " PRODUCT_SUMMARY " " GPSEE_CURRENT_VERSION_STRING "\n"
                   "Copyright (c) 2007-2010 PageMail, Inc. All Rights Reserved.\n"
                   "\n"
 		  "More Help: Additional information beyond basic usage.\n"
@@ -506,6 +517,9 @@ PRIntn prmain(PRIntn argc, char **argv)
   int			skipSheBang = 0;
   int			exitCode = 1;
   int			verbosity;	                /* Verbosity to use before flags are processed */
+#ifdef GPSEE_DEBUGGER
+  JSDContext            *jsdc;          
+#endif
 
 #if defined(__SURELYNX__)
   permanent_pool = apr_initRuntime();
@@ -651,6 +665,9 @@ PRIntn prmain(PRIntn argc, char **argv)
   jsi = gpsee_createInterpreter();
   realm = jsi->realm;
   cx = jsi->cx;
+#if defined(GPSEE_DEBUGGER)
+  jsdc = gpsee_initDebugger(cx, realm);
+#endif
 
   gpsee_setThreadStackLimit(cx, &stackBasePtr, strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));
 
@@ -676,9 +693,6 @@ PRIntn prmain(PRIntn argc, char **argv)
       goto out;
   }
 
-#if !defined(SYSTEM_GSR)
-#define	SYSTEM_GSR	"/usr/bin/gsr"
-#endif
   if ((argv[0][0] == '/') && (strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
   {
     char preloadScriptFilename[FILENAME_MAX];
@@ -791,6 +805,10 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   out:
+#ifdef GPSEE_DEBUGGER
+  gpsee_finiDebugger(jsdc);
+#endif
+
   gpsee_destroyInterpreter(jsi);
   JS_ShutDown();
 
