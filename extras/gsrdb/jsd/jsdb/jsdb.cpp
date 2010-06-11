@@ -87,6 +87,19 @@ jsdb_EndRequest(JSDB_Data* data) {
 #endif
 }
 
+#if 0
+/* Cannot enable hookable i/o until we solve _initReturn() -- error message display realm problem */
+#define printf(a...)    gpsee_printf(cx, a)
+#define fprintf(a...)   gpsee_fprintf(cx, a)
+#define vfprintf(a...)  gpsee_vfprintf(cx, a)
+#define fwrite(a...)    gpsee_fwrite(cx, a)
+#define fread(a...)     gpsee_fread(cx, a)
+#define fgets(a...)     gpsee_fgets(cx, a)
+#define fputs(a...)     gpsee_fputs(cx, a)
+#define fputc(a...)     gpsee_fputc(cx, a)
+#define puts(a...)      gpsee_puts(cx, a)
+#endif
+
 /***************************************************************************/
 
 static void
@@ -705,6 +718,7 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
 
 #ifdef GPSEE
     grt = gpsee_createRuntime();
+    grt->useCompilerCache = 0;
     rtDebugger = grt->rt;
     realmDebugger = gpsee_createRealm(grt, "debugger");
     if (realmDebugger)
@@ -741,7 +755,6 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
     }
 #endif
 
-    printf("NewRuntime: %p\n", rtDebugger);
 #ifdef GPSEE
     data = jsdb_newCX(rt, rtDebugger, realmDebugger, jsdc, cx, dbgObj, depth+1);
 #else
