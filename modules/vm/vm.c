@@ -89,6 +89,46 @@ static JSBool vm_version_getter(JSContext *cx, JSObject *obj, jsval id, jsval *v
   return JS_TRUE;
 }
 
+/** Generic Getter */
+static JSBool vm_generic_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  void          *ptr;
+  gpsee_realm_t *realm;
+
+  if (JSVAL_TO_INT(id) != -1)
+  {
+    realm = gpsee_getRealm(cx);
+    if (!realm)
+      return gpsee_throw(cx, MODULE_ID ": Unable to determine GPSEE Realm for current context");
+  }
+
+  switch(JSVAL_TO_INT(id))
+  {
+    case -1:
+      ptr = cx;
+      break;
+    case -2:
+      ptr = realm->grt->rt;
+      break;
+    case -3:
+      ptr = realm->globalObject;
+      break;
+    case -4:
+      ptr = realm;
+      break;
+    default:
+      return gpsee_throw(cx, MODULE_ID ": invalid tinyID!");
+  }
+
+  obj = gpsee_newByteThing(cx, ptr, 0, JS_FALSE);
+  if (!obj)
+    return JS_FALSE;
+
+  *vp = OBJECT_TO_JSVAL(obj);
+
+  return JS_TRUE;
+}
+
 static JSBool vm_jsval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   char buf[32];
@@ -96,6 +136,39 @@ static JSBool vm_jsval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
   snprintf(buf, sizeof(buf), GPSEE_PTR_FMT, (void *)argv[0]);
 
   *rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf));
+  return JS_TRUE;
+}
+
+static JSBool vm_jschars(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  JSString      *str = NULL;
+  jschar        *ptr;
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".jschars.arguments.count");
+    
+  if (!JSVAL_IS_STRING(argv[0]))
+  {
+    str = JS_ValueToString(cx, argv[0]);
+    if (!str)
+      return JS_FALSE; /* OOM */
+    argv[0] = STRING_TO_JSVAL(str);                             /* Provide a temporary GC root */
+    ptr = JS_GetStringChars(str);
+  }
+  else
+  {
+    ptr = JS_GetStringChars(JSVAL_TO_STRING(argv[0]));
+  }
+
+  obj = gpsee_newByteThing(cx, ptr, 0, JS_FALSE);
+  if (!obj)
+    return JS_FALSE;
+
+  *rval = OBJECT_TO_JSVAL(obj);
+
+  if (str)
+    JS_SetReservedSlot(cx, obj, 0, STRING_TO_JSVAL(str));        /* Provide a proper lifetimed GC root */
+    
   return JS_TRUE;
 }
 
@@ -298,6 +371,7 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
     { "GC",			vm_gc,				0, 0, 0 },	
     { "isCompilableUnit",	vm_isCompilableUnit,		0, 0, 0 },
     { "jsval",			vm_jsval,			0, 0, 0 },
+    { "jschars",                vm_jschars,                     0, 0, 0 },
     { "dumpHeap",		vm_dumpHeap,			0, 0, 0 },
     { "dumpValue",		vm_dumpValue,			0, 0, 0 },
     { "dumpObject",		vm_dumpObject,			0, 0, 0 },
@@ -306,8 +380,12 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
 
   static JSPropertySpec vm_static_props[] = 
   {
-    { "version",	0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_version_getter, 	JS_PropertyStub },
-    { "jit",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			vm_jit_getter,		vm_jit_setter },
+    { "version",	 0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_version_getter, 	JS_PropertyStub },
+    { "jit",		 0, JSPROP_ENUMERATE | JSPROP_PERMANENT, 			vm_jit_getter,		vm_jit_setter },
+    { "cx",             -1, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_generic_getter, 	JS_PropertyStub },
+    { "rt",             -2, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_generic_getter, 	JS_PropertyStub },
+    { "globalObject",   -3, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_generic_getter, 	JS_PropertyStub },
+    { "realm",          -4, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY, 	vm_generic_getter, 	JS_PropertyStub },
     { NULL, 0, 0, NULL, NULL }
   };
 
