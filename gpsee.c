@@ -930,23 +930,6 @@ void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
   return prvslot;
 }
 
-/** 
- *  All byteThings must have this JSTraceOp. It is used for two things:
- *  1. It identifies byteThings to other byteThings
- *  2. It ensures that hnd->memoryOwner is not finalized while other byteThings 
- *     directly using the same backing memory store are reacheable.
- *
- *  @param trc	Tracer handle supplied by JSAPI.
- *  @param obj	The object behind traced.
- */
-void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
-{
-  byteThing_handle_t	*hnd = JS_GetPrivate(trc->context, obj);
-
-  if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
-    JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
-}
-
 /** Instanciate a JavaScript interpreter -- i.e. a runtime,
  *  a context, a global object.
  *  @returns	A handle to the interpreter, ready for use.
