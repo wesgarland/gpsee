@@ -460,6 +460,7 @@ void gpsee_uio_dumpPendingWrites(JSContext *cx, gpsee_realm_t *realm);
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
 #define                             gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
 JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj); /**< @ingroup bytethings */
+JSObject *gpsee_newByteThing(JSContext *cx, void *buffer, size_t length, JSBool copy);
 
 /** Determine if JSClass instaciates bytethings or not.
  *  @ingroup    bytethings
@@ -467,7 +468,10 @@ JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObjec
  *  @param      clasp   The class pointer to test
  *  @returns    0 if it is not
  */
-static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
 {
   return clasp ? (clasp->mark == (JSMarkOp)gpsee_byteThingTracer) : 0;
 }
@@ -478,7 +482,10 @@ static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
  *  @param      obj     The object to test
  *  @returns    0 if it is not
  */
-static inline int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
 {
   return gpsee_isByteThingClass(cx, JS_GET_CLASS(cx, obj));
 }
@@ -489,7 +496,10 @@ static inline int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
  *  @param      v       The value to test
  *  @returns    1 if the value is falsey, 0 otherwise
  */
-static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
     return (v == JS_GetEmptyStringValue (cx));
@@ -546,7 +556,10 @@ void __attribute__((noreturn)) panic(const char *message);
  *  @returns	JS_TRUE when values are swapped
  *
  */
-static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
+#ifndef DOXYGEN
+static inline 
+#endif
+JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
 { 
   GPSEE_STATIC_ASSERT(sizeof(jsval) == sizeof(void *));
   /* jslock.c code: return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE; */
@@ -564,7 +577,10 @@ static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, 
  *  @returns    JS_TRUE when values are swapped
  */
 #include <gpsee_lock.c>
-static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
+#ifndef DOXYGEN
+static inline 
+#endif
+JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
 {
   return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE;
 }
