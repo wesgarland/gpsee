@@ -600,7 +600,19 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
   memset(hnd, 0, sizeof(*hnd));
   JS_SetPrivate(cx, obj, hnd);
 
-  GPSEE_STATIC_ASSERT(sizeof(size_t) == sizeof(void *));
+  if (JSVAL_IS_OBJECT(argv[0]) && gpsee_isByteThing(cx, JSVAL_TO_OBJECT(argv[0])))
+  {
+    byteThing_handle_t *other_hnd = JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[0]));
+
+    if (!other_hnd)
+      return gpsee_throw(cx, MODULE_ID ".cast.arguments.0.invalid: invalid bytething (missing private handle)");
+
+    hnd->buffer         = other_hnd->buffer;
+    hnd->length         = other_hnd->length;
+    hnd->memoryOwner    = JSVAL_TO_OBJECT(argv[0]);
+
+    return JS_TRUE;
+  }
 
   if (!JSVAL_IS_INT(argv[0]))
   {
@@ -612,6 +624,7 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     if (isnan(d))
       return pointer_fromString(cx, argv[0], (void **)&hnd->buffer, CLASS_ID ".cast");
 
+    GPSEE_STATIC_ASSERT(sizeof(size_t) == sizeof(void *));
     hnd->buffer = (void *)((size_t)d);
     if ((void *)((size_t)d) != hnd->buffer)
       return gpsee_throw(cx, CLASS_ID ".cast.overflow");
