@@ -57,7 +57,7 @@ LIBRARY		= libgpsee-jsdb.$(SOLIB_EXT)
 build: $(EXPORT_LIBS) $(EXPORT_PROGS)
 
 LIBOBJS 	+= jsdebug.o jsd_atom.o jsd_high.o jsd_hook.o jsd_lock.o jsd_obj.o jsd_scpt.o jsd_stak.o jsd_step.o \
-		   jsd_text.o jsd_val.o jsdb.o jsdrefl.o gpsee_debugger.o
+		   jsd_text.o jsd_val.o jsdb.o jsdrefl.o gpsee_debugger.o editline.o sysunix.o
 
 JS		:= $(dir $(SPIDERMONKEY_SRC))
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
@@ -73,6 +73,8 @@ gsrdb: 		EXTRA_LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
 gsrdb.o:	EXTRA_CPPFLAGS += -DGPSEE_DEBUGGER -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\""
 gsrdb.c:	
 		ln -s $(GPSEE_SRC_DIR)/gsr.c $@
+
+sysunix.o editline.o:	CPPFLAGS += -DANSI_ARROWS -DHAVE_TCGETATTR -DHIDE -DUSE_DIRENT -DSYS_UNIX -DHAVE_STDLIB -DUNIQUE_HISTORY  
 
 install:	gsrdb-link
 
