@@ -387,7 +387,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
       char linebuf[len+1];
       int i;
 
-      strncpy(linebuf, report->linebuf + start, len+1);
+      gpsee_cpystrn(linebuf, report->linebuf + start, len+1);
       gpsee_fprintf(cx, stderr, "%s: %s\n", prefix, linebuf);
       gpsee_fprintf(cx, stderr, "%s: ", prefix);
       for (i = report->tokenptr - report->linebuf - start; i > 1; i--)
