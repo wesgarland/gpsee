@@ -79,13 +79,14 @@ static void SendSourceToJSDebugger(const char *filename, uintN lineno,
 /** Initialize the debugger for this embedding. Not sure if this is per-cx or per-rt.
  *  Must be called before the embedding processes JavaScript to be debugged.
  *
- *  @param      cx      The current JavaScript context
- *  @param      realm   The current GPSEE realm
+ *  @param      cx              The current JavaScript context
+ *  @param      realm           The current GPSEE realm
+ *  @param      debugger        The fully-qualified path to the debugger.js we will invoke
  *  @returns    A new JSD Context
  */
-JSDContext *gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm)
+JSDContext *gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *debugger)
 {
-  JSDContext            *jsdc;
+  JSDContext    *jsdc;
 
   jsdc = JSD_DebuggerOnForUser(realm->grt->rt, realm, NULL, NULL);
   if (!jsdc)
@@ -93,7 +94,7 @@ JSDContext *gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm)
   JSD_JSContextInUse(jsdc, cx);
   JS_SetSourceHandler(realm->grt->rt, SendSourceToJSDebugger, jsdc);
 
-  if (JSDB_InitDebugger(realm->grt->rt, jsdc, 0) != JS_TRUE)
+  if (JSDB_InitDebugger(realm->grt->rt, jsdc, 0, debugger) != JS_TRUE)
     panic("Could not start JSDB debugger layer");
 
   realm->grt->useCompilerCache = 0;       /* Interacts poorly with JSD source-code transmitter */

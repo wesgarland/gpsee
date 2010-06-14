@@ -54,7 +54,7 @@ GPSEE_JS_CXXFLAGS	+= -I$(GPSEE_INCLUDE_DIR) -I$(SPIDERMONKEY_SRC) $(shell $(GPSE
 GPSEE_JS_LDFLAGS	+= $(filter-out -lmozjs,$(filter-out -lgpsee,$(shell $(GPSEE_CONFIG) --ldflags))) $(GPSEE_SRC_DIR)/libgpsee.a
 EXPORT_PROGS		+= $(PRODUCT)
 
-build: $(EXPORT_LIBS) $(EXPORT_PROGS)
+build: $(EXPORT_LIBS) $(EXPORT_PROGS) $(EXPORT_EXTRA_FILES)
 
 $(SHELL_BUILD)/$(PRODUCT).mk: Makefile $(SHELL_BUILD)/Makefile $(SHELL_BUILD)/$(PRODUCT).cpp
 	@echo " * Building $(SHELL_BUILD)/$(PRODUCT).mk"

@@ -57,10 +57,6 @@ const void *jsdbContextPrivateID = "JSDB GPSEE Context Private ID: this pointer 
 #define JS_EndRequest(cx) void(0)
 #endif
 
-#ifndef JSDB_LOAD_DEBUGGER
-# define JSDB_LOAD_DEBUGGER "load('debugger.js')"
-#endif
-
 JSDB_Data*
 jsdb_getData(JSDB_Data* data, JSBool primary);
 
@@ -705,16 +701,19 @@ JSDB_TermDebugger(JSDContext* jsdc)
 }
 
 JS_EXPORT_API(JSBool)
-JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
+JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth, const char *debugger_filename)
 {
     JSRuntime* rtDebugger;
     JSContext* cx;
     JSObject* dbgObj;
     jsval rvalIgnore;
     JSDB_Data* data;
-    static char load_deb[] = JSDB_LOAD_DEBUGGER;
     gpsee_realm_t* realmDebugger;
     gpsee_runtime_t* grt;
+    char load_debugger[1024];
+
+    if (snprintf(load_debugger, sizeof(load_debugger), "load(\"%s\");", debugger_filename) >= (int)sizeof(load_debugger))
+      return _initReturn("Debugger filename is too long", JS_FALSE);
 
 #ifdef GPSEE
     grt = gpsee_createRuntime();
@@ -729,6 +728,21 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
       gpsee_destroyRuntime(grt);
       return _initReturn("debugger GPSEE initialization error", JS_FALSE);
     }      
+
+    gpsee_enterAutoMonitor(cx, &realmDebugger->monitors.programModuleDir);      
+    if (realmDebugger->monitored.programModuleDir == NULL)
+    {
+      realmDebugger->monitored.programModuleDir = gpsee_dirname(debugger_filename, 
+                                                                (char *)JS_malloc(cx, strlen(debugger_filename)), 
+                                                                strlen(debugger_filename) + 1);
+      if (!realmDebugger->monitored.programModuleDir)
+      {
+        gpsee_leaveAutoMonitor(realmDebugger->monitors.programModuleDir);
+        return _initReturn("debugger GPSEE program module dir initialization error", JS_FALSE);
+      }
+    }
+    gpsee_leaveAutoMonitor(realmDebugger->monitors.programModuleDir);
+
 #else
     rtDebugger = JS_NewRuntime(8L * 1024L * 1024L);
     if(!rtDebugger)
@@ -781,7 +795,7 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
             return _initReturn_cx("failed to create jsdc for nested debugger",
                                JS_FALSE, data);
         JSD_JSContextInUse(local_jsdc, cx);
-        if(!JSDB_InitDebugger(data->rtDebugger, local_jsdc, data->debuggerDepth)) {
+        if(!JSDB_InitDebugger(data->rtDebugger, local_jsdc, data->debuggerDepth, debugger_filename)) {
             JSD_DebuggerOff(local_jsdc);
             return _initReturn_cx("failed to init nested debugger", JS_FALSE, data);
         }
@@ -800,8 +814,8 @@ JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth)
 #endif /* JSD_LOWLEVEL_SOURCE */
 
     if (!JS_EvaluateScript(cx, dbgObj,
-                      load_deb, sizeof(load_deb)-1, "jsdb_autoload", 1,
-                      &rvalIgnore))
+                           load_debugger, strlen(load_debugger), "jsdb_autoload", 1,
+                           &rvalIgnore))
     {
         return _initReturn_cx("failed to execute jsdb_autoload", JS_FALSE, data);
     }

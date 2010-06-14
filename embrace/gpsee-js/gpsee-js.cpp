@@ -197,7 +197,7 @@ main(int argc, char **argv, char **envp)
         return 1;
     JSD_JSContextInUse(jsdc, cx);
     JS_SetSourceHandler(rt, SendSourceToJSDebugger, jsdc);
-    jsdbc = JSDB_InitDebugger(rt, jsdc, 0);
+    jsdbc = JSDB_InitDebugger(rt, jsdc, 0, DEBUGGER_JS);
 #endif
 
 #ifdef WORKERS
