@@ -38,7 +38,7 @@
 ##                              Requires that GPSEE already be built and installed.
 ## @author      Wes Garland, PageMail, Inc., wes@page.ca
 ## @date        May 2010
-## @version     $Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
+## @version     $Id: Makefile,v 1.1 2010/06/14 22:23:49 wes Exp $
 
 top: build
 

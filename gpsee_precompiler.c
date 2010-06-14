@@ -37,9 +37,9 @@
  * @file	gpsee_precompiler.c	GPSEE script precompiler, part of the build/install processes
  * @author	Wes Garland
  * @date	Apr 2010
- * @version	$Id: gpsee_precompiler.c,v 1.2 2010/04/22 12:45:15 wes Exp $
+ * @version	$Id: gpsee_precompiler.c,v 1.3 2010/06/14 22:11:59 wes Exp $
  */
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_precompiler.c,v 1.2 2010/04/22 12:45:15 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_precompiler.c,v 1.3 2010/06/14 22:11:59 wes Exp $";
 
 #include "./gpsee.h"
 #if defined(GPSEE_DARWIN_SYSTEM)

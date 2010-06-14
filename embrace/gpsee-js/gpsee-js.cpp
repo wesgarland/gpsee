@@ -40,7 +40,7 @@
 #endif
 #undef offsetOf
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.4 2010/04/28 12:45:52 wes Exp $";
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.5 2010/06/14 22:11:59 wes Exp $";
 
 #ifndef PRODUCT_SHORTNAME
 # define PRODUCT_SHORTNAME	"gpsee-js"

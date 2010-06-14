@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm.c,v 1.6 2010/04/14 00:38:52 wes Exp $
+ *  @version    $Id: vm.c,v 1.7 2010/06/14 22:12:01 wes Exp $
  *
  *  $Log: vm.c,v $
+ *  Revision 1.7  2010/06/14 22:12:01  wes
+ *  Sync'd with mercurial
+ *
  *  Revision 1.6  2010/04/14 00:38:52  wes
  *  Synchronize with Mercurial
  *
@@ -61,7 +64,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.6 2010/04/14 00:38:52 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.7 2010/06/14 22:12:01 wes Exp $";
  
 #include "gpsee.h"
 
