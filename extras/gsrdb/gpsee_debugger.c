@@ -39,10 +39,10 @@
  * @ingroup     debugger
  * @author	Wes Garland
  * @date	June 2010
- * @version	$Id:$
+ * @version	$Id: gpsee_debugger.c,v 1.1 2010/06/14 22:23:49 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id:$";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_debugger.c,v 1.1 2010/06/14 22:23:49 wes Exp $";
 
 #include <prinit.h>
 #include "gpsee.h"

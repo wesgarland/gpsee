@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,7 +46,7 @@
  *  standalone SureLynx JS shell. 
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"

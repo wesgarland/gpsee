@@ -35,7 +35,7 @@
  *  @file	sockets.js	Simple sockets API for GPSEE
  *  @author	Wes Garland
  *  @date	March 2010
- *  @version	$Id: net.js,v 1.4 2010/04/14 00:38:48 wes Exp $
+ *  @version	$Id: net.js,v 1.5 2010/06/14 22:12:01 wes Exp $
  */
 
 const binary = require("binary");

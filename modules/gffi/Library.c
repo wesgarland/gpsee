@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		donny.viszneki@gmail.com
  *  @date	Jul 2009
- *  @version	$Id: Library.c,v 1.3 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: Library.c,v 1.4 2010/06/14 22:12:00 wes Exp $
  */
 
 #include <gpsee.h>

@@ -41,7 +41,7 @@
  *                                      monitor system is shut down.
  * @date        May 2010
  * @author      Wes Garland
- * @version     $Id:$ 
+ * @version     $Id: gpsee_monitors.c,v 1.1 2010/06/14 22:23:49 wes Exp $ 
  *
  */
 

@@ -39,10 +39,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $
+ *  @version	$Id: gffi.c,v 1.10 2010/06/14 22:12:00 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.10 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi.h"

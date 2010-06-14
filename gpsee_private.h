@@ -37,7 +37,7 @@
  *  @file	gpsee_private.h		Private interfaces for use within GPSEE.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	March 2009
- *  @version	$Id: gpsee_private.h,v 1.8 2010/04/14 00:38:02 wes Exp $
+ *  @version	$Id: gpsee_private.h,v 1.9 2010/06/14 22:11:59 wes Exp $
  *  @ingroup    internal
  */
 

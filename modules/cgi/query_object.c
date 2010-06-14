@@ -37,10 +37,10 @@
  *  @file	query_object.c	A Spidermonkey object for processing CGI requests. Uses eekim's ancient cgilib.
  *  @author	Wes Garland
  *  @date	Dec 2007
- *  @version	$Id: query_object.c,v 1.4 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: query_object.c,v 1.5 2010/06/14 22:12:00 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: query_object.c,v 1.4 2010/03/06 18:17:14 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: query_object.c,v 1.5 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
 #include <cgi-lib.h>

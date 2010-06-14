@@ -40,7 +40,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: MutableStruct.c,v 1.9 2010/03/30 21:09:43 wes Exp $
+ *  @version	$Id: MutableStruct.c,v 1.10 2010/06/14 22:12:00 wes Exp $
  *
  *  @todo       Struct and member lookup are linear traversal; should sort them
  *		and bsearch or similar.

@@ -74,7 +74,7 @@
  *
  *  @author     Wes Garland, wes@page.ca
  *  @date       May 2010
- *  @version    $Id:$
+ *  @version    $Id: gpsee_realms.c,v 1.1 2010/06/14 22:23:49 wes Exp $
  */
 
 #include "gpsee.h"
