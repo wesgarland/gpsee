@@ -299,16 +299,16 @@ struct gpsee_realm
     moduleHandle_t      *programModule;
     const char          *programModuleDir;        
     char * const *      script_argv;            /**< argv from main() */
-  } mutable;                                    
+  } monitored;                                    
 
-/**< In order to read/write a member of mutable, you must enter the similarly-named monitor */
+/**< In order to read/write a member of monitored, you must enter the similarly-named monitor */
 #ifdef JS_THREADSAFE
   struct
   {
     gpsee_autoMonitor_t     programModule;
     gpsee_autoMonitor_t     programModuleDir;
     gpsee_autoMonitor_t     script_argv;
-  } monitors;                                   /**< Monitors for mutable members */
+  } monitors;                                   /**< Monitors for monitored members */
 #endif
 };
 
@@ -428,7 +428,7 @@ void                    gpsee_destroyMonitor            (gpsee_runtime_t *grt, g
  *  @{
  */
 #ifdef GPSEE_DEBUGGER
-JSDContext *            gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm);
+JSDContext *            gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *debugger);
 void                    gpsee_finiDebugger(JSDContext *jsdc);
 #endif
 /** @} */

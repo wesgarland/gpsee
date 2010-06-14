@@ -169,7 +169,7 @@ const char *system_InitModule(JSContext *cx, JSObject *module)
     return NULL;
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
-  if (!gpsee_createJSArray_fromVector(cx, module, "args", realm->mutable.script_argv))
+  if (!gpsee_createJSArray_fromVector(cx, module, "args", realm->monitored.script_argv))
   {
     gpsee_leaveAutoMonitor(realm->monitors.script_argv);
     return NULL;

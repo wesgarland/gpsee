@@ -1152,7 +1152,27 @@ static JSBool loadDiskModule(JSContext *cx, moduleHandle_t *parentModule,  const
     const char	*currentModulePath;
     char	pmBuf[PATH_MAX];
 
-    currentModulePath = gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf));
+    if (parentModule->cname[0] == '/')
+    {
+      currentModulePath = gpsee_dirname(parentModule->cname, pmBuf, sizeof(pmBuf));
+    }
+    else
+    {
+      /* Parent module is not a "normal" GPSEE module: probably a 3rd-party embedding
+       * which does not understand program modules, or pre-load code.  3rd-party
+       * embedding can set the realm's programModuleDir: that can be used instead.
+       * In the case of pre-load code loading relative modules, we simply use ".".
+       */
+      gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
+      if (realm->monitored.programModuleDir)
+      {
+        gpsee_cpystrn(pmBuf, realm->monitored.programModuleDir, sizeof(pmBuf));
+        currentModulePath = pmBuf;
+      }
+      else
+        currentModulePath = ".";
+      gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
+    }
 
     if (loadDiskModule_inDir(realm, cx, moduleName, currentModulePath, module_p) == JS_FALSE)
       return JS_FALSE;
@@ -1502,15 +1522,15 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
       *s = (char)0;
   }
 
-  /* realm->mutable->programModuleDir stores a copy of the program module's directory, 
+  /* realm->monitored->programModuleDir stores a copy of the program module's directory, 
    * which we can use to generate nicer error output, or posssible program-relative
    * resource names.
    */
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
-  if (realm->mutable.programModuleDir)
-    JS_free(cx, (char *)realm->mutable.programModuleDir);
+  if (realm->monitored.programModuleDir)
+    JS_free(cx, (char *)realm->monitored.programModuleDir);
   i = strlen(cnBuf) + 1;
-  realm->mutable.programModuleDir = gpsee_dirname(cnBuf, JS_malloc(cx, i), i);
+  realm->monitored.programModuleDir = gpsee_dirname(cnBuf, JS_malloc(cx, i), i);
   if (!realm->monitors.programModuleDir)
   {
     gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
@@ -1542,7 +1562,7 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   }
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
-  realm->mutable.programModule = module;
+  realm->monitored.programModule = module;
   gpsee_leaveAutoMonitor(realm->monitors.programModule);
 
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
@@ -1558,14 +1578,14 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 
   /* For the CommonJS system module's "args" property */
   gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
-  realm->mutable.script_argv = script_argv;
+  realm->monitored.script_argv = script_argv;
   gpsee_leaveAutoMonitor(realm->monitors.script_argv);
 
   /* Run the program (initializing the module also runs the script code) */
   b = initializeModule(cx, module);
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
-  realm->mutable.script_argv = NULL;  /* We do not know anything about script_argv's lifetime */
+  realm->monitored.script_argv = NULL;  /* We do not know anything about script_argv's lifetime */
   gpsee_leaveAutoMonitor(realm->monitors.script_argv);
 
   if (b == JS_FALSE)
@@ -1578,7 +1598,7 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   dprintf("failed running program module %s\n", module ? moduleShortName(module->cname) : "(null)");
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
-  realm->mutable.programModule = NULL;
+  realm->monitored.programModule = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModule);
 
   if (module)

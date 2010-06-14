@@ -41,15 +41,13 @@
 ## @date        May 2010
 ## @version     $Id: Makefile,v 1.6 2010/04/28 12:45:52 wes Exp $
 
-PRODUCT 	= gpsee-jsdb
-HERE		:= $(PWD)
-JSD		= $(GPSEE_SRC_DIR)/extras/gsrdb/jsd
-EXPORT_LIBS	+= $(LIBRARY)
-EXPORT_PROGS	+= gpsee-jsdb.js
+PRODUCT 		 = gpsee-jsdb
+HERE			:= $(PWD)
+JSD			 = $(GPSEE_SRC_DIR)/extras/gsrdb/jsd
+EXPORT_EXTRA_FILES       = $(JSD)/jsdb/debugger.js
+EXTRA_FILE_DIR           = $(SOLIB_DIR)/jsdb
 
 include ../gpsee-js/Makefile
-
-LIBRARY			= libgpsee-jsdb.$(SOLIB_EXT)
 
 top build: $(EXPORT_LIBS) $(EXPORT_PROGS)
 
@@ -77,10 +75,7 @@ VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
 CPPFLAGS	+= -I$(JSD)
 
 GPSEE_JS_CXXFLAGS       += -DGPSEE_NO_WORKERS -DGPSEE_JSDB -I$(JSD) -I$(JSD)/jsdb -D"PRODUCT_SHORTNAME=gpsee-jsdb"
+GPSEE_JS_CXXFLAGS	+= '"-DDEBUGGER_JS=\"$(SOLIB_DIR)/jsdb/debugger.js\""'
 GPSEE_JS_LDFLAGS        += $(addprefix $(HERE)/,$(OBJS))
 
-$(LIBRARY) $(PRODUCT):	$(OBJS)
-
-jsdb.o: CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('$(BIN_DIR)/gpsee-jsdb.js')\""
-gpsee-jsdb.js: $(JSD)/jsdb/debugger.js
-	$(CP) $^ $@
+$(PRODUCT):	$(OBJS)

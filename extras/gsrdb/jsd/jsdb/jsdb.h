@@ -66,7 +66,7 @@ extern JS_EXPORT_API(void)
 JSDB_TermDebugger(JSDContext* jsdc);
 
 extern JS_EXPORT_API(JSBool)
-JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth);
+JSDB_InitDebugger(JSRuntime* rt, JSDContext* jsdc, int depth, const char *debugger_filename);
 
 JS_END_EXTERN_C
 

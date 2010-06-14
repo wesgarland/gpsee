@@ -42,11 +42,13 @@
 
 top: build
 
-GPSEE_CONFIG    ?= ../../gpsee-config
-EXPORT_PROGS	= gsrdb
-EXPORT_HEADERS	= jsd/jsdebug.h jsd/jsdb/jsdb.h
-EXPORT_LIBS	= $(LIBRARY)
-AUTOGEN_SRC	= gsrdb.c
+GPSEE_CONFIG    	?= ../../gpsee-config
+EXPORT_PROGS		= gsrdb
+EXPORT_HEADERS		= jsd/jsdebug.h jsd/jsdb/jsdb.h
+EXPORT_LIBS		= $(LIBRARY)
+AUTOGEN_SRC		= gsrdb.c
+EXPORT_EXTRA_FILES	= gsrdb.js ui.js breakpoints.js display.js jsapi.js
+EXTRA_FILE_DIR		= $(SOLIB_DIR)/gsrdb
 
 include $(shell $(GPSEE_CONFIG) --outside.mk)
 
@@ -70,7 +72,7 @@ jsdb.o: 	CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('debugger.js')\""
 $(LIBOBJS):	EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
 
 gsrdb: 		EXTRA_LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
-gsrdb.o:	EXTRA_CPPFLAGS += -DGPSEE_DEBUGGER -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\""
+gsrdb.o:	EXTRA_CPPFLAGS += -DGPSEE_DEBUGGER -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
 gsrdb.c:	
 		ln -s $(GPSEE_SRC_DIR)/gsr.c $@
 

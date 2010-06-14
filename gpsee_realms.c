@@ -246,7 +246,7 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 
   JS_RemoveRoot(cx, &realm->globalObject);
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
-  realm->mutable.programModuleDir = NULL;
+  realm->monitored.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
 
   if (gpsee_ds_forEach(cx, grt->realmsByContext, destroyRealmContext_cb, realm) == JS_FALSE)

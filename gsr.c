@@ -666,7 +666,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   realm = jsi->realm;
   cx = jsi->cx;
 #if defined(GPSEE_DEBUGGER)
-  jsdc = gpsee_initDebugger(cx, realm);
+  jsdc = gpsee_initDebugger(cx, realm, DEBUGGER_JS);
 #endif
 
   gpsee_setThreadStackLimit(cx, &stackBasePtr, strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));

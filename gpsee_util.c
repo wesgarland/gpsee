@@ -308,7 +308,7 @@ const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filena
     return long_filename;
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
-  programModule = realm->mutable.programModule;
+  programModule = realm->monitored.programModule;
   if (!programModule)
     goto out;
 
@@ -494,7 +494,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 
     /* Look for filenames which can be shortened */
     gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
-    pm_dir = realm->mutable.programModuleDir;
+    pm_dir = realm->monitored.programModuleDir;
     if (!pm_dir)
       panic("Out of memory reporting an uncaught exception in " __FILE__);
     if (!pm_dir[0])
