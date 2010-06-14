@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - Call stack support
+ * @file jsd_atom.cpp
+ * @brief JavaScript Debugging support - Call stack support
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 #include "jsd.h"

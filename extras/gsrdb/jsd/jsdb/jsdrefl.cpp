@@ -37,8 +37,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
-* Reflects JSD api into JavaScript
-*/
+ * @file jsdrefl.cpp
+ * @brief Reflects JSD api into JavaScript
+ * @ingroup jsdb
+ * @author Netscape Communications Corporation
+ */
 
 #include "jsdbpriv.h"
 #include <gpsee.h>

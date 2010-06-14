@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - Stepping support
+ * @file jsd_step.cpp
+ * @brief JavaScript Debugging support - Stepping support
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 #include "jsd.h"

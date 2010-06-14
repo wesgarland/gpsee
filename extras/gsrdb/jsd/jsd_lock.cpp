@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - Locking and threading support
+ * @file jsd_lock.cpp
+ * @brief JavaScript Debugging support - Locking and threading support
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 /*                                                                           

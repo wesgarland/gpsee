@@ -37,8 +37,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
-* JSDB public and callback functions
-*/
+ * @file jsdb.cpp
+ * @brief JSDB public and callback functions
+ * @ingroup jsdb
+ * @author Netscape Communications Corporation
+ */
 
 #ifdef GPSEE
 const void *jsdbContextPrivateID = "JSDB GPSEE Context Private ID: this pointer is unique";

@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - Source Text functions
+ * @file jsd_text.cpp
+ * @brief JavaScript Debugging support - Source Text functions
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 #include <ctype.h>

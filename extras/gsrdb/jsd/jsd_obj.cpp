@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - Object support
+ * @file jsd_obj.cpp
+ * @brief JavaScript Debugging support - Object support
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 #include "jsd.h"

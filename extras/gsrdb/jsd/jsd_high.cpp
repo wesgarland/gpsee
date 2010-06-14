@@ -36,7 +36,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 /*
- * JavaScript Debugging support - 'High Level' functions
+ * @file jsd_high.cpp
+ * @brief JavaScript Debugging support - 'High Level' functions
+ * @ingroup jsd
+ * @author Netscape Communications Corporation
  */
 
 #include "jsd.h"
