@@ -28,6 +28,7 @@ const commands =
     { label: "throw",           fn: throwVal,                           help: "Force the current frame to throw a value, then resume" },
     { label: "list",            fn: list,                               help: "List source code" },
     { label: "help",            fn: gsrHelp,                            help: "Help summary or details on a specific command" }
+// ptype -> JS_GET_CLASS
 ];
 
 function gsrHelp(args)

@@ -2,5 +2,5 @@
 
 JS_DEBUGEE="$1"
 
-gdb -q -x gdb-gsrdb.cmds --args gsrdb -f $1
+gdb -q -x `dirname $0`/gdb-gsrdb.cmds --args gsrdb -f $1
 
