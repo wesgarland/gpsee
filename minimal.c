@@ -36,10 +36,10 @@
  * @file	minimal.c           A minimal GPSEE embedding: "Hello, world"
  * @author	Wes Garland, wes@page.ca
  * @date	Jan 2008
- * @version	$Id: minimal.c,v 1.2 2010/02/08 17:53:32 wes Exp $
+ * @version	$Id: minimal.c,v 1.3 2010/06/14 22:11:59 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: minimal.c,v 1.2 2010/02/08 17:53:32 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: minimal.c,v 1.3 2010/06/14 22:11:59 wes Exp $";
 
 #include <gpsee.h>
 
@@ -55,10 +55,10 @@ int main (int argc, char *argv[])
 
   gpsee_openlog("minimal");
 
-  jsi = gpsee_createInterpreter(NULL, NULL);
+  jsi = gpsee_createInterpreter();
 
   scriptCode = "print('Hello, World!');";
-  JS_EvaluateScript(jsi->cx, jsi->globalObj, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
+  JS_EvaluateScript(jsi->cx, jsi->globalObject, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
 
   gpsee_destroyInterpreter(jsi);
   gpsee_closelog();

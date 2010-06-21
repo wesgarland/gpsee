@@ -40,7 +40,7 @@
  *						similar functionality.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_context_private.c,v 1.3 2009/07/23 19:00:40 wes Exp $
+ *  @version	$Id: gpsee_context_private.c,v 1.5 2010/06/14 22:11:59 wes Exp $
  *
  *  @note	If anything (class, module, etc) in the embedding makes use of this mechanism for context-private
  *		storage, *everything* must be make use it for content-private storage.
@@ -49,7 +49,7 @@
  *		for JS_SetContextCallback -- they probably don't work as expected.
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.3 2009/07/23 19:00:40 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee_context_private.c,v 1.5 2010/06/14 22:11:59 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -60,7 +60,7 @@ typedef struct
   struct
   {
     JSContext 		*cx;
-    void		*id;
+    const void		*id;
     JSContextCallback	cb;
     void 		*storage;
   } *list;
@@ -173,7 +173,7 @@ JSBool gpsee_contextCallback(JSContext *cx, uintN contextOp)
  *  @see	JS_SetContextThread()
  *  @see	gpsee_destroyContextPrivate() 
  */
-void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb)
+void *gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSContextCallback cb)
 {
   size_t			i;
   void				*retval;
@@ -207,7 +207,7 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
   i = hnd->listSize++;
   hnd->list = JS_realloc(cx, hnd->list, hnd->listSize * sizeof(hnd->list[0]));
   if (!hnd->list)
-    goto out;
+    panic("Out of memory in " __FILE__);
   
   if (id)
     hnd->list[i].cx	= cx;
@@ -215,7 +215,7 @@ void *gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCal
     hnd->list[i].cx	= (JSContext *)JS_GetRuntime(cx);	/* simulating JS_SetContextCallback */
   hnd->list[i].id	= id;
   hnd->list[i].cb	= cb;
-  hnd->list[i].storage 	= size?JS_malloc(cx, size):NULL;
+  hnd->list[i].storage 	= size ? JS_malloc(cx, size) : NULL;
 
   if (hnd->list[i].storage)
     memset(hnd->list[i].storage, 0, size);

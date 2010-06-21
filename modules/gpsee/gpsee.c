@@ -38,16 +38,21 @@
  *				which isn't available from JavaScript.
  *  @author     Wes Garland
  *  @date       Oct 2007
- *  @version    $Id: gpsee.c,v 1.9 2010/04/14 00:38:46 wes Exp $
+ *  @version    $Id: gpsee.c,v 1.10 2010/06/14 22:12:01 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee.c,v 1.9 2010/04/14 00:38:46 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee.c,v 1.10 2010/06/14 22:12:01 wes Exp $";
  
 #include "gpsee.h"
 #include <prinit.h>
 #if defined(GPSEE_SUNOS_SYSTEM)
 # include <sys/loadavg.h>
 #endif
+
+#ifndef HAVE_APR
+# include <time.h>
+#endif
+
 #include <math.h>
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.gpsee"
@@ -187,7 +192,11 @@ static JSBool gpsee_sleep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 #if defined(HAVE_APR)
   apr_sleep((apr_interval_time_t)d * APR_USEC_PER_SEC);
 #else
-  sleep((time_t)round(d));
+  struct timespec rqtp;
+  time_t secs = (time_t) d;
+  rqtp.tv_sec = secs;
+  rqtp.tv_nsec = (long)( (d - secs) * 1000000000.0 );
+  nanosleep(&rqtp, NULL);
 #endif
 
   JS_ResumeRequest(cx, saveDepth);
@@ -218,6 +227,10 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   const char  *scriptFilename;
   JSString    *scriptFilename_jsstr;
   JSBool      success;
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+
+  if (!realm)
+    return JS_FALSE;
 
   switch(argc)
   {
@@ -225,7 +238,7 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
       return gpsee_throw(cx, MODULE_ID ".include.arguments.count");
       break;
     case 1:
-      thisObj = ((gpsee_interpreter_t *)(JS_GetRuntimePrivate(JS_GetRuntime(cx))))->globalObj;
+      thisObj = realm->globalObject;
       fnArg = argv + 0;
       break;
     case 2:
@@ -346,20 +359,20 @@ static JSBool gpsee_underscoreExit(JSContext *cx, JSObject *obj, uintN argc, jsv
 
 static JSBool gpsee_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-  if (jsi->primordialThread != PR_GetCurrentThread())
+  if (grt->primordialThread != PR_GetCurrentThread())
   {
     return gpsee_throw(cx, MODULE_ID ".exit.thread: gpsee.exit() may not be called by any other thread "
 		       "than the thread which created the run time!");
   }
 
   if (argc)
-    jsi->exitCode = JSVAL_TO_INT(argv[0]);
+    grt->exitCode = JSVAL_TO_INT(argv[0]);
   else
-    jsi->exitCode = 0;
+    grt->exitCode = 0;
 
-  jsi->exitType = et_requested;
+  grt->exitType = et_requested;
 
   return JS_FALSE; /* not reached */
 }

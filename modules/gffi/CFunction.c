@@ -41,7 +41,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jun 2009
- *  @version	$Id: CFunction.c,v 1.14 2010/04/14 00:38:31 wes Exp $
+ *  @version	$Id: CFunction.c,v 1.15 2010/06/14 22:12:00 wes Exp $
  */
 
 #include <gpsee.h>
@@ -185,7 +185,7 @@ fail:
 static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 {
   JSBool                ret;
-  jsrefcount            depth;
+  jsrefcount            depth = 0;
   cFunction_closure_t   *clos;
   JSObject              *obj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
@@ -214,7 +214,7 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSBool                ret;
-  jsrefcount            depth;
+  jsrefcount            depth = 0;
   cFunction_closure_t   *clos;
   
   obj = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
@@ -584,6 +584,9 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 		   instance_methods, 	/* fs - functions struct for parent_proto (normal "this" methods) */
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
+
+  if (gpsee_setModuleData(cx, cFunction_clasp, proto) == JS_FALSE)
+    return NULL;
 
   GPSEE_ASSERT(proto);
 

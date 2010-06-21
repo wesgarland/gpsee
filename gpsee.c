@@ -37,120 +37,16 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
  *
  *  Can be used to embed Spidermonkey in other applications (e.g. MTA) or in the
  *  standalone SureLynx JS shell. 
- *
- *  $Log: gpsee.c,v $
- *  Revision 1.29  2010/04/28 12:41:33  wes
- *  Added support for js-ctypes
- *
- *  Revision 1.28  2010/04/14 00:37:52  wes
- *  Synchronize with Mercurial
- *
- *  Revision 1.27  2010/04/01 13:43:19  wes
- *  Improved uncaught exception handling & added tests
- *
- *  Revision 1.26  2010/03/06 18:17:13  wes
- *  Synchronize Mercurial and CVS Repositories
- *
- *  Revision 1.25  2010/02/25 15:37:52  wes
- *  Added check to not set UTF8 twice even with multiple runtimes
- *
- *  Revision 1.24  2010/02/17 15:59:33  wes
- *  Module Refactor checkpoint: switched modules array to a splay tree
- *
- *  Revision 1.22  2010/02/12 21:37:25  wes
- *  Module system refactor check-point
- *
- *  Revision 1.21  2010/02/10 18:55:37  wes
- *  Make program modules JITable with modern tracemonkey
- *
- *  Revision 1.20  2010/02/08 16:56:18  wes
- *  Added gpsee_assert() in all builds, to unify GPSEE-core API across release types
- *
- *  Revision 1.19  2010/02/05 21:32:40  wes
- *  Added C Stack overflow protection facility to GPSEE-core
- *
- *  Revision 1.18  2010/01/25 22:05:27  wes
- *  Trivial code clean-up
- *
- *  Revision 1.17  2010/01/24 04:46:53  wes
- *  Deprecated mozfile, mozshell and associated libgpsee baggage
- *
- *  Revision 1.16  2009/10/20 20:32:46  wes
- *  gpsee_getInstancePrivateNTN no longer crashes on null object
- *
- *  Revision 1.15  2009/10/18 03:50:25  wes
- *  Updated JSOPTIONS_VAROBJFIX to match current module semantics
- *
- *  Revision 1.14  2009/09/17 20:55:51  wes
- *  Added GPSEE_NO_ASYNC_CALLBACKS switch
- *
- *  Revision 1.13  2009/07/31 16:45:15  wes
- *  C99
- *
- *  Revision 1.12  2009/07/30 17:10:35  wes
- *  Added ability to run bare (non-UTF-8) C strings
- *
- *  Revision 1.11  2009/07/28 15:21:52  wes
- *  byteThing memoryOwner patch
- *
- *  Revision 1.10  2009/07/23 19:00:40  wes
- *  Merged with upstream
- *
- *  Revision 1.9  2009/07/23 18:34:37  wes
- *  Added *gpsee_getInstancePrivateNTN, always set JS version
- *
- *  Revision 1.8  2009/06/12 17:01:20  wes
- *  Merged with upstream
- *
- *  Revision 1.7  2009/06/11 17:17:10  wes
- *  C strings are now UTF8
- *
- *  Revision 1.6  2009/05/27 04:29:18  wes
- *  Refactored interpreter creation to allow better GPSEE/JSAPI mapping
- *
- *  Revision 1.5  2009/05/19 21:27:28  wes
- *  Made C Strings UTF-8
- *
- *  Revision 1.4  2009/04/01 22:30:55  wes
- *  Bugfixes for getopt, linux build, and module-case in tests
- *
- *  Revision 1.3  2009/04/01 20:05:49  wes
- *  Fixed double-uncaught-log
- *
- *  Revision 1.2  2009/03/31 15:13:57  wes
- *  Updated to reflect correct module name cases and build unix stream
- *
- *  Revision 1.1  2009/03/30 23:55:43  wes
- *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
- *
- *  Revision 1.3  2007/12/21 19:48:09  wes
- *   - changed log() calls to apr_surelynx_log() to remove problems
- *     linking with libm.so
- *   - Improved "print" so that it will usually output a line of
- *     text and its linefeed in the same buffer, so multi-threading
- *     print statements looks nicer.
- *   - Remove APR pool scaffolding (unnecessary complication)
- *   - Now jots down primordial threadID in interpreter handle,
- *     for use by Thread.exit()
- *
- *  Revision 1.2  2007/11/07 19:55:21  wes
- *   - Support for _FiniClass to allow us to cleanly tear down
- *     class prototype C private data before shutting down the
- *     JS engine
- *   - Correct JS Context semantics for MT embedding
- *   - Support for rc.gpsee_javascript_version
- *   - Change global object GC root pointer from temp stack to heap
- *
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.29 2010/04/28 12:41:33 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -210,10 +106,10 @@ void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
   exit(1);
 }
 
-static void output_message(JSContext *cx, gpsee_interpreter_t *jsi, const char *er_pfx, const char *log_message, JSErrorReport *report, int printOnTTY)
+static void output_message(JSContext *cx, gpsee_runtime_t *grt, const char *er_pfx, const char *log_message, JSErrorReport *report, int printOnTTY)
 {
-  if (jsi->errorLogger)
-    jsi->errorLogger(cx, er_pfx, log_message);
+  if (grt->errorLogger)
+    grt->errorLogger(cx, er_pfx, log_message);
   else
   {
     if (JSREPORT_IS_WARNING(report->flags))
@@ -241,10 +137,10 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
   char			er_lineno[16];
   char			er_charno[16];
   char			er_pfx[64];
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   int                   printOnTTY = 0;
 
-  if (jsi->errorReport == er_none)
+  if (grt->errorReport == er_none)
     return;
 
   if (!report)
@@ -256,7 +152,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
   /* Conditionally ignore reported warnings. */
   if (JSREPORT_IS_WARNING(report->flags))
   {
-    if (jsi->errorReport & er_noWarnings)
+    if (grt->errorReport & er_noWarnings)
       return;
 
     if (rc_bool_value(rc, "gpsee_report_warnings") == rc_false)
@@ -284,7 +180,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     er_filename[0] = (char)0;
 
   if (report->lineno)
-    snprintf(er_lineno, sizeof(er_lineno), "line %u ", report->lineno + (jsi ? jsi->linenoOffset : 0));
+    snprintf(er_lineno, sizeof(er_lineno), "line %u ", report->lineno);
   else
     er_lineno[0] = (char)0;
 
@@ -307,7 +203,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
       snprintf(er_warning, sizeof(er_warning), "%swarning ", (JSREPORT_IS_STRICT(report->flags) ? "strict " : ""));
   }
 
-  if (report->errorNumber)
+  if (report->errorNumber)     
     snprintf(er_number, sizeof(er_number), "#%i ", report->errorNumber);
   else
     er_number[0] = (char)0;
@@ -326,14 +222,14 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     ctmp++;
     strncpy(log_message, message, ctmp-message);
     log_message[ctmp - message] = (char)0;
-    output_message(cx, jsi, er_pfx, log_message, report, printOnTTY);
+    output_message(cx, grt, er_pfx, log_message, report, printOnTTY);
     message = ctmp;
 
     memset(er_pfx, ' ', strlen(er_pfx));
     er_pfx[0] = '|';   
   }
   
-  output_message(cx, jsi, er_pfx, message, report, printOnTTY);
+  output_message(cx, grt, er_pfx, message, report, printOnTTY);
 }
 
 /** API-Compatible with Print() in js.c. Uses more RAM, but much less likely
@@ -375,6 +271,8 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     gpsee_printf(cx, "%s%s%s", i ? " " : "", JS_GetStringBytes(str), i+1==argc?"\n":"");
     JS_ResumeRequest(cx, depth);
   }
+
+  *rval = JSVAL_VOID;
   return JS_TRUE;
 }
 
@@ -394,7 +292,7 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  *
  *  @returns	JS_FALSE
  *
- *  @warning	This function will panic if the interpreter cannot allocate 
+ *  @warning	This function will panic if the runtime cannot allocate 
  *		enough memory to prepare the exception-throwing message.
  *
  *  @note	This function uses the APR SureLynx gpsee_makeLogFormat() function,
@@ -462,7 +360,6 @@ JSBool gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *
   return JS_TRUE;
 }
 
-
 /** Lazy resolver for global classes.
  *  Originally from js.c; cruft removed.
  */
@@ -489,20 +386,20 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
 
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp);
 /** Thread for triggering closures registered with gpsee_addAsyncCallback() */
-static void gpsee_asyncCallbackTriggerThreadFunc(void *jsi_vp)
+static void gpsee_asyncCallbackTriggerThreadFunc(void *grt_vp)
 {
-  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) jsi_vp;
+  gpsee_runtime_t *grt = (gpsee_runtime_t *) grt_vp;
   GPSEEAsyncCallback *cb;
 
   /* Run this loop as long as there are async callbacks registered */
   do {
     JSContext *cx;
 
-    /* Acquire mutex protecting jsi->asyncCallbacks */
-    PR_Lock(jsi->asyncCallbacks_lock);
+    /* Acquire mutex protecting grt->asyncCallbacks */
+    PR_Lock(grt->asyncCallbacks_lock);
 
     /* Grab the head of the list */
-    cb = jsi->asyncCallbacks;
+    cb = grt->asyncCallbacks;
     if (cb)
     {
       /* Grab the JSContext from the head */
@@ -524,18 +421,18 @@ static void gpsee_asyncCallbackTriggerThreadFunc(void *jsi_vp)
     }
 
     /* Relinquish mutex */
-    PR_Unlock(jsi->asyncCallbacks_lock);
+    PR_Unlock(grt->asyncCallbacks_lock);
 
     /* Sleep for a bit; interrupted by PR_Interrupt() */
     PR_Sleep(PR_INTERVAL_MIN); // TODO this should be configurable!!
   }
-  while (jsi->asyncCallbacks);
+  while (grt->asyncCallbacks);
 }
 /** Our "Operation Callback" multiplexes this Spidermonkey facility. It is called automatically by Spidermonkey, and is
  *  triggered on a regular interval by gpsee_asyncCallbackTriggerThreadFunc() */
-static JSBool gpsee_operationCallback(JSContext *cx)
+JSBool gpsee_operationCallback(JSContext *cx)
 {
-  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback *cb;
 
   /* The callbacks registered with GPSEE may want to invoke JSAPI functionality, which might toss us back out
@@ -551,7 +448,7 @@ static JSBool gpsee_operationCallback(JSContext *cx)
    * operation callback altogether. */
   JS_SetOperationCallback(cx, NULL);
 
-  cb = jsi->asyncCallbacks;
+  cb = grt->asyncCallbacks;
   if (cb)
   {
     GPSEEAsyncCallback *next;
@@ -560,7 +457,7 @@ static JSBool gpsee_operationCallback(JSContext *cx)
       /* Save the 'next' link in case the callback deletes itself */
       next = cb->next;
       /* Invoke callback */
-      if (!((*(cb->callback))(cb->cx, cb->userdata)))
+      if (!((*(cb->callback))(cb->cx, cb->userdata, cb)))
         /* Propagate exceptions */
         return JS_FALSE;
     }
@@ -585,7 +482,7 @@ static JSBool gpsee_operationCallback(JSContext *cx)
  */
 GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata)
 {
-  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback *newcb, **pp;
 
   /* Allocate the new callback entry struct */
@@ -601,22 +498,22 @@ GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunc
   newcb->userdata = userdata;
   newcb->cx = cx;
 
-  /* Acquire mutex protecting jsi->asyncCallbacks */
-  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Acquire mutex protecting grt->asyncCallbacks */
+  PR_Lock(grt->asyncCallbacks_lock);
   /* Insert the new callback into the list */
   /* Locate a sorted insertion point into the linked list; sort by 'cx' member */
-  for (pp = &jsi->asyncCallbacks; *pp && (*pp)->cx > cx; pp = &(*pp)->next);
+  for (pp = &grt->asyncCallbacks; *pp && (*pp)->cx > cx; pp = &(*pp)->next);
   /* Insert! */
   newcb->next = *pp;
   *pp = newcb;
   /* Relinquish mutex */
-  PR_Unlock(jsi->asyncCallbacks_lock);
+  PR_Unlock(grt->asyncCallbacks_lock);
   /* If this is the first time this context has had a callback registered, we must register a context callback to clean
    * up all callbacks associated with this context. Note that we don't want to do this for the primordial context, but
    * it's a moot point because gpsee_maybeGC() is registered soon after context instantiation and should never be
    * removed until just before context finalization, anyway. */
   if (!newcb->next || newcb->next->cx != cx)
-    gpsee_getContextPrivate(cx, &jsi->asyncCallbacks, 0, gpsee_removeAsyncCallbackContext);
+    gpsee_getContextPrivate(cx, &grt->asyncCallbacks, 0, gpsee_removeAsyncCallbackContext);
 
   /* Return a pointer to the new callback entry struct */
   return newcb;
@@ -625,43 +522,61 @@ GPSEEAsyncCallback *gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunc
  *  you are deleting, but not from within a different one. You must not call this function if you are not in the
  *  JSContext associated with the callback you are removing.
  *
- *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
-void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *d)
+ *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. 
+ *
+ *  @param      cx      Current context; does not need to be a the context the callback was registered with.
+ *  @param      cbHnd   Handle for the callback we are deleting
+ */
+void gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *cbHnd)
 {
-  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback *cb;
 
-  /* Acquire mutex protecting jsi->asyncCallbacks */
-  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Acquire mutex protecting grt->asyncCallbacks */
+  PR_Lock(grt->asyncCallbacks_lock);
   /* Locate the entry we want */
-  for (cb = jsi->asyncCallbacks; cb && cb->next != d; cb = cb->next);
+  for (cb = grt->asyncCallbacks; cb && cb->next != cbHnd; cb = cb->next);
   /* Remove the entry from the linked list */
   cb->next = cb->next->next;
   /* Relinquish mutex */
-  PR_Unlock(jsi->asyncCallbacks_lock);
+  PR_Unlock(grt->asyncCallbacks_lock);
   /* Free the memory */
-  JS_free(cx, d);
+  JS_free(cx, cbHnd);
 }
-/** Deletes any number of gpsee_addAsyncCallback() registrations for a given JSContext. This is NOT SAFE to call from
- *  within such a callback. You must not call this function if you are not in the JSContext associated with the
+/** Deletes all async callbacks associated with the current context. Suitable for use as as JSContextCallback.
+ *  This is NOT SAFE to call from within an async callback.
+ *  You must not call this function if you are not in the JSContext associated with the
  *  callback you are removing. This function is intended for being called during the finalization of a JSContext (ie.
  *  during the context callback, gpsee_contextCallback().)
  *
- *  This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. */
+ *  @note This call may traverse the entire linked list of registrations. Don't add and remove callbacks a lot. 
+ *
+ *  @param      cx              The state of the JS context if used as a JSContextCallback. If calling directly, pass JSCONTEXT_DESTROY.
+ *  @param      contextOp       
+ *  @returns    JS_TRUE
+ *
+ *  @todo Investigate using gpsee_removeAsyncCallbackContext() to clean up async callbacks on context shutdown.
+ */
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
 {
-  gpsee_interpreter_t *jsi = (gpsee_interpreter_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t *grt = (gpsee_runtime_t *) JS_GetRuntimePrivate(JS_GetRuntime(cx));
   GPSEEAsyncCallback **cb, **cc, *freeme = NULL;
+
+#ifdef GPSEE_DEBUG_BUILD
+  /* Assert that cx is on current thread */
+  JS_BeginRequest(cx);
+  JS_EndRequest(cx);
+#endif
 
   if (contextOp != JSCONTEXT_DESTROY)
     return JS_TRUE;
-  if (!jsi->asyncCallbacks)
+  if (!grt->asyncCallbacks)
     return JS_TRUE;
 
-  /* Acquire mutex protecting jsi->asyncCallbacks */
-  PR_Lock(jsi->asyncCallbacks_lock);
+  /* Acquire mutex protecting grt->asyncCallbacks */
+  PR_Lock(grt->asyncCallbacks_lock);
   /* Locate the first entry we want to remove */
-  for (cb = &jsi->asyncCallbacks; *cb && (*cb)->cx != cx; cb = &(*cb)->next);
+  for (cb = &grt->asyncCallbacks; *cb && (*cb)->cx != cx; cb = &(*cb)->next);
   if (*cb)
   {
     freeme = *cb;
@@ -671,7 +586,7 @@ JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
     *cb = *cc;
   }
   /* Relinquish mutex */
-  PR_Unlock(jsi->asyncCallbacks_lock);
+  PR_Unlock(grt->asyncCallbacks_lock);
 
   /* Free the memory */
   while (freeme)
@@ -685,70 +600,92 @@ JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp)
   }
   return JS_TRUE;
 }
-/** Deletes all gpsee_addAsyncCallback() registrations */
-void gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi)
+
+/** Deletes all gpsee_addAsyncCallback() registrations. This routine
+ *  runs unlocked and is
+ *  intend as a shutdown-helper function and not an API entry point.
+ *
+ *  @param      cx      Context in the same runtime as grt
+ *  @param      grt     The runtime from which to remove all callbacks
+ */
+static void removeAllAsyncCallbacks_unlocked(JSContext *cx, gpsee_runtime_t *grt)
 {
   GPSEEAsyncCallback *cb, *d;
-  JSContext *cx = jsi->cx;
+
   /* Delete everything! */
-  cb = jsi->asyncCallbacks;
+  cb = grt->asyncCallbacks;
   while (cb)
   {
     d = cb->next;
     JS_free(cx, cb);
     cb = d;
   }
-  jsi->asyncCallbacks = NULL;
+  grt->asyncCallbacks = NULL;
 }
-static JSBool gpsee_maybeGC(JSContext *cx, void *ignored)
+#endif
+
+static JSBool gpsee_maybeGC(JSContext *cx, void *ignored, GPSEEAsyncCallback *cb)
 {
   JS_MaybeGC(cx);
   return JS_TRUE;
 }
-#endif
+
+static JSBool destroyRealm_cb(JSContext *cx, const void *key, void *value, void *private)
+{
+  gpsee_realm_t *realm = (void *)key;  
+  return gpsee_destroyRealm(cx, realm);
+}
+
 /**
- *  @note	If this is the LAST interpreter in the application,
+ *  @note	If this is the LAST runtime in the application,
  *		the API user should call JS_Shutdown() to avoid
  *		memory leaks.
  */
-int gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter)
+int gpsee_destroyRuntime(gpsee_runtime_t *grt)
 {
+  JSContext *cx = grt->coreCx;
+
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   GPSEEAsyncCallback * cb;
-
+  
   /* Clean up "operation callback" stuff */
   /* Cut off the head of the linked list to ensure that the "operation callback" trigger thread doesn't begin a new
    * run over its contents */
-  /* Acquire mutex protecting jsi->asyncCallbacks */
-  PR_Lock(interpreter->asyncCallbacks_lock);
-  cb = interpreter->asyncCallbacks;
-  interpreter->asyncCallbacks = NULL;
+  /* Acquire mutex protecting grt->asyncCallbacks */
+  PR_Lock(grt->asyncCallbacks_lock);
+  cb = grt->asyncCallbacks;
+  grt->asyncCallbacks = NULL;
   /* Relinquish mutex */
-  PR_Unlock(interpreter->asyncCallbacks_lock);
+  PR_Unlock(grt->asyncCallbacks_lock);
   /* Interrupt the trigger thread in case it is in */
-  if (PR_Interrupt(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_Interrupt(interpreter->asyncCallbackTriggerThread) failed!\n");
+  if (PR_Interrupt(grt->asyncCallbackTriggerThread) != PR_SUCCESS)
+    gpsee_log(cx, SLOG_WARNING, "PR_Interrupt(grt->asyncCallbackTriggerThread) failed!\n");
   /* Wait for the trigger thread to see this */
-  if (PR_JoinThread(interpreter->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(interpreter->cx, SLOG_WARNING, "PR_JoinThread(interpreter->asyncCallbackTriggerThread) failed!\n");
-  interpreter->asyncCallbackTriggerThread = NULL;
+  if (PR_JoinThread(grt->asyncCallbackTriggerThread) != PR_SUCCESS)
+    gpsee_log(cx, SLOG_WARNING, "PR_JoinThread(grt->asyncCallbackTriggerThread) failed!\n");
+  grt->asyncCallbackTriggerThread = NULL;
   /* Destroy mutex */
-  PR_DestroyLock(interpreter->asyncCallbacks_lock);
+  PR_DestroyLock(grt->asyncCallbacks_lock);
   /* Now we can free the contents of the list */
-  interpreter->asyncCallbacks = cb;
-  gpsee_removeAsyncCallbacks(interpreter);
+  grt->asyncCallbacks = cb;
+  removeAllAsyncCallbacks_unlocked(cx, grt);
 #endif
 
-  gpsee_shutdownModuleSystem(interpreter, interpreter->cx);
-  gpsee_initIOHooks(interpreter->cx, interpreter); 
+  gpsee_resetIOHooks(cx, grt);
+  JS_SetGCCallback(cx, NULL);
 
-  JS_RemoveRoot(interpreter->cx, &interpreter->globalObj);
-  JS_EndRequest(interpreter->cx);
-  JS_DestroyContext(interpreter->cx);
-  JS_DestroyRuntime(interpreter->rt);
+  if (gpsee_ds_forEach(cx, grt->realms, destroyRealm_cb, NULL) == JS_FALSE)
+    panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRuntime: Error destroying realm");
+
+  gpsee_ds_destroy(grt->realms);
+  gpsee_ds_destroy(grt->realmsByContext);
+  gpsee_ds_destroy(grt->gcCallbackList);
   
-  gpsee_moduleSystemCleanup(interpreter);
-  free(interpreter);
+  gpsee_shutdownMonitorSystem(grt);
+  JS_DestroyContext(cx);
+  JS_DestroyRuntime(grt->rt);
+
+  free(grt);
   return 0;
 }
 
@@ -773,19 +710,17 @@ JSClass *gpsee_getGlobalClass(void)
   return &global_class;
 }
 
-/** Initialize a global (or global-like) object. This task is normally performed by gpsee_createInterpreter. 
+/** Initialize a global (or global-like) object. This task is normally performed by gpsee_createRuntime. 
  *  This function attaches gpsee-specific prototypes to the object, after initializing it with 
  *  JS_InitStandardClasses(). It does NOT call JS_SetGlobalObject(), or provide global object GC roots.
  *
  *  @param	cx		JavaScript context
+ *  @param      realm           The realm the object belongs to
  *  @param	obj		The object to modify
- *  @param	script_argv	Argument vector for the script (not the interpreter)
- *  @param	script_env	Environment variables for the script (often, but not always, 
- *  				the same as the interpreter)
  *
  *  @returns	JS_TRUE on success.  Failure may leave obj partially initialized.
  */
-JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[])
+JSBool gpsee_initGlobalObject(JSContext *cx, gpsee_realm_t *realm, JSObject *obj)
 {
   if (JS_InitStandardClasses(cx, obj) != JS_TRUE)
     return JS_FALSE;
@@ -793,7 +728,6 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
 #ifdef JS_HAS_CTYPES
     if (JS_InitCTypesClass(cx, obj) != JS_TRUE)
       return JS_FALSE;
-    printf("cgtypes ready\n");
 #endif
 
   if (JS_DefineProperty(cx, obj, "gpseeNamespace", 
@@ -801,37 +735,28 @@ JSBool gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_
     return JS_FALSE;
 
   if (JS_DefineFunction(cx, obj, "print", gpsee_global_print, 0, 0) == NULL)
-    return JS_FALSE;
+    return JS_FALSE;  
 
-  if (script_argv)
-    gpsee_createJSArray_fromVector(cx, obj, "arguments", script_argv);
-
-  if (script_environ)
-    gpsee_createJSArray_fromVector(cx, obj, "environ", script_environ);
-
-  if (JS_DefineFunction(cx, obj, "loadModule", gpsee_loadModule, 0, 0) == NULL)
-    return JS_FALSE;
-
-  return JS_TRUE;
+  return gpsee_modulizeGlobal(cx, realm, obj, __func__, 0);
 }
 
 /**
  *  Set the maximum (or minimum, depending on arch) address which JSAPI is allowed to use on the C stack.
  *  Any attempted use beyond this address will cause an exception to be thrown, rather than risking a
- *  segfault.
+ *  segfault.  The value used will be noted in gpsee_runtime_t::threadStackLimit, so it can be
+ *  reused by code which creates new contexts (including gpsee_createContext()).
  *
  *  If rc.gpsee_thread_stack_limit is zero this check is disabled.
  *
  *  @param	cx		JS Context to set - must be set before any JS code runs
  *  @param	stackBase	An address near the top (bottom) of the stack
  *
- *  @note	This routine should be called every time JS_NewContext() is called for this protection
- *  		to extend universally.
+ *  @see gpsee_createContext();
  */
-void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
+void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackSize)
 {
-  jsuword 	stackLimit;
-  jsuword	maxStackSize = strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0);
+  gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  jsuword 	        stackLimit;
 
   if (maxStackSize == 0)     /* Disable checking for stack overflow if limit is zero. */
   {
@@ -846,21 +771,22 @@ void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase)
     stackLimit = (jsuword)stackBase - maxStackSize;
 #endif
   }
+
   JS_SetThreadStackLimit(cx, stackLimit);
+  grt->threadStackLimit = stackLimit;
+  return;
 }
 
-/** Instanciate a JavaScript interpreter -- i.e. a runtime,
- *  a context, a global object.
+/** Instanciate a GPSEE Runtime 
  *
- *  @returns	A handle to the interpreter, ready for use.
+ *  @returns	A handle to the runtime, ready for use.
  */
-gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * const script_environ[])
+gpsee_runtime_t *gpsee_createRuntime()
 {
-  JSClass		*global_class = gpsee_getGlobalClass();
   const char		*jsVersion;
   JSRuntime		*rt;
   JSContext 		*cx;
-  gpsee_interpreter_t	*interpreter;
+  gpsee_runtime_t	*grt;
   static jsval		setUTF8 = JSVAL_FALSE;
 
   if (!getenv("GPSEE_NO_UTF8_C_STRINGS"))
@@ -869,20 +795,31 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
       JS_SetCStringsAreUTF8();
   }
 
-  interpreter = calloc(sizeof(*interpreter), 1);
+  grt = calloc(sizeof(*grt), 1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
   if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x40000"), NULL, 0))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript runtime!");
 
-  JS_SetRuntimePrivate(rt, interpreter);
+  JS_SetRuntimePrivate(rt, grt);
 
   /* Control the maximum amount of memory the JS engine will allocate and default to infinite */
   JS_SetGCParameter(rt, JSGC_MAX_BYTES, strtol(rc_default_value(rc, "gpsee_gc_maxbytes", "0"), NULL, 0) ?: (size_t)-1);
   
-  /* Create the default context, used for the primordial thread */
+  /* Create the core context, used only by GPSEE internals */
   if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript context!");
+
+  if (gpsee_initializeMonitorSystem(cx, grt) == JS_FALSE)
+    panic(__FILE__ ": Unable to intialize monitor subsystem");
+
+  grt->rt               = rt;
+  grt->coreCx           = cx;
+  grt->realms           = gpsee_ds_create(grt, 0, 1);
+  grt->realmsByContext  = gpsee_ds_create(grt, 0, 1);
+  grt->gcCallbackList   = gpsee_ds_create(grt, GPSEE_DS_OTM_KEYS, 1);
+
+  grt->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
   /* Set the JavaScript version for compatibility reasons if required. */
   if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))
@@ -895,54 +832,29 @@ gpsee_interpreter_t *gpsee_createInterpreter(char * const script_argv[], char * 
     JS_SetVersion(cx, JSVERSION_LATEST);
   }
 
-  JS_BeginRequest(cx);	/* Request stays alive as long as the interpreter does */
+  JS_BeginRequest(cx);	/* Request stays alive as long as the grt does */
   JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
-  gpsee_initIOHooks(interpreter->cx, interpreter); 
+  if (gpsee_initIOHooks(cx, grt) == JS_FALSE)
+    panic(__FILE__ ": Unable to initialized hookable I/O subsystem");
   JS_SetErrorReporter(cx, gpsee_errorReporter);
-
-  interpreter->globalObj = JS_NewObject(cx, global_class, NULL, NULL);
-  if (!interpreter->globalObj)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create global object!");
-
-  JS_AddNamedRoot(cx, &interpreter->globalObj, "globalObj");	/* Usually unnecessary but JS_SetOptions can change that */
-  
-  if (gpsee_initGlobalObject(cx, interpreter->globalObj, script_argv, script_environ) == JS_FALSE)
-    panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to initialize global object!");
-
-  if (gpsee_initializeModuleSystem(interpreter, cx) == JS_FALSE)
-    panic("Unable to initialize module system");
-
-  /* Primarily to support the system module's "args" property */
-  interpreter->script_argv = script_argv;
-
-#if !defined(MAKEDEPEND) && !defined(DOXYGEN)
-# if defined(JS_THREADSAFE)
-  interpreter->primordialThread	= PR_GetCurrentThread();
-# else
-#  error "We need threads"
-# endif
-  interpreter->cx	 	= cx;
-  interpreter->rt 	 	= rt;
-#endif
-  
-  interpreter->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
 
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   /* Initialize async callback subsystem */
-  interpreter->asyncCallbacks = NULL;
+  grt->asyncCallbacks = NULL;
   /* Create mutex to protect access to 'asyncCallbacks' */
-  interpreter->asyncCallbacks_lock = PR_NewLock();
+  grt->asyncCallbacks_lock = PR_NewLock();
   /* Start the "operation callback" trigger thread */
-  JS_SetOperationCallback(cx, gpsee_operationCallback);
-  interpreter->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
-        interpreter, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 0);
-  if (!interpreter->asyncCallbackTriggerThread)
+  grt->asyncCallbackTriggerThread = PR_CreateThread(PR_SYSTEM_THREAD, gpsee_asyncCallbackTriggerThreadFunc,
+        grt, PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 0);
+  if (!grt->asyncCallbackTriggerThread)
     panic(__FILE__ ": PR_CreateThread() failed!");
   /* Add a callback to spin the garbage collector occasionally */
   gpsee_addAsyncCallback(cx, gpsee_maybeGC, NULL);
   /* Add a context callback to remove any async callbacks associated with the context */
 #endif
-  return interpreter;
+
+  JS_SetGCCallback(cx, gpsee_gcCallback);       
+  return grt;
 }
 
 /** Used instead of JS_InitClass in module code. 
@@ -1018,23 +930,53 @@ void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
   return prvslot;
 }
 
-/** 
- *  All byteThings must have this JSTraceOp. It is used for two things:
- *  1. It identifies byteThings to other byteThings
- *  2. It ensures that hnd->memoryOwner is not finalized while other byteThings 
- *     directly using the same backing memory store are reacheable.
- *
- *  @param trc	Tracer handle supplied by JSAPI.
- *  @param obj	The object behind traced.
+/** Instanciate a JavaScript interpreter -- i.e. a runtime,
+ *  a context, a global object.
+ *  @returns	A handle to the interpreter, ready for use.
  */
-void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
+gpsee_interpreter_t *gpsee_createInterpreter()
 {
-  byteThing_handle_t	*hnd = JS_GetPrivate(trc->context, obj);
+  gpsee_interpreter_t *jsi;
 
-  if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
-    JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
+  jsi = calloc(sizeof(*jsi), 1);
+  if (!jsi)
+    return NULL;
+
+  jsi->grt = gpsee_createRuntime();
+  if (!jsi->grt)
+    goto out;
+  
+  jsi->realm = gpsee_createRealm(jsi->grt, __func__);
+  if (!jsi->grt)
+    goto out;
+  
+  jsi->cx = gpsee_createContext(jsi->realm);
+  if (!jsi->cx)
+    goto out;
+
+  jsi->globalObject     = jsi->realm->globalObject;
+  jsi->rt               = jsi->grt->rt;
+
+  return jsi;
+
+  out:
+  if (jsi->grt)
+    gpsee_destroyRuntime(jsi->grt);
+
+  free(jsi);
+  return NULL;
 }
 
+void gpsee_destroyInterpreter(gpsee_interpreter_t *jsi)
+{
+  gpsee_destroyRuntime(jsi->grt);
+}
 
-
-
+/** Return the GPSEE runtime associated with the current JS Context.
+ *  @param      cx      The current JS context
+ *  @returns    A pointer to the GPSEE runtime
+ */
+gpsee_runtime_t *gpsee_getRuntime(JSContext *cx)
+{
+  return (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx)); 
+}

@@ -38,7 +38,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Oct 2007
- *  @version	$Id: thread.c,v 1.4 2010/03/06 18:17:14 wes Exp $
+ *  @version	$Id: thread.c,v 1.5 2010/06/14 22:12:01 wes Exp $
  *
  *  Basic strategy: JS code instanciates Thread object and calls JS start() method. 
  *                  C Back end makes a thread with NSPR, runs the run() method. If 
@@ -60,7 +60,7 @@
  *		call JS_DestroyRuntime.  To clean them up, call thread_FiniModule().
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: thread.c,v 1.4 2010/03/06 18:17:14 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: thread.c,v 1.5 2010/06/14 22:12:01 wes Exp $";
 
 #define DEBUG 1	/* moz */
 #include <nspr.h>
@@ -485,14 +485,14 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
   return retval;
 }
 
-JSBool Thread_SweepBCB(JSContext *cx, void *private)
+JSBool Thread_SweepBCB(JSContext *cx, void *private, GPSEEAsyncCallback *cb)
 {
   JSObject	*Thread_prototype = (JSObject *)private;
   
   return Thread_Sweep(cx, Thread_prototype);
 }
 
-JSBool Thread_YieldBCB(JSContext *cx, void *unused)
+JSBool Thread_YieldBCB(JSContext *cx, void *unused, GPSEEAsyncCallback *cb)
 {
   return thread_yield(cx);
 }
@@ -814,17 +814,17 @@ static JSBool th_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
  */
 static JSBool th_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   PRThread 		*callingThread = PR_GetCurrentThread();
 
-  if (callingThread == jsi->primordialThread)
+  if (callingThread == grt->primordialThread)
   {
     if (argc)
-      jsi->exitCode = JSVAL_TO_INT(argv[0]);
+      grt->exitCode = JSVAL_TO_INT(argv[0]);
     else
-      jsi->exitCode = 0;
+      grt->exitCode = 0;
 
-    jsi->exitType = et_requested;
+    grt->exitType = et_requested;
 
     return JS_FALSE;
   }

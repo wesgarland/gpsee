@@ -41,7 +41,7 @@
  *  @author     Donny Viszneki
  *              hdon@page.ca
  *  @date       Nov 2009
- *  @version    $Id: shellalike.js,v 1.3 2010/04/22 12:48:16 wes Exp $
+ *  @version    $Id: shellalike.js,v 1.4 2010/06/14 22:12:01 wes Exp $
  */
 
 /* Module requirements */
@@ -268,7 +268,7 @@ function Digraph() {
     var m_id = m_elements.length;
     var m_pads = {
       'src': [],
-      'snk': [],
+      'snk': []
     };
 
     /* Pad class */
@@ -317,7 +317,7 @@ function Digraph() {
         get owner()       m_element,
         get toString()    function() m_pad.toString(),
         get linked()      Boolean(m_pad.linked),
-        '_private':       function(key) pass(key, m_pad),
+        '_private':       function(key) pass(key, m_pad)
       };
     } /* Digraph_Element_Pad constructor */
 
@@ -349,7 +349,7 @@ function Digraph() {
       get toString()    function() el.toString(),
       get addPad()      function() el.addPad.apply(el,arguments),
       get owner()       m_graph,
-      get _private()    function(key) pass(key, el),
+      get _private()    function(key) pass(key, el)
     };
   }
 
@@ -461,7 +461,7 @@ function Digraph() {
     get isLinear()          Digraph_isLinear,
     get isCyclic()          Digraph_isCyclic,
     get isContinuous()      Digraph_isContinuous,
-    get linearize()         Digraph_linearize,
+    get linearize()         Digraph_linearize
   };
 }
 
@@ -527,28 +527,28 @@ function Pipeline() {
     Pipeline_append(m_graph.addElement({
           'toString':     function()'[External Command '+command+']',
           'internal':     false,
-          'command':      command,
+          'command':      command
     }));
   }
   function Pipeline_addGenerator(generator) {
     Pipeline_append(m_graph.addElement({
           'toString':     function()'[Generator '+(generator.name||'anonymous')+']',
           'internal':     true,
-          'generator':    generator,
+          'generator':    generator
     }));
   }
   function Pipeline_addMap(func) {
     Pipeline_append(m_graph.addElement({
           'toString':     function()'[Mapping '+(func.name||'anonymous')+']',
           'internal':     true,
-          'generator':    function(src){for(let y in src)yield func(y)},
+          'generator':    function(src){for(let y in src)yield func(y)}
     }));
   }
   function Pipeline_addIterator(iterator) {
     Pipeline_append(m_graph.addElement({
           'toString':     function()'[Iterator]',
           'internal':     true,
-          'iterator':     iterator,
+          'iterator':     iterator
     }));
   }
   function Pipeline_add(a) {
@@ -605,14 +605,14 @@ function Pipeline() {
   /* TODO note this style of digraph inheritance isn't actually implemented yet */
   m_graph = new Digraph({
     'validateGraph': Pipeline_validateGraph,
-    'realizeGraph':  Pipeline_realizeGraph,
+    'realizeGraph':  Pipeline_realizeGraph
   });
 
   return this.iface = {
     'shape':        Pipeline_shape,
     'add':          Pipeline_add,
     'addMap':       Pipeline_addMap,
-    'run':          Pipeline_run,
+    'run':          Pipeline_run
   };
 }
 
@@ -676,7 +676,7 @@ var CAY = {
   /* @jazzdoc shellalike.cay.prototype.apply
    * This is a reference to Function.prototype.apply()
    */
-  'apply':  Function.prototype.apply,
+  'apply':  Function.prototype.apply
 }
 
 function cay(cmd) {

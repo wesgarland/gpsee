@@ -19,22 +19,24 @@ int main(int argc, char **argv)
   JSContext *cx;
   GPSEEAsyncCallback *cb;
 
-  jsi = gpsee_createInterpreter(NULL, NULL);
+  jsi = gpsee_createInterpreter();
   if (!jsi)
     panic("UNEXPECTED: could not instantiate gpsee_interpreter_t\n");
-  cx = JS_NewContext(jsi->rt, 65536);
+
+  cx = gpsee_createContext(jsi->realm);
   if (!cx)
     panic("UNEXPECTED: could not instantiate JSContext\n");
+
   gpsee_addAsyncCallback(cx, callback, (void*)1);
   gpsee_addAsyncCallback(cx, callback, (void*)2);
   gpsee_addAsyncCallback(cx, callback, (void*)3);
-  for (cb = jsi->asyncCallbacks; cb && cb->cx != cx; cb = cb->next);
+  for (cb = jsi->grt->asyncCallbacks; cb && cb->cx != cx; cb = cb->next);
   if (cb && cb->cx == cx)
     printf("EXPECTED: callback exists\n");
   else
     printf("UNEXPECTED: callback does not exist\n");
   JS_DestroyContext(cx);
-  for (cb = jsi->asyncCallbacks; cb && cb->cx != cx; cb = cb->next);
+  for (cb = jsi->grt->asyncCallbacks; cb && cb->cx != cx; cb = cb->next);
   if (cb && cb->cx == cx)
     printf("FAILURE: all callbacks not destroyed\n");
   else

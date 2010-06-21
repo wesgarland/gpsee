@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jul 2009
- *  @version	$Id: Memory.c,v 1.12 2010/04/14 00:38:35 wes Exp $
+ *  @version	$Id: Memory.c,v 1.13 2010/06/14 22:12:00 wes Exp $
  */
 
 #include <gpsee.h>
@@ -473,6 +473,7 @@ static JSBool memory_duplicate(JSContext *cx, uintN argc, jsval *vp)
 {
   JSObject 		*robj;
   JSObject		*thisObj = JS_THIS_OBJECT(cx, vp);
+  JSObject              *memory_proto;
   struct_handle_t	*thisHnd = thisObj ? gpsee_getInstancePrivate(cx, thisObj, mutableStruct_clasp, immutableStruct_clasp) : NULL;
   memory_handle_t	*newHnd;
   jsval 		mcArgv[] = { JSVAL_TO_INT(0), JSVAL_TRUE };
@@ -493,6 +494,9 @@ static JSBool memory_duplicate(JSContext *cx, uintN argc, jsval *vp)
     default:
       return gpsee_throw(cx, CLASS_ID ".arguments.count");
   }
+
+  if (gpsee_getModuleData(cx, memory_clasp, (void **)&memory_proto, CLASS_ID ".duplicate") == JS_FALSE)
+    return JS_FALSE;
 
   robj = JS_NewObject(cx, memory_clasp, memory_proto, thisObj);
   if (!robj)
@@ -575,9 +579,13 @@ JSBool Memory_Equal(JSContext *cx, JSObject *thisObj, jsval v, JSBool *bp)
 JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   memory_handle_t	*hnd;
-  
+  JSObject              *memory_proto;
+
   if (argc != 1)
     return gpsee_throw(cx, CLASS_ID ".cast.arguments.count");
+
+  if (gpsee_getModuleData(cx, memory_clasp, (void **)&memory_proto, CLASS_ID ".cast") == JS_FALSE)
+    return JS_FALSE;
 
   obj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
   if (!obj)
@@ -592,7 +600,19 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
   memset(hnd, 0, sizeof(*hnd));
   JS_SetPrivate(cx, obj, hnd);
 
-  GPSEE_STATIC_ASSERT(sizeof(size_t) == sizeof(void *));
+  if (JSVAL_IS_OBJECT(argv[0]) && gpsee_isByteThing(cx, JSVAL_TO_OBJECT(argv[0])))
+  {
+    byteThing_handle_t *other_hnd = JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[0]));
+
+    if (!other_hnd)
+      return gpsee_throw(cx, MODULE_ID ".cast.arguments.0.invalid: invalid bytething (missing private handle)");
+
+    hnd->buffer         = other_hnd->buffer;
+    hnd->length         = other_hnd->length;
+    hnd->memoryOwner    = JSVAL_TO_OBJECT(argv[0]);
+
+    return JS_TRUE;
+  }
 
   if (!JSVAL_IS_INT(argv[0]))
   {
@@ -604,6 +624,7 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     if (isnan(d))
       return pointer_fromString(cx, argv[0], (void **)&hnd->buffer, CLASS_ID ".cast");
 
+    GPSEE_STATIC_ASSERT(sizeof(size_t) == sizeof(void *));
     hnd->buffer = (void *)((size_t)d);
     if ((void *)((size_t)d) != hnd->buffer)
       return gpsee_throw(cx, CLASS_ID ".cast.overflow");
@@ -740,7 +761,6 @@ static void Memory_Finalize(JSContext *cx, JSObject *obj)
 }
 
 JSClass *memory_clasp = NULL;
-JSObject *memory_proto = NULL;
 
 /**
  *  Initialize the Memory class prototype.
@@ -752,6 +772,8 @@ JSObject *memory_proto = NULL;
  */
 JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 {
+  JSObject *memory_proto;
+
   /** Description of this class: */
   static JSExtendedClass memory_eclass =
   {
@@ -810,25 +832,11 @@ JSObject *Memory_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
 		   NULL,		/* static_ps - props struct for constructor */
 		   NULL); 		/* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
+  if (gpsee_setModuleData(cx, memory_clasp, memory_proto) == JS_FALSE)
+    return NULL;
+
   GPSEE_ASSERT(memory_proto);
 
   return memory_proto;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

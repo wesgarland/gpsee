@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.38 2010/04/28 12:44:48 wes Exp $
+## @version	$Id: Makefile,v 1.39 2010/06/14 22:11:59 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
@@ -104,7 +104,9 @@ include build.mk
 -include depend.mk
 
 GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_util.c gpsee_modules.c gpsee_compile.c gpsee_context_private.c \
-			  gpsee_xdrfile.c gpsee_hookable_io.c
+			  gpsee_xdrfile.c gpsee_hookable_io.c gpsee_datastores.c gpsee_monitors.c gpsee_realms.c gpsee_gccallbacks.c \
+			  gpsee_bytethings.c
+
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
 
 ifneq ($(STREAM),surelynx)
@@ -134,7 +136,8 @@ build: _prebuild
 	$(MAKE) _build
 _prebuild: $(SPIDERMONKEY_BUILD) $(LIBFFI_BUILD)
 _build: $(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) \
-	$(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES)
+	$(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES) \
+	$(EXPORT_EXTRA_FILES)
 $(SPIDERMONKEY_BUILD):
 	cd spidermonkey && $(MAKE) build
 $(LIBFFI_BUILD):
@@ -145,7 +148,7 @@ install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
 clean: EXTRA_CLEAN_RULE=clean_modules
-clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log
+clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log libgpsee.a
 real-clean: clean
 	cd spidermonkey && $(MAKE) clean
 	cd libffi && $(MAKE) clean
@@ -168,7 +171,7 @@ install_js_components:
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
 $(TARGET_LIBEXEC_JSC):	install_js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
-	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || /bin/true
+	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || [ X = X ]
 
 show_modules:
 	@echo 
@@ -265,6 +268,8 @@ invasive-bin-dist bin-dist:: install
 
 libgpsee.$(SOLIB_EXT): LDFLAGS += $(JSAPI_LIBS)
 libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
+
+libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 
 gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))

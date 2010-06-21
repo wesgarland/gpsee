@@ -70,6 +70,8 @@ endif
 		$(if $(XLIBS), $(CP) $(XLIBS) $(SOLIB_DIR))
 		@$(if $(EXPORT_LIBEXEC_OBJS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
 		$(if $(EXPORT_LIBEXEC_OBJS), $(CP) $(EXPORT_LIBEXEC_OBJS) $(LIBEXEC_DIR))
+		@$(if $(EXPORT_EXTRA_FILES), [ -d $(EXTRA_FILE_DIR) ] || mkdir -p $(EXTRA_FILE_DIR))
+		$(if $(EXPORT_EXTRA_FILES), $(CP) $(EXPORT_EXTRA_FILES) $(EXTRA_FILE_DIR))
 
 # Install binaries and shared libraries
 install-nodeps install:	XPROGS =$(strip $(EXPORT_PROGS))
@@ -92,6 +94,8 @@ install-nodeps:
 		$(if $(XLIBS), $(CP) $(XLIBS) $(SOLIB_DIR))
 		@$(if $(EXPORT_LIBEXEC_OBJS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
 		$(if $(EXPORT_LIBEXEC_OBJS), $(CP) $(EXPORT_LIBEXEC_OBJS) $(LIBEXEC_DIR))
+		@$(if $(EXPORT_EXTRA_FILES), [ -d $(EXTRA_FILE_DIR) ] || mkdir -p $(EXTRA_FILE_DIR))
+		$(if $(EXPORT_EXTRA_FILES), $(CP) $(EXPORT_EXTRA_FILES) $(EXTRA_FILE_DIR))
 
 # Propagate changes to headers and static libraries
 srcmaint:	XLIBS =$(strip $(filter %.$(LIB_EXT),$(EXPORT_LIBS)))

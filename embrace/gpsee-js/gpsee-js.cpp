@@ -11,12 +11,12 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Initial Developer of the Original Code is PageMail, Inc.
+ * The Initial Developer of the Original Code is Mozilla.
  *
- * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Portions created by PageMail, Inc. are 
+ * Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
  *
- * Contributor(s): 
+ * Contributor(s): Wes Garland, wes@page.ca, PageMail, Inc.
  * 
  * Alternatively, the contents of this file may be used under the terms of
  * either of the GNU General Public License Version 2 or later (the "GPL"),
@@ -34,28 +34,17 @@
  */
 
 #include <gpsee.h>
+#ifdef GPSEE_JSDB
+# include "jsdebug.h"
+# include "jsdb.h"
+#endif
 #undef offsetOf
 
-static const char rcsid[]="$Id: gpsee-js.cpp,v 1.4 2010/04/28 12:45:52 wes Exp $";
-static int jsshell_contextPrivate_id = 1234;	/* we use the address, not the number */
+static const char rcsid[]="$Id: gpsee-js.cpp,v 1.5 2010/06/14 22:11:59 wes Exp $";
 
-#undef JS_GetContextPrivate
-#undef JS_SetContextPrivate
-#undef JS_GetGlobalObject
-#undef main
-
-#define PRODUCT_SHORTNAME	"gpsee-js"
-
-JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSObject *parent)
-{
-  extern JSClass global_class;
-
-  if (clasp == &global_class)
-    clasp = gpsee_getGlobalClass();
-
-  return JS_NewObject(cx, clasp, proto, parent);
-}
-//#define JS_NewObject(cx, clasp, proto, parent)	gpseejs_NewObject(cx, clasp, proto, parent)
+#ifndef PRODUCT_SHORTNAME
+# define PRODUCT_SHORTNAME	"gpsee-js"
+#endif
 
 #undef main
 #define main(a,b,c) notMain(a,b,c)
@@ -65,7 +54,50 @@ JSObject *gpseejs_NewObject(JSContext *cx, JSClass *clasp, JSObject *proto, JSOb
 #if defined(JS_THREADSAFE) && defined(jsworkers_h___) && !defined(GPSEE_NO_WORKERS)
 # define WORKERS
 #else
+# if defined(GPSEE_NO_WORKERS)
+#  undef WORKERS
+# endif
+#endif
+
+#ifndef WORKERS
 # warning Building without worker thread support
+#endif
+
+#ifdef GPSEE_JSDB
+/*
+ * This facilitates sending source to JSD (the debugger system) in the shell
+ * where the source is loaded using the JSFILE hack in jsscan. The function
+ * below is used as a callback for the jsdbgapi JS_SetSourceHandler hook.
+ * A more normal embedding (e.g. mozilla) loads source itself and can send
+ * source directly to JSD without using this hook scheme.
+ */
+static void
+SendSourceToJSDebugger(const char *filename, uintN lineno,
+                       jschar *str, size_t length,
+                       void **listenerTSData, void *closure)
+{
+    JSDSourceText *jsdsrc = (JSDSourceText *) *listenerTSData;
+    JSDContext *jsdc  = (JSDContext *)closure;
+
+    if (!jsdsrc) {
+        if (!filename)
+            filename = "typein";
+        if (1 == lineno) {
+            jsdsrc = JSD_NewSourceText(jsdc, filename);
+        } else {
+            jsdsrc = JSD_FindSourceForURL(jsdc, filename);
+            if (jsdsrc && JSD_SOURCE_PARTIAL !=
+                JSD_GetSourceStatus(jsdc, jsdsrc)) {
+                jsdsrc = NULL;
+            }
+        }
+    }
+    if (jsdsrc) {
+        jsdsrc = JSD_AppendUCSourceText(jsdc,jsdsrc, str, length,
+                                        JSD_SOURCE_PARTIAL);
+    }
+    *listenerTSData = jsdsrc;
+}
 #endif
 
 int
@@ -76,7 +108,11 @@ main(int argc, char **argv, char **envp)
     JSContext *cx;
     JSObject *glob, *it, *envobj;
     int result;
-    gpsee_interpreter_t *jsi = gpsee_createInterpreter(NULL, envp);
+    gpsee_interpreter_t *jsi = gpsee_createInterpreter();
+#ifdef GPSEE_JSDB
+    JSDContext *jsdc;
+    JSBool      jsdbc;
+#endif
 
     global_class = *gpsee_getGlobalClass();
     CheckHelpMessages();
@@ -121,7 +157,7 @@ main(int argc, char **argv, char **envp)
 
     JS_BeginRequest(cx);
 
-    glob = jsi->globalObj;
+    glob = jsi->globalObject;
     if (!glob)
         return 1;
 
@@ -155,6 +191,15 @@ main(int argc, char **argv, char **envp)
     if (!envobj || !JS_SetPrivate(cx, envobj, envp))
         return 1;
 
+#ifdef GPSEE_JSDB
+    jsdc = JSD_DebuggerOnForUser(rt, jsi->realm, NULL, NULL);
+    if (!jsdc)
+        return 1;
+    JSD_JSContextInUse(jsdc, cx);
+    JS_SetSourceHandler(rt, SendSourceToJSDebugger, jsdc);
+    jsdbc = JSDB_InitDebugger(rt, jsdc, 0, DEBUGGER_JS);
+#endif
+
 #ifdef WORKERS
     class ShellWorkerHooks : public js::workers::WorkerHooks {
     public:
@@ -176,9 +221,15 @@ main(int argc, char **argv, char **envp)
         result = gExitCode;
 #endif
 
-    JS_EndRequest(cx);
+#ifdef GPSEE_JSDB
+    if (jsdc) {
+        if (jsdbc)
+            JSDB_TermDebugger(jsdc);
+        JSD_DebuggerOff(jsdc);
+    }
+#endif
 
-    // JS_CommenceRuntimeShutDown(rt);
+    JS_EndRequest(cx);
 
 #ifdef jsworkers_h___
     JS_CommenceRuntimeShutDown(rt);

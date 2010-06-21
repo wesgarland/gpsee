@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** 
  *
  *  @author	Donny Viszneki, PageMail, Inc., hdon@page.ca
- *  @version	$Id: gpsee_compile.c,v 1.3 2010/04/14 00:37:56 wes Exp $
+ *  @version	$Id: gpsee_compile.c,v 1.4 2010/06/14 22:11:59 wes Exp $
  *  @file	gpsee_compile.c		Code to compile JavaScript, and to transparently
  *					cache compiled byte code to/from disk.
  */
@@ -129,7 +129,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
   }
   else
   {
-    gpsee_interpreter_t *jsi;
+    gpsee_runtime_t *grt;
 
     /* Open the script file if it hasn't been yet */
     if (!scriptFile && !(scriptFile = fopen(scriptFilename, "r")))
@@ -138,9 +138,9 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
 
     /* Should we use the compiler cache at all? */
-    /* Check the compiler cache setting in our gpsee_interpreter_t struct */
-    jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-    useCompilerCache = jsi->useCompilerCache;
+    /* Check the compiler cache setting in our gpsee_runtime_t struct */
+    grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+    useCompilerCache = grt->useCompilerCache;
 
     /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
      * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */

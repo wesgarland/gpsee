@@ -1,0 +1,90 @@
+******************************************************************
+***
+***  This debugger is a work-in-progress and is not yet considered 
+***  stable enough for general use. It may, in fact, neither build
+***  nor run for you.   On the other hand, it might.
+***
+******************************************************************
+
+
+
+The latest documentation for the GSR Debugger is available at http://code.google.com/p/gpsee/wiki/GSRDB.
+
+Introduction
+------------
+The GSR Debugger (gsrdb) is used to debug JavaScript programs written with GPSEE. It can debug any program which can be run by GSR.
+
+History
+-------
+The original JavaScript debugger for the SpiderMonkey shell was written by John Bandhauer (jband) sometime around 1998. This debugger was 
+built on top of a JS reflection of JSD, which is in turn built on top of jsdbgapi. Mozilla's Venkman debugger, as well as Firebug, are built 
+on an XPConnect interface to JSD (jsdIDebuggerComponent).
+
+GPSEE ships a version of jband's debugger, jsdb, in embrace/gpsee-jsdb. This version runs in the Mozilla JS shell, and is virtually unmodified 
+from the Mozilla-derived sources.
+
+The version of JSD and the JS<>JSD reflection which ship with GPSEE have been forked from the Mozilla tree with no major changes (and all 
+changes are visible by examining GPSEE's Mercurial history). They have been ported to modern SpiderMonkey (~1.8.2), tweaked to understand 
+GPSEE Realms, and had some minor bug fixes and thread-safety magic dust (mostly courtesy Josh Soref a.k.a. timeless) applied.
+
+Building GSRDB
+--------------
+
+Once of you have build and installed GPSEE,
+
+    * cd extras/gsrdb
+    * make build
+    * sudo make install 
+
+Invocation
+----------
+
+Using the debugger is as simple as replacing 'gsr' with 'gsrdb' in your toolchain. You can use gsrdb as a she-bang script runner, just like 
+gsr, with the same flags, or you can use the command-line option -f scriptname (or -F for she-bang scripts) to run your script under the 
+debugger.
+
+The debugger's UI will present itself when your program throws an exception, a breakpoint is hit, or the debugger keyword (a "magic" 
+JavaScript statement) is hit.
+
+If you want to enter the debugger's UI before your script is run, you need to invoke gsrdb, specifying the script to on the command line -- 
+you cannot invoke as a script interpreter in this case. Then add the '-c debugger' command line option cause gsrdb to trip the debugger 
+keyword.
+
+gsrdb -c debugger -f program.js
+gsrdb -c debugger -F mySheBangScript -- arg1 arg2 arg3
+
+Using the Debugger
+------------------
+
+Prompts
+-------
+
+The debugger is written in GPSEE's flavour of JavaScript (CommonJS) and is self-debugging. The old jsdb user interface is used to debug the 
+gsrdb interface -- at least as of this writing. The gsrdb UI is heavily influenced by gdb, the GNU Debugger.
+
+Prompt 	        Activity
+=========================================================================================================
+(gsrdb) 	You are debugging your script, using the gsrdb UI
+gsrdb-self1> 	You are debugging gsrdb, using the jsdb UI
+gsrdb-self2> 	You are debugging gsrdb-self1 (the debugger that's debugging gsrdb), using the jsdb UI
+gsrdb-self3> 	Your are debugging gsrdb-self2, using the jsdb UI
+
+To exit a debugger using the jsdb UI, use the resume() command.
+
+The gsrdb UI will accept shortened commands when they are unambiguous.
+
+Setting Breakpoints
+-------------------
+
+    * break filename:linenumber
+    * break linenumber (to break in the current file)
+    * Breakpoints can be set in files which are not yet loaded. 
+
+Listing Source CodeÂ
+-------------------
+
+    * A * beside a line number indicates that there is a breakpoint set at that line
+    * A > beside a line number indicates the last statement executed before entering the debugger 
+
+  0001: print("hello");
+*>0002: print("world");

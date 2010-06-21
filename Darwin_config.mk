@@ -41,7 +41,7 @@ LINKER		 	 = $(GCC) -dynamiclib $(JSAPI_LIBS) -undefined dynamic_lookup
 CC			 = $(GCC)
 
 GPSEE_C_DEFINES         += HAVE_NDBM
-libgpsee.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
+lib%.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@      
 
 clean: DEBUG_DUMP_DIRS += $(wildcard $(foreach PROG, $(notdir $(PROGS)), ./$(PROG).dSYM))
 

@@ -37,11 +37,11 @@
  *  @file	gpsee_util.c	General utility functions which have nothing
  *				to do with GPSEE other than it uses them.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_util.c,v 1.12 2010/04/14 00:38:07 wes Exp $
+ *  @version	$Id: gpsee_util.c,v 1.13 2010/06/14 22:11:59 wes Exp $
  *  @date	March 2009
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.12 2010/04/14 00:38:07 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_util.c,v 1.13 2010/06/14 22:11:59 wes Exp $:";
 
 #include "gpsee.h"
 #define NO_FUNCTION_NAME "<global scope>"
@@ -225,133 +225,6 @@ int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 #endif
 }
 
-
-/*
- * CDDL HEADER START
- *
- * The contents of this file are subject to the terms of the
- * Common Development and Distribution License (the "License").
- * You may not use this file except in compliance with the License.
- *
- * You can obtain a copy of the license at usr/src/OPENSOLARIS.LICENSE
- * or http://www.opensolaris.org/os/licensing.
- * See the License for the specific language governing permissions
- * and limitations under the License.
- *
- * When distributing Covered Code, include this CDDL HEADER in each
- * file and include the License file at usr/src/OPENSOLARIS.LICENSE.
- * If applicable, add the following below this CDDL HEADER, with the
- * fields enclosed by brackets "[]" replaced with your own identifying
- * information: Portions Copyright 2009 Page Mail, Inc.
- *
- * CDDL HEADER END
- */
-
-/*
- * Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
- * Use is subject to license terms.
- */
-
-/*	Copyright (c) 1988 AT&T	*/
-/*	  All Rights Reserved  	*/
-
-//#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
-/*
- * Similar to popen(3S) but with pipe to cmd's stdin and from stdout.
- */
-
-#include <sys/types.h>
-#include <libgen.h>
-#include <stdio.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <errno.h>
-//#include "lib_gen.h"
-
-int gpsee_p2open(const char *cmd, int *FDs, pid_t *pid)
-{
-  int tocmd[2];
-  int fromcmd[2];
-
-  if (pipe(tocmd) < 0 || pipe(fromcmd) < 0)
-    return (-1);
-#ifndef _LP64
-  if (tocmd[1] >= 256 || fromcmd[0] >= 256) {
-    (void) close(tocmd[0]);
-    (void) close(tocmd[1]);
-    (void) close(fromcmd[0]);
-    (void) close(fromcmd[1]);
-    return (-1);
-  }
-#endif  /*      _LP64   */
-  if ((*pid = fork()) == 0) {
-    (void) close(tocmd[1]);
-    (void) close(0);
-    (void) fcntl(tocmd[0], F_DUPFD, 0);
-    (void) close(tocmd[0]);
-    (void) close(fromcmd[0]);
-    (void) close(1);
-    (void) fcntl(fromcmd[1], F_DUPFD, 1);
-    (void) close(fromcmd[1]);
-    (void) execl("/bin/sh", "sh", "-c", cmd, (char *)0);
-    _exit(1);
-  }
-  if (*pid == (pid_t)-1)
-    return (-1);
-  (void) close(tocmd[0]);
-  (void) close(fromcmd[1]);
-
-  FDs[0] = fromcmd[0];
-  FDs[1] = tocmd[1];
-  return (0);
-}
-
-int gpsee_p2close(int *fdp, FILE **tocmd, FILE **fromcmd, int kill_sig, pid_t pid)
-{
-  int             status;
-  void            (*hstat)(int), (*istat)(int), (*qstat)(int);
-  pid_t r;
-
-  /* Kill process */
-
-  if (pid == (pid_t)-1)
-    return (-1);
-
-  if (kill_sig != 0) {
-    (void) kill(pid, kill_sig);
-  }
-
-  /* Finalize stdio */
-
-  if (tocmd && *tocmd) {
-    fclose(*tocmd);
-    *tocmd = NULL;
-  }
-  if (fromcmd && *fromcmd) {
-    fclose(*fromcmd);
-    *fromcmd = NULL;
-  }
-
-  /* Wait for process to exit */
-
-  istat = signal(SIGINT, SIG_IGN);
-  qstat = signal(SIGQUIT, SIG_IGN);
-  hstat = signal(SIGHUP, SIG_IGN);
-  while ((r = waitpid(pid, &status, 0)) == (pid_t)-1 && errno == EINTR)
-    ;
-  if (r == (pid_t)-1)
-    status = -1;
-  (void) signal(SIGINT, istat);
-  (void) signal(SIGQUIT, qstat);
-  (void) signal(SIGHUP, hstat);
-
-  /* Return the child process's exit status */
-  return (status);
-}
-
 /** Returns a number >= 0 if there is a currently pending exception and that exception qualifies as
  *  a "SystemExit". Currently, to exit a process using the exception throwing mechanism, one must
  *  throw an system exit code. If uncaught, this should signify to the host application the
@@ -414,64 +287,47 @@ haveint:
   return -1;
 }
 
-/** Get the current (as indicated by jsi->globalObj) program module's directory,
- *  and return a copy allocated with JS_malloc().
+/**
+ *  Return a pointer to the relative filename of the passed long_filename. The returned
+ *  filename will be in relation to the realm's program module, and will always be
+ *  a substring of long_filename (pointing inside it - no copying).
  *
- *  @param	cx	The JavaScript context
- *  @param	jsi	The GPSEE context
- *  @returns	A copy of the directory, including the trailing slash, or a copy of an empty buffer,
- *		or NULL on OOM.
+ *  @param      cx              Any context in the current realm
+ *  @param      long_filename   The filename to shorten
+ * 
+ *  @returns    The shortened filename, or long_filename.
  */
-const char *gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi)
+const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filename)
 {
-  const char *cname;
-  const char *bname;
-  char *dircopy;
+  moduleHandle_t        *programModule;
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
+  const char            *cname;
+  const char            *bname;
 
-  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
+  if (!realm)
+    return long_filename;
+
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
+  programModule = realm->monitored.programModule;
   if (!programModule)
-    goto err;
+    goto out;
 
   cname = gpsee_getModuleCName(programModule);
   if (!cname)
-    goto err;
+    goto out;
 
   bname = strrchr(cname, '/');
   if (!bname)
-    goto err;
-
-  dircopy = JS_malloc(cx, (bname-cname) + 2);
-  if (!dircopy)
-    goto err;
-
-  strncpy(dircopy, cname, (bname-cname) + 1);
-  dircopy[(bname-cname) + 1] = (char)0;
-  return dircopy;
-  
-  err:
-  return JS_strdup(cx, "");
-}
-
-const char *gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename)
-{
-  const char *cname;
-  const char *bname;
-
-  moduleHandle_t *programModule = JS_GetPrivate(cx, jsi->globalObj);
-  if (!programModule)
-    return long_filename;
-
-  cname = gpsee_getModuleCName(programModule);
-  if (!cname)
-    return long_filename;
-
-  bname = strrchr(cname, '/');
-  if (!bname)
-    return long_filename;
+    goto out;
 
   if (strncmp(long_filename, cname, (bname-cname) + 1) == 0)
+  {
+    gpsee_leaveAutoMonitor(realm->monitors.programModule);
     return long_filename + (bname-cname) + 1;
+  }
 
+  out:
+  gpsee_leaveAutoMonitor(realm->monitors.programModule);
   return long_filename;
 }
 
@@ -482,8 +338,8 @@ const char *gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *js
  */
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
-  gpsee_interpreter_t	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  const char		*filename = gpsee_programRelativeFilename(cx, jsi, report->filename);
+  gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  const char		*filename = gpsee_programRelativeFilename(cx, report->filename);
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
   int			bold = isatty(STDERR_FILENO);
@@ -503,10 +359,10 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   sz = snprintf(prefix, sizeof(prefix), "%s:%d", filename, report->lineno);
   GPSEE_ASSERT(sz < sizeof(prefix));
 
-  if (jsi->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
+  if (grt->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
-    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, jsi->pendingErrorMessage, bold?VT_UNBOLD:"");
-    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, jsi->pendingErrorMessage);
+    gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, grt->pendingErrorMessage, bold?VT_UNBOLD:"");
+    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
   }
 
   if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
@@ -531,7 +387,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
       char linebuf[len+1];
       int i;
 
-      strncpy(linebuf, report->linebuf + start, len+1);
+      gpsee_cpystrn(linebuf, report->linebuf + start, len+1);
       gpsee_fprintf(cx, stderr, "%s: %s\n", prefix, linebuf);
       gpsee_fprintf(cx, stderr, "%s: ", prefix);
       for (i = report->tokenptr - report->linebuf - start; i > 1; i--)
@@ -567,7 +423,7 @@ static const char *rev_strchr(const char *start, char search, const char *limit)
  */
 JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
   jsval                	v;
   char 			*longerror = NULL;
   JSErrorReporter 	reporter;
@@ -597,7 +453,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
         error = JS_GetStringBytes(JSVAL_TO_STRING(v));
 
         /* This makes the message available to gpsee_reportErrorSourceCode() */
-        jsi->pendingErrorMessage = error;
+        grt->pendingErrorMessage = error;
       }
     }
 
@@ -622,7 +478,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
   reporter = JS_SetErrorReporter(cx, (JSErrorReporter)gpsee_reportErrorSourceCode);
   JS_ReportPendingException(cx);
   JS_SetErrorReporter(cx, reporter);
-  jsi->pendingErrorMessage = NULL;
+  grt->pendingErrorMessage = NULL;
 
   if (!dumpStack)
     return JS_TRUE;
@@ -634,13 +490,18 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
     size_t		pm_dir_len;
     char		*nl, *line_start, *tok;
     size_t		extraBytes = 0;
+    gpsee_realm_t       *realm = gpsee_getRealm(cx);
 
     /* Look for filenames which can be shortened */
-    pm_dir = gpsee_programModuleDirCopy(cx, jsi);
+    gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
+    pm_dir = realm->monitored.programModuleDir;
     if (!pm_dir)
       panic("Out of memory reporting an uncaught exception in " __FILE__);
     if (!pm_dir[0])
+    {
+      gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
       goto done;
+    }
     pm_dir_len = strlen(pm_dir);
 
     for (line_start = longerror, nl=strchr(line_start, '\n'); 
@@ -657,6 +518,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 	extraBytes += pm_dir_len;
       }
     }
+    gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
 
     /* Lines beginning with @ need a fake function name for the table to render right */
     for (nl = strchr(longerror, '\n'); 
@@ -731,12 +593,15 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 
       nl = strchr(longerror, '\n');
       if (nl)
-	tok = (char *)rev_strchr(nl, '\t', longerror);
-      if (nl && tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
       {
-	tok--;
-	memmove(tok, tok + 1, strlen(tok + 1) + 1);
-	memcpy(tok, "\t\t\n", 3);
+	tok = (char *)rev_strchr(nl, '\t', longerror);
+
+        if (tok && tok != longerror && strncmp(tok-1, "\t\t0\n", 4) == 0)
+        {
+          tok--;
+          memmove(tok, tok + 1, strlen(tok + 1) + 1);
+          memcpy(tok, "\t\t\n", 3);
+        }
       }
     }
 
@@ -912,3 +777,4 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
   }
   gpsee_fprintf(cx, out, "\n");
 }
+

@@ -39,10 +39,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	May 2009
- *  @version	$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $
+ *  @version	$Id: gffi.c,v 1.10 2010/06/14 22:12:00 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.9 2010/03/26 00:19:32 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.10 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
 #include "gffi.h"
@@ -76,8 +76,6 @@ JSObject *CFunction_proto = NULL;
 /** Initialize the module */
 const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 {
-  JSObject *proto;
-
   static JSPropertySpec gffi_props[] =
   {
     { "errno",		0, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_SHARED, gffi_errno_getter, gffi_errno_setter },
@@ -89,26 +87,23 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
     JS_FS_END
   };
 
-  proto = MutableStruct_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (MutableStruct_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
   CFunction_proto = CFunction_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (CFunction_proto == NULL)
     return NULL;
 
-  proto = Memory_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (Memory_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  if (!Library_InitClass(cx, moduleObject, NULL))
+  if (Library_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  if (!WillFinalize_InitClass(cx, moduleObject, NULL))
+  if (WillFinalize_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
-  proto = CType_InitClass(cx, moduleObject, NULL);
-  if (proto == NULL)
+  if (CType_InitClass(cx, moduleObject, NULL) == NULL)
     return NULL;
 
   if (JS_DefineProperty(cx, moduleObject, "pointerSize", INT_TO_JSVAL(sizeof(void *)), NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY) == JS_FALSE) 

@@ -37,7 +37,7 @@
  *  @file	gffi_module.h		Symbols shared between classes/objects in the gffi module.
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
  *  @date	June 2009
- *  @version	$Id: gffi.h,v 1.13 2010/04/14 00:38:37 wes Exp $
+ *  @version	$Id: gffi.h,v 1.14 2010/06/14 22:12:00 wes Exp $
  */
 
 #include <dlfcn.h>
@@ -130,8 +130,6 @@ extern JSClass *mutableStruct_clasp;
 extern JSClass *immutableStruct_clasp;
 extern JSClass *cFunction_clasp;
 extern JSClass *memory_clasp;
-extern JSObject *memory_proto;
-extern JSObject *mutableStruct_proto;
 
 /** Magic numbers used in argument passing */
 typedef enum
@@ -177,7 +175,6 @@ void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
 /* The function that invokes a cFunction_closure_t */
 void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
 void *findPreDefFunction(const char *functionName);
-extern JSObject *CFunction_proto;
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
 JSBool struct_setInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
