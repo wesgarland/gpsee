@@ -36,103 +36,35 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.31 2010/04/14 00:37:54 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.33 2010/06/14 22:11:59 wes Exp $
  *
- *  $Log: gpsee.h,v $
- *  Revision 1.31  2010/04/14 00:37:54  wes
- *  Synchronize with Mercurial
- *
- *  Revision 1.30  2010/04/01 13:43:19  wes
- *  Improved uncaught exception handling & added tests
- *
- *  Revision 1.29  2010/03/06 18:39:51  wes
- *  Merged with upstream
- *
- *  Revision 1.28  2010/03/06 18:17:13  wes
- *  Synchronize Mercurial and CVS Repositories
- *
- *  Revision 1.27  2010/02/17 15:59:33  wes
- *  Module Refactor checkpoint: switched modules array to a splay tree
- *
- *  Revision 1.26  2010/02/13 20:33:43  wes
- *  Module system refactor checkpoint
- *
- *  Revision 1.25  2010/02/12 21:37:25  wes
- *  Module system refactor check-point
- *
- *  Revision 1.24  2010/02/08 20:24:54  wes
- *  Forced singled-thread/spin-lock behaviour on module loading
- *
- *  Revision 1.23  2010/02/08 18:28:40  wes
- *  Re-enabled GPSEE Async Callback facility & fixed test
- *
- *  Revision 1.22  2010/02/05 21:32:40  wes
- *  Added C Stack overflow protection facility to GPSEE-core
- *
- *  Revision 1.21  2010/01/24 04:46:54  wes
- *  Deprecated mozfile, mozshell and associated libgpsee baggage
- *
- *  Revision 1.20  2009/10/29 18:35:05  wes
- *  ByteThing casting, apply(), call() mutability fixes
- *
- *  Revision 1.19  2009/09/21 21:33:41  wes
- *  Implemented Memory equality operator in gffi module
- *
- *  Revision 1.18  2009/09/17 20:57:11  wes
- *  Fixed %m support for gpsee_log in surelynx stream
- *
- *  Revision 1.17  2009/08/06 14:17:51  wes
- *  Corrected comment-in-comment false warning
- *
- *  Revision 1.16  2009/08/05 18:40:26  wes
- *  Adjusted _GNU_SOURCE definition location and tweaked build system to make debugging modules/gffi/\* easier
- *
- *  Revision 1.15  2009/08/04 20:22:38  wes
- *  Work towards resolving build-system circular dependencies et al
- *
- *  Revision 1.14  2009/07/31 16:08:20  wes
- *  C99
- *
- *  Revision 1.13  2009/07/31 14:56:08  wes
- *  Removed printf formats, now in gpsee_formats.h
- *
- *  Revision 1.11  2009/07/28 15:52:27  wes
- *  Updated isByteThing functions
- *
- *  Revision 1.10  2009/07/28 15:21:52  wes
- *  byteThing memoryOwner patch
- *
- *  Revision 1.9  2009/07/27 21:05:37  wes
- *  Corrected gpsee_getInstancePrivate macro
- *
- *  Revision 1.8  2009/07/23 21:19:01  wes
- *  Added ByteString_Cast
- *
- *  Revision 1.7  2009/07/23 19:00:40  wes
- *  Merged with upstream
- *
- *  Revision 1.6  2009/07/23 18:35:13  wes
- *  Added *gpsee_getInstancePrivateNTN
- *
- *  Revision 1.5  2009/06/12 17:01:20  wes
- *  Merged with upstream
- *
- *  Revision 1.4  2009/05/27 04:38:44  wes
- *  Improved build configuration for out-of-tree GPSEE embeddings
- *
- *  Revision 1.3  2009/05/08 18:18:38  wes
- *  Added fieldSize, offsetOf and gpsee_isFalsy()
- *
- *  Revision 1.2  2009/04/01 22:30:55  wes
- *  Bugfixes for getopt, linux build, and module-case in tests
- *
- *  Revision 1.1  2009/03/30 23:55:43  wes
- *  Initial Revision for GPSEE. Merges now-defunct JSEng and Open JSEng projects.
- *
+ *  @defgroup   core            GPSEE Core API
+ *  @{
+ *  @defgroup   realms          GPSEE Realms
+ *  @defgroup   module_system   GPSEE Module System - implementation of Modules
+ *  @defgroup   async           GPSEE Async Callbacks
+ *  @defgroup   monitors        GPSEE Monitors
+ *  @defgroup   datastores      GPSEE Data Stores
+ *  @defgroup   bytethings      GPSEE ByteThings
+ *  @}
+ *  @defgroup   internal        GPSEE Internals
+ *  @defgroup   modules         GPSEE Modules - Modules which ship with GPSEE
+ *  @defgroup   utility         Utility / Portability functions: system-level functions provided for/by GPSEE 
+ *  @defgroup   debugger        GPSEE Debugger Facilities
  */
 
 #ifndef GPSEE_H
 #define GPSEE_H
+
+/* Forward declarations & primitive typedefs */
+typedef struct gpsee_realm gpsee_realm_t;               /**< @ingroup realms */
+typedef struct dataStore *      gpsee_dataStore_t;      /**< Handle describing a GPSEE data store */
+typedef struct moduleHandle     moduleHandle_t; 	/**< Handle describing a loaded module */
+typedef struct moduleMemo       moduleMemo_t; 		/**< Handle to module system's realm-wide memo */
+typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
+typedef void *                  gpsee_monitor_t;        /**< Synchronization primitive */
+typedef void *                  gpsee_autoMonitor_t;    /**< Synchronization primitive */
+typedef struct GPSEEAsyncCallback GPSEEAsyncCallback;   /**< @ingroup async */
 
 #include "gpsee_config.h" /* MUST BE INCLUDED FIRST */
 #include <prthread.h>
@@ -143,7 +75,7 @@
 # define gpsee_makeLogFormat(a,b)	makeLogFormat_r(a,b)
 #else
 # define GPSEE_MAX_LOG_MESSAGE_SIZE	1024
-const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
+const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup utility */
 #endif
 
 #if !defined(NO_GPSEE_SYSTEM_INCLUDES)
@@ -174,6 +106,11 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew);
 #endif
 
 #include <jsapi.h>
+#ifdef GPSEE_DEBUGGER
+# include "jsdebug.h"
+# include "jsdb.h"
+#endif
+
 #if !defined(INT_TO_JSVAL) && defined(JSVAL_ZERO) /* Bug workaround for tracemonkey, introduced Aug 18 2009, patched here Sep 25 2009 - xxx wg  */
 #undef JSVAL_ZERO
 #undef JSVAL_ONE
@@ -226,7 +163,7 @@ typedef enum
   er_none	= er_noWarnings | 1 << 31
 } errorReport_t;
 
-/* exitType_t describes the lifecycle phase of a gpsee_interpreter_t */
+/* exitType_t describes the lifecycle phase of a gpsee_runtime_t */
 typedef enum
 {
   et_unknown	= 0,
@@ -236,7 +173,7 @@ typedef enum
   et_finished           = 1 << 0,
 
   /* Anywhere that a function can throw an exception, you can throw an uncatchable exception (ie. return JS_FALSE,
-   * or NULL) after setting gpsee_interpreter_t.exitType to et_requested. The meaning of this behavior is to unwind
+   * or NULL) after setting gpsee_runtime_t.exitType to et_requested. The meaning of this behavior is to unwind
    * the stack and exit immediately. Javascript code cannot catch this type of exit, however for that exact reason,
    * it is not the recommended way to exit your program, as a proper SystemExit exception (TODO unimplemented!) will
    * get the job done as long as you don't catch it (and you only should if you have a valid reason for it) but also
@@ -253,133 +190,317 @@ typedef enum
   et_successMask	= et_finished | et_requested
 } exitType_t;
 
-typedef JSBool (* JS_DLL_CALLBACK GPSEEBranchCallback)(JSContext *cx, JSScript *script, void *_private);
-typedef struct moduleHandle moduleHandle_t; 		/**< Handle describing a loaded module */
-typedef struct moduleMemo moduleMemo_t; 		/**< Handle to module system's interpreter-wide memo */
-typedef struct modulePathEntry *modulePathEntry_t; 	/**< Pointer to a module path linked list element */
+#ifndef GPSEE_NO_ASYNC_CALLBACKS
+/** addtogroup async
+ *  @{
+ */
+/** Signature for callback functions that can be registered by gpsee_addAsyncCallback()  */
+typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*, GPSEEAsyncCallback *);
 
-/** Signature for callback functions that can be registered by gpsee_addAsyncCallback() */
-typedef JSBool (*GPSEEAsyncCallbackFunction)(JSContext*, void*);
-/** Data struct for entries in the asynchronous callback multiplexor */
-typedef struct GPSEEAsyncCallback
+/** Data struct for entries in the asynchronous callback multiplexor. */
+struct GPSEEAsyncCallback
 {
   GPSEEAsyncCallbackFunction  callback;   /**< Callback function */
   void                        *userdata;  /**< Opaque data pointer passed to the callback */
   JSContext                   *cx;        /**< Pointer to JSContext for the callback */
-  struct GPSEEAsyncCallback   *next;      /**< Linked-list link! */
-} GPSEEAsyncCallback;
+  struct GPSEEAsyncCallback   *next;      /**< Linked-list link */
+}; 
+/** @} */
+#endif
 
-/** Handle describing a gpsee interpreter important details and state */
+/** Handle describing a gpsee runtime important details and state
+ *  @ingroup core
+ */
 typedef struct
 {
-  JSRuntime 		*rt;			/**< Handle for this interpreter's JavaScript runtime */
-  JSContext 		*cx;			/**< Context for use by primoridial thread. */
-  JSObject		*globalObj;		/**< Global object, for binding things like parseInt() */
+  JSRuntime 		*rt;			/**< Handle for this GPSEE runtime's JavaScript runtime */
+  JSContext             *coreCx;                /**< JSContext for use by gpsee core */
+  PRThread	        *primordialThread;      /**< Primordial thread for this runtime */
+  gpsee_dataStore_t	realms;	                /**< Key-value index; key = realm, value = NULL */
+  gpsee_dataStore_t	realmsByContext;	/**< Key-value index; key = context, value = realm */
+  gpsee_dataStore_t     monitorList_unlocked;   /**< Key-value index; key = monitor, value = NULL. Must hold grt->monitors.monitor to use. */
+  gpsee_dataStore_t     gcCallbackList;         /**< List of GC callback functions and their invocation realms */
   size_t		stackChunkSize;		/**< For calls to JS_NewContext() */
-
-  signed int		linenoOffset;		/**< Added line number in error reports, in case script doesn't start at top of file. */
+  jsuint                threadStackLimit;       /**< Upper bound on C stack bounds per context */
   int 			exitCode;		/**< Exit Code from System.exit() etc */
   exitType_t		exitType;		/**< Why the script stopped running */
   errorReport_t		errorReport;		/**< What errors to report? 0=all unless RC file overrides */
   void			(*errorLogger)(JSContext *cx, const char *pfx, const char *msg); /**< Alternate logging function for error reporter */
 
+#if defined(JS_THREADSAFE)
+  PRThread	*requireLockThread;		/**< Matches NULL or PR_GetCurrentThread if we are allowed to require; change must be atomic */
+  size_t	requireLockDepth;
+#endif
+#ifndef GPSEE_NO_ASYNC_CALLBACKS
+  GPSEEAsyncCallback    *asyncCallbacks;        /**< Pointer to linked list of OPCB entries */
+  PRLock                *asyncCallbacks_lock;
+  PRThread              *asyncCallbackTriggerThread;
+#endif
+  unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
+  const char            *pendingErrorMessage;   /**< This provides a way to provide an extra message for gpsee_reportErrorSourceCode() */
+
+#ifdef JS_THREADSAFE
+  struct
+  {
+    gpsee_monitor_t     monitor;        /** Monitor for use by the monitor subsystem */
+    gpsee_autoMonitor_t realms;         /** Held during realm creation once the realm is visible but before it's completely initialized, 
+                                            and whenever grt->realms or grt->realmsByContext pointers need synchronization. */
+    gpsee_autoMonitor_t user_io;        /**< Monitor which must be held to read/write user_io */
+    gpsee_autoMonitor_t cx;             /**< Monitor which is held during gpsee_createContext() and gpsee_destroyContext() */
+  } monitors;
+#endif
+
+  struct
+  {
+    int    (*printf)      (JSContext *, const char *, ...);                   /**< Hookable I/O vtable entry for printf */
+    int    (*fprintf)     (JSContext *, FILE *, const char *, ...);           /**< Hookable I/O vtable entry for fprintf */
+    int    (*vfprintf)    (JSContext *, FILE *, const char *, va_list);       /**< Hookable I/O vtable entry for vfprintf */
+    size_t (*fwrite)      (void *, size_t, size_t, FILE *, JSContext *);      /**< Hookable I/O vtable entry for fwrite */
+    size_t (*fread)       (void *, size_t, size_t, FILE *, JSContext *);      /**< Hookable I/O vtable entry for fread */
+    char * (*fgets)       (char *, int, FILE *, JSContext *);                 /**< Hookable I/O vtable entry for fgets */
+    int    (*fputs)       (const char *, FILE *, JSContext *);                /**< Hookable I/O vtable entry for fputs */
+    int    (*fputc)       (int, FILE *, JSContext *);                         /**< Hookable I/O vtable entry for fputc */
+    int    (*fgetc)       (FILE *, JSContext *);                              /**< Hookable I/O vtable entry for fgetc */
+    int    (*puts)        (const char *, JSContext *);                        /**< Hookable I/O vtable entry for puts */
+
+    struct 
+    { 
+      gpsee_realm_t           *realm;                 /**< GPSEE Realm the I/O hooks belong to */
+      jsval                   input;                  /**< JavaScript function to generate output */
+      jsval                   output;                 /**< JavaScript function to collect input */
+      JSContext               *hookCx;                /**< A JS Context which can be used by any thread holding the hookMonitor */
+      gpsee_autoMonitor_t     monitor;                /**< Monitor which must be held to use hookCx, or to call any vtable function */
+    } *hooks;                                         /**< Javascript I/O hooks array; per-fd hooks; indexed by file descriptor  */
+    size_t                    hooks_len;              /**< Number of entries in hooks array (maxfd+1) */
+  } user_io;                                          /**< Hookable I/O vtable and JavaScript I/O hooks */
+} gpsee_runtime_t;
+
+/** Handle describing a GPSEE Realm.
+ *  @ingroup realms
+ */
+struct gpsee_realm
+{
+#ifdef GPSEE_DEBUG_BUILD
+  const char            *name;                  /**< Name of the realm */
+#endif
+  gpsee_runtime_t       *grt;                   /**< GPSEE Runtime which created this realm */
+  JSObject		*globalObject;		/**< Global object ("super-global") */
+  JSContext             *cachedCx;              /**< A partially initialied context left over from realm creation, or NULL */
   moduleMemo_t 		*modules;		/**< List of loaded modules and their shutdown requirements etc */
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
-  char * const *         script_argv;           /**< argv from main() */
+  gpsee_dataStore_t     moduleData;             /**< Scratch-pad for modules; keys are unique pointers */
+  gpsee_dataStore_t     user_io_pendingWrites;  /**< Pending data which will be written on the next async callback */
 
-#if defined(JS_THREADSAFE)
-  PRThread	*primordialThread;
-  PRThread	*requireLockThread;		/**< Matches NULL or PR_GetCurrentThread if we are allowed to require; change must be atomic */
-  size_t	requireLockDepth;
+  struct
+  {
+    moduleHandle_t      *programModule;
+    const char          *programModuleDir;        
+    char * const *      script_argv;            /**< argv from main() */
+  } monitored;                                    
+
+/**< In order to read/write a member of monitored, you must enter the similarly-named monitor */
+#ifdef JS_THREADSAFE
+  struct
+  {
+    gpsee_autoMonitor_t     programModule;
+    gpsee_autoMonitor_t     programModuleDir;
+    gpsee_autoMonitor_t     script_argv;
+  } monitors;                                   /**< Monitors for monitored members */
 #endif
-  /** Pointer to linked list of OPCB entries */
-  GPSEEAsyncCallback    *asyncCallbacks;
-  PRLock                *asyncCallbacks_lock;
-  PRThread              *asyncCallbackTriggerThread;
-  unsigned int          useCompilerCache:1;     /**< Option: Do we use the compiler cache? */
-  const char            *pendingErrorMessage;   /**< This provides a way to provide an extra message for gpsee_reportErrorSourceCode() */
+};
 
-  /** Hookable IO vtable */
-  int    (*user_io_printf)      (JSContext *, const char *, ...);
-  int    (*user_io_fprintf)     (JSContext *, FILE *, const char *, ...);
-  int    (*user_io_vfprintf)    (JSContext *, FILE *, const char *, va_list);
-  size_t (*user_io_fwrite)      (void *, size_t, size_t, FILE *, JSContext *);
-  size_t (*user_io_fread)       (void *, size_t, size_t, FILE *, JSContext *);
-  char * (*user_io_fgets)       (char *, int, FILE *, JSContext *);
-  int    (*user_io_fputs)       (const char *, FILE *, JSContext *);
-  int    (*user_io_fputc)       (int, FILE *, JSContext *);
-  int    (*user_io_puts)        (const char *, JSContext *);
-
-  /** Per-fd hooks */
-  size_t                                user_io_hooks_len;
-  struct { jsval input; jsval output; } *user_io_hooks;
+/** Convenience structure for gpsee_createInterpreter() / gpsee_destroyInterpreter().
+ *  @ingroup core
+ */
+typedef struct
+{
+  gpsee_runtime_t       *grt;           /**< A new GPSEE Runtime */
+  gpsee_realm_t         *realm;         /**< A GPSEE Realm in the grt runtime */
+  JSRuntime             *rt;            /**< The JS runtime associated with the GPSEE Runtime */
+  JSContext             *cx;            /**< A JS Context for the realm */
+  JSObject              *globalObject;  /**< The global object for the realm */
 } gpsee_interpreter_t;
 
-JS_EXTERN_API(GPSEEAsyncCallback*)  gpsee_addAsyncCallback(JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
-JS_EXTERN_API(void)                 gpsee_removeAsyncCallbacks(gpsee_interpreter_t *jsi);
-JS_EXTERN_API(void)                 gpsee_removeAsyncCallback(JSContext *cx, GPSEEAsyncCallback *c);
+/** @addtogroup core
+ *  @{
+ */
+typedef JSBool (* gpsee_gcCallback_fn)(JSContext *cx, gpsee_realm_t *, JSGCStatus); /**< GPSEE GC Callback function type */
+JSBool                  gpsee_addGCCallback             (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
+JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, gpsee_gcCallback_fn cb);
+/** @} */
+/** @addtogroup async
+ *  @{
+ */
+#ifndef GPSEE_NO_ASYNC_CALLBACKS
+GPSEEAsyncCallback *    gpsee_addAsyncCallback          (JSContext *cx, GPSEEAsyncCallbackFunction callback, void *userdata);
+void                    gpsee_removeAsyncCallback       (JSContext *cx, GPSEEAsyncCallback *c);
+#endif
+/** @} */
 
 /* core routines */
-JS_EXTERN_API(gpsee_interpreter_t*) gpsee_createInterpreter(char * const argv[], char * const script_environ[]);
-JS_EXTERN_API(int)                  gpsee_destroyInterpreter(gpsee_interpreter_t *interpreter);
+JS_EXTERN_API(void)                 gpsee_destroyInterpreter(gpsee_interpreter_t *jsi);
+JS_EXTERN_API(gpsee_interpreter_t *)gpsee_createInterpreter() __attribute__((malloc));
+JS_EXTERN_API(gpsee_runtime_t *)    gpsee_createRuntime() __attribute__((malloc));
+gpsee_runtime_t *                   gpsee_getRuntime(JSContext *cx);
+JS_EXTERN_API(int)                  gpsee_destroyRuntime(gpsee_runtime_t *grt);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
 JS_EXTERN_API(JSBool)               gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack);
-JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase);
+JS_EXTERN_API(void) 		    gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackSize);
 JS_EXTERN_API(JSBool)               gpsee_throw(JSContext *cx, const char *fmt, ...) __attribute__((format(printf,2,3)));
-JS_EXTERN_API(int)                  gpsee_addBranchCallback(JSContext *cx, GPSEEBranchCallback cb, void *_private, size_t oneMask);
-JS_EXTERN_API(JSBool)               gpsee_branchCallback(JSContext *cx, JSScript *script);
 JS_EXTERN_API(void)                 gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *report);
-JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, void *id, size_t size, JSContextCallback cb);
+JS_EXTERN_API(void*)                gpsee_getContextPrivate(JSContext *cx, const void *id, size_t size, JSContextCallback cb);
 JS_EXTERN_API(JSContextCallback)    gpsee_setContextCallback(JSContext *cx, JSContextCallback cb);
 JS_EXTERN_API(JSBool)               gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, 
 							const char *scriptCode, JSScript **script, JSObject *scope, JSObject **scriptObject);
+/** @addtogroup modules
+ *  @{
+ */
 JS_EXTERN_API(JSBool)               gpsee_loadModule(JSContext *cx, JSObject *parentObject, uintN argc, jsval *argv, jsval *rval);
 JS_EXTERN_API(JSObject*)            gpsee_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
                                                     JSClass *clasp, JSNative constructor, uintN nargs,
                                                     JSPropertySpec *ps, JSFunctionSpec *fs,
                                                     JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
                                                     const char *moduleID);
-JS_EXTERN_API(const char *)	    gpsee_programRelativeFilename(JSContext *cx, gpsee_interpreter_t *jsi, const char *long_filename);
-JS_EXTERN_API(const char *)  	    gpsee_programModuleDirCopy(JSContext *cx, gpsee_interpreter_t *jsi);
+JS_EXTERN_API(const char *)         gpsee_programRelativeFilename(JSContext *cx, const char *long_filename);
 JS_EXTERN_API(JSObject*)            gpsee_findModuleVarObject_byID(JSContext *cx, const char *moduleID);
-JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile);
+JS_EXTERN_API(JSBool)               gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const char *scriptCode, FILE *scriptFile, char * const argv[], char * const script_environ[]);
+JS_EXTERN_API(JSBool)               gpsee_modulizeGlobal(JSContext *cx, gpsee_realm_t *realm, JSObject *glob, const char *label, size_t id);
 JS_EXTERN_API(const char *)	    gpsee_getModuleCName(moduleHandle_t *module);
-JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, JSObject *obj, char * const script_argv[], char * const script_environ[]);
-JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void);
+JS_EXTERN_API(JSBool)               gpsee_getModuleDataStore(JSContext *cx, gpsee_dataStore_t *dataStore_p);
+JS_EXTERN_API(JSBool)               gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const char *throwPrefix);
+JS_EXTERN_API(JSBool)               gpsee_setModuleData(JSContext *cx, const void *key, void *data);
+/** @} */
+JS_EXTERN_API(JSBool)               gpsee_initGlobalObject(JSContext *cx, gpsee_realm_t *realm, JSObject *obj);
+JS_EXTERN_API(JSClass*)             gpsee_getGlobalClass(void) __attribute__((const));
+/** @addtogroup realms
+ *  @{
+ */
+gpsee_realm_t *      gpsee_createRealm(gpsee_runtime_t *grt, const char *name) __attribute__((malloc));
+gpsee_realm_t *      gpsee_getRealm(JSContext *cx);
+JSBool               gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm);
+JSContext *          gpsee_createContext(gpsee_realm_t *realm);
+void                 gpsee_destroyContext(JSContext *cx);
+/** @} */
+
+/** @addtogroup datastores
+ *  @{
+ */
+typedef JSBool (* gpsee_ds_forEach_fn)(JSContext *cx, const void *key, void * value, void *_private); /**< Iterator function for gpsee_ds_forEach() */
+gpsee_dataStore_t       gpsee_ds_create                 (gpsee_runtime_t *grt, uint32 flags, size_t initialSizeHint) __attribute__((malloc));
+void *                  gpsee_ds_get                    (gpsee_dataStore_t store, const void *key);
+JSBool                  gpsee_ds_put                    (gpsee_dataStore_t store, const void *key, void *value);
+void *                  gpsee_ds_remove                 (gpsee_dataStore_t store, const void *key);
+void                    gpsee_ds_empty                  (gpsee_dataStore_t store);
+JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *_private);
+void                    gpsee_ds_destroy                (gpsee_dataStore_t store);
+gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint) __attribute__((malloc));
+
+/**
+ *  Flag to create an unlocked GPSEE Data Store.  An unlocked data store 
+ *  requires external synchronization for read/write access. Provided so that
+ *  we can use data stores to build synchronization primitives. If you are 
+ *  not sure that you need this flag, then you don't.
+ */
+#define GPSEE_DS_UNLOCKED       (1 << 0)
+/** 
+ *  Flag to create a GPSEE Data Store where the value pointer is considered part of the key.
+ */
+#define GPSEE_DS_OTM_KEYS    (1 << 1)
+/** @} */
+
+/* GPSEE monitors */
+/** @addtogroup monitors
+ *  @{
+ */
+void                    gpsee_enterAutoMonitorRT        (gpsee_runtime_t *grt, gpsee_autoMonitor_t *monitor_p);
+void                    gpsee_enterAutoMonitor          (JSContext *cx, gpsee_autoMonitor_t *monitor_p);
+void                    gpsee_leaveAutoMonitor          (gpsee_autoMonitor_t monitor);
+gpsee_monitor_t         gpsee_getNilMonitor             (void) __attribute__((const));
+gpsee_monitor_t         gpsee_createMonitor             (gpsee_runtime_t *grt) __attribute__((malloc));
+void                    gpsee_enterMonitor              (gpsee_monitor_t monitor);
+void                    gpsee_leaveMonitor              (gpsee_monitor_t monitor);
+void                    gpsee_destroyMonitor            (gpsee_runtime_t *grt, gpsee_monitor_t monitor);
+
+/** @addtogroup debugger
+ *  @{
+ */
+#if defined(GPSEE_DEBUGGER) || defined(DOXYGEN)
+JSDContext *            gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *debugger);
+void                    gpsee_finiDebugger(JSDContext *jsdc);
+JSBool                  gpsee_native_break(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
+#endif
+/** @} */
 
 /* support routines */
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
 JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
 JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
 JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
+JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+
+/** @addtogroup utils
+ *  @{
+ */
 JS_EXTERN_API(char*)                gpsee_cpystrn(char *dst, const char *src, size_t dst_size);
 JS_EXTERN_API(size_t)               gpsee_catstrn(char *dst, const char *src, size_t dst_size);
 JS_EXTERN_API(const char*)          gpsee_basename(const char *filename);
 JS_EXTERN_API(const char*)          gpsee_dirname(const char *filename, char *buf, size_t bufLen);
 JS_EXTERN_API(int)                  gpsee_resolvepath(const char *path, char *buf, size_t bufsiz);
 JS_EXTERN_API(JSBool)               gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *arrayName, char * const argv[]);
-JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
+/** @} */
 
 /* Hookable I/O routines */
-JS_EXTERN_API(void)                 gpsee_initIOHooks(JSContext *cx, gpsee_interpreter_t *jsi);
+JS_EXTERN_API(void)                 gpsee_resetIOHooks(JSContext *cx, gpsee_runtime_t *grt);
+JSBool gpsee_initIOHooks(JSContext *cx, gpsee_runtime_t *grt);
+void gpsee_uio_dumpPendingWrites(JSContext *cx, gpsee_realm_t *realm);
 
 /* GPSEE JSAPI idiom extensions */
 JS_EXTERN_API(void*)                gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...); 
 #define                             gpsee_getInstancePrivate(cx, obj, ...) gpsee_getInstancePrivateNTN(cx, obj, __VA_ARGS__, NULL)
-JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj);
+JS_EXTERN_API(void)                 gpsee_byteThingTracer(JSTracer *trc, JSObject *obj); /**< @ingroup bytethings */
+JSObject *gpsee_newByteThing(JSContext *cx, void *buffer, size_t length, JSBool copy);
 
-static inline int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
+/** Determine if JSClass instaciates bytethings or not.
+ *  @ingroup    bytethings
+ *  @param      cx      The current JS context
+ *  @param      clasp   The class pointer to test
+ *  @returns    0 if it is not
+ */
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isByteThingClass(JSContext *cx, const JSClass *clasp)
 {
   return clasp ? (clasp->mark == (JSMarkOp)gpsee_byteThingTracer) : 0;
 }
-static inline int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
+
+/** Determine if an object is a bytething or not.
+ *  @ingroup    bytethings
+ *  @param      cx      The current JS context
+ *  @param      obj     The object to test
+ *  @returns    0 if it is not
+ */
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isByteThing(JSContext *cx, JSObject *obj)
 {
   return gpsee_isByteThingClass(cx, JS_GET_CLASS(cx, obj));
 }
-static inline int	gpsee_isFalsy(JSContext *cx, jsval v)
+
+/** Determine if a jsval is falsey (null, void, false, zero).
+ *  @ingroup    utils
+ *  @param      cx      The current JS context
+ *  @param      v       The value to test
+ *  @returns    1 if the value is falsey, 0 otherwise
+ */
+#ifndef DOXYGEN
+static inline 
+#endif
+int	gpsee_isFalsy(JSContext *cx, jsval v)
 {
   if (JSVAL_IS_STRING(v))
     return (v == JS_GetEmptyStringValue (cx));
@@ -427,31 +548,40 @@ void __attribute__((noreturn)) panic(const char *message);
 /** Compare-And-Swap jsvals using fast, unportable routines in Solaris 10's atomic.h
  *  which take advantage of hardware optimizations on supported platforms.
  *
+ *  <tt><i>example:</i></tt>	if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
+ *
+ *  @ingroup    utils
  *  @param	vp	jsval to change
  *  @param	oldv	Only change vp if it matches oldv
  *  @param	newv	Value for new vp to become
  *  @returns	JS_TRUE when values are swapped
  *
- *  @example	if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
  */
-static inline JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
+#ifndef DOXYGEN
+static inline 
+#endif
+JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval newv) 
 { 
-  GPSEE_STATIC_ASSERT(sizeof(jsval) == 4);
+  GPSEE_STATIC_ASSERT(sizeof(jsval) == sizeof(void *));
   /* jslock.c code: return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE; */
-  return (atomic_cas_32((uint32_t  *)vp, oldv, newv) == (uint32_t)oldv) ? JS_TRUE : JS_FALSE;
+  return (atomic_cas_ptr((void  *)vp, oldv, newv) == (void *)oldv) ? JS_TRUE : JS_FALSE;
 }
 #else
 /** Compare-And-Swap jsvals using code lifted from jslock.c ca. Spidermonkey 1.8.
  *
+ *  <tt><i>example:<i/></tt>    if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
+ *
+ *  @ingroup    utils
  *  @param      vp      jsval to change
  *  @param      oldv    Only change vp if it matches oldv
  *  @param      newv    Value for new vp to become
  *  @returns    JS_TRUE when values are swapped
- *
- *  @example    if (jsval_CompareAndSwap(&v, wasThisVal, becomeThisVal) == JS_TRUE) { do_something(); };
  */
 #include <gpsee_lock.c>
-static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
+#ifndef DOXYGEN
+static inline 
+#endif
+JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsval newv)
 {
   return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE;
 }
@@ -467,7 +597,7 @@ static inline JSBool jsval_CompareAndSwap(jsval *vp, const jsval oldv, const jsv
 }
 #endif
 
-#if defined(GPSEE_DEBUG_BUILD)
+#if defined(GPSEE_DEBUG_BUILD) && !defined(DOXYGEN)
 /* Convenience enums, for use in debugger only */
 typedef enum
 {
@@ -487,6 +617,9 @@ static jsbool_t  __attribute__((unused)) __jsbool = js_false;
 static jsval_t  __attribute__((unused)) __jsval = jsval_void;
 #endif
 
+/** Flags describing implementation characteristics of a particular byte thing.
+ *  @ingroup bytethings
+ */
 typedef enum 
 { 
   bt_immutable	= 1 << 0 	/**< byteThing is immutable -- means we can count on hnd->buffer etc never changing */
@@ -503,6 +636,8 @@ typedef enum
  *  - have a JSTraceOp in the class definition which uses the gpsee_byteThingTracer()
  *  - that trace op keeps hnd->memoryOwner GC-entrained when it is not "us"
  *  - any ByteThing may freely use another byteThing's hnd->buffer so long as it marks the other as the memoryOwner
+ *
+ *  @ingroup bytethings
  */
 typedef struct
 {
@@ -516,6 +651,7 @@ typedef struct
  *  - called before JS_InitClass, but after JSClass is defined
  *  - Type X has x_handle_t private data type
  *  - Type X has x_class JSClass
+ *  @ingroup bytethings
  */
 #define GPSEE_DECLARE_BYTETHING_CLASS(cls)	 								\
 GPSEE_STATIC_ASSERT(offsetOf(cls ## _handle_t, btFlags) == offsetOf(byteThing_handle_t, btFlags)); 		\
@@ -526,7 +662,9 @@ GPSEE_ASSERT(cls ## _class.finalize != JS_FinalizeStub);							\
 cls ## _class.mark = (JSMarkOp)gpsee_byteThingTracer;								\
 cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 
-
+/** @ingroup bytethings
+ *  @see GPSEE_DECLARE_BYTETHING_CLASS
+ */
 #define GPSEE_DECLARE_BYTETHING_EXTCLASS(ecls) { JSClass ecls ## _class = ecls ##_eclass.base; GPSEE_DECLARE_BYTETHING_CLASS(ecls); ecls ## _eclass.base = ecls ##_class; }
 
 #define GPSEE_ERROR_OUTPUT_VERBOSITY   0
@@ -538,4 +676,5 @@ cls ## _class.flags |= JSCLASS_HAS_PRIVATE | JSCLASS_MARK_IS_TRACE;
 #define GSR_FORCE_STACK_DUMP_VERBOSITY 2
 #define GSR_PREPROGRAM_TTY_VERBOSITY   2
 #define GSR_PREPROGRAM_NOTTY_VERBOSITY 0
+
 #endif /* GPSEE_H */

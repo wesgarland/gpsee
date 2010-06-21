@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: curses.c,v 1.7 2010/04/04 14:56:07 wes Exp $
+ *  @version	$Id: curses.c,v 1.8 2010/06/14 22:12:00 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: curses.c,v 1.7 2010/04/04 14:56:07 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: curses.c,v 1.8 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
 #include <stdlib.h>
@@ -88,7 +88,7 @@ void cursesStdScrErrorLogger(JSContext *cx, const char *prefix, const char *mess
 const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   /** Classes & objects provided by module */
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   if (Window_InitClass(cx, moduleObject) == NULL)
     return NULL;
@@ -101,7 +101,7 @@ const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
 
   initscr();
   raise(SIGWINCH);
-  jsi->errorLogger = cursesStdScrErrorLogger;
+  grt->errorLogger = cursesStdScrErrorLogger;
   noecho();
   raw();
   nonl();

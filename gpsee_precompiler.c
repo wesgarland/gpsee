@@ -37,9 +37,9 @@
  * @file	gpsee_precompiler.c	GPSEE script precompiler, part of the build/install processes
  * @author	Wes Garland
  * @date	Apr 2010
- * @version	$Id: gpsee_precompiler.c,v 1.2 2010/04/22 12:45:15 wes Exp $
+ * @version	$Id: gpsee_precompiler.c,v 1.3 2010/06/14 22:11:59 wes Exp $
  */
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_precompiler.c,v 1.2 2010/04/22 12:45:15 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_precompiler.c,v 1.3 2010/06/14 22:11:59 wes Exp $";
 
 #include "./gpsee.h"
 #if defined(GPSEE_DARWIN_SYSTEM)
@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
   gpsee_interpreter_t	*jsi;				/* Handle describing JS interpreter */
   const char		*scriptFilename;		/* Filename with JavaScript program in it */
   FILE			*scriptFile;
-  const char      	*errmsg;
   JSScript        	*script;
   JSObject        	*scrobj;
   int			exitCode;
@@ -79,7 +78,8 @@ int main(int argc, char *argv[])
 
   gpsee_verbosity(2);
 
-  jsi = gpsee_createInterpreter(NULL, NULL);
+  jsi = gpsee_createInterpreter();
+
   jsOptions = JS_GetOptions(jsi->cx) | JSOPTION_ANONFUNFIX | JSOPTION_STRICT | JSOPTION_RELIMIT | JSOPTION_JIT;	/* match GSR baseline */
   JS_SetOptions(jsi->cx, jsOptions | JSOPTION_WERROR);
 
@@ -94,10 +94,9 @@ int main(int argc, char *argv[])
   }
 
   printf(" * Precompiling %s\n", scriptFilename);
-  if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObj, &scrobj) == JS_FALSE)
+  if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObject, &scrobj) == JS_FALSE)
   {
     fprintf(stderr, "Could not compile %s (%s)\n", scriptFilename, errno ? strerror(errno) : "no system error");
-    GPSEE_ASSERT(errmsg);
     exitCode = 1;
   }
   else

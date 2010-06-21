@@ -1,0 +1,6 @@
+break gpsee_breakpoint
+commands
+silent
+step 4
+end
+run

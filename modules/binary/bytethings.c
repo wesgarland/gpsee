@@ -38,10 +38,10 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: bytethings.c,v 1.11 2010/04/14 00:38:27 wes Exp $
+ *  @version	$Id: bytethings.c,v 1.12 2010/06/14 22:12:00 wes Exp $
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.11 2010/04/14 00:38:27 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.12 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
 #include "binary.h"
@@ -1093,6 +1093,8 @@ JSBool byteThing_toByteThing(JSContext *cx, uintN argc, jsval *vp, JSClass *clas
     /* Mutable ByteArray result means we must return a new instance */
     mustBeNew = 1;
   }
+  else
+    return gpsee_throw(cx, MODULE_ID ".internalerror: byteThing_toByteThing() misused: classOfResult argument not ByteString nor ByteArray");
 
   /* Deduce our source class */
   if (JS_InstanceOf(cx, self, byteString_clasp, NULL))

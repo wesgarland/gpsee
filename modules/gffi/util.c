@@ -39,7 +39,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Sep 2009
- *  @version	$Id: util.c,v 1.3 2010/03/26 00:19:33 wes Exp $
+ *  @version	$Id: util.c,v 1.4 2010/06/14 22:12:01 wes Exp $
  */
 
 #include <gpsee.h>
@@ -149,12 +149,16 @@ JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsva
     jsval 		argv[] = { INT_TO_JSVAL(0), JSVAL_FALSE };
     memory_handle_t	*memHnd;
     JSObject		*robj;
+    JSObject            *memory_proto;
 
     if (!ptr)
     {
       *rval = JSVAL_NULL;
       return JS_TRUE;
     }
+
+    if (gpsee_getModuleData(cx, memory_clasp, (void **)&memory_proto, throwPrefix) == JS_FALSE)
+      return JS_FALSE;
 
     robj = JS_NewObject(cx, memory_clasp, memory_proto, NULL);
     if (Memory_Constructor(cx, robj, sizeof(argv) / sizeof(argv[0]), argv, rval) == JS_FALSE)

@@ -39,10 +39,10 @@
  *                              for the stdio features.
  *  @author     Donny Viszneki
  *  @date       Feb 2010
- *  @version    $Id: system.c,v 1.2 2010/03/10 16:26:42 wes Exp $
+ *  @version    $Id: system.c,v 1.3 2010/06/14 22:12:01 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.2 2010/03/10 16:26:42 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.3 2010/06/14 22:12:01 wes Exp $";
  
 #include "gpsee.h"
 #include "system.h"
@@ -63,7 +63,7 @@ static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, js
   /* This implementation is a little funny in that it calls JS_EvaluateScript() on snprintf()d code.
    * It probably could be done another way, but this was the quickest, and I don't see any glaring
    * flaws with this course, other than a slightly bitter taste in my mouth. */
-  static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))file=require('fs-base');exports.%s=file.openDescriptor(%d,{'%s':true})";
+  static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))this.file=require('fs-base');exports.%s=this.file.openDescriptor(%d,{'%s':true})";
   char code[sizeof(codeTemplate)+9];
   const char *propName;
   int which;
@@ -82,15 +82,6 @@ static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, js
   moduleScope = JS_GetParent(cx, obj);
   if (!JS_EvaluateScript(cx, moduleScope, code, strlen(code), __FILE__, __LINE__, vp))
     return JS_FALSE;
-  return JS_TRUE;
-
-  propName = stdioStreams[which].name;
-  if (!JS_DeleteProperty(cx, obj, propName))
-    return JS_FALSE;
-
-  if (!JS_SetProperty(cx, obj, propName, vp))
-    return JS_FALSE;
-
   return JS_TRUE;
 }
 
@@ -123,9 +114,12 @@ static JSBool system_platform_getter(JSContext *cx, JSObject *obj, jsval id, jsv
 
 static JSBool system_global_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  gpsee_interpreter_t 	*jsi = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+  
+  if (!realm)
+    return JS_FALSE;
 
-  *vp = OBJECT_TO_JSVAL(jsi->globalObj);
+  *vp = OBJECT_TO_JSVAL(realm->globalObject);
 
   return JS_TRUE;
 }
@@ -143,7 +137,8 @@ static JSBool system_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
 
 const char *system_InitModule(JSContext *cx, JSObject *module)
 {
-  gpsee_interpreter_t 	*jsi;
+  gpsee_realm_t *realm;
+
   static JSPropertySpec properties[] = 
   {
     { "stdin",  	0, JSPROP_ENUMERATE, system_stdioGetProperty, 	system_stdioSetProperty },
@@ -166,13 +161,20 @@ const char *system_InitModule(JSContext *cx, JSObject *module)
   if (JS_DefineFunctions(cx, module, methods) != JS_TRUE)
     return NULL;
 
-  jsi = (gpsee_interpreter_t*)JS_GetRuntimePrivate(JS_GetRuntime(cx));
+  realm = gpsee_getRealm(cx);
+  if (!realm)
+    return NULL;
 
   if (!system_InitEnv(cx, module))
     return NULL;
 
-  if (!gpsee_createJSArray_fromVector(cx, module, "args", jsi->script_argv))
+  gpsee_enterAutoMonitor(cx, &realm->monitors.script_argv);
+  if (!gpsee_createJSArray_fromVector(cx, module, "args", realm->monitored.script_argv))
+  {
+    gpsee_leaveAutoMonitor(realm->monitors.script_argv);
     return NULL;
+  }
+  gpsee_leaveAutoMonitor(realm->monitors.script_argv);
 
   return MODULE_ID; 
 }
