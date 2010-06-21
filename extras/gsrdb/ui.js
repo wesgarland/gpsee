@@ -76,7 +76,7 @@ function callExpr(args)
   var expr = argsToExpr(args);
 
   if (expr)
-    print("result: " + safeEval(expr));
+    print("result: " + reval(expr).toSource());
 }
 
 function jsdbExpr(args)

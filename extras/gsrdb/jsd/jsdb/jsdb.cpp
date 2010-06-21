@@ -427,6 +427,7 @@ SafeEval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
+#ifndef GPSEE
 static JSBool
 NativeBreak(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -438,6 +439,7 @@ NativeBreak(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 #endif
     return JS_TRUE;
 }
+#endif
 
 static JSFunctionSpec debugger_functions[] = {
     {"gc",              GC,        0, 0, 0},
@@ -446,7 +448,9 @@ static JSFunctionSpec debugger_functions[] = {
     {"write",           Write,          0, 0, 0},
     {"gets",            Gets,           0, 0, 0},
     {"safeEval",        SafeEval,       3, 0, 0},
+#ifndef GPSEE
     {"nativeBreak",     NativeBreak,    0, 0, 0},
+#endif
     {0, 0, 0, 0, 0}
 };
 

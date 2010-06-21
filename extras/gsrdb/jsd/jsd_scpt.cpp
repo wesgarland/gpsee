@@ -821,7 +821,7 @@ jsd_SetExecutionHook(JSDContext*           jsdc,
 
     jsd_BeginRequest(jsdc);
 
-    if( ! JS_SetTrap(jsdc->dumbContext, jsdscript->script, 
+    if( !JS_SetTrap(jsdc->dumbContext, jsdscript->script, 
                      (jsbytecode*)pc, jsd_TrapHandler, 
                      PRIVATE_TO_JSVAL(jsdhook)) )
     {

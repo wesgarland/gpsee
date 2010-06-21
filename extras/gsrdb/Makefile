@@ -63,7 +63,7 @@ LIBOBJS 	+= jsdebug.o jsd_atom.o jsd_high.o jsd_hook.o jsd_lock.o jsd_obj.o jsd_
 
 JS		:= $(dir $(SPIDERMONKEY_SRC))
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
-CPPFLAGS	+= -I$(JSD) -I$(JSD)/jsdb
+CPPFLAGS	+= -I$(JSD) -I$(JSD)/jsdb -DGPSEE_DEBUGGER
 
 $(LIBRARY):	$(LIBOBJS)
 OBJS		+= $(LIBOBJS) gsrdb.o gsr.o
@@ -72,7 +72,7 @@ jsdb.o: 	CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('debugger.js')\""
 $(LIBOBJS):	EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
 
 gsrdb: 		EXTRA_LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
-gsrdb.o:	EXTRA_CPPFLAGS += -DGPSEE_DEBUGGER -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
+gsrdb.o:	EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
 gsrdb.c:	
 		ln -s $(GPSEE_SRC_DIR)/gsr.c $@
 

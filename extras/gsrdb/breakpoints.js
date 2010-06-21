@@ -1,5 +1,11 @@
 var breakpoints = [];
-function Breakpoint(arg)
+function Breakpoint_function(arg)
+{
+  reval('native_break(' + arg + ')');
+  print(" * Added breakpoint for native function '" + arg + "'");
+}
+
+function Breakpoint_location(arg)
 {
   var a = arg.split(":");
   
@@ -41,7 +47,17 @@ function Breakpoint(arg)
   }
 
   addBreakpoint(this.filename, this.lineno);
-  print("added breakpoint: " + this.toSource());
+  print(" * added breakpoint: " + this.toSource());
+}
+
+function Breakpoint(arg)
+{
+  earg = revalToValue(arg);
+
+  if (typeof(earg) == "object")
+    return Breakpoint_function(arg);
+  else
+    return Breakpoint_location(arg);
 }
 
 exports.add = function (args)

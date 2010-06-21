@@ -427,9 +427,10 @@ void                    gpsee_destroyMonitor            (gpsee_runtime_t *grt, g
 /** @addtogroup debugger
  *  @{
  */
-#ifdef GPSEE_DEBUGGER
+#if defined(GPSEE_DEBUGGER) || defined(DOXYGEN)
 JSDContext *            gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *debugger);
 void                    gpsee_finiDebugger(JSDContext *jsdc);
+JSBool                  gpsee_native_break(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 #endif
 /** @} */
 

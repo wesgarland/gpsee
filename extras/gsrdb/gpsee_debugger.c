@@ -76,8 +76,81 @@ static void SendSourceToJSDebugger(const char *filename, uintN lineno,
   *listenerTSData = jsdsrc;
 }     
 
+/** 
+ *  Entry point for native-debugger debugging. Set this function as a break point
+ *  in your native-language debugger debugging gsrdb, and you can set breakpoints
+ *  on JSNative (and JSFastNative) functions from the gsrdb user interface.
+ */
+void __attribute__((noinline)) gpsee_breakpoint(void) 
+{
+  printf("\n");
+  return;
+}
+
+JSBool gpsee_fastNative_breakpoint(JSContext *cx, uintN argc, jsval *vp)
+{
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+  JSFunction    *fun   = JS_ValueToFunction(cx, JS_CALLEE(cx, vp));
+  JSFastNative  jsfn   = gpsee_ds_get(realm->moduleData, fun);
+
+  gpsee_breakpoint();
+
+  if (!jsfn)
+    panic("Corrupted fast native breakpoint");
+
+  return jsfn(cx, argc, vp);
+}
+
+JSBool gpsee_native_breakpoint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+  JSFunction    *fun   = JS_ValueToFunction(cx, argv[-2]);
+  JSNative      jsn    = gpsee_ds_get(realm->moduleData, fun);
+  gpsee_breakpoint();
+
+  if (!jsn)
+    panic("Corrupted fast native breakpoint");
+
+  return jsn(cx, obj, argc, argv, rval);
+}
+
+JSBool gpsee_native_break(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  JSFunction    *fun;
+  JSNative      jsn;
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+  jsdouble      d;
+
+  if (argc != 1)
+    return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".nativeBreak.arguments.count");
+
+  fun = JS_ValueToFunction(cx, argv[0]);
+  if (!fun)
+    return JS_FALSE;
+
+  jsn = JS_GetFunctionNative(cx, fun);
+  if (jsn)
+  {
+    JS_SetFunctionNative(cx, fun, gpsee_native_breakpoint);
+  }
+  else
+  {
+    jsn = (JSNative)JS_GetFunctionFastNative(cx, fun);
+    if (!jsn)
+      return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".nativeBreak.type: Cannot set a native breakpoint on an interpreted function");
+
+    JS_SetFunctionFastNative(cx, fun, gpsee_fastNative_breakpoint);
+  }
+
+  gpsee_ds_put(realm->moduleData, fun, jsn);
+
+  d = (jsdouble)(size_t)jsn;
+  return JS_NewNumberValue(cx, d, rval);
+}
+
 /** Initialize the debugger for this embedding. Not sure if this is per-cx or per-rt.
- *  Must be called before the embedding processes JavaScript to be debugged.
+ *  Must be called before the embedding processes JavaScript to be debugged. This is
+ *  'debuggee' context, as opposed to 'debugger'
  *
  *  @param      cx              The current JavaScript context
  *  @param      realm           The current GPSEE realm
@@ -87,6 +160,7 @@ static void SendSourceToJSDebugger(const char *filename, uintN lineno,
 JSDContext *gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *debugger)
 {
   JSDContext    *jsdc;
+  JSFunction    *fn;
 
   jsdc = JSD_DebuggerOnForUser(realm->grt->rt, realm, NULL, NULL);
   if (!jsdc)
@@ -98,6 +172,14 @@ JSDContext *gpsee_initDebugger(JSContext *cx, gpsee_realm_t *realm, const char *
     panic("Could not start JSDB debugger layer");
 
   realm->grt->useCompilerCache = 0;       /* Interacts poorly with JSD source-code transmitter */
+
+  /* Native break has to be defined in terms of the debuggee, or we will have to 
+   * contort ourselves badly to modify the JSFunction cross-runtime. JSClass for Function
+   * will be wrong, for starters.
+   */
+  fn = JS_DefineFunction(cx, realm->globalObject, "native_break", gpsee_native_break, 0, 0);
+  if (!fn)
+    panic("Could not start JSDB debugger layer");
 
   return jsdc;
 }
@@ -112,3 +194,5 @@ void gpsee_finiDebugger(JSDContext *jsdc)
   JSDB_TermDebugger(jsdc);       
   JSD_DebuggerOff(jsdc);
 }
+
+
