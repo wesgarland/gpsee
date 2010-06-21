@@ -56,3 +56,9 @@ GPSEE_C_DEFINES         += HAVE_NDBM
 ICONV_LDFLAGS 		 = 
 ICONV_HEADER  		 = /usr/include/iconv.h
 ICONV_CPPFLAGS		+= -Wno-unknown-pragmas
+
+# Default cURL is from the Solaris SFW Collection ("Optional Software" in 5.10)
+ifneq $(X,X$(wildcard /opt/sfw/include/curl/curl.h))
+CURL_LDFLAGS	?= -L/opt/sfw/lib -R/opt/sfw/lib -lcurl
+CURL_CPPFLAGS	?= -I/opt/sfw/include
+endif

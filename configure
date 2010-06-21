@@ -137,6 +137,19 @@ disable_async_callbacks()
   fi
 }
 
+with_curl()
+{
+  [ "$1" = "help" ] && echo "Specify location of cURL headers and library" && return
+
+  echo "CURL_CPPFLAGS=-L$1/include" >&5
+  echo "CURL_LDFLAGS=-L$1/lib" >&5
+
+  if [ ! -f "$1/curl/curl.h ]; then
+    errout " *** Error: $1/curl/curl.h: file not found"
+    exit 1
+  fi
+}
+
 # main
 
 case "$1" in 
@@ -146,6 +159,19 @@ case "$1" in
 esac
 
 . ${gpsee_dir}/configure.incl
+
+# first pass: configure configure
+originalArgs="$*"
+while [ "$1" ]
+do
+  if expr "$1" : '--with-pkg-config=.*' >/dev/null ; then
+    pkgconfig="`echo \"$1\" | sed 's/=.*//'`"
+  fi
+done
+
+[ "$pkgconfig" ] || pkgconfig="pkg-config"
+
+set -- $originalArgs
 
 fd=5
 confdirs=". spidermonkey libffi"
