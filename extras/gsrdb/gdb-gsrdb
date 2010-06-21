@@ -1,0 +1,6 @@
+#! /bin/sh
+
+JS_DEBUGEE="$1"
+
+gdb -q -x gdb-gsrdb.cmds --args gsrdb -f $1
+
