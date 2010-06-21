@@ -45,6 +45,10 @@ lib%.dylib: LDFLAGS += -Wl,-install_name,$(SOLIB_DIR)/$@
 
 clean: DEBUG_DUMP_DIRS += $(wildcard $(foreach PROG, $(notdir $(PROGS)), ./$(PROG).dSYM))
 
-# Prefer Apple iconv over Macports/Fink
-ICONV_LDFLAGS   	=	/usr/lib/libiconv.dylib
-ICONV_HEADER    	=       /usr/include/iconv.h
+# Prefer Apple iconv over MacPorts/Fink
+ICONV_LDFLAGS   	= /usr/lib/libiconv.dylib
+ICONV_HEADER    	= /usr/include/iconv.h
+
+# Prefer Apple curl over MacPorts/Fink
+CURL_LDFLAGS		?= -lcurl
+CURL_CPPFLAGS		?= 

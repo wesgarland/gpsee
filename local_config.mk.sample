@@ -48,3 +48,6 @@ GSR_SHEBANG_LINK	?= /usr/bin/gsr
 
 JSDOC_DIR=/opt/jsdoc-toolkit
 JAZZDOC=[ ]
+
+# Uncomment to enable cURL module
+IGNORE_MODULES += curl

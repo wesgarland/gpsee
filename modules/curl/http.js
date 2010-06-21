@@ -11,7 +11,7 @@ const easycurl = curlmod.easycurl;
 const easycurl_slist = curlmod.easycurl_slist;
 
 
-var http = function()
+var http = function http()
 {
     this.curl = new easycurl();
 
@@ -49,7 +49,7 @@ var http = function()
 
     // 0 or 1 for debuggig output
     z.setopt(z.CURLOPT_VERBOSE, 1);
-    z.debug = function(itype, data) {
+    z.debug = function debug(itype, data) {
         switch (itype) {
         case 0:
             // informational messages
@@ -101,7 +101,7 @@ var http = function()
 
 
 http.prototype = {
-    get: function(url, referrer)  {
+    get: function get(url, referrer)  {
         var z = this.curl;
         z.setopt(z.CURLOPT_HTTPGET, 1);
         z.setopt(z.CURLOPT_POST, 0);
@@ -111,7 +111,7 @@ http.prototype = {
     /**
      * post data must be formatted appropriated into one string
      */
-    post: function(url, referrer, post) {
+    post: function post(url, referrer, post) {
         var z = this.curl;
         z.setopt(z.CURLOPT_HTTPGET, 0);
         z.setopt(z.CURLOPT_POST, 1);
@@ -119,7 +119,7 @@ http.prototype = {
         return this._setup(url, referrer);
     },
 
-    _setup: function(url, referrer) {
+    _setup: function _setup(url, referrer) {
         var z = this.curl;
         z.setopt(z.CURLOPT_URL, url);
         z.setopt(z.CURLOPT_REFERER, referrer || "");
@@ -159,7 +159,7 @@ http.prototype = {
     /*
      * Sample to show off the easycurl.getinfo method
      */
-    info: function() {
+    info: function info() {
         var z= this.curl;
 
         print("" +  z.getinfo(z.CURLINFO_SIZE_DOWNLOAD) +

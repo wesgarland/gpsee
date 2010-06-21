@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Nick Galbreath
  *
  * Portions created by the Initial Developer are
- * Copyright (c) 2009, Nick Galbreath. All Rights Reserved.
+ * Copyright (c) 2009-2010, Nick Galbreath. All Rights Reserved.
  *
  * Contributor(s):
  *
@@ -44,15 +44,12 @@
 #include <curl/curl.h>
 
 // LOCAL
-#include "Memory.h"
-
 #include "gpsee.h"
 
 #include "libcurl_constants.h"
 #include "libcurl_curlinfo.h"
 
-// TODO: correct namespace
-#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.ca.page.curl"
+#define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.com.client9.curl"
 static const char __attribute__((unused)) rcsid[]="$Id: $";
 
 // Forward declarations
@@ -175,7 +172,7 @@ static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream)
   JSObject* obj = cb->obj;
 
   // TODO: Donny; JS_ResumeRequest
-  JSObject* bthing = byteThing_fromCArray(cx, (const unsigned char *) ptr, len);
+  JSObject* bthing = gpsee_newByteThing(cx, ptr, len, JS_TRUE);
   argv[0] = OBJECT_TO_JSVAL(bthing);
 
   // TODO: check function return value to see if we want to abort or not?
@@ -232,7 +229,8 @@ static int debug_callback(CURL *c, curl_infotype itype, char * buf, size_t len, 
 
   // TODO: Donny; JS_ResumeRequest
   argv[0] = INT_TO_JSVAL(itype);
-  JSObject* bthing = byteThing_fromCArray(cx, (const unsigned char *) buf, len);
+  JSObject* bthing = gpsee_newByteThing(cx, buf, len, JS_TRUE);
+
   argv[1] = OBJECT_TO_JSVAL(bthing);
 
   // TODO: check function return value to see if we want to abort or not?
@@ -629,9 +627,6 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
     };
 
   /* ----------------------------------- */
-
-  if (!Memory_InitClass(cx, obj))
-    return NULL;
 
   easycurl_class = &easy_class;
   easycurl_proto =
