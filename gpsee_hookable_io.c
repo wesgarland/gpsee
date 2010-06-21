@@ -405,11 +405,15 @@ void gpsee_resetIOHooks(JSContext *cx, gpsee_runtime_t *grt)
   grt->user_io.printf   = uio_printf_hook;
   grt->user_io.fprintf  = uio_fprintf_hook;
   grt->user_io.vfprintf = uio_vfprintf_hook;
+#ifdef WIN32
+# error This approach will not work with callee-pops (stdcall) as the argument count is one short
+#endif
   grt->user_io.fwrite   = (void *)fwrite;
   grt->user_io.fread    = (void *)fread;
   grt->user_io.fgets    = (void *)fgets;
   grt->user_io.fputs    = (void *)fputs;
   grt->user_io.fputc    = (void *)fputc;
+  grt->user_io.fgetc    = (void *)fgetc;
   grt->user_io.puts     = (void *)puts;
 
   grt->user_io.hooks_len = 0;

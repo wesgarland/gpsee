@@ -175,7 +175,7 @@ JSBool gpsee_ds_put(gpsee_dataStore_t store, const void *key, void *value)
  *  @param      store   The data store
  *  @param      key     The key describing the value to remove
  *
- *  @return      returns The value removed, or NULL if not found
+ *  @return     returns The value removed, or NULL if not found
  *
  *  @note       It is not possible to differentiate between not-found and NULL-valued success.
  */
@@ -202,6 +202,40 @@ void *gpsee_ds_remove(gpsee_dataStore_t store, const void *key)
   out:
   gpsee_leaveMonitor(store->monitor);
   return value;
+}
+
+/**
+ *  Remove a key/value from a GPSEE Data Store.
+ *
+ *  @param      store   The data store
+ *  @param      key     The key describing the value to remove
+ *  @param      value   The value to remove
+ *
+ *  @return     returns JS_TRUE if the value was found and the key/value pair removed; otherwise returns JS_FALSE.
+ */
+JSBool gpsee_ds_match_remove(gpsee_dataStore_t store, const void *key, const void *value)
+{
+  size_t        i;
+  JSBool        found = JS_FALSE;
+
+  gpsee_enterMonitor(store->monitor);
+
+  for (i=0; i < store->size; i++)
+  {
+    if ((store->data[i].key == key) && (store->data[i].value == value))
+    {
+#ifdef GPSEE_DEBUG_BUILD
+      memset(&store->data[i], 0xdd, sizeof(store->data[0]));
+#endif
+      store->data[i].key = NULL;
+      found = JS_TRUE;
+      goto out;
+    }
+  }
+
+  out:
+  gpsee_leaveMonitor(store->monitor);
+  return found;
 }
 
 /**

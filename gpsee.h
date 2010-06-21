@@ -329,7 +329,7 @@ typedef struct
  */
 typedef JSBool (* gpsee_gcCallback_fn)(JSContext *cx, gpsee_realm_t *, JSGCStatus); /**< GPSEE GC Callback function type */
 JSBool                  gpsee_addGCCallback             (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
-JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, gpsee_gcCallback_fn cb);
+JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
 /** @} */
 /** @addtogroup async
  *  @{
@@ -393,6 +393,7 @@ gpsee_dataStore_t       gpsee_ds_create                 (gpsee_runtime_t *grt, u
 void *                  gpsee_ds_get                    (gpsee_dataStore_t store, const void *key);
 JSBool                  gpsee_ds_put                    (gpsee_dataStore_t store, const void *key, void *value);
 void *                  gpsee_ds_remove                 (gpsee_dataStore_t store, const void *key);
+JSBool                  gpsee_ds_match_remove           (gpsee_dataStore_t store, const void *key, const void *value);
 void                    gpsee_ds_empty                  (gpsee_dataStore_t store);
 JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *_private);
 void                    gpsee_ds_destroy                (gpsee_dataStore_t store);

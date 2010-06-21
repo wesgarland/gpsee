@@ -680,7 +680,7 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
   gpsee_ds_destroy(grt->realms);
   gpsee_ds_destroy(grt->realmsByContext);
   gpsee_ds_destroy(grt->gcCallbackList);
-  
+
   gpsee_shutdownMonitorSystem(grt);
   JS_DestroyContext(cx);
   JS_DestroyRuntime(grt->rt);

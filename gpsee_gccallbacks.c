@@ -37,6 +37,11 @@
  *                                      Allows us to have realm-specific GC Callbacks,
  *                                      and any number of GC Callbacks without explicit
  *                                      cooperation between program/module/etc authors.
+ *
+ *  @note       The datastore, grt->gcCallbackList is an OTM (one-to-many) store which
+ *              stores callback function pointers as keys with their attendant realms
+ *              as values.
+ *
  *  @ingroup    core
  *  @author     Wes Garland
  *  @date       June 2010
@@ -47,7 +52,8 @@
 #include "gpsee_private.h"
 
 /**
- * Add a callback to the garbage collector. 
+ * Add a callback to the garbage collector.  Can add the same callback multiple times
+ * with different realms. Realm pointer is never  de-referenced, only passed along to callback.
  *
  * @param       grt             GPSEE Runtime associated with the callback (GC is per-runtime)
  * @param       realm           Callback's invocation realm, or NULL for callbacks related to the GPSEE Runtime
@@ -66,13 +72,41 @@ JSBool gpsee_addGCCallback(gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcC
  *
  * @param       grt             GPSEE Runtime associated with the callback
  * @param       cb              Callback to remove
+ * @param       realm           Realm associated with the callback to remove
  * @returns     JS_TRUE on success, JS_FALSE on if the callback was not found
  *
  * @see JS_AddGCCallback()
  */
-JSBool gpsee_removeGCCallback(gpsee_runtime_t *grt, gpsee_gcCallback_fn cb)
+JSBool gpsee_removeGCCallback(gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb)
 {
-  return gpsee_ds_remove(grt->gcCallbackList, cb) ? JS_TRUE : JS_FALSE;
+  return gpsee_ds_match_remove(grt->gcCallbackList, cb, realm);
+}
+
+static JSBool gcCallbackRemoveAllForRealm_cb(JSContext *cx, const void *key, void *value, void *private)
+{
+  gpsee_gcCallback_fn   fn              = key;
+  gpsee_realm_t         *thisRealm      = value;
+  gpsee_realm_t         *checkRealm     = private;
+
+  if (thisRealm == checkRealm)
+    if (gpsee_removeGCCallback(thisRealm->grt, thisRealm, fn) == JS_FALSE)
+      return JS_FALSE;
+
+  return JS_TRUE;
+}
+
+/**
+ * Remove callbacks from the garbage collector. 
+ *
+ * @param       grt             GPSEE Runtime associated with the callback
+ * @param       realm           Realm associated with the callbacks to remove
+ * @returns     JS_TRUE on success, JS_FALSE on if the callback was not found
+ *
+ * @see JS_AddGCCallback()
+ */
+JSBool gpsee_removeAllGCCallbacks_forRealm(gpsee_runtime_t *grt, gpsee_realm_t *realm)
+{
+  return gpsee_ds_forEach(NULL, grt->gcCallbackList, gcCallbackRemoveAllForRealm_cb, (void *)realm);
 }
 
 /**
