@@ -168,11 +168,11 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   if (!realm->user_io_pendingWrites)
     return JS_FALSE;
 
-  realm->globalObject = JS_NewObject(cx, gpsee_getGlobalClass(), NULL, NULL);
+  realm->globalObject = JS_NewGlobalObject(cx, gpsee_getGlobalClass());
   if (!realm->globalObject)
     goto err_out;
 
-  JS_AddNamedRoot(cx, &realm->globalObject, "super-global");
+  JS_AddNamedObjectRoot(cx, &realm->globalObject, "super-global");
 
   if (gpsee_ds_put(grt->realms, realm, NULL) == JS_FALSE)
     goto err_out;
@@ -244,7 +244,7 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
     gpsee_leaveAutoMonitor(grt->monitors.user_io);
   }
 
-  JS_RemoveRoot(cx, &realm->globalObject);
+  JS_RemoveObjectRoot(cx, &realm->globalObject);
   gpsee_removeAllGCCallbacks_forRealm(realm->grt, realm);
   JS_GC(cx);
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);

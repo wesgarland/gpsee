@@ -455,7 +455,7 @@ static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleH
      * required for the user module path (require.paths). This path is global
      * across ALL contexts in the realm.
      */
-    JS_AddNamedRoot(cx, &realm->userModulePath, "User Module Path");
+    JS_AddNamedObjectRoot(cx, &realm->userModulePath, "User Module Path");
     realm->userModulePath = JS_NewArrayObject(cx, 0, NULL);
     if (!realm->userModulePath)
       goto fail;
@@ -524,7 +524,7 @@ static JSObject *newModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleHandl
 
   dpDepth(+1);
 
-  moduleScope = JS_NewObjectWithGivenProto(cx, &module_scope_class, JS_GetPrototype(cx, realm->globalObject), NULL);
+  moduleScope = JS_NewGlobalObject(cx, &module_scope_class);
   if (!moduleScope)
       goto fail;
 
@@ -1791,7 +1791,7 @@ void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
   /* Clean up module paths */
   if (realm->userModulePath)
   {
-    JS_RemoveRoot(cx, &realm->userModulePath);
+    JS_RemoveObjectRoot(cx, &realm->userModulePath);
 
     for (node = realm->modulePath; node; node = nextNode)
     {

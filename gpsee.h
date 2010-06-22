@@ -111,6 +111,31 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup ut
 # include "jsdb.h"
 #endif
 
+/* Compatibility macros to maintain backward compatbility with ~JS 1.8.1 */
+#if !defined(JS_TYPED_ROOTING_API)
+# define JS_AddValueRoot(cx, vp)                JS_AddRoot(cx, vp);
+# define JS_AddStringRoot(cx, rp)               JS_AddRoot(cx, rp);
+# define JS_AddObjectRoot(cx, rp)               JS_AddRoot(cx, rp);
+# define JS_AddDoubleRoot(cx, rp)               JS_AddRoot(cx, rp);
+# define JS_AddGCThingRoot(cx, rp)              JS_AddRoot(cx, rp);
+
+# define JS_AddNamedValueRoot(cx, vp, name)     JS_AddNamedRoot(cx, vp, name);
+# define JS_AddNamedStringRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+# define JS_AddNamedObjectRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+# define JS_AddNamedDoubleRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+# define JS_AddNamedGCThingRoot(cx, rp, name)   JS_AddNamedRoot(cx, rp, name);
+
+# define JS_RemoveValueRoot(cx, vp)             JS_RemoveRoot(cx, vp);
+# define JS_RemoveStringRoot(cx, rp)            JS_RemoveStringRoot(cx, rp);
+# define JS_RemoveObjectRoot(cx, rp)            JS_RemoveObjectRoot(cx, rp);
+# define JS_RemoveDoubleRoot(cx, rp)            JS_RemoveDoubleRoot(cx, rp);
+# define JS_RemoveGCThingRoot(cx, rp)           JS_RemoveGCThingRoot(cx, rp);
+#endif
+
+#if !defined(JS_HAS_NEW_GLOBAL_OBJECT)
+# define JS_NewGlobalObject(cx, clasp)          JS_NewObject(cx, clasp, NULL, NULL);
+#endif
+
 #if !defined(INT_TO_JSVAL) && defined(JSVAL_ZERO) /* Bug workaround for tracemonkey, introduced Aug 18 2009, patched here Sep 25 2009 - xxx wg  */
 #undef JSVAL_ZERO
 #undef JSVAL_ONE
@@ -330,6 +355,7 @@ typedef struct
 typedef JSBool (* gpsee_gcCallback_fn)(JSContext *cx, gpsee_realm_t *, JSGCStatus); /**< GPSEE GC Callback function type */
 JSBool                  gpsee_addGCCallback             (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
 JSBool                  gpsee_removeGCCallback          (gpsee_runtime_t *grt, gpsee_realm_t *realm, gpsee_gcCallback_fn cb);
+JSBool                  gpsee_removeAllGCCallbacks_forRealm(gpsee_runtime_t *grt, gpsee_realm_t *realm);
 /** @} */
 /** @addtogroup async
  *  @{
