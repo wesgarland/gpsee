@@ -439,7 +439,7 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
 
   threadObj = NULL;
 
-  JS_AddNamedRoot(cx, &threadObj, "ThreadSweep_threadObj");
+  JS_AddNamedObjectRoot(cx, &threadObj, "ThreadSweep_threadObj");
 
   iter = JS_NewPropertyIterator(cx , protected->threadList);
   if (!iter)
@@ -448,7 +448,7 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
     goto out;
   }
 
-  JS_AddNamedRoot(cx, &iter, "ThreadSweep_iter");
+  JS_AddNamedObjectRoot(cx, &iter, "ThreadSweep_iter");
 
   while (((retval = JS_NextProperty(cx, iter, &id)) == JS_TRUE) && (id != JSVAL_VOID))
   {
@@ -472,10 +472,10 @@ JSBool Thread_Sweep(JSContext *cx, JSObject *proto)
     (void)thread_join(cx, hnd, NULL);	/* will suspend/resume the request */
   }
 
-  JS_RemoveRoot(cx, &iter);
+  JS_RemoveObjectRoot(cx, &iter);
 
   out:
-  JS_RemoveRoot(cx, &threadObj);
+  JS_RemoveObjectRoot(cx, &threadObj);
 
 #if !defined(THREAD_INTERLEAVE_SWEEPERS) || (THREAD_INTERLEAVE_SWEEPERS == 0)
   if (jsval_CompareAndSwap(&protected->sweepLock, JSVAL_TRUE, JSVAL_FALSE) != JS_TRUE)

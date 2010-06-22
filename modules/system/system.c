@@ -65,7 +65,6 @@ static JSBool system_stdioGetProperty(JSContext *cx, JSObject *obj, jsval id, js
    * flaws with this course, other than a slightly bitter taste in my mouth. */
   static const char codeTemplate[] = "if(!this.hasOwnProperty('file'))this.file=require('fs-base');exports.%s=this.file.openDescriptor(%d,{'%s':true})";
   char code[sizeof(codeTemplate)+9];
-  const char *propName;
   int which;
   JSObject *moduleScope;
 

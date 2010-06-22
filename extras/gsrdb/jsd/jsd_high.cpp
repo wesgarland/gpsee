@@ -185,7 +185,7 @@ _newJSDContext(JSRuntime*         jsrt,
 #ifdef GPSEE
     jsdc->glob = realm->globalObject;
 #else
-    jsdc->glob = JS_NewObject(jsdc->dumbContext, &global_class, NULL, NULL);
+    jsdc->glob = JS_NewGlobalObject(jsdc->dumbContext, &global_class);
     if( ! jsdc->glob )
         goto label_newJSDContext_failure;
 

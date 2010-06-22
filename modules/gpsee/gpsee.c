@@ -263,19 +263,19 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
   if (access(scriptFilename, F_OK))
     return gpsee_throw(cx, MODULE_ID ".include.file: %s - %s", scriptFilename, strerror(errno));
 
-  JS_AddNamedRoot(cx, &scriptFilename_jsstr, "GpseeModule.include.scriptFilename_jsstr");
+  JS_AddNamedStringRoot(cx, &scriptFilename_jsstr, "GpseeModule.include.scriptFilename_jsstr");
 
   errno = 0;
   success = gpsee_compileScript(cx, scriptFilename, NULL, NULL, &script, thisObj, &scrobj);
 
-  JS_RemoveRoot(cx, &scriptFilename_jsstr);
+  JS_RemoveStringRoot(cx, &scriptFilename_jsstr);
 
   if (!success)
     return JS_FALSE;
 
-  JS_AddNamedRoot(cx, &scrobj, "include_scrobj");
+  JS_AddNamedObjectRoot(cx, &scrobj, "include_scrobj");
   success = JS_ExecuteScript(cx, thisObj, script, rval);
-  JS_RemoveRoot(cx, &scrobj);
+  JS_RemoveObjectRoot(cx, &scrobj);
 
   return success;
 }

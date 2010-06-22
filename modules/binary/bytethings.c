@@ -1461,7 +1461,7 @@ JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t le
   if (!retval)
     return NULL;
   /* Protect our array from garbage collector during calls to JS_SetElement() */
-  JS_AddRoot(cx, &retval);
+  JS_AddObjectRoot(cx, &retval);
   /* Iterate over each byte */
   for (i=0; i<len; i++)
   {
@@ -1471,7 +1471,7 @@ JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t le
       return NULL;
   }
   /* Un-GC-protect */
-  JS_RemoveRoot(cx, &retval);
+  JS_RemoveObjectRoot(cx, &retval);
   /* Return the array object containing results */
   return retval;
 }

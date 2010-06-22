@@ -723,14 +723,14 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!noRunScript)
       {
-        JS_AddNamedRoot(cx, &scrobj, "preload_scrobj");
+        JS_AddNamedObjectRoot(cx, &scrobj, "preload_scrobj");
         if (JS_ExecuteScript(cx, realm->globalObject, script, &v) == JS_FALSE)
         {
 	  if (JS_IsExceptionPending(cx))
 	    jsi->grt->exitType = et_exception;
           JS_ReportPendingException(cx);
         }
-        JS_RemoveRoot(cx, &scrobj);
+        JS_RemoveObjectRoot(cx, &scrobj);
       }
     }
 

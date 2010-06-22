@@ -385,7 +385,7 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
     return JS_FALSE;
 
   /* Protect our array from garbage collector */
-  JS_AddRoot(cx, &retval);
+  JS_AddObjectRoot(cx, &retval);
 
   /* Iterate through ByteArray splitting it up by 'delimiter' */
   chunkstart = 0;
@@ -404,10 +404,10 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
       if (!o)
         return JS_FALSE;
       /* Push the new ByteArray into our result array */
-      JS_AddRoot(cx, &o);
+      JS_AddObjectRoot(cx, &o);
       oval = OBJECT_TO_JSVAL(o);
       success = JS_SetElement(cx, retval, chunknum++, &oval);
-      JS_RemoveRoot(cx, &o);
+      JS_RemoveObjectRoot(cx, &o);
       if (!success)
         return JS_FALSE;
       /* Start on new chunk! */
@@ -421,7 +421,7 @@ JSBool ByteString_split(JSContext *cx, uintN argc, jsval *vp)
   /* Return the array object containing results */
   JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(retval));
   /* Un-GC-protect */
-  JS_RemoveRoot(cx, &retval);
+  JS_RemoveObjectRoot(cx, &retval);
   /* Success! */
   return JS_TRUE;
 }
