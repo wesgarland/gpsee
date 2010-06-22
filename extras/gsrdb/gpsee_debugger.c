@@ -49,6 +49,9 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee_debugger.c,v 1.1 2
 #include "jsdebug.h"
 #include "jsdb.h"
 
+JS_PUBLIC_API(JSBool) JS_SetFunctionNative(JSContext *cx, JSFunction *fun, JSNative funp);
+JS_PUBLIC_API(JSBool) JS_SetFunctionFastNative(JSContext *cx, JSFunction *fun, JSFastNative funp);
+
 static void SendSourceToJSDebugger(const char *filename, uintN lineno,
                                    jschar *str, size_t length,
                                    void **listenerTSData, void *closure)
@@ -194,5 +197,4 @@ void gpsee_finiDebugger(JSDContext *jsdc)
   JSDB_TermDebugger(jsdc);       
   JSD_DebuggerOff(jsdc);
 }
-
 
