@@ -59,7 +59,7 @@ LIBRARY		= libgpsee-jsdb.$(SOLIB_EXT)
 build: $(EXPORT_LIBS) $(EXPORT_PROGS)
 
 LIBOBJS 	+= jsdebug.o jsd_atom.o jsd_high.o jsd_hook.o jsd_lock.o jsd_obj.o jsd_scpt.o jsd_stak.o jsd_step.o \
-		   jsd_text.o jsd_val.o jsdb.o jsdrefl.o gpsee_debugger.o editline.o sysunix.o
+		   jsd_text.o jsd_val.o jsdb.o jsdrefl.o gpsee_debugger.o editline.o sysunix.o jsdbgapi_aux.o
 
 JS		:= $(dir $(SPIDERMONKEY_SRC))
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
