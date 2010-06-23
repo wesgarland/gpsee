@@ -37,7 +37,7 @@
  *  @file	gpsee.c 	Core GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2007
- *  @version	$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $
+ *  @version	$Id: gpsee.c,v 1.31 2010/06/23 15:13:58 wes Exp $
  *
  *  Routines for running JavaScript programs, reporting errors via standard SureLynx
  *  mechanisms, throwing exceptions portably, etc. 
@@ -46,7 +46,7 @@
  *  standalone SureLynx JS shell. 
  */
 
-static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.30 2010/06/14 22:11:59 wes Exp $";
+static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.31 2010/06/23 15:13:58 wes Exp $";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -781,7 +781,7 @@ void gpsee_setThreadStackLimit(JSContext *cx, void *stackBase, jsuword maxStackS
  *
  *  @returns	A handle to the runtime, ready for use.
  */
-gpsee_runtime_t *gpsee_createRuntime()
+gpsee_runtime_t *gpsee_createRuntime(void)
 {
   const char		*jsVersion;
   JSRuntime		*rt;
@@ -798,7 +798,7 @@ gpsee_runtime_t *gpsee_createRuntime()
   grt = calloc(sizeof(*grt), 1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
-  if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x40000"), NULL, 0))))
+  if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x4000"), NULL, 0))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript runtime!");
 
   JS_SetRuntimePrivate(rt, grt);
@@ -934,7 +934,7 @@ void *gpsee_getInstancePrivateNTN(JSContext *cx, JSObject *obj, ...)
  *  a context, a global object.
  *  @returns	A handle to the interpreter, ready for use.
  */
-gpsee_interpreter_t *gpsee_createInterpreter()
+gpsee_interpreter_t *gpsee_createInterpreter(void)
 {
   gpsee_interpreter_t *jsi;
 
