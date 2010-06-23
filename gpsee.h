@@ -36,7 +36,7 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.34 2010/06/23 15:13:58 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.35 2010/06/23 15:20:59 wes Exp $
  *
  *  @defgroup   core            GPSEE Core API
  *  @{
@@ -126,10 +126,10 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup ut
 # define JS_AddNamedGCThingRoot(cx, rp, name)   JS_AddNamedRoot(cx, rp, name);
 
 # define JS_RemoveValueRoot(cx, vp)             JS_RemoveRoot(cx, vp);
-# define JS_RemoveStringRoot(cx, rp)            JS_RemoveStringRoot(cx, rp);
-# define JS_RemoveObjectRoot(cx, rp)            JS_RemoveObjectRoot(cx, rp);
-# define JS_RemoveDoubleRoot(cx, rp)            JS_RemoveDoubleRoot(cx, rp);
-# define JS_RemoveGCThingRoot(cx, rp)           JS_RemoveGCThingRoot(cx, rp);
+# define JS_RemoveStringRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+# define JS_RemoveObjectRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+# define JS_RemoveDoubleRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+# define JS_RemoveGCThingRoot(cx, rp)           JS_RemoveRoot(cx, rp);
 #endif
 
 #if !defined(JS_HAS_NEW_GLOBAL_OBJECT)
