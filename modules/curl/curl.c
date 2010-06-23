@@ -37,7 +37,7 @@
  *          client9 LLC
  *          nickg@client9.com
  *  @date   Jan 2010
- *  @version    $Id: $
+ *  @version    $Id: curl.c,v 1.1 2010/06/23 15:50:10 hdon Exp $
  */
 
 // THIRDPARTY
@@ -50,7 +50,7 @@
 #include "libcurl_curlinfo.h"
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME ".module.com.client9.curl"
-static const char __attribute__((unused)) rcsid[]="$Id: $";
+static const char __attribute__((unused)) rcsid[]="$Id: curl.c,v 1.1 2010/06/23 15:50:10 hdon Exp $";
 
 // Forward declarations
 static JSClass* easycurl_slist_class;

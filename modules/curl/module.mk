@@ -41,4 +41,8 @@ EXTRA_CPPFLAGS += $(CURL_CPPFLAGS)
 EXTRA_LDFLAGS += $(CURL_LDFLAGS)
 
 libcurl_constants.h: make_libcurl_constants.py
-	python make_libcurl_constants.py > $@
+	$(CPP) $(CPPFLAGS) curl_system_headers.h | python make_libcurl_constants.py > $@
+
+
+
+
