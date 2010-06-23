@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-text = None
+#text = None
 
-name = '/opt/local/include/curl/curl.h'
-name = '/usr/include/curl/curl.h'
-f = open(name)
-text = f.read()
-f.close();
+#name = '/opt/local/include/curl/curl.h'
+#name = '/usr/include/curl/curl.h'
+#f = open(name)
+#text = f.read()
+#f.close();
 
+import sys
+text = sys.stdin.read()
 import re
 
 longargs = [];
