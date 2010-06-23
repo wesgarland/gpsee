@@ -36,7 +36,7 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.33 2010/06/14 22:11:59 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.34 2010/06/23 15:13:58 wes Exp $
  *
  *  @defgroup   core            GPSEE Core API
  *  @{
@@ -342,8 +342,8 @@ void                    gpsee_removeAsyncCallback       (JSContext *cx, GPSEEAsy
 
 /* core routines */
 JS_EXTERN_API(void)                 gpsee_destroyInterpreter(gpsee_interpreter_t *jsi);
-JS_EXTERN_API(gpsee_interpreter_t *)gpsee_createInterpreter() __attribute__((malloc));
-JS_EXTERN_API(gpsee_runtime_t *)    gpsee_createRuntime() __attribute__((malloc));
+JS_EXTERN_API(gpsee_interpreter_t *)gpsee_createInterpreter(void) __attribute__((malloc));
+JS_EXTERN_API(gpsee_runtime_t *)    gpsee_createRuntime(void) __attribute__((malloc));
 gpsee_runtime_t *                   gpsee_getRuntime(JSContext *cx);
 JS_EXTERN_API(int)                  gpsee_destroyRuntime(gpsee_runtime_t *grt);
 JS_EXTERN_API(int)                  gpsee_getExceptionExitCode(JSContext *cx);
@@ -563,7 +563,7 @@ JSBool jsval_CompareAndSwap(volatile jsval *vp, const jsval oldv, const jsval ne
 { 
   GPSEE_STATIC_ASSERT(sizeof(jsval) == sizeof(void *));
   /* jslock.c code: return js_CompareAndSwap(vp, oldv, newv) ? JS_TRUE : JS_FALSE; */
-  return (atomic_cas_ptr((void  *)vp, oldv, newv) == (void *)oldv) ? JS_TRUE : JS_FALSE;
+  return (atomic_cas_ptr((void  *)vp, (void *)oldv, (void *)newv) == (void *)oldv) ? JS_TRUE : JS_FALSE;
 }
 #else
 /** Compare-And-Swap jsvals using code lifted from jslock.c ca. Spidermonkey 1.8.
