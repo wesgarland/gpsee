@@ -224,7 +224,7 @@ jsd_GetValueString(JSDContext* jsdc, JSDValue* jsdval)
             JS_RestoreExceptionState(cx, exceptionState);
             if(jsdval->string)
             {
-                if(!JS_AddNamedRoot(cx, &jsdval->string, "ValueString"))
+                if(!JS_AddNamedStringRoot(cx, &jsdval->string, "ValueString"))
                     jsdval->string = NULL;
             }
             jsd_EndRequest(jsdc);
@@ -268,7 +268,7 @@ jsd_NewValue(JSDContext* jsdc, jsval val)
     {
         JSBool ok = JS_FALSE;
         jsd_BeginRequest(jsdc);
-        ok = JS_AddNamedRoot(jsdc->dumbContext, &jsdval->val, "JSDValue");
+        ok = JS_AddNamedValueRoot(jsdc->dumbContext, &jsdval->val, "JSDValue");
         jsd_EndRequest(jsdc);
         if(!ok)
         {
@@ -293,7 +293,7 @@ jsd_DropValue(JSDContext* jsdc, JSDValue* jsdval)
         if(JSVAL_IS_GCTHING(jsdval->val))
         {
             jsd_BeginRequest(jsdc);
-            JS_RemoveRoot(jsdc->dumbContext, &jsdval->val);
+            JS_RemoveValueRoot(jsdc->dumbContext, &jsdval->val);
             jsd_EndRequest(jsdc);
         }
         free(jsdval);
@@ -399,7 +399,7 @@ jsd_RefreshValue(JSDContext* jsdc, JSDValue* jsdval)
         if(!JSVAL_IS_STRING(jsdval->val))
         {
             jsd_BeginRequest(jsdc);
-            JS_RemoveRoot(cx, &jsdval->string);
+            JS_RemoveStringRoot(cx, &jsdval->string);
             jsd_EndRequest(jsdc);
         }
         jsdval->string = NULL;

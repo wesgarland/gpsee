@@ -2,5 +2,10 @@
 
 JS_DEBUGEE="$1"
 
-gdb -q -x `dirname $0`/gdb-gsrdb.cmds --args gsrdb -f $1
+if [ ! "$JS_DEBUGEE" ]; then
+  echo "Usage: $0 <script.js>" >/dev/stderr
+  exit 1
+fi
+
+gdb -q -x `dirname $0`/gdb-gsrdb.cmds --args gsrdb -c debugger -f $1
 

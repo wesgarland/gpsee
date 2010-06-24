@@ -1,5 +1,7 @@
 #include "jsfun.h"
 
+JS_BEGIN_EXTERN_C
+
 JS_PUBLIC_API(JSBool)
 JS_SetFunctionNative(JSContext *cx, JSFunction *fun, JSNative funp)
 {
@@ -19,3 +21,6 @@ JS_SetFunctionFastNative(JSContext *cx, JSFunction *fun, JSFastNative funp)
     fun->u.n.native = (JSNative)funp;
     return JS_TRUE;
 }
+
+JS_END_EXTERN_C
+

@@ -819,3 +819,15 @@ int main(int argc, char *argv[])
 {
   return PR_Initialize(prmain, argc, argv, 0);
 }
+
+#ifdef GPSEE_DEBUGGER
+/**
+ *  Entry point for native-debugger debugging. Set this function as a break point
+ *  in your native-language debugger debugging gsrdb, and you can set breakpoints
+ *  on JSNative (and JSFastNative) functions from the gsrdb user interface.
+ */
+extern void __attribute__((noinline)) gpsee_breakpoint(void)
+{
+  return;
+}
+#endif
