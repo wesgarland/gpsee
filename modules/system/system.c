@@ -126,12 +126,19 @@ static JSBool system_global_getter(JSContext *cx, JSObject *obj, jsval id, jsval
 static JSBool system_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   static const char 	js[]="require('system').stdout.writeln";
-  jsval			v;
+  static const char 	jr[]="require('system').stdout";
+  jsval			v, w;
+
+  if (JS_EvaluateScript(cx, obj, js, sizeof(jr) - 1, __FILE__, __LINE__, &w) == JS_FALSE)
+    return JS_FALSE;
+
+  if (!JSVAL_IS_OBJECT(w))
+    return JS_FALSE;
 
   if (JS_EvaluateScript(cx, obj, js, sizeof(js) - 1, __FILE__, __LINE__, &v) == JS_FALSE)
     return JS_FALSE;
 
-  return JS_CallFunctionValue(cx, obj, v, argc, argv, rval);
+  return JS_CallFunctionValue(cx, JSVAL_TO_OBJECT(w), v, argc, argv, rval);
 }
 
 const char *system_InitModule(JSContext *cx, JSObject *module)
