@@ -49,8 +49,12 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee_debugger.c,v 1.1 2
 #include "jsdebug.h"
 #include "jsdb.h"
 
+JS_BEGIN_EXTERN_C
+
 JS_PUBLIC_API(JSBool) JS_SetFunctionNative(JSContext *cx, JSFunction *fun, JSNative funp);
 JS_PUBLIC_API(JSBool) JS_SetFunctionFastNative(JSContext *cx, JSFunction *fun, JSFastNative funp);
+
+JS_END_EXTERN_C
 
 static void SendSourceToJSDebugger(const char *filename, uintN lineno,
                                    jschar *str, size_t length,
@@ -79,16 +83,7 @@ static void SendSourceToJSDebugger(const char *filename, uintN lineno,
   *listenerTSData = jsdsrc;
 }     
 
-/** 
- *  Entry point for native-debugger debugging. Set this function as a break point
- *  in your native-language debugger debugging gsrdb, and you can set breakpoints
- *  on JSNative (and JSFastNative) functions from the gsrdb user interface.
- */
-void __attribute__((noinline)) gpsee_breakpoint(void) 
-{
-  printf("\n");
-  return;
-}
+extern void __attribute__((noinline)) gpsee_breakpoint(void);
 
 JSBool gpsee_fastNative_breakpoint(JSContext *cx, uintN argc, jsval *vp)
 {
