@@ -44,7 +44,7 @@ GFFI_CPPFLAGS		?= -D_GNU_SOURCE -DDB_DBM_HSEARCH=1
 #GPSEE_C_DEFINES += HAVE_NDBM
 
 # Where is cURL? Over-ride with local_config.mk if necessary
-ifneq $(X,X$(wildcard /usr/local/include/curl/curl.h))
+ifneq (X,X$(wildcard /usr/local/include/curl/curl.h))
 CURL_LDFLAGS    ?= -L/usr/local/lib -R/opt/sfw/lib -lcurl
 CURL_CPPFLAGS   ?= -I/usr/local/include
 endif
