@@ -168,7 +168,11 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   if (!realm->user_io_pendingWrites)
     return JS_FALSE;
 
+#if defined(JSRESERVED_GLOBAL_COMPARTMENT)
+  realm->globalObject = JS_NewCompartmentAndGlobalObject(cx, gpsee_getGlobalClass(), NULL);
+#else
   realm->globalObject = JS_NewGlobalObject(cx, gpsee_getGlobalClass());
+#endif
   if (!realm->globalObject)
     goto err_out;
 
