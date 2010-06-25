@@ -256,7 +256,7 @@ exports.touch = function touch(path, when)
 
   if (_stat.call(path, sb) != 0)
   {
-    if (ffi.errno != dh.ENONET)
+    if (ffi.errno != dh.ENOENT)
       throw new Error("Cannot touch '" + path + "'" + syserr());
     exports.openRaw(path, { write: true, create: true, exclusive: true }).close();
   }
