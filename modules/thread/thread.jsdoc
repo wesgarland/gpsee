@@ -1,0 +1,152 @@
+/**
+ * @namespace		gpsee.module.ca.page.thread - Container for Thread class.
+ * @author		Wes Garland, PageMail, Inc., wes@page.ca
+ * @description		Holding module for the {@link Thread.Thread} class.
+ */
+var Thread = {};
+/** 
+ *  @class
+ *  @name		Thread.Thread
+ *  @description 	Exposes a threading API to JavaScript.
+ *  <p>
+ *  As of SpiderMonkey 1.8, there are multithreaded property access "gotchas" to be aware of.
+ *  While previous releases to serialized access to objects, new optimizations
+ *  in the engine have changed this - particularly for arrays. It is recommended that
+ *  inter-thread communication be limited to manipulating properties of the the
+ *  thread handle (which appears to the running thread as "this" in its outermost
+ *  scope), and only checking those values when the thread joins.  If only one value
+ *  needs to be exchanged, the safest way is to use the Thread.exit() method.
+ *  </p><p>
+ *  The Thread class uses the GPSEE multiplexed branch callback to periodically yield
+ *  and sweep for joined threads. This should insure good concurrency and reasonable
+ *  resource consumption, even in applications which spawn many threads from JavaScript.
+ *  </p>
+ *
+ *  @link <a href="https://developer.mozilla.org/en/JS_THREADSAFE">https://developer.mozilla.org/en/JS_THREADSAFE</a>
+ *  @link <a href="https://developer.mozilla.org/En/SpiderMonkey/Internals/Thread_Safety">https://developer.mozilla.org/En/SpiderMonkey/Internals/Thread_Safety</a>
+ *
+ *  <p>The thread class uses the following GPSEE runtime configuration variables:</p>
+ *
+ *  <table cellpadding=3 cellspacing=0 border=1>
+ *    <tr style="background: #DDDDDD;"><th>RC Variable</th><th>Default Value</th><th>Notes</th></tr>
+ *    <tr>
+ *      <td>gpsee_thread_stack_chunk_size</td><td>gpsee_stack_chunk_size RC variable or 8192</td>
+ *      <td>Stack chunk size for thread's context</td>
+ *    </tr>
+ *  </table>
+ *
+ *  @constructor
+ *  @descriptor		Instanciates a thread handle.
+ *  @param	func	Function to launch when thread is started.
+ *  @returns	Thread handle in new state
+ *  @throws	gpsee.module.ca.page.thread.constructor.notFunction when constructor is called without new
+ *  @throws	gpsee.module.ca.page.thread.constructor.arguments.count when argument count is wrong
+ *  @throws	gpsee.module.ca.page.thread.constructor.arguments.0.typeOf when first argument is not a function
+ * 
+ */
+var Thread.Thread = function(func)
+{
+  /** Terminate the current thread.
+   *  @param exitCode	Value to pass back in thread handle, through
+   *                    its exitCode property.
+   *
+   *  This method Treats exiting the primordial thread the same 
+   *  as calling gpsee.module.ca.page.ca.system.exit().
+   *  Note that exiting the main thread will not cause the program
+   *  to terminate immediately, it will still block waiting for all
+   *  the other threads to join and THEN exit.
+   */
+  function exit(){};   
+
+  /** State of the thread. Possible values are:
+   *  <ul>
+   *    <li>new	
+   *    <li>runnable
+   *    <li>joining
+   *    <li>dead
+   *  </ul>
+   *
+   * <pre>
+   * <b>Thread State Transition Diagram</b>
+   *
+   * void          new              runnable                joining        dead       Why
+   * ============================================================================================================
+   * |---Thread----->                                                                 Constructor
+   *                |--th_start-------->                                              About to start NSPR thread
+   *                                   |-------------th_start---------------->        NSPR thread failed to start
+   *                                   |--------thread_join--->                       Waiting on PR_JoinThread
+   *                                                          |--thread_join->        Thread stopped running
+   *                |----------------------Thread_Finalize------------------->        Still born (never ran)
+   *
+   * </pre>
+   * <ul>
+   *   <li>Thread instance object is inserted into Thread.threadList when marked runnable
+   *   <li>Thread instance object is removed from Thread.threadList when marked dead
+   * </ul>
+   */
+  var state={};
+
+  /** Thread ID. A string unique to the current thread. May be re-used again by another thread
+   *  once the current thread has died and its handle finalized.
+   */
+  var threadID={};
+
+  /** Start the thread. Executes the this.run method in a new thread.
+   *  No arguments are passed along; if the thread requires arguments from the parent,
+   *  the parent should modify the thread handle and the running thread can check its
+   *  outer-most 'this'.
+   */
+  function start(){};
+
+  /** Function which is run when thread is spawned. Normally assigned by constructor,
+   *  not intended to be called directly, but rather by this.start();
+   */
+  function run(){};
+
+  /** Uncaught exception which aborted the thread. */
+  var exception = {}:
+
+  /** Wait for a thread to join.
+   *  <p>Blocks until either this thread (obj) has finished running,
+   *  or it is discovered that this thread is not joinable (i.e. already joined,
+   *  another thread trying to join, etc.)</p>
+   *  <p>
+   *  All threads are created joinable, however it is not be possible to join
+   *  a thread when:
+   *  <ul>
+   *   <li>the thread was never started
+   *   <li>another thread is trying to join it
+   *   <li>the thread is no longer running
+   *  </ul>
+   *  </p>
+   *  @returns	true when the thread was joined, false when it could not be joined
+   *  
+   *  @throws  gpsee.module.ca.page.thread.join.this	when a thread tries to join itself.
+   */
+  function join(){};
+}
+
+/** Pause execution of the current thread.
+ *  @param	seconds		Amount of time to sleep, accepts floats.
+ *  @static
+ */
+var Thread.Thread.sleep = function sleep(){};
+
+  /** List of running threads. Has a length property.
+   *  @static
+   */
+var Thread.Thread.threadList = [];
+
+  /** Retrieve the ID of the CPU the current thread is running on.
+   *  Currently available only under Solaris.
+   *  @static
+   *  @returns CPU ID
+   */
+var Thread.Thread.getcpuid = function(){};
+
+  /** Yield execution of the current thread. Gives up the remainder of
+   *  of the OS-scheduler-assigned timeslice and suspends the JSAPI
+   *  request on the current thread's context.
+   *  @static
+   */
+var Thread.Thread.yield = function(){};
