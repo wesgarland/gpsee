@@ -59,6 +59,7 @@ int main (int argc, char *argv[])
 
   scriptCode = "print('Hello, World!');";
   JS_EvaluateScript(jsi->cx, jsi->globalObject, scriptCode, strlen(scriptCode), "anonymous", 1, &rval);
+  rval = JSVAL_NULL;	/* rval is a potential GC root with the conservative stack-scanning collector */
 
   gpsee_destroyInterpreter(jsi);
   gpsee_closelog();

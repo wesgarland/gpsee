@@ -689,8 +689,13 @@ PRIntn prmain(PRIntn argc, char **argv)
   if (scriptCode) 
   {
     jsval v;
+
     if (JS_EvaluateScript(cx, realm->globalObject, scriptCode, strlen(scriptCode), "command_line", 1, &v) == JS_FALSE)
+    {
+      v = JSVAL_NULL;
       goto out;
+    }
+    v = JSVAL_NULL;
   }
 
   if ((argv[0][0] == '/') && (strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
@@ -731,6 +736,7 @@ PRIntn prmain(PRIntn argc, char **argv)
           JS_ReportPendingException(cx);
         }
         JS_RemoveObjectRoot(cx, &scrobj);
+        v = JSVAL_NULL;
       }
     }
 
