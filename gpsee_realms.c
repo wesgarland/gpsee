@@ -195,9 +195,10 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   if (realm)
   {
     JS_free(cx, realm);
+#ifdef GPSEE_DEBUG_BUILD
     if (realm->name)
       JS_free(cx, (char *)realm->name);
-
+#endif
     realm = NULL;
   }
 
