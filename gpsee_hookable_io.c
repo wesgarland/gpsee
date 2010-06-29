@@ -40,7 +40,7 @@
  *              environments) can hook them to avoid screen corruption etc.
  *  @author     Wes Garland, wes@page.ca
  *  @date       April 2010
- *  @version    $Id: gpsee_hookable_io.c,v 1.1 2010/06/14 22:23:49 wes Exp $
+ *  @version    $Id: gpsee_hookable_io.c,v 1.2 2010/06/29 19:20:21 wes Exp $
  */
 
 #include "gpsee.h"
@@ -458,10 +458,10 @@ static JSBool hookFileDescriptor(JSContext *cx, int fd, jsval ihook, jsval ohook
 
     if (old == NULL)    /* first-time allocation: init 3 fds before populating one */
     {
-      size_t fd;
+      size_t ifd;
 
-      for (fd = 0; fd < grt->user_io.hooks_len; fd++)
-        grt->user_io.hooks[fd].input = grt->user_io.hooks[fd].output = JSVAL_VOID;
+      for (ifd = 0; ifd < grt->user_io.hooks_len; ifd++)
+        grt->user_io.hooks[ifd].input = grt->user_io.hooks[ifd].output = JSVAL_VOID;
     }
   }
 
