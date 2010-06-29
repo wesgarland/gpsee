@@ -149,7 +149,7 @@ std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 	[ -s $@ ] || rm $@
 	[ -f $@ ]
 
-std_defs:	EXTRA_CPPFLAGS += -I$(GFFI_DIR)
+std_defs:	LEADING_CPPFLAGS += -I$(GFFI_DIR)
 std_defs.%:	HEADERS  = std_functions.h stdint.h std_macro_consts.h
 gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h std_macro_consts.h
 

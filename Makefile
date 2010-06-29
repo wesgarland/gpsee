@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.39 2010/06/14 22:11:59 wes Exp $
+## @version	$Id: Makefile,v 1.40 2010/06/29 19:27:57 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
@@ -73,7 +73,7 @@ AUTOGEN_HEADERS		+= modules.h gpsee_config.h
 -include $(GPSEE_SRC_DIR)/spidermonkey/vars.mk
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
-IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base sqlite
+IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base
 INTERNAL_MODULES 	+= vm gpsee system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
@@ -271,7 +271,7 @@ libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
 
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 
-gsr.o: EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
+gsr.o: CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 gsr: gsr.o $(VERSION_O)
 
