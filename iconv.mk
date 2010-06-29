@@ -38,15 +38,15 @@
 # C code compiled with this Makefile can find iconv.h at ICONV_HEADER
 #
 
-EXTRA_LDFLAGS		+= $(ICONV_LDFLAGS)
-EXTRA_CPPFLAGS		+= $(ICONV_CPPFLAGS)
+LDFLAGS			+= $(ICONV_LDFLAGS)
+LEADING_CPPFLAGS	+= $(ICONV_CPPFLAGS)
 
 ifneq (X$(strip $(ICONV_HEADER)),X)
 ICONV_CPPFLAGS		+= -include $(ICONV_HEADER) -DICONV_HEADER=$(ICONV_HEADER)
 endif
 
 build_debug_iconv:
-	@echo	"LDFLAGS	= $(EXTRA_LDFLAGS)"
+	@echo	"LDFLAGS	= $(LDFLAGS)"
 	@echo	"ICONV_HEADER	= $(ICONV_HEADER)"
 ifeq (X$(strip $(ICONV_LDFLAGS)),X)
 	@echo   "ICONV_LDFLAGS not specified; assuming iconv is present in libc"

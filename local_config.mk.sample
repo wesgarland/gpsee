@@ -51,3 +51,6 @@ JAZZDOC=[ ]
 
 # Uncomment to enable cURL module
 IGNORE_MODULES += curl
+
+# Uncomment to enable the SQLite module
+IGNORE_MODULES += sqlite

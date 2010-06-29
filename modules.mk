@@ -60,7 +60,7 @@ ifneq ($(MAKECMDGOALS),depend)
 -include depend.mk
 endif
 
-CPPFLAGS	:= -I$(GPSEE_SRC_DIR) $(CPPFLAGS)
+LEADING_CPPFLAGS += -I$(GPSEE_SRC_DIR)
 
 DEPEND_FILES += $(GPSEE_SRC_DIR)/modules.mk module.mk 
 DEPEND_FILES += $(wildcard $(MODULE_OBJ:.o=.c) $(MODULE_OBJ:.o=.cpp))
