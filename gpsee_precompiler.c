@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 
   fclose(scriptFile);
  out:
+  scrobj = NULL;
   gpsee_destroyInterpreter(jsi);
   JS_ShutDown();
 
