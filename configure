@@ -1,16 +1,23 @@
 #! /bin/sh
 
-[ ! "$BASH_VERSION" ] && [ -x /bin/bash ] && (BASH_VERSION=dontrecurse /bin/bash $0 $*; exit $?)
+if [ "`uname -s`" != "SunOS" ]; then
+  [ ! "$BASH_VERSION" ] && [ -x /bin/bash ] && (BASH_VERSION=dontrecurse /bin/bash $0 $*; exit $?)
+
+  if [ "$BASH_VERSION" = "dontrecurse" ] || [ ! "$BASH_VERSION" ]; then
+    echo "Sorry, need either a Solaris or Bash shell to run this program"
+  fi
+fi
 
 cat <<EOF
 
-*** Working in progress -- if you're not working on this,  ***
+*** Work in progress -- if you're not working on this,     ***
 *** it's not for you. Build instructions for GPSEE are at  ***
 *** http://code.google.com/p/gpsee/wiki/Building           ***
 
 EOF
 
 argv_zero="$0"
+configure_cmd="$0 $*"
 gpsee_dir="`dirname $0`"
 
 isFunc="typeset -f"
@@ -35,7 +42,7 @@ fi
 
 _printf_fmt_opt_help()
 {
-  printf "  %25.25s %s\n" "$1                                                         " "$2"
+  printf "  %30.30s %s\n" "$1                                                         " "$2"
 }
 
 _echo_fmt_opt_help()
@@ -139,15 +146,40 @@ disable_async_callbacks()
 
 with_curl()
 {
-  [ "$1" = "help" ] && echo "Specify location of cURL headers and library" && return
+  [ "$1" = "help" ] && echo "Specify cURL prefix directory" && return
 
-  echo "CURL_CPPFLAGS=-L$1/include" >&5
-  echo "CURL_LDFLAGS=-L$1/lib" >&5
+  echo "CURL_CPPFLAGS=-I$1/include" >&5
+  echo "CURL_LDFLAGS=$1/lib/libcurl.\$(SOLIB_EXT)" >&5
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
 
-  if [ ! -f "$1/curl/curl.h ]; then
+  if [ ! -f "$1/include/curl/curl.h" ]; then
     errout " *** Error: $1/curl/curl.h: file not found"
     exit 1
   fi
+}
+
+with_curl_ldflags()
+{
+  [ "$1" = "help" ] && echo "Specify cURL linker flags" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  echo "CURL_LDFLAGS+=$1" >&5
+}
+
+with_curl_cppflags()
+{
+  [ "$1" = "help" ] && echo "Specify cURL pre-processor flags" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  echo "CURL_CPPFLAGS+=$1" >&5
+}
+
+enable_curl()
+{
+  [ "$1" = "help" ] && echo "Enable cURL (do not use with --with-curl*)" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  cfg_pkg CURL libcurl 5
 }
 
 # main
@@ -167,9 +199,11 @@ do
   if expr "$1" : '--with-pkg-config=.*' >/dev/null ; then
     pkgconfig="`echo \"$1\" | sed 's/=.*//'`"
   fi
+  shift
 done
 
-[ "$pkgconfig" ] || pkgconfig="pkg-config"
+
+[ "$pkgconfig" ] || pkgconfig="`locate pkg-config`"
 
 set -- $originalArgs
 
@@ -184,6 +218,8 @@ do
   cat "$file.sample" >> "$file"
   eval "exec $fd>>\"$file\""
   fd=`expr $fd + 1`
+  echo "" >> $fd
+  echo "# Changes made by $configure_cmd" >> $fd
 done
 
 a="`locate autoconf2.13 autoconf213 autoconf-2.13`" && echo "AUTOCONF=$a" >&5
@@ -238,6 +274,28 @@ echo
 if [ "$?" != "0" ]; then
   errout ""
   errout " *** Could not configure LibFFI. Stop."
+  errout ""
+  exit 5
+fi
+
+echo
+echo " * Building SpiderMonkey"
+echo
+(cd spidermonkey && make build && make install)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not build SpiderMonkey. Stop."
+  errout ""
+  exit 4
+fi
+
+echo
+echo " * Building LibFFI"
+echo
+(cd libffi && make build && make install)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not build LibFFI. Stop."
   errout ""
   exit 5
 fi

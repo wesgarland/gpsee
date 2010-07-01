@@ -59,9 +59,11 @@ include $(GPSEE_SRC_DIR)/build.mk
 
 include local_config.mk
 
+LIBFFI_PREFIX ?= $(LIBFFI_BUILD)/install
+
 ifneq ($(MAKECMDGOALS), help)
-LIBFFI_LIB_DIR		?= $(SOLIB_DIR)
-LIBFFI_INCLUDE_DIR	?= $(GPSEE_PREFIX_DIR)/include/libffi
+LIBFFI_LIB_DIR		?= $(LIBFFI_PREFIX)/lib
+LIBFFI_INCLUDE_DIR	?= $(LIBFFI_PREFIX)/include
 include sanity.mk
 LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
 endif

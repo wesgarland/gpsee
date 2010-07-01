@@ -36,13 +36,13 @@
 
 AUTOGEN_HEADERS += libcurl_constants.h
 
-OBJS += $(EXTRA_MODULE_OBJS)
 LEADING_CPPFLAGS += $(CURL_CPPFLAGS)
 LDFLAGS += $(CURL_LDFLAGS)
 
 libcurl_constants.h: make_libcurl_constants.py
-	$(CPP) $(CPPFLAGS) curl_system_headers.h | python make_libcurl_constants.py > $@
+	$(CPP) $(CURL_CPPFLAGS) $(CPPFLAGS) curl_system_headers.h | python make_libcurl_constants.py > $@
 
-
+curl.o: LEADING_CPPFLAGS += $(CURL_CPPFLAGS)
+curl.$(SOLIB_EXT): LDFLAGS += $(CURL_LDFLAGS)
 
 
