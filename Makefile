@@ -130,7 +130,7 @@ DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
 .PHONY:	all build _build _prebuild clean real-clean depend build_debug build_debug_modules \
-	show_modules clean_modules src-dist bin-dist top help install_js_components
+	show_modules clean_modules src-dist bin-dist top help install-%
 
 build: _prebuild
 	$(MAKE) _build
@@ -143,7 +143,7 @@ $(SPIDERMONKEY_BUILD):
 $(LIBFFI_BUILD):
 	cd spidermonkey && $(MAKE) build
 
-install: $(TARGET_LIBEXEC_JSC) gsr-link
+install: $(TARGET_LIBEXEC_JSC) gsr-link install-libffi install-spidermonkey
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 
 clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
@@ -165,12 +165,19 @@ modules.h: Makefile $(STREAM)_stream.mk
 		| $(SED) -e 's/.*/InternalModule(&)/' \
 		>> $@
 
-install_js_components:
+install-js_components:
 		@echo " * Installing JavaScript module components"
 		@$(if $(TARGET_LIBEXEC_JS), [ -d $(LIBEXEC_DIR) ] || mkdir -p $(LIBEXEC_DIR))
 		$(if $(TARGET_LIBEXEC_JS), $(CP) $(EXPORT_LIBEXEC_JS) $(LIBEXEC_DIR))
 
-$(TARGET_LIBEXEC_JSC):	install_js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
+install-spidermonkey:
+		$(CP) -rp $(JSAPI_INCLUDE_DIR) $(GPSEE_PREFIX_DIR)
+		$(CP) -rp $(JSAPI_LIB_DIR) $(GPSEE_PREFIX_DIR)
+
+install-libffi:
+		$(CP) -rp $(LIBFFI_LIB_DIR) $(GPSEE_PREFIX_DIR)
+
+$(TARGET_LIBEXEC_JSC):	install-js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
 	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || [ X = X ]
 
 show_modules:

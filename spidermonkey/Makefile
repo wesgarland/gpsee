@@ -59,7 +59,7 @@ NO_BUILD_RULES = TRUE
 include local_config.mk
 
 ifneq ($(MAKECMDGOALS),help)
-JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
+JSAPI_PREFIX		?= $(SPIDERMONKEY_BUILD)/jsapi
 LIB_DIR			?= $(JSAPI_PREFIX)/lib
 INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
 include sanity.mk

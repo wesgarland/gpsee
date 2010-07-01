@@ -93,7 +93,7 @@ VERSION_C 	?= $(VERSION_O:.$(OBJ_EXT)=.c)
 VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
 
 ifdef SUDO_USER
-.INTERMEDIATE:   	$(VERSION_O)
+.PRECIOUS:		$(VERSION_O) $(VERSION_C)
 else
 .PHONY:			$(VERSION_O)
 endif

@@ -52,7 +52,7 @@ LIBFFI_SRC              ?= $(strip $(firstword $(wildcard $(SPIDERMONKEY_SRC)/ct
 PKG_CONFIG		?= pkg-config
 
 # Where to install libffi
-LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)
+# LIBFFI_PREFIX		?= $(GPSEE_PREFIX_DIR)
 
 # Options to pass to make when building libffi
 LIBFFI_MAKE_OPTIONS	?= -j3
