@@ -229,7 +229,8 @@ static JSBool destroyRealmContext_cb(JSContext *cx, const void *key, void *value
  *   It is the caller's responsibility to insure no other thread is trying to use this realm.
  *
  *   @param     realm   The realm to destroy
- *   @param     cx      A context which is in the realm's runtime but not in the realm
+ *   @param     cx      A context which is in the realm's runtime but not in the realm. The
+ *                      context must be in a request.
  *
  *   @returns JS_TRUE on success
  */
@@ -251,7 +252,9 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 
   JS_RemoveObjectRoot(cx, &realm->globalObject);
   gpsee_removeAllGCCallbacks_forRealm(realm->grt, realm);
+  JS_EndRequest(cx);
   JS_GC(cx);
+  JS_BeginRequest(cx);
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
   realm->monitored.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);

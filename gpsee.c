@@ -645,6 +645,8 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
 {
   JSContext *cx = grt->coreCx;
 
+  JS_BeginRequest(cx);
+
 #if !defined(GPSEE_NO_ASYNC_CALLBACKS)
   GPSEEAsyncCallback * cb;
   
@@ -676,6 +678,8 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
 
   if (gpsee_ds_forEach(cx, grt->realms, destroyRealm_cb, NULL) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRuntime: Error destroying realm");
+
+  JS_EndRequest(cx);
 
   gpsee_ds_destroy(grt->realms);
   gpsee_ds_destroy(grt->realmsByContext);
@@ -832,7 +836,7 @@ gpsee_runtime_t *gpsee_createRuntime(void)
     JS_SetVersion(cx, JSVERSION_LATEST);
   }
 
-  JS_BeginRequest(cx);	/* Request stays alive as long as the grt does */
+  JS_BeginRequest(cx);	
   JS_SetOptions(cx, JS_GetOptions(cx) | JSOPTION_ANONFUNFIX);
   if (gpsee_initIOHooks(cx, grt) == JS_FALSE)
     panic(__FILE__ ": Unable to initialized hookable I/O subsystem");
@@ -854,6 +858,8 @@ gpsee_runtime_t *gpsee_createRuntime(void)
 #endif
 
   JS_SetGCCallback(cx, gpsee_gcCallback);       
+  JS_EndRequest(cx);
+
   return grt;
 }
 
