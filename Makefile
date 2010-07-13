@@ -177,7 +177,11 @@ install-spidermonkey:
 install-libffi:
 		$(CP) -rp $(LIBFFI_LIB_DIR) $(GPSEE_PREFIX_DIR)
 
-$(TARGET_LIBEXEC_JSC):	install-js_components gpsee_precompiler $(TARGET_LIBEXEC_JS)
+ifndef SUDO_USER
+$(TARGET_LIBEXEC_JSC): gpsee_precompiler
+endif
+
+$(TARGET_LIBEXEC_JSC):	install-js_components $(TARGET_LIBEXEC_JS)
 	@./gpsee_precompiler $(dir $@)$(shell echo $(notdir $@) | sed -e 's/^\.//' -e 's/c$$//') || [ X = X ]
 
 show_modules:

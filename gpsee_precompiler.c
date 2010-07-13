@@ -57,7 +57,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
 	 "executing them. It is intended to be used during the GPSEE install\n"
 	 "process, so that system libraries can be precompiled with sudo,\n"
 	 "rather than requiring that first-time users of said libraries be\n"
-	 "priviledged users.\n"
+	 "privileged users.\n"
 	 "\n", argv_zero
 	 );
   exit(2);
