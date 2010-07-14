@@ -146,7 +146,7 @@ $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
 
 $(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
 	[ -d $(SPIDERMONKEY_BUILD) ] || mkdir -p $(SPIDERMONKEY_BUILD)
-	cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
+	cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(CONFIGURE_ENV_VARS) $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)
 	@[ -s $@ ] && touch $@
 
 configure: $(SPIDERMONKEY_BUILD)/Makefile vars.mk
@@ -239,7 +239,7 @@ build_debug:
 	@echo "  $(SM_MAKE)"
 	@echo
 	@echo "Configure will be invoked as:"
-	@echo "cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
+	@echo "cd $(SPIDERMONKEY_BUILD) && CC="$(CC)" CXX="$(CXX)" $(CONFIGURE_ENV_VARS) $(SPIDERMONKEY_SRC)/configure $(CONFIGURE_OPTIONS)"
 	@echo
 	@echo "JS_CONFIG = $(JS_CONFIG)"
 	@echo

@@ -121,6 +121,18 @@ with_jsapi()
   echo "SPIDERMONKEY_SRC=$1" >&6
 }
 
+with_jsapi_options()
+{
+  [ "$1" = "help" ] && echo "add options to js/src/configure command" && return
+  echo "CONFIGURE_OPTIONS += $1" >&6
+}
+
+with_jsapi_cppflags()
+{
+  [ "$1" = "help" ] && echo "add C pre-processor flags to spidermonkey build" && return
+  echo "CONFIGURE_ENV_VARS += CPPFLAGS=$1" >&6
+}
+
 with_mozilla()
 {
   [ "$1" = "help" ] && echo "specify location of Mozilla tree" && return
