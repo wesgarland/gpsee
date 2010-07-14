@@ -69,10 +69,10 @@ $(LIBRARY):	$(LIBOBJS)
 OBJS		+= $(LIBOBJS) gsrdb.o gsr.o
 
 jsdb.o: 	CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('debugger.js')\""
-$(LIBOBJS):	EXTRA_CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
+$(LIBOBJS):	CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
 
-gsrdb: 		EXTRA_LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
-gsrdb.o:	EXTRA_CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
+gsrdb: 		LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
+gsrdb.o:	CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
 gsrdb.c:	
 		ln -s $(GPSEE_SRC_DIR)/gsr.c $@
 
