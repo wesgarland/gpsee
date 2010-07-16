@@ -1441,7 +1441,7 @@ void *gpsee_memrchr(const void *s, int c, size_t n)
 {
   const char *p;
 
-  for (p = (char *)s + n; p != s; p--)
+  for (p = (char *)s + n; p >= s; p--)
   {
     if (*p == c)
       return (void *)p;
