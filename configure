@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh -f
 
 if [ "`uname -s`" != "SunOS" ]; then
   [ ! "$BASH_VERSION" ] && [ -x /bin/bash ] && (BASH_VERSION=dontrecurse /bin/bash $0 $*; exit $?)
@@ -258,8 +258,8 @@ do
       errout "$1: invalid option"
       exit 1
     else
-      echo "$arg" | grep '^~/' >/dev/null && arg="`echo \"$arg\" | sed 's/^~\//$(HOME)\//'`"
-      $func "$arg"
+#      echo "$arg" | grep '^~/' >/dev/null && arg="`echo \"$arg\" | sed 's/^~\//$(HOME)\//'`"
+      $func "`uglob \"$arg\"`"
     fi
   else
     errout "$1: invalid option"

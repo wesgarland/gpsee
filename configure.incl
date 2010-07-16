@@ -37,3 +37,13 @@ cfg_pkg()
   echo "${NAME}_CPPFLAGS+=`$pkgconfig --cflags ${name}`" >&${fd}
   echo "${NAME}_LDFLAGS+=`$pkgconfig --libs ${name}`" >&${fd}
 }
+
+uglob()
+{
+  if expr "$1" : '~[/A-Za-z0-9_].*' >/dev/null; then
+    eval echo "$1"
+  else
+    echo "$1"
+  fi
+}
+
