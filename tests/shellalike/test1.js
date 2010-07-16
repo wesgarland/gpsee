@@ -44,6 +44,7 @@
  */
 
 const sh = require("shellalike");
+const rot13 = 'sed -e y/abcdefghijklmnopqrstuvwxyz/nopqrstuvwxyzabcdefghijklm/ -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/NOPQRSTUVWXYZABCDEFGHIJKLM/';
 
 function io_test_cat() {
   var cat = new sh.Process("cat|cat");
@@ -62,7 +63,7 @@ function io_test_close() {
   for (var x in cat) print(x.trim());
 }
 function io_test_tail() {
-  var log = sh.cay("tail /var/log/auth.log")("rot13");
+  var log = sh.cay("tail /var/log/auth.log")(rot13);
   for (var line in log)
     print(line.trim());
 }
@@ -119,7 +120,7 @@ function test1(t) {
 function test2() {
   var x = new sh.Pipeline;
   x.add("tail -f /var/log/auth.log");
-  x.add("rot13");
+  x.add(rot13);
   var shape = x.shape();
   if (shape !== 'all external')
     throw new Error('shape "'+shape+'" !== "all external"');
@@ -136,7 +137,7 @@ function test3() {
 function test4() {
   var x = new sh.Pipeline;
   x.add("tail -f /var/log/auth.log");
-  x.add("rot13");
+  x.add(rot13);
   x.add(function(src){for(var each in src)yield src});
   var shape = x.shape();
   if (shape !== 'to internal')
@@ -145,7 +146,7 @@ function test4() {
 function test5() {
   var x = new sh.Pipeline;
   x.add(function(src){yield 'one\n';yield 'two\n';yield 'three\n'});
-  x.add("rot13");
+  x.add(rot13);
   x.add("cat > output-test");
   var shape = x.shape();
   if (shape !== 'to external')
@@ -154,14 +155,14 @@ function test5() {
 function test6() {
   var x = new sh.Pipeline;
   x.add(function(src){yield 'one\n';yield 'two\n';yield 'three\n'});
-  x.add("rot13");
+  x.add(rot13);
   x.add(function(src){for each(let each in src) print(each)});
   var shape = x.shape();
   if (shape !== 'interleaved')
     throw new Error('shape "'+shape+'" !== "interleaved"');
 }
 function test7() {
-  var shape = sh.cay("cat test-file")("rot13")(function(src){for each(let each in src)print(each)})._pipeline.shape();
+  var shape = sh.cay("cat test-file")(rot13)(function(src){for each(let each in src)print(each)})._pipeline.shape();
   if (shape !== 'to internal')
     throw new Error('shape "'+shape+'" !== "to internal"');
 }
@@ -169,7 +170,7 @@ function test8() {
   sh.cay(function(){yield'ONE';yield'TWO';yield'THREE'}).print();
 }
 function test9() {
-  sh.cay("cat tests/shellalike/test1.js")("rot13").rtrim().print();
+  sh.cay("cat tests/shellalike/test1.js")(rot13).rtrim().print();
 }
 
 var args = Array.apply(null, arguments);
