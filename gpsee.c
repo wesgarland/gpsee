@@ -686,6 +686,7 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
   gpsee_ds_destroy(grt->gcCallbackList);
 
   gpsee_shutdownMonitorSystem(grt);
+  JS_CommenceRuntimeShutDown(grt->rt);
   JS_DestroyContext(cx);
   JS_DestroyRuntime(grt->rt);
 
@@ -976,6 +977,7 @@ gpsee_interpreter_t *gpsee_createInterpreter(void)
 void gpsee_destroyInterpreter(gpsee_interpreter_t *jsi)
 {
   gpsee_destroyRuntime(jsi->grt);
+  free(jsi);
 }
 
 /** Return the GPSEE runtime associated with the current JS Context.
