@@ -211,14 +211,17 @@ static int uio_vfprintf_hook(JSContext *cx, FILE *file, const char *fmt, va_list
 {
   int buflen = vsnprintf(NULL, 0, fmt, ap);
   char *buf;
+  int ret;
 
   if (buflen <= 0)
     return buflen ? -1 : 0;
 
-  buf = malloc(buflen + 1);     /* Can't JS_malloc, can't propagate OOM */
+  buf = malloc(buflen + 1);     /* Can't JS_malloc: can't propagate OOM */
   vsnprintf(buf, buflen + 1, fmt, ap);
 
-  return uio_fwrite_hook(buf, 1, buflen, file, cx);
+  ret = uio_fwrite_hook(buf, 1, buflen, file, cx);
+  free(buf);
+  return ret;
 }
 
 static int uio_printf_hook(JSContext *cx, const char *fmt, ...)
