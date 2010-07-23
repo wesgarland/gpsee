@@ -141,7 +141,7 @@ $(LIBFFI_BUILD)/Makefile: $(LIBFFI_SRC)/configure #Makefile local_config.mk
 
 configure: $(LIBFFI_BUILD)/Makefile vars.mk
 force_configure:
-	$(RM) $(LIBFFI_BUILD)/Makefile vars.mk
+	$(RM) $(LIBFFI_BUILD)/Makefile $(LIBFFI_BUILD)/config.status vars.mk
 	$(MAKE) configure
 
 build: $(LIBFFI_BUILD)/Makefile
