@@ -1,11 +1,22 @@
 #! /bin/sh -f
 
-if [ "`uname -s`" != "SunOS" ]; then
-  [ ! "$BASH_VERSION" ] && [ -x /bin/bash ] && (BASH_VERSION=dontrecurse /bin/bash $0 $*; exit $?)
-
-  if [ "$BASH_VERSION" = "dontrecurse" ] || [ ! "$BASH_VERSION" ]; then
-    echo "Sorry, need either a Solaris or Bash shell to run this program"
+if [ ! "$BASH_VERSION" ]; then
+  if [ ! -x "/bin/bash" ]; then
+    . ${gpsee_dir}/configure.incl
+    bash="`locate bash`"
+  else
+    bash=/bin/bash
   fi
+
+  if [ "$bash" ]; then
+    BASH_VERSION=dontrecurse $bash $0 $*
+    exit $?
+  fi
+fi
+
+if [ "$BASH_VERSION" = "dontrecurse" ] || [ ! "$BASH_VERSION" ]; then
+  echo "Sorry, need a bash shell to run this program"
+  exit 1
 fi
 
 cat <<EOF
@@ -97,6 +108,17 @@ with_build()
   echo "BUILD=$1" >&5
 }
 
+with_stream()
+{
+  [ "$1" = "help" ] && echo "specify GPSEE build stream (unix or surelynx)" && return
+  echo "STREAM=$1" >&5
+}
+
+with_gnu_make()
+{
+  [ "$1" = "help" ] && echo "specify location of GNU Make (3.81 or better) executable" && return
+}
+
 with_pkg_config()
 {
   [ "$1" = "help" ] && echo "specify location of pkg-config executable" && return
@@ -143,6 +165,7 @@ with_gcc_prefix()
 {
   [ "$1" = "help" ] && echo "specify prefix of GCC to use" && return
   echo "GCC_PREFIX=$1" >&5
+  echo "CC=gcc" >&5
 }
 
 disable_async_callbacks()
@@ -209,13 +232,17 @@ originalArgs="$*"
 while [ "$1" ]
 do
   if expr "$1" : '--with-pkg-config=.*' >/dev/null ; then
-    pkgconfig="`echo \"$1\" | sed 's/=.*//'`"
+    pkgconfig="`echo \"$1\" | sed 's/.*=//'`"
+  fi
+  if expr "$1" : '--with-gnu-make=.*' >/dev/null ; then
+    make="`echo \"$1\" | sed 's/.*=//'`"
+    echo MAKE IS $make
   fi
   shift
 done
 
-
 [ "$pkgconfig" ] || pkgconfig="`locate pkg-config`"
+[ "$make" ] || make="`locate make gmake`"
 
 set -- $originalArgs
 
@@ -226,7 +253,8 @@ do
   file="$gpsee_dir/$dir/local_config.mk"
   [ -f "$file" ] && head -1 "$file" | grep -v "Generated" >/dev/null && mv "$dir/local_config.mk" "$dir/local_config.mk.old"
   echo "# Generated `date` by $USER on `hostname`" > "$file"
-  #echo "$file is on fd $fd"
+  echo "# Configuration command: $0 $originalArgs" >> "$file"
+  echo "# " >> "$file" 
   cat "$file.sample" >> "$file"
   eval "exec $fd>>\"$file\""
   fd=`expr $fd + 1`
@@ -235,6 +263,10 @@ do
 done
 
 a="`locate autoconf2.13 autoconf213 autoconf-2.13`" && echo "AUTOCONF=$a" >&5
+
+if expr "$PWD" : .*surelynx >/dev/null; then
+  with_stream surelynx
+fi
 
 while [ "$1" ]
 do
@@ -271,7 +303,7 @@ done
 echo
 echo " * Configuring SpiderMonkey"
 echo
-(cd spidermonkey && make configure)
+(cd spidermonkey && $make QUIET=True force_configure)
 if [ "$?" != "0" ]; then
   errout ""
   errout " *** Could not configure SpiderMonkey. Stop."
@@ -282,7 +314,7 @@ fi
 echo
 echo " * Configuring LibFFI"
 echo
-(cd libffi && make configure)
+(cd libffi && $make QUIET=True force_configure)
 if [ "$?" != "0" ]; then
   errout ""
   errout " *** Could not configure LibFFI. Stop."
@@ -293,7 +325,7 @@ fi
 echo
 echo " * Building SpiderMonkey"
 echo
-(cd spidermonkey && make build && make install)
+(cd spidermonkey && $make QUIET=True build && $make QUIET=True install)
 if [ "$?" != "0" ]; then
   errout ""
   errout " *** Could not build SpiderMonkey. Stop."
@@ -304,7 +336,7 @@ fi
 echo
 echo " * Building LibFFI"
 echo
-(cd libffi && make build && make install)
+(cd libffi && $make QUIET=True build && $make QUIET=True install)
 if [ "$?" != "0" ]; then
   errout ""
   errout " *** Could not build LibFFI. Stop."
