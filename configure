@@ -21,9 +21,9 @@ fi
 
 cat <<EOF
 
-*** Work in progress -- if you're not working on this,     ***
-*** it's not for you. Build instructions for GPSEE are at  ***
-*** http://code.google.com/p/gpsee/wiki/Building           ***
+*** Work in progress -- if you have trouble with this script, ***
+*** you can still use the old build system; they are at       ***
+*** http://code.google.com/p/gpsee/wiki/Building              ***
 
 EOF
 
