@@ -37,7 +37,7 @@
 # 1. Cannot use standard AUTOGEN_HEADERS / AUTOGEN_SOURCE rules for some 
 #    of these files, as producing them during the depend.mk phase could
 #    result in compilation errors (and does on Snow Leopard).  This is 
-#    because the depend.mk phase precenes the dynamic generation of 
+#    because the depend.mk phase precedes the dynamic generation of 
 #    std_cppflags.mk, which in turn selects the correct standards symbol
 #    set for for the target being built.
 #
@@ -65,7 +65,7 @@ GFFI_DIR := $(shell pwd)
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
 ifneq ($(MAKECMDGOALS),clean)
-include std_cppflags.mk
+-include std_cppflags.mk
 endif
 include sanity.mk
 
