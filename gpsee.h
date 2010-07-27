@@ -305,9 +305,6 @@ typedef struct
  */
 struct gpsee_realm
 {
-#ifdef GPSEE_DEBUG_BUILD
-  const char            *name;                  /**< Name of the realm */
-#endif
   gpsee_runtime_t       *grt;                   /**< GPSEE Runtime which created this realm */
   JSObject		*globalObject;		/**< Global object ("super-global") */
   JSContext             *cachedCx;              /**< A partially initialied context left over from realm creation, or NULL */
@@ -334,6 +331,12 @@ struct gpsee_realm
     gpsee_autoMonitor_t     programModuleDir;
     gpsee_autoMonitor_t     script_argv;
   } monitors;                                   /**< Monitors for monitored members */
+#endif
+
+#ifdef GPSEE_DEBUG_BUILD
+  const char            *name;                  /**< Name of the realm */
+#else
+  const char		*unused;
 #endif
 };
 
