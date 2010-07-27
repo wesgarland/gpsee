@@ -342,6 +342,8 @@ depend.mk: MDFLAGS+=-DGPSEE_$(STREAM_UCASE)_STREAM
 gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
 	@echo " * Generating $@"
 	@$(SED) \
+		-e 's;@@CC@@;$(CC);g'\
+		-e 's;@@CXX@@;$(CXX);g'\
 		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
 		-e 's;@@LDFLAGS@@;$(LDFLAGS) -lgpsee $(JSAPI_LIBS);g'\
 		-e 's;@@CPPFLAGS@@;$(filter-out -I $(GPSEE_SRC_DIR) -I$(GPSEE_SRC_DIR),$(CPPFLAGS));g'\
@@ -353,9 +355,10 @@ gpsee-config: gpsee-config.template Makefile local_config.mk spidermonkey/local_
 		-e 's;@@SOLIB_DIR@@;$(SOLIB_DIR);g'\
 		-e 's;@@GPSEE_RELEASE@@;$(GPSEE_RELEASE);g'\
 		-e 's;@@STREAM@@;$(STREAM);g'\
+		-e 's;@@GCC_PREFIX@@;$(GCC_PREFIX);g'\
 		-e 's;@@BUILD@@;$(BUILD);g'\
 		-e 's;@@INCLUDE_DIR@@;$(INCLUDE_DIR);g'\
-		-e 's;@@EXPORT_LIBS@@@;$(EXPORT_LIBS);g'\
+		-e 's;@@EXPORT_LIBS@@;$(EXPORT_LIBS);g'\
 		-e 's;@@GPSEE_SRC@@;$(GPSEE_SRC_DIR);g'\
 		-e 's;@@SPIDERMONKEY_SRC@@;$(SPIDERMONKEY_SRC);g'\
 		-e 's;@@SPIDERMONKEY_BUILD@@;$(SPIDERMONKEY_BUILD);g'\

@@ -11,6 +11,8 @@ Options:
         [--version]
         [--libs]
         [--ldflags]
+        [--cc]
+        [--cxx]
         [--cflags]
         [--cppflags]
         [--cxxflags]
@@ -19,6 +21,7 @@ Options:
 	[--spidermonkey-build]
 	[--spidermonkey-src]
 	[--outside.mk]
+	[--gcc-prefix]
 	[--stream]"
 }
 
@@ -53,8 +56,11 @@ do
     "--ldflags")
 	echo "@@LDFLAGS@@"
 	;;
-    "--cflags")
-	echo "@@CFLAGS@@"
+    "--cc")
+	echo "@@CC@@"
+	;;
+    "--cxx")
+	echo "@@CXX@@"
 	;;
     "--cppflags")
 	echo "-I@@INCLUDE_DIR@@ @@CPPFLAGS@@"
@@ -76,6 +82,9 @@ do
 	;;
     "--outside.mk")
         echo "@@OUTSIDE_MK@@"
+	;;
+    "--gcc-prefix")
+        echo "@@GCC_PREFIX@@"
 	;;
     "--stream")
         echo "@@STREAM@@"
