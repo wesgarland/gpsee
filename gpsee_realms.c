@@ -202,12 +202,15 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
     realm = NULL;
   }
 
-  if (cx)
+  if (cx) {
     JS_DestroyContext(cx);
+    cx = NULL;
+  }
 
   out:
   gpsee_leaveAutoMonitor(grt->monitors.realms);
-  JS_EndRequest(cx);
+  if (cx)
+    JS_EndRequest(cx);
   return realm;
 }
 
