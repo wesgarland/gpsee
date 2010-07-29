@@ -49,6 +49,10 @@
 #        header and location of js-config respectively. If $2 is not specified,
 #        we look for js-config on your path.
 #
+#        If $1 -, output will be sent to file descriptor 7. You can use this
+#        to append this script's output to another header without generating
+#        an intermediary file.
+#
 # If you need to use a make program other than 'make', specify it in the MAKE
 # environment variable when invoking this script.
 #
@@ -81,7 +85,7 @@ fi
 
 argv_zero="$0"
 output_header="$1"
-[ "$1" ] || output_header="probe-jsapi.h"
+[ "$output_header" ] || output_header="probe-jsapi.h"
 JS_CONFIG="js-config"
 [ "$2" ] && JS_CONFIG="$2"
 listFuncs="typeset -F"
@@ -135,7 +139,7 @@ build()
 {
   rm -f probe-jsapi probe-jsapi.o
   cat > probe-jsapi.cpp
-  $MAKE JS_CONFIG="$JS_CONFIG" -f probe-jsapi.mk probe-jsapi >&6
+  $MAKE JS_CONFIG="$JS_CONFIG" -f `dirname $argv_zero`/probe-jsapi.mk probe-jsapi >&6
   return $?
 }
 
@@ -168,7 +172,11 @@ emit_comment()
 
 emit_code()
 {
-  cat >&7
+  if [ "$1" ]; then
+    echo "$*" >&7
+  else
+    cat >&7
+  fi
 }
 
 . `dirname ${argv_zero}`/probe-jsapi.incl
@@ -180,15 +188,24 @@ date > probe-jsapi.err
 # fd 6 = output from build process
 # fd 7 = the output header
 
-echo "Generating ${output_header}"
-echo "/* Generated `date` by $USER on `hostname` */" > "${output_header}"
-$MAKE JS_CONFIG="$JS_CONFIG" -f probe-jsapi.mk build_debug | emit_comment 7>>"${output_header}"
+if [ "${output_header}" = "-" ]; then
+  echo "Generating output header on fd 7"
+else
+  exec 7>>"${output_header}"
+  echo "Generating ${output_header}"
+  echo "/* Generated `date` by $USER on `hostname` */" >&7
+fi
 
+$MAKE JS_CONFIG="$JS_CONFIG" -f `dirname $argv_zero`/probe-jsapi.mk build_debug | emit_comment
+emit_code <<EOF
+#ifndef _PROBE_JSAPI_HEADER
+#define _PROBE_JSAPI_HEADER
+EOF
 $listFuncs | sed 's/^.* //' | grep '^test_' | sort | while read func
 do
   print "Checking "
   unset dots
-  $func 5>&1 6>>probe-jsapi.out 2>>probe-jsapi.err 7>>"${output_header}" | while read line
+  $func 5>&1 6>>probe-jsapi.out 2>>probe-jsapi.err | while read line
   do 
     [ "$dots" ] && $print ".. "
     print "$line"
@@ -199,5 +216,6 @@ do
 done 
 
 rm -f probe-jsapi.o probe-jsapi
+emit_code "#endif"
 echo "Done."
 echo
