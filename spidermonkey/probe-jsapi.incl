@@ -243,7 +243,7 @@ EOF
 
 test_JSExtendedClass()
 {
-  say "if you have JSExtendedClass"
+  say "if you have JSExtendedClass (bug 571789)"
   build <<EOF
 $prologue
 $needCx
@@ -262,7 +262,7 @@ EOF
 
 test_ObjectOps()
 {
-  say "if you have object ops"
+  say "if you have object ops (bug 571789)"
   build <<EOF
 $prologue
 $needCx
