@@ -106,7 +106,31 @@ EOF
     emit_define JSAPI_HAS_FATVALS
     say "yes"
   else
-    emit_comment This JSAPI does not have fatvals
+    emit_comment This JSAPI does not have fatvals. 
+    emit_comment Re-Implement DOUBLE_TO_JSVAL and JSVAL_TO_DOUBLE to match post-fatvals API.
+    emit_code <<EOF
+static JS_ALWAYS_INLINE jsval
+DOUBLEPTR_TO_JSVAL(jsdouble *dp)
+{
+    JS_ASSERT(((jsword) dp & JSVAL_TAGMASK) == 0);
+    return JSVAL_SETTAG((jsval) dp, JSVAL_DOUBLE);
+}  
+#ifdef DOUBLE_TO_JSVAL
+# undef DOUBLE_TO_JSVAL
+#endif
+#define DOUBLE_TO_JSVAL(dp) DOUBLEPTR_TO_JSVAL(*dp)
+
+static JS_ALWAYS_INLINE jsdouble *
+JSVAL_TO_DOUBLEPTR(jsval v)
+{
+    JS_ASSERT(JSVAL_IS_DOUBLE(v));
+    return (jsdouble *) JSVAL_TO_GCTHING(v);
+}
+#ifdef JSVAL_TO_DOUBLE
+# undef JSVAL_TO_DOUBLE
+#endif
+#define JSVAL_TO_DOUBLE(v) *JSVAL_TO_DOUBLEPTR(v)
+EOF
     say "no"
   fi
 }

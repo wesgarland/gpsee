@@ -199,7 +199,10 @@ fi
 $MAKE JS_CONFIG="$JS_CONFIG" -f `dirname $argv_zero`/probe-jsapi.mk build_debug | emit_comment
 emit_code <<EOF
 #ifndef _PROBE_JSAPI_HEADER
-#define _PROBE_JSAPI_HEADER
+# define _PROBE_JSAPI_HEADER
+# ifndef jsapi_h___
+#  error Please include __FILE__ after jsapi.h!
+# endif
 EOF
 $listFuncs | sed 's/^.* //' | grep '^test_' | sort | while read func
 do
