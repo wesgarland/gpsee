@@ -47,7 +47,7 @@
 #include "jsapi.h"
 JSBool                  gpsee_initializeModuleSystem    (JSContext *cx, gpsee_realm_t *realm);
 void 			gpsee_shutdownModuleSystem      (JSContext *cx, gpsee_realm_t *realm);
-void			gpsee_moduleSystemCleanup       (gpsee_realm_t *realm);
+void			gpsee_moduleSystemCleanup       (JSContext *cx, gpsee_realm_t *realm);
 JSBool                  gpsee_initializeMonitorSystem   (JSContext *cx, gpsee_runtime_t *grt);      
 void                    gpsee_shutdownMonitorSystem     (gpsee_runtime_t *grt);
 gpsee_realm_t *         gpsee_getModuleScopeRealm       (JSContext *cx, JSObject *moduleScope);
