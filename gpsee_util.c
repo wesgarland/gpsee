@@ -342,7 +342,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   const char		*filename = gpsee_programRelativeFilename(cx, report->filename);
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
-  int			bold = isatty(STDERR_FILENO);
+  int			bold = gpsee_isatty(STDERR_FILENO);
 
   if (bold)
   {
@@ -365,7 +365,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
     gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
   }
 
-  if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && isatty(STDERR_FILENO))
+  if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && gpsee_isatty(STDERR_FILENO))
   {
     size_t start, len;
     const char *c = report->linebuf;
@@ -776,5 +776,24 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
     while (!done && *c);
   }
   gpsee_fprintf(cx, out, "\n");
+}
+
+int gpsee_isatty(int fd)
+{
+  const char *s;
+
+  if (fd == STDOUT_FILENO)
+  {
+    if ((s = getenv("GPSEE_STDOUT_ISATTY")))
+      return atoi(s) ? 1 : 0;
+  }
+
+  if (fd == STDERR_FILENO)
+  {
+    if ((s = getenv("GPSEE_STDERR_ISATTY")))
+      return atoi(s) ? 1 : 0;
+  }
+
+  return isatty(fd);
 }
 

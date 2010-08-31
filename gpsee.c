@@ -159,11 +159,11 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
       return;
 
     if (gpsee_verbosity(0) >= GPSEE_WARNING_OUTPUT_VERBOSITY)
-      printOnTTY = 1 && isatty(STDERR_FILENO);
+      printOnTTY = 1 && gpsee_isatty(STDERR_FILENO);
   }
   else
     if (gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
-      printOnTTY = 1 && isatty(STDERR_FILENO);
+      printOnTTY = 1 && gpsee_isatty(STDERR_FILENO);
 
   if (report->filename)
   {

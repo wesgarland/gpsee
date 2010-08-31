@@ -96,7 +96,7 @@ const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
   if (keyboard_InitObject(cx, moduleObject) == NULL)
     return NULL;
 
-  if (!isatty(fileno(stdout)))
+  if (!gpsee_isatty(fileno(stdout)))
     filter();
 
   initscr();

@@ -465,6 +465,7 @@ JSBool                  gpsee_native_break(JSContext *cx, JSObject *obj, uintN a
 /** @} */
 
 /* support routines */
+int			gpsee_isatty(int fd);
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
 JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
 JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
