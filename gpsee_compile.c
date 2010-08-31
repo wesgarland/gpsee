@@ -169,7 +169,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     /* Open the cache file, in a rather specific way */
     if (!(cache_file = fopen(cache_filename, "r")))
     {
-      dprintf(AT "could not load from compiler cache \"%s\" (%m)\n", cache_filename);
+      dprintf(AT "could not load from compiler cache \"%s\" (%s)\n", cache_filename, strerror(errno));
       goto cache_read_end;
     }
 
