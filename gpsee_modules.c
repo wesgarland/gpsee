@@ -250,7 +250,7 @@ struct moduleHandle
   JSObject		*scrobj;	/**< GC thing for script, used by GC callback */
 
   moduleHandle_flags_t	flags;		/**< Special attributes of module; bit-field */
-
+  int			released;
   moduleHandle_t	*next;		/**< Used when treating as a linked list node, i.e. during DSO unload */
   SPLAY_ENTRY(moduleHandle)	entry;	/**< Tree data */
 };
@@ -667,16 +667,21 @@ static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
  *  finalization order is random.
  *
  *  @param	cx	JavaScript context
- *  @param	module	Module handle to finalize
+ *  @param	module	Module handle to destroy'
  *  @returns	module->next
  */
-static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *module)
+static moduleHandle_t *destroyModuleHandle(JSContext *cx, moduleHandle_t *module)
 {
   moduleHandle_t *next = module->next;
 
-  dprintf("Finalizing module handle at 0x%p\n", module);
+  dprintf("Destroyinging module handle at 0x%p (%s)\n", module, moduleShortName(module->cname));
   if (module->cname)
+  {
+#if defined(GPSEE_DEBUG_BUILD)
+    memset((char *)module->cname, 0xbb, strlen(module->cname));
+#endif
     JS_free(cx, (char *)module->cname);
+  }
 
   if (module->DSOHnd)
   {
@@ -689,7 +694,6 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
 #if defined(GPSEE_DEBUG_BUILD)
   memset(module, 0xba, sizeof(*module));
 #endif    
-
   free(module);
 
   return next;
@@ -722,6 +726,11 @@ static moduleHandle_t *finalizeModuleHandle(JSContext *cx, moduleHandle_t *modul
 static void releaseModuleHandle(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module)
 {
   dprintf("Releasing module at 0x%p\n", module);
+
+  if (module->released)
+    return;
+  else
+    module->released = 1;
 
   SPLAY_REMOVE(moduleMemo, realm->modules, module);
   markModuleUnused(cx, module);
@@ -815,11 +824,21 @@ static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
   dpDepth(+1);
 
   hnd = getModuleScopeInfo(cx, moduleScope);
-  GPSEE_ASSERT(hnd && hnd->module);
+  if (!hnd)
+  {
+    dpDepth(-1);
+    dprintf("scope is already final\n");
+    return;
+  }
+
+  GPSEE_ASSERT(hnd->module);
   GPSEE_ASSERT(hnd->module->fini == NULL);      /* Should not be finalizing if fini handler is unrun */
 
   dprintf("module is %s, %p\n", moduleShortName(hnd->module->cname), hnd->module);
   releaseModuleHandle(cx, hnd->realm, hnd->module);
+#if defined(GPSEE_DEBUG_BUILD)
+  memset(hnd, 0xbc, sizeof(*hnd));
+#endif
   JS_free(cx, hnd);
 
   dpDepth(-1);
@@ -1010,7 +1029,12 @@ static void freeModulePath_fromJSArray(JSContext *cx, modulePathEntry_t modulePa
 
   for (pathEl = modulePath; pathEl; pathEl = pathEl->next)
     if (pathEl->dir)
+    {
+#if defined(GPSEE_DEBUG_BUILD)
+      memset((char *)pathEl->dir, 0xbd, strlen(pathEl->dir));
+#endif
       JS_free(cx, (char *)pathEl->dir);
+    }
 
   JS_free(cx, modulePath);
   return;
@@ -1629,7 +1653,7 @@ static JSBool moduleGCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCStatus s
   if (status == JSGC_FINALIZE_END)
   {
     while (realm->unreachableModule_llist)
-      realm->unreachableModule_llist = finalizeModuleHandle(cx, realm->unreachableModule_llist);
+      realm->unreachableModule_llist = destroyModuleHandle(cx, realm->unreachableModule_llist);
   }
 
   if (status != JSGC_MARK_END)
@@ -1883,19 +1907,31 @@ JSBool gpsee_modulizeGlobal(JSContext *cx, gpsee_realm_t *realm, JSObject *glob,
  *  @note	This is why the module memo tree is allocated 
  *		with malloc rather than JS_malloc.
  */
-void gpsee_moduleSystemCleanup(gpsee_realm_t *realm)
+void gpsee_moduleSystemCleanup(JSContext *cx, gpsee_realm_t *realm)
 {
   moduleHandle_t	*module, *nextModule;
+
+  GPSEE_ASSERT(NULL == JS_SetGCCallback(cx, NULL));
 
   for (module = SPLAY_MIN(moduleMemo, realm->modules);
        module != NULL;
        module = nextModule)
   {
     nextModule = SPLAY_NEXT(moduleMemo, realm->modules, module);
-    SPLAY_REMOVE(moduleMemo, realm->modules, module);
-    free(module);
+    /* Remove the scope from the splay and drop it on the unreachable_llist */
+    if (module->scope)
+    {
+      finalizeModuleScope(cx, module->scope);
+      JS_SetPrivate(cx, module->scope, NULL);
+    }
+    else
+      releaseModuleHandle(cx, realm, module);
+//    destroyModuleHandle(cx, module);
   }
   
+#if defined(GPSEE_DEBUG_BUILD)
+  memset(realm->modules, 0xbe, sizeof(*realm->modules));
+#endif
   free(realm->modules);
 }
 

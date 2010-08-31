@@ -265,7 +265,7 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
   if (gpsee_ds_forEach(cx, grt->realmsByContext, destroyRealmContext_cb, realm) == JS_FALSE)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRealmContext");
 
-  gpsee_moduleSystemCleanup(realm);
+  gpsee_moduleSystemCleanup(cx, realm);
 
   if (realm->cachedCx)
     JS_DestroyContext(realm->cachedCx);
@@ -275,6 +275,7 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
 #ifdef GPSEE_DEBUG_BUILD
   memset(realm, 0xde, sizeof(*realm));
 #endif
+  JS_free(cx, realm);
 
   return JS_TRUE;
 }
