@@ -45,7 +45,7 @@
  *  @ingroup    core
  *  @author     Wes Garland
  *  @date       June 2010
- *  @verison    $Id: gpsee_gccallbacks.c,v 1.1 2010/06/14 22:23:49 wes Exp $
+ *  @verison    $Id: gpsee_gccallbacks.c,v 1.2 2010/09/01 18:12:35 wes Exp $
  */
 
 #include "gpsee.h"

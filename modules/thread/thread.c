@@ -38,7 +38,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Oct 2007
- *  @version	$Id: thread.c,v 1.5 2010/06/14 22:12:01 wes Exp $
+ *  @version	$Id: thread.c,v 1.6 2010/09/01 18:12:36 wes Exp $
  *
  *  Basic strategy: JS code instanciates Thread object and calls JS start() method. 
  *                  C Back end makes a thread with NSPR, runs the run() method. If 
@@ -60,7 +60,7 @@
  *		call JS_DestroyRuntime.  To clean them up, call thread_FiniModule().
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: thread.c,v 1.5 2010/06/14 22:12:01 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: thread.c,v 1.6 2010/09/01 18:12:36 wes Exp $";
 
 #define DEBUG 1	/* moz */
 #include <nspr.h>

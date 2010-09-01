@@ -40,7 +40,7 @@
  *  @author     Donny Viszneki
  *              hdon@page.ca
  *  @date       Nov 2009
- *  @version    $Id: test1.js,v 1.3 2010/04/22 12:42:20 wes Exp $
+ *  @version    $Id: test1.js,v 1.4 2010/09/01 18:12:36 wes Exp $
  */
 
 const sh = require("shellalike");

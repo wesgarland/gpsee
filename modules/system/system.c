@@ -39,10 +39,10 @@
  *                              for the stdio features.
  *  @author     Donny Viszneki
  *  @date       Feb 2010
- *  @version    $Id: system.c,v 1.3 2010/06/14 22:12:01 wes Exp $
+ *  @version    $Id: system.c,v 1.4 2010/09/01 18:12:36 wes Exp $
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.3 2010/06/14 22:12:01 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: system.c,v 1.4 2010/09/01 18:12:36 wes Exp $";
  
 #include "gpsee.h"
 #include "system.h"

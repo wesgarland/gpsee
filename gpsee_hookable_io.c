@@ -40,7 +40,7 @@
  *              environments) can hook them to avoid screen corruption etc.
  *  @author     Wes Garland, wes@page.ca
  *  @date       April 2010
- *  @version    $Id: gpsee_hookable_io.c,v 1.2 2010/06/29 19:20:21 wes Exp $
+ *  @version    $Id: gpsee_hookable_io.c,v 1.3 2010/09/01 18:12:35 wes Exp $
  */
 
 #include "gpsee.h"

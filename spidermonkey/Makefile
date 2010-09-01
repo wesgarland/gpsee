@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	Jan 2008
-## @version	$Id: Makefile,v 1.10 2010/04/28 12:41:33 wes Exp $ 
+## @version	$Id: Makefile,v 1.11 2010/09/01 18:12:36 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build Mozilla SpiderMonkey in a
