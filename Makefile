@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.40 2010/06/29 19:27:57 wes Exp $
+## @version	$Id: Makefile,v 1.41 2010/09/01 18:12:34 wes Exp $
 
 top: 	
 	@if [ -f ./local_config.mk ]; then $(MAKE) help; echo " *** Running $(MAKE) build"; echo; $(MAKE) build; else $(MAKE) help; fi
