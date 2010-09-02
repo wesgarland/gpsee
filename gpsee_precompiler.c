@@ -93,6 +93,11 @@ int main(int argc, char *argv[])
     goto out;
   }
 
+  if (fgetc(scriptFile) == '#' && fgetc(scriptFile) == '!' && fgetc(scriptFile) == ' ')
+    while(fgetc(scriptFile) != '\n');
+  else
+    rewind(scriptFile);
+
   printf(" * Precompiling %s\n", scriptFilename);
   if (gpsee_compileScript(jsi->cx, scriptFilename, scriptFile, NULL, &script, jsi->globalObject, &scrobj) == JS_FALSE)
   {
