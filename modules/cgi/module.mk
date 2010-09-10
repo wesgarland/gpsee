@@ -35,18 +35,15 @@
 EXTRA_MODULE_OBJS	= query_object.o
 
 ifeq ($(APR_PROJECT),TRUE)
-EXTRA_MODULE_OBJS	+= PHPSession_class.o
+EXTRA_MODULE_OBJS	+= PHPSession_class.o phpsess.o
 endif
 
 ifeq ($(STREAM),surelynx)
-LDFLAGS 		+= -lphpsess -lcgihtml
-else
+LDFLAGS 		+= -lphpsess
+endif
+
 EXTRA_MODULE_OBJS	+= cgihtml/cgihtml.a
 CPPFLAGS		+= -Icgihtml
-ifeq ($(APR_PROJECT),TRUE)
-EXTRA_MODULE_OBJS	+= phpsess.o
-endif
-endif
 
 build:
 	cd ../.. && $(MAKE)

@@ -110,6 +110,7 @@ static JSBool query_readQuery(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 
   depth = JS_SuspendRequest(cx);
   retval = read_cgi_input(cx, hnd->query, hnd->uploadDir);
+  
   JS_ResumeRequest(cx, depth);
 
   *rval = retval ? JSVAL_TRUE : JSVAL_FALSE;
@@ -117,7 +118,7 @@ static JSBool query_readQuery(JSContext *cx, JSObject *obj, uintN argc, jsval *a
   for (n = hnd->query->head; n; n = n->next)
   {
     /* temporary fix? we don't want to overwrite our module readQuery() member */
-    if (!strcmp(n->entry.name,"readQuery"))
+    if (!n->entry.name || !strcmp(n->entry.name,"readQuery"))
       continue;
 
     if (n->entry.value == NULL)
