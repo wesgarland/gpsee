@@ -86,7 +86,6 @@
  */
 
 #include <gpsee.h>
-#define apr_surelynx_log jseng_log
 #include "phpsess.h"
 #include <sys/mman.h>
 
