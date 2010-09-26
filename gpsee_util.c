@@ -341,7 +341,7 @@ const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filena
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
   gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  const char		*filename = gpsee_programRelativeFileame(cx, report->filename) ?: "<unknown filename>";
+  const char		*filename = gpsee_programRelativeFilename(cx, report->filename) ?: "<unknown filename>";
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
   int			bold = gpsee_isatty(STDERR_FILENO);
