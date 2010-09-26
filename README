@@ -3,9 +3,12 @@ Thanks for downloading GPSEE!
 Please visit us on the web at http://code.google.com/p/gpsee/
 for the most recent documentation and build instructions.
 
-The most recent version of Spidermonkey which has been tested and is known
+The most recent version of SpiderMonkey which has been tested and is known
 to work with GPSEE is revision 21e90d198613 from the TraceMonkey tree.
 This is "pre-fatvals", in Mozilla-speak.
+
+To select a specific version of SpiderMonkey, enter the repository directory
+and use the following command: hg revert --rev=XXX --all
 
 What is GPSEE?
 =========================================================================
