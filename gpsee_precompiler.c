@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
   if (!scriptFile)
   {
-    fprintf(stderr, "Unable to open' script '%s'! (%m)", scriptFilename);
+    fprintf(stderr, "Unable to open' script '%s'! (%s)\n", scriptFilename, strerror(errno));
     exitCode = 1;
     goto out;
   }
