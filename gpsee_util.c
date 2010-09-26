@@ -296,6 +296,8 @@ haveint:
  *  @param      long_filename   The filename to shorten
  * 
  *  @returns    The shortened filename, or long_filename.
+ *
+ *  @note	Passing long_filename = NULL to this function will cause it to return NULL.
  */
 const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filename)
 {
@@ -304,7 +306,7 @@ const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filena
   const char            *cname;
   const char            *bname;
 
-  if (!realm)
+  if (!realm || !long_filename)
     return long_filename;
 
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
@@ -339,7 +341,7 @@ const char *gpsee_programRelativeFilename(JSContext *cx, const char *long_filena
 static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSErrorReport *report)
 {
   gpsee_runtime_t	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
-  const char		*filename = gpsee_programRelativeFilename(cx, report->filename);
+  const char		*filename = gpsee_programRelativeFileame(cx, report->filename) ?: "<unknown filename>";
   char 			prefix[strlen(filename) + 21]; /* Allocate enough room for "filename:lineno" */
   size_t 		sz;
   int			bold = gpsee_isatty(STDERR_FILENO);
