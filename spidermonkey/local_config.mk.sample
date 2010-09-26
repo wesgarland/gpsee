@@ -62,4 +62,8 @@ CONFIGURE_OPTIONS	+= --with-system-nspr
 # Extra optoins to pass to make while building SpiderMonkey
 SM_MAKE_OPTIONS		?= -j2
 
+# Set to FALSE if using a pre-built SpiderMonkey, or your
+# SpiderMonkey installs directly to its target location
+STAGED_SPIDERMONKEY_BUILD = TRUE
+
 # You can override any variables in Makefile here with the = operator

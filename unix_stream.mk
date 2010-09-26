@@ -94,13 +94,14 @@ VERSION_H 	?= $(VERSION_O:.$(OBJ_EXT)=.h)
 
 ifdef SUDO_USER
 .PRECIOUS:		$(VERSION_O) $(VERSION_C)
-else
-.PHONY:			$(VERSION_O)
 endif
-$(VERSION_O):           $(VERSION_C)
+$(VERSION_O):		$(VERSION_C)
 	$(CC) $(CFLAGS) -c $(VERSION_C) -o $@
+ifndef SUDO_USER
+.PHONY: $(VERSION_C)
 $(VERSION_C):           $(VERSION_C_IN) $(VERSION_H)
 	$(MK_VERSION_C)
+endif
 else
 VERSION_C=
 VERSION_H=

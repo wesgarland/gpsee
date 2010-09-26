@@ -59,9 +59,11 @@ SOLIB_DIRS      += $(SOLIB_DIR)
 %.$(SOLIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
 		$(SO_AR) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 
+ifndef SUDO_USER
 %.$(LIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
 		$(AR_RU) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
 		$(RANLIB) $@
+endif
 
 export GPSEE_SRC_DIR BUILD STREAM
 export SPIDERMONKEY_BUILD SPIDERMONKEY_SRC
