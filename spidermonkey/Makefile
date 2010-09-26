@@ -59,7 +59,11 @@ NO_BUILD_RULES = TRUE
 include local_config.mk
 
 ifneq ($(MAKECMDGOALS),help)
+ifeq ($(STAGED_SPIDERMONKEY_BUILD),TRUE)
 JSAPI_PREFIX		?= $(SPIDERMONKEY_BUILD)/jsapi
+else
+JSAPI_PREFIX		?= $(GPSEE_PREFIX_DIR)/jsapi
+endif
 LIB_DIR			?= $(JSAPI_PREFIX)/lib
 INCLUDE_DIR		?= $(JSAPI_PREFIX)/include
 include sanity.mk
@@ -217,6 +221,8 @@ vars.mk: $(JS_CONFIG)
 	@echo "JSAPI_BUILD_TYPE=$(BUILD)" >> vars.mk
 	@echo "SPIDERMONKEY_SRC=$(SPIDERMONKEY_SRC)" >> vars.mk
 	@echo "SPIDERMONKEY_BUILD=$(SPIDERMONKEY_BUILD)" >> vars.mk
+	@echo "STAGED_SPIDERMONKEY_BUILD = $(STAGED_SPIDERMONKEY_BUILD)" >> vars.mk
+
 	@[ "$(SUDO_USER)" = "" ] || chown $(SUDO_USER) vars.mk
 
 clean:
