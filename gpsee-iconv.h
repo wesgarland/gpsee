@@ -39,8 +39,6 @@
  * @version	$Id: gpsee-iconv.h,v 1.2 2010/03/06 18:17:13 wes Exp $
  */
 
-#include <dlfcn.h>
-
 #ifdef HAVE_ICONV
 /*
  * This file is required because of
