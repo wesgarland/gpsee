@@ -67,13 +67,13 @@ if [ "$BASH_VERSION" = "dontrecurse" ] || [ ! "$BASH_VERSION" ]; then
   exit 1
 fi
 
-cat <<EOF
-
-*** Work in progress -- if you have trouble with this script, ***
-*** you can still use the old build system; instructions are  ***
-*** at http://code.google.com/p/gpsee/wiki/Building           ***
-
-EOF
+#cat <<EOF
+#
+#*** Work in progress -- if you have trouble with this script, ***
+#*** you can still use the old build system; instructions are  ***
+#*** at http://code.google.com/p/gpsee/wiki/Building           ***
+#
+#EOF
 
 argv_zero="$0"
 configure_cmd="$0 $*"
@@ -96,7 +96,7 @@ _echo_fmt_opt_help()
 _help()
 {
 cat <<EOF
-configure -- Configuration automator for GPSEE.
+configure - Configuration automator for GPSEE.
 Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
 
 Usage: $argv_zero [options]
@@ -203,7 +203,7 @@ with_gcc_prefix()
 
 disable_async_callbacks()
 {
-  [ "$1" = "help" ] && echo "disable async callback facility (breaks require('signals')" && return
+  [ "$1" = "help" ] && echo "disable async callback facility (breaks require('signals'))" && return
 
   if [ "$1" = "enable" ]; then
     echo "EXTRA_CPPFLAGS += -UGPSEE_NO_ASYNC_CALLBACKS" >&5
