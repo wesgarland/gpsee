@@ -174,7 +174,9 @@ real-clean: clean
 	cd libffi && $(MAKE) clean
 
 gsr-link:
+ifneq (X$(GSR_SHEBANG_LINK),X)
 	[ -h "$(GSR_SHEBANG_LINK)" ] || ln -s "$(BIN_DIR)/gsr" "$(GSR_SHEBANG_LINK)"
+endif
 
 gpsee_modules.o: CPPFLAGS += -DDEFAULT_LIBEXEC_DIR=\"$(LIBEXEC_DIR)\" -DDSO_EXTENSION=\"$(SOLIB_EXT)\"
 
@@ -284,7 +286,9 @@ $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LDFLAGS += $(JSAPI_INSTALL_LIBS)
 
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 
+ifneq (X$(GSR_SHEBANG_LINK),X)
 gsr.o: CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
+endif
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
 $(BIN_DIR)/gsr: gsr.o $(VERSION_O)
 

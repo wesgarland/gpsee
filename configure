@@ -131,79 +131,79 @@ EOF
 
 prefix()
 {
-  [ "$1" = "help" ] && echo "specify location of GPSEE install" && return
+  [ "$1" = "help" ] && echo "Specify location of GPSEE install" && return
   echo "GPSEE_PREFIX_DIR=$1" >&5
 }
 
 with_build()
 {
-  [ "$1" = "help" ] && echo "specify GPSEE build type (DEBUG or RELEASE)" && return
+  [ "$1" = "help" ] && echo "Specify GPSEE build type (DEBUG or RELEASE)" && return
   echo "BUILD=$1" >&5
 }
 
 with_stream()
 {
-  [ "$1" = "help" ] && echo "specify GPSEE build stream (unix or surelynx)" && return
+  [ "$1" = "help" ] && echo "Specify GPSEE build stream (unix or surelynx)" && return
   echo "STREAM=$1" >&5
 }
 
 with_gnu_make()
 {
-  [ "$1" = "help" ] && echo "specify location of GNU Make (3.81 or better) executable" && return
+  [ "$1" = "help" ] && echo "Specify location of GNU Make (3.81 or better) executable" && return
 }
 
 with_pkg_config()
 {
-  [ "$1" = "help" ] && echo "specify location of pkg-config executable" && return
+  [ "$1" = "help" ] && echo "Specify location of pkg-config executable" && return
   echo "PKG_CONFIG=$1" >&5
 }
 
 with_autoconf213()
 {
-  [ "$1" = "help" ] && echo "specify location of autoconf 2.13 executable" && return
+  [ "$1" = "help" ] && echo "Specify location of autoconf 2.13 executable" && return
   echo "AUTOCONF=$1" >&5
 }
 
 with_jsapi_build()
 {
-  [ "$1" = "help" ] && echo "specify SpiderMonkey build type (DEBUG or RELEASE)" && return
+  [ "$1" = "help" ] && echo "Specify SpiderMonkey build type (DEBUG or RELEASE)" && return
   echo "BUILD=$1" >&6
 }
 
 with_jsapi()
 {
-  [ "$1" = "help" ] && echo "specify location of js/src (if not using Mozilla tree)" && return
+  [ "$1" = "help" ] && echo "Specify location of js/src (if not using Mozilla tree)" && return
   echo "SPIDERMONKEY_SRC=$1" >&6
 }
 
 with_jsapi_options()
 {
-  [ "$1" = "help" ] && echo "add options to js/src/configure command" && return
+  [ "$1" = "help" ] && echo "Add options to js/src/configure command" && return
   echo "CONFIGURE_OPTIONS += $1" >&6
 }
 
 with_jsapi_cppflags()
 {
-  [ "$1" = "help" ] && echo "add C pre-processor flags to spidermonkey build" && return
+  [ "$1" = "help" ] && echo "Add C pre-processor flags to spidermonkey build" && return
   echo "CONFIGURE_ENV_VARS += CPPFLAGS=$1" >&6
 }
 
 with_mozilla()
 {
-  [ "$1" = "help" ] && echo "specify location of Mozilla tree" && return
+  [ "$1" = "help" ] && echo "Specify location of Mozilla tree" && return
   echo "SPIDERMONKEY_SRC=$1/js/src" >&6
 }
 
 with_gcc_prefix()
 {
-  [ "$1" = "help" ] && echo "specify prefix of GCC to use" && return
+  [ "$1" = "help" ] && echo "Specify prefix of GCC to use" && return
   echo "GCC_PREFIX=$1" >&5
   echo "CC=gcc" >&5
 }
 
 disable_async_callbacks()
 {
-  [ "$1" = "help" ] && echo "disable async callback facility (breaks require('signals'))" && return
+  [ "$1" = "help" ] && echo "Disable async callback facility (breaks require('signals'))" && return
 
   if [ "$1" = "enable" ]; then
     echo "EXTRA_CPPFLAGS += -UGPSEE_NO_ASYNC_CALLBACKS" >&5
@@ -248,6 +248,18 @@ enable_curl()
 
   echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
   cfg_pkg CURL libcurl 5
+}
+
+with_system_gsr()
+{
+  [ "$1" = "help" ] && echo "Specify alternate location for /usr/bin/gsr symlink" && return
+  echo "GSR_SHEBANG_LINK=$1" >&5
+}
+
+disable_gsr_symlink()
+{
+  [ "$1" = "help" ] && echo "Do not emit system gsr symlink (does not erase existing)" && return
+  echo "GSR_SHEBANG_LINK=" >&5
 }
 
 # main
