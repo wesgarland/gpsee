@@ -106,7 +106,7 @@ static JSBool system_stdioSetProperty(JSContext *cx, JSObject *obj, jsval id, js
 
 static JSBool system_platform_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-  *vp = STRING_TO_JSVAL(JS_InternString(cx, GPSEE_GLOBAL_NAMESPACE_NAME " " GPSEE_CURRENT_VERSION_STRING));
+  *vp = STRING_TO_JSVAL(JS_InternString(cx, GPSEE_GLOBAL_NAMESPACE_NAME "XXX" GPSEE_CURRENT_VERSION_STRING));
 
   return JS_TRUE;
 }
