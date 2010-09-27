@@ -56,7 +56,7 @@
  
 static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.26 2010/09/01 18:12:35 wes Exp $";
 
-#define PRODUCT_VERSION		"1.0-pre3"
+#define PRODUCT_VERSION		"1.0-rc1"
 
 #if !defined(GPSEE_DEBUGGER)
 # define PRODUCT_SUMMARY        "Script Runner for GPSEE"
