@@ -9,7 +9,7 @@
 #ifndef _HTML_LIB
 #define _HTML_LIB 1
 
-void html_header();
+void html_header(void);
 void mime_header(char *mime);
 void nph_header(char *status);
 void show_html_page(char *loc);
@@ -18,7 +18,7 @@ void pragma(char *msg);
 void set_cookie(char *name, char *value, char *expires, char *path,
 		char *domain, short secure);
 void html_begin(char *title);
-void html_end();
+void html_end(void);
 
 /* better to do printf inside of function, or return string? */
 void h1(char *header);

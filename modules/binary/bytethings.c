@@ -69,7 +69,7 @@ static const char __attribute__((unused)) rcsid[]="$Id: bytethings.c,v 1.13 2010
  *  An error will be thrown if 'obj' has no "private" data, if obj's clasp does not match that pointed to by claspp (if it
  *  is not NULL and does not point to NULL) or if obj's class is neither byteString_clasp nor byteArray_clasp.
  */
-inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName)
+byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName)
 {
   JSClass *clasp;
   const char *cn;
