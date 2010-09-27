@@ -62,3 +62,5 @@ ifneq (X,X$(wildcard /opt/sfw/include/curl/curl.h))
 CURL_LDFLAGS	?= -L/opt/sfw/lib -R/opt/sfw/lib -lcurl
 CURL_CPPFLAGS	?= -I/opt/sfw/include
 endif
+
+GNU_TAR		= gtar
