@@ -164,10 +164,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup ut
 
 #define GPSEE_MAX_THROW_MESSAGE_SIZE		256
 #define GPSEE_GLOBAL_NAMESPACE_NAME 		"gpsee"
-#define GPSEE_CURRENT_VERSION_STRING		"0.2-pre2"
-#define GPSEE_MAJOR_VERSION_NUMBER	        0
-#define GPSEE_MINOR_VERSION_NUMBER		2
-#define GPSEE_MICRO_VERSION_NUMBER		0
+#include <gpsee_version.h>
 #include <gpsee_formats.h>
 
 #if !defined(fieldSize)
