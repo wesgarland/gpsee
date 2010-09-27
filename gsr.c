@@ -56,7 +56,7 @@
  
 static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.26 2010/09/01 18:12:35 wes Exp $";
 
-#define PRODUCT_VERSION		"1.0-rc1"
+#define PRODUCT_VERSION		"1.0-rc2"
 
 #if !defined(GPSEE_DEBUGGER)
 # define PRODUCT_SUMMARY        "Script Runner for GPSEE"
@@ -64,10 +64,6 @@ static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.26 2010/09/01 
 #else
 # define PRODUCT_SUMMARY        "Script Debugger for GPSEE"
 # define PRODUCT_SHORTNAME	"gsrdb"
-#endif
-
-#if !defined(SYSTEM_GSR)
-#define	SYSTEM_GSR	"/usr/bin/" PRODUCT_SHORTNAME
 #endif
 
 #include <prinit.h>
@@ -253,8 +249,10 @@ static void __attribute__((noreturn)) moreHelp(const char *argv_zero)
 		  "  - Exit codes 0 and 1 are reserved for 'success' and 'error' respectively.\n"
 		  "    Application programs can return any exit code they wish, from 0-127,\n"
 		  "    with either require('gpsee').exit() or by throwing a number literal.\n"
+#if defined(SYSTEM_GSR)
 		  "  - Preload scripts will only be processed when " PRODUCT_SHORTNAME " is not invoked\n"
 		  "    as " SYSTEM_GSR ".\n"
+#endif
 		  "\n"
 	       );
   exit(1);
@@ -698,7 +696,11 @@ PRIntn prmain(PRIntn argc, char **argv)
     v = JSVAL_NULL;
   }
 
-  if ((argv[0][0] == '/') && (strcmp(argv[0], SYSTEM_GSR) != 0) && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
+  if ((argv[0][0] == '/') 
+#if defined(SYSTEM_GSR)
+      && (strcmp(argv[0], SYSTEM_GSR) != 0) 
+#endif
+      && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
   {
     char preloadScriptFilename[FILENAME_MAX];
     char mydir[FILENAME_MAX];
