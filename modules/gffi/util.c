@@ -237,7 +237,7 @@ static JSBool valueTo_jsint(JSContext *cx, jsval v, jsint *ip, int argn, const c
  */
 static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storagep, int argn, const char *throwPrefix) 
 {
-  jsint i;
+  int i;
 
   *storagep = JS_malloc(cx, sizeof(char));
   if (!*storagep)
@@ -247,22 +247,21 @@ static JSBool valueTo_char(JSContext *cx, jsval v, void **avaluep, void **storag
 
   if (!JSVAL_IS_INT(v))
   {
-    const char *s;
-    JSString		*str = JS_ValueToString(cx, v);
+    const char	*s;
+    JSString	*str = JS_ValueToString(cx, v);
 
     if (!str && JS_IsExceptionPending(cx))
       return JS_FALSE;
 
     s = JS_GetStringBytes(str);
-    if (s)
-    {
-      if (s[0] && !s[1])
-	i = s[0];
-    }
+    if (s[0] && !s[1])
+      i = s[0];
+    else
+      return gpsee_throw(cx, "%s.arguments.%i.valueTo_char.length: passed string is not once char long", throwPrefix, argn);
   }
   else
   {
-    if (valueTo_jsint(cx, v, &i, argn, throwPrefix) == JS_FALSE)
+    if (valueTo_jsint(cx, v, &i, argn, throwPrefix) != JS_TRUE)
       return JS_FALSE;
   }
 
@@ -291,7 +290,7 @@ static JSBool valueTo_ ##ftype(JSContext *cx, jsval v, 				\
   jsint i;									\
   ctype tgt;									\
     								                \
-  if (valueTo_jsint(cx, v, &i, argn, throwPrefix) == JS_FALSE)			\
+  if (valueTo_jsint(cx, v, &i, argn, throwPrefix) != JS_TRUE)			\
     return JS_FALSE;								\
     								                \
   tgt = i;									\

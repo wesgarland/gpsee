@@ -82,7 +82,7 @@ GPSEE_STATIC_ASSERT(sizeof(int64) == sizeof(long long int));
  *  @throws     range.underflow
  *  @throws     range.overflow
  */
-inline int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 index, const char const * methodName)\
+int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 index, const char const * methodName)\
 {
   if (index < 0)
   {
@@ -451,6 +451,8 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
       /* TODO to number! */
       if (JSVAL_IS_INT(argv[0]))
         start = JSVAL_TO_INT(argv[0]);
+      else
+	return gpsee_throw(cx, CLASS_ID ".slice,arguments.0.type: must specify an actual number");
       end = hnd->length;
       /* Wrap negative indexes around the end */
       if (start < 0)
@@ -463,8 +465,14 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
       /* TODO to number! */
       if (JSVAL_IS_INT(argv[0]))
         start = JSVAL_TO_INT(argv[0]);
+      else
+	return gpsee_throw(cx, CLASS_ID ".slice,arguments.0.type: must specify an actual number");
+
       if (JSVAL_IS_INT(argv[1]))
         end = JSVAL_TO_INT(argv[1]);
+      else
+	return gpsee_throw(cx, CLASS_ID ".slice,arguments.1.type: must specify an actual number");
+
       /* Wrap negative indexes around the end */
       if (end < 0)
         end = hnd->length + end;

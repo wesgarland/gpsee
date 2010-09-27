@@ -14,7 +14,7 @@
 
 /* HTTP headers */
 
-void html_header()
+void html_header(void)
 {
   printf("Content-type: text/html\n\n");
 }
@@ -72,7 +72,7 @@ void html_begin(char *title)
   printf("<body>\n");
 }
 
-void html_end()
+void html_end(void)
 {
   printf("</body> </html>\n");
 }

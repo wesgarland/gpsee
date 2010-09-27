@@ -144,7 +144,7 @@ static JSBool memory_asString(JSContext *cx, uintN argc, jsval *vp)
 	length = strlen((char *)hnd->buffer);
       break;
     case 1:
-      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asString.argument.1") == JS_FALSE)
+      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asString.argument.1") != JS_TRUE)
 	return JS_FALSE;
       break;
     default:
@@ -215,7 +215,7 @@ static JSBool memory_asDataString(JSContext *cx, uintN argc, jsval *vp)
 	length = strlen((char *)hnd->buffer);
       break;
     case 1:
-      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asDataString.argument.1") == JS_FALSE)
+      if (memory_parseLengthArgument(cx, argv[0], hnd->buffer, &length, CLASS_ID ".asDataString.argument.1") != JS_TRUE)
 	return JS_FALSE;
       break;
     default:
