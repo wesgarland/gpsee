@@ -75,6 +75,7 @@ CHOWN		?= chown
 AWK		?= awk
 TR		?= tr
 SED		?= sed
+GNU_TAR		?= tar
 
 # File extensions; EXE_EXT includes dot if required
 OBJ_EXT		?=o

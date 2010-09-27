@@ -51,6 +51,10 @@
 GPSEE_SRC_DIR ?= ..
 GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 
+ifneq (X,$(wildcard js/src/configure.in)X)
+SPIDERMONKEY_SRC=$(shell pwd)/js/src
+endif
+
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
 -include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
