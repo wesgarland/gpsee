@@ -83,7 +83,7 @@ JSAPI_INSTALL_LIBS = $(JSAPI_LIBS)
 endif
 endif
 
-PROGS                   ?= 
+PROGS                   ?= gpsee_version
 
 ALL_MODULES		?= $(filter-out $(IGNORE_MODULES) ., $(shell cd modules && find . -type d -name '[a-z]*' -prune | sed 's;^./;;') $(shell cd $(STREAM)_modules 2>/dev/null && find . -type d -name '[a-z]*' -prune | sed 's;^./;;'))
 IGNORE_MODULES		+= pairodice mozshell mozfile file filesystem-base
@@ -233,7 +233,6 @@ show_modules:
 	@echo  $(sort $(wildcard $(foreach MODULE, $(ALL_MODULES), modules/$(MODULE)/$(MODULE).jsdoc $(STREAM)_modules/$(MODULE)/$(MODULE).jsdoc))) |\
 		$(SED) -e 's/  */ /g' | tr ' ' '\n' | $(GREP) -v '^ *$$' | $(SED) 's/^/ - /'
 
-PROGS += gpsee_version
 clean_makefile_depends:
 	$(RM) gpsee_release.mk
 
@@ -290,6 +289,7 @@ ifneq (X$(GSR_SHEBANG_LINK),X)
 gsr.o: CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 endif
 gsr.o: WARNINGS := $(filter-out -Wcast-align, $(WARNINGS))
+gsr.o: gpsee_version.h
 $(BIN_DIR)/gsr: gsr.o $(VERSION_O)
 
 $(SPIDERMONKEY_BUILD)/libjs_static.a:
@@ -338,7 +338,7 @@ TEMPLATE_MARKUP =\
 		-e 's;@@SPIDERMONKEY_BUILD@@;$(SPIDERMONKEY_BUILD);g'\
 		-e 's;@@OUTSIDE_MK@@;$(GPSEE_SRC_DIR)/outside.mk;g'\
 
-gpsee-config gpsee.pc: gpsee_version Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
+gpsee-config gpsee.pc: gpsee_version gpsee_version.h Makefile local_config.mk spidermonkey/local_config.mk spidermonkey/vars.mk $(LIBFFI_CONFIG_DEPS)
 gpsee-config gpsee.pc: GPSEE_RELEASE=$(shell ./gpsee_version)
 
 gpsee-config: gpsee-config.template 
@@ -353,6 +353,9 @@ gpsee.pc: gpsee.pc.template
 $(SOLIB_DIR)/pkgconfig/gpsee.pc: gpsee.pc
 	@[ -d $(dir $@) ] || $(MKDIR) $(dir $@)
 	$(CP) $^ $@
+
+gpsee_version: gpsee_version.c gpsee_version.h
+	$(CC) gpsee_version.c -o $@
 
 help:
 	@echo

@@ -38,26 +38,15 @@ HAVE_TOP_RULE=1
 top: build install bin-dist
 
 include Makefile
-include $(GPSEE_SRC_DIR)/gpsee_release.mk
 
 gpsee_version: LOADLIBES=
-$(GPSEE_SRC_DIR)ddd/gpsee_release.mk: gpsee_version
+$(GPSEE_SRC_DIR)/gpsee_release.mk: gpsee_version
 	@echo GPSEE_RELEASE="$(shell ./gpsee_version)"	 > $@
+include $(GPSEE_SRC_DIR)/gpsee_release.mk
 
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: TMPFILE=gpsee_file_list.tmp
 gpsee-$(GPSEE_RELEASE)_src.tar.gz:: 
 	@$(RM) $(TMPFILE) || [ X = X ]
-#	ls $(PROGS:=.c) $(GPSEE_SOURCES) Doxyfile Makefile *.mk [A-Z][A-Z][A-Z][A-Z]* \
-#		gpsee.jsdoc gpsee_*.[ch] gpsee.h \
-#		| sort -u >> $(TMPFILE)
-#	find licenses -type f >> $(TMPFILE)
-#	find modules -type f >> $(TMPFILE)
-#	find sample_programs -type f >> $(TMPFILE)
-#	find tests -type f | grep -v '/\..*\.jsc$$' >> $(TMPFILE)
-#	find docgen -type f >> $(TMPFILE)
-#	ls spidermonkey/Makefile spidermonkey/*.sample >> $(TMPFILE)
-#	find unix_modules -type f >> $(TMPFILE) 
-#	find apr_modules -type f >> $(TMPFILE) || [ ! -d apr_modules ]
 	ls version.c >> $(TMPFILE)
 	$(HG) locate >> $(TMPFILE)
 	[ ! -d gpsee-$(GPSEE_RELEASE) ] || rm -rf gpsee-$(GPSEE_RELEASE)
