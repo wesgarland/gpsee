@@ -239,7 +239,7 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 {
   JSString 	*str;
   jsrefcount 	depth;
-  int		i;
+  uintN		i;
 
   /* Iterate over all arguments, converting them to strings as necessary, replacing
    * the contents of argv with the results. */
@@ -297,7 +297,7 @@ JSBool gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
  *
  *  @note	This function uses the APR SureLynx gpsee_makeLogFormat() function,
  *		so %m will work, and so will addPercentM_Handler() with surelynx.
-*/
+ */
 JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
 {
   char 		*message;
@@ -809,7 +809,7 @@ gpsee_runtime_t *gpsee_createRuntime(void)
   JS_SetRuntimePrivate(rt, grt);
 
   /* Control the maximum amount of memory the JS engine will allocate and default to infinite */
-  JS_SetGCParameter(rt, JSGC_MAX_BYTES, strtol(rc_default_value(rc, "gpsee_gc_maxbytes", "0"), NULL, 0) ?: (size_t)-1);
+  JS_SetGCParameter(rt, JSGC_MAX_BYTES, (size_t)strtol(rc_default_value(rc, "gpsee_gc_maxbytes", "0"), NULL, 0) ?: (size_t)-1);
   
   /* Create the core context, used only by GPSEE internals */
   if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
