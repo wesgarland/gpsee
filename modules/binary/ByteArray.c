@@ -628,7 +628,7 @@ static JSBool ByteArray_sort(JSContext *cx, uintN argc, jsval *vp)
 }
 static int compare_bytes(const void *a, const void*b)
 {
-  return *(unsigned char*)a - *(unsigned char*)b;
+  return *(const unsigned char*)a - *(const unsigned char*)b;
 }
 /** Implemented both ByteArray.slice() and ByteArray.splice() instance methods */
 static JSBool ByteArray_lice(JSContext *cx, uintN argc, jsval *vp, JSBool splice, const char *methodName)

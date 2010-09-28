@@ -87,6 +87,9 @@ ICONV_LDFLAGS	?= -liconv
 GPSEE_C_DEFINES	+= HAVE_ICONV GPSEE_STD_SUSV3 GPSEE_STD_XSI
 DEFAULT_GPSEE_PREFIX_DIR ?= /usr/local/gpsee
 
+CFLAGS		+= $(WARNINGS)
+CXXFLAGS	+= $(WARNINGS)
+
 # Build a timestamp object, requires $(VERSION_H) [version.h]
 ifndef NO_VERSION_O_RULES
 ifdef VERSION_O

@@ -1998,7 +1998,7 @@ JSBool gpsee_getModuleData(JSContext *cx, const void *key, void **data_p, const 
 {
   gpsee_dataStore_t     ds;
 
-  if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
+  if (gpsee_getModuleDataStore(cx, &ds) != JS_TRUE)
     return JS_FALSE;
 
   *data_p = gpsee_ds_get(ds, key);
@@ -2026,7 +2026,7 @@ JSBool gpsee_setModuleData(JSContext *cx, const void *key, void *data)
 {
   gpsee_dataStore_t     ds;
 
-  if (gpsee_getModuleDataStore(cx, &ds) == JS_FALSE)
+  if (gpsee_getModuleDataStore(cx, &ds) != JS_TRUE)
     return JS_FALSE;
 
   return gpsee_ds_put(ds, key, data);

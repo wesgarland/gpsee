@@ -108,7 +108,13 @@ static size_t uio_fwrite_js(JSContext *cx, gpsee_realm_t *realm, jsval hookFn, c
 
   JS_LeaveLocalRootScope(cx);
 
-  return JSVAL_IS_INT(rval) ? JSVAL_TO_INT(rval) : bufLen;
+  if (!JSVAL_IS_INT(rval))
+    return bufLen;
+
+  if (JSVAL_TO_INT(rval) < 0)
+    return 0;
+
+  return JSVAL_TO_INT(rval);
 }
 
 /** 

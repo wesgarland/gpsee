@@ -307,7 +307,7 @@ static void * xdrfile_raw (JSXDRState *xdr, uint32 len)
   /* If we're deserializing, we need to read the file into the buffer */
   if (xdr->mode != JSXDR_ENCODE)
   {
-    int n;
+    size_t n;
     /* Fill our 'raw' chunk from the underlying file */
     n = fread(self->raw, 1, len, self->f);
     if (n < len)
@@ -389,7 +389,7 @@ static JSBool xdrfile_seek (JSXDRState *xdr, int32 offset, JSXDRWhence whence)
 }
 static JSBool xdrfile_setbytes (JSXDRState *xdr, char *buf, uint32 len)
 {
-  int n;
+  size_t n;
 
   #ifdef XDR_USES_MMAP
   if (self->mappos)
