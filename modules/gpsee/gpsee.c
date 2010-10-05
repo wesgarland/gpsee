@@ -284,7 +284,7 @@ static JSBool gpsee_include(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 static JSBool gpsee_system(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   int		exitCode;
-  int		i;
+  size_t	i;
   JSString 	*str;
   jsrefcount 	depth;
   size_t	len, totalLen = 0;

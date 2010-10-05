@@ -33,6 +33,12 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
+/*
+ * @note        This file is extremely sensitive in changes to JSAPI due to
+ *              its promicuous use of both shell and JSAPI internals. It is
+ *              intended to be used ONLY with the recommended JSAPI release;
+ *              GPSEE cannot provide sufficient API insulation.
+ */
 #include <gpsee.h>
 #ifdef GPSEE_JSDB
 # include "jsdebug.h"
@@ -48,6 +54,11 @@ static const char rcsid[]="$Id: gpsee-js.cpp,v 1.5 2010/06/14 22:11:59 wes Exp $
 
 #undef main
 #define main(a,b,c) notMain(a,b,c)
+
+gpsee_interpreter_t *jsi;
+#define JS_NewContext(rt, dummy) gpsee_createContext(jsi->realm)
+#define JS_DestroyContext(cx) gpsee_destroyContext(cx)
+
 #include "shell/js.cpp"
 #undef main
 
@@ -104,17 +115,16 @@ int
 main(int argc, char **argv, char **envp)
 {
     int stackDummy;
-    JSRuntime *rt;
     JSContext *cx;
-    JSObject *glob, *it, *envobj;
     int result;
-    gpsee_interpreter_t *jsi = gpsee_createInterpreter();
 #ifdef GPSEE_JSDB
     JSDContext *jsdc;
-    JSBool      jsdbc;
+    JSBool jsdbc;
 #endif
 
+    jsi = gpsee_createInterpreter();
     global_class = *gpsee_getGlobalClass();
+
     CheckHelpMessages();
 #ifdef HAVE_SETLOCALE
     setlocale(LC_ALL, "");
@@ -129,67 +139,34 @@ main(int argc, char **argv, char **envp)
     gStackBase = (jsuword) &stackDummy;
 #endif
 
+#ifdef XP_OS2
+   /* these streams are normally line buffered on OS/2 and need a \n, *
+    * so we need to unbuffer then to get a reasonable prompt          */
+    setbuf(stdout,0);
+    setbuf(stderr,0);
+#endif
+
     gErrFile = stderr;
     gOutFile = stdout;
 
     argc--;
     argv++;
 
-    if (!jsi)
-      return 1;
+#ifdef XP_WIN
+    // Set the timer calibration delay count to 0 so we get high
+    // resolution right away, which we need for precise benchmarking.
+    extern int CALIBRATION_DELAY_COUNT;
+    CALIBRATION_DELAY_COUNT = 0;
+#endif
 
-    rt = jsi->rt;
-
-    if (!InitWatchdog(rt))
+    if (!InitWatchdog(jsi->rt))
         return 1;
 
-#ifdef jsworkers_h___
-    cx = NewContext(rt);
-    if (!cx)
-      return 1;
-#else
-    JS_SetContextCallback(rt, ContextCallback);
-    cx = jsi->cx;
-    ContextCallback(cx, JSCONTEXT_NEW);
-#endif
+    cx = NewContext(jsi->rt);
+    if (!cx)  
+        return 1;
 
     JS_SetGCParameterForThread(cx, JSGC_MAX_CODE_CACHE_BYTES, 16 * 1024 * 1024);
-
-    JS_BeginRequest(cx);
-
-    glob = jsi->globalObject;
-    if (!glob)
-        return 1;
-
-    if (cx != jsi->cx)
-      JS_SetGlobalObject(cx, glob);
-
-#ifdef JS_HAS_CTYPES
-    if (!JS_InitCTypesClass(cx, glob))
-        return NULL;
-#endif
-
-    if (!JS_DefineFunctions(cx, glob, shell_functions))
-        return 1;
-
-    it = JS_DefineObject(cx, glob, "it", &its_class, NULL, 0);
-    if (!it)
-        return 1;
-    if (!JS_DefineProperties(cx, it, its_props))
-        return 1;
-    if (!JS_DefineFunctions(cx, it, its_methods))
-        return 1;
-
-    if (!JS_DefineProperty(cx, glob, "custom", JSVAL_VOID, its_getter,
-                           its_setter, 0))
-        return 1;
-    if (!JS_DefineProperty(cx, glob, "customRdOnly", JSVAL_VOID, its_getter,
-                           its_setter, JSPROP_READONLY))
-        return 1;
-
-    envobj = JS_DefineObject(cx, glob, "environment", &env_class, NULL, 0);
-    if (!envobj || !JS_SetPrivate(cx, envobj, envp))
-        return 1;
 
 #ifdef GPSEE_JSDB
     jsdc = JSD_DebuggerOnForUser(rt, jsi->realm, NULL, NULL);
@@ -200,26 +177,7 @@ main(int argc, char **argv, char **envp)
     jsdbc = JSDB_InitDebugger(rt, jsdc, 0, DEBUGGER_JS);
 #endif
 
-#ifdef WORKERS
-    class ShellWorkerHooks : public js::workers::WorkerHooks {
-    public:
-        JSObject *newGlobalObject(JSContext *cx) { return NewGlobalObject(cx); }
-    };
-    ShellWorkerHooks hooks;
-    if (!JS_AddNamedRoot(cx, &gWorkers, "Workers") ||
-        !js::workers::init(cx, &hooks, glob, &gWorkers)) {
-        return 1;
-    }
-#endif
-
-    result = ProcessArgs(cx, glob, argv, argc);
-
-#ifdef WORKERS
-    js::workers::finish(cx, gWorkers);
-    JS_RemoveRoot(cx, &gWorkers);
-    if (result == 0)
-        result = gExitCode;
-#endif
+    result = shell(cx, argc, argv, envp);
 
 #ifdef GPSEE_JSDB
     if (jsdc) {
@@ -229,12 +187,9 @@ main(int argc, char **argv, char **envp)
     }
 #endif
 
-    JS_EndRequest(cx);
+    JS_CommenceRuntimeShutDown(jsi->rt);
 
-#ifdef jsworkers_h___
-    JS_CommenceRuntimeShutDown(rt);
     DestroyContext(cx, true);
-#endif
 
     KillWatchdog();
 
@@ -243,6 +198,3 @@ main(int argc, char **argv, char **envp)
     JS_ShutDown();
     return result;
 }
-
-
-

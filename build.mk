@@ -46,9 +46,31 @@ LDFLAGS		+= $(LEADING_LDFLAGS) -L$(GPSEE_SRC_DIR) $(LDFLAGS_SOLIB_DIRS)
 CPPFLAGS	+= $(LEADING_CPPFLAGS) -DGPSEE -I$(GPSEE_SRC_DIR) $(INCLUDES) $(JSAPI_CFLAGS)
 SOLIB_DIRS	+= $(JSAPI_LIB_DIR)
 
+WARNINGS	?= -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Winline
+
 ifneq (X,X$(filter $(BUILD),DEBUG PROFILE DRELEASE))
-CFLAGS += -g -O0 -Wall
-CXXFLAGS += -g -O0 -Wall
+CFLAGS += -g
+CXXFLAGS += -g
+endif
+
+ifneq (X,X$(filter $(BUILD),PROFILE RELEASE))
+CFLAGS += -O3
+CXXFLAGS += -O3
+endif
+
+ifneq (X,X$(filter $(BUILD),DEBUG))
+CFLAGS += -O0
+CXXFLAGS += -O0
+endif
+
+ifneq (X,X$(filter $(BUILD),DRELEASE))
+CFLAGS += -O1
+CXXFLAGS += -O1
+endif
+
+ifneq (X,X$(filter $(BUILD),PROFILE))
+CFLAGS += -p -pg
+CXXFLAGS += -p -pg
 endif
 
 CFLAGS		+= $(PIC_CFLAG)

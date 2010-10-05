@@ -286,7 +286,7 @@ static JSBool vm_isCompilableUnit(JSContext *cx, JSObject *obj, uintN argc, jsva
   jsrefcount 	depth;
   size_t	len, maxLen = 0;
   char		*buf;
-  int		i;
+  size_t        i;
 
   /** Coerce all args .toString() and calculate maximal buffer size */
   for (i = 0; i < argc; i++)

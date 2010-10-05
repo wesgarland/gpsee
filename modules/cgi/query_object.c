@@ -65,7 +65,7 @@ void query_Finalize(JSContext *cx, JSObject *obj)
   if (hnd->query)
     magic_free_function(hnd->query);
 #else
-#warning minor core leak	/* Once per script interpreter. EEK does not provide a freer */
+#warning minor core leak	/* Once per realm - modules are singletons. EEK does not provide a freer */
 #endif
 
   if (hnd->uploadDir)
