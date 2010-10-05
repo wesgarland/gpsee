@@ -1,0 +1,15 @@
+# libgpsee pkg-config source file
+
+prefix=@@GPSEE_PREFIX_DIR@@
+exec_prefix=${prefix}
+libdir=@@SOLIB_DIR@@
+includedir=@@INCLUDE_DIR@@
+
+Name: libgpsee
+Description: Library to simplify embedding/versioning libmozjs, share libmozjs code, add CommonJS modules, etc.
+Version: @@GPSEE_RELEASE@@
+URL: http://code.google.com/p/gpsee/
+Requires: nspr
+Conflicts:
+Libs: @@LOADLIBES@@
+Cflags: @@CPPFLAGS@@
