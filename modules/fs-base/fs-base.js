@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base.js,v 1.15 2010/09/01 18:12:35 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.16 2010/10/05 01:16:48 wes Exp $
  */
 
 const binary = require("binary");
@@ -234,7 +234,7 @@ exports.remove = function remove(path)
   if (_stat.call(path, sb) != 0)
     throw new Error("Cannot remove '" + path + "'" + syserr());
 
-  if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLINK)) == 0)
+  if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLNK)) == 0)
     throw new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
 
   if (_unlink.call(path) != 0)
@@ -502,7 +502,7 @@ exports.isLink = function isLink(path)
   var sb = new ffi.MutableStruct("struct stat");
 
   if (_stat.call(path, sb) == 0)
-    return (sb.st_mode & dh.S_IFLINK) != 0;
+    return (sb.st_mode & dh.S_IFLNK) != 0;
   return false;
 };
 
