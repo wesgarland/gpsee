@@ -373,7 +373,7 @@ int parse_form_encoded(llist* entries)
   return numentries;
 }
 
-int _read_cgi_input(JSContext *cx, llist* entries, const char *uploadDir)
+int read_cgi_input(JSContext *cx, llist* entries, const char *uploadDir)
 {
   char *input;
   int status;

@@ -138,7 +138,7 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
     return buf;
   }
 
-  if ((slash - fullpath) >= bufLen)
+  if (((size_t)(slash - fullpath)) >= bufLen)
     return NULL;
 
   strncpy(buf, fullpath, slash - fullpath);
@@ -707,7 +707,10 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
     cols[shrnk] -= shrinkamount;
   }
   else
+  {
     shrnk = -1; // disable shrink
+    shrinkamount = 0;
+  }
 
   if (widecol)
   {
@@ -730,6 +733,7 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
         done = 1;
       else
       {
+        char *e;
         /* Look for repeated lines if we're at the beginning of the line */
         if (i == 0)
         {
@@ -767,7 +771,7 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
         {
           gpsee_fprintf(cx, out, "   ^ repeats %d times\n", repeats);
           /* Adjust the cursor to absorb the repeated lines */
-          d = e;
+          d = e;        /* GCC warns e unused; in fact repeats > 1 guards */
         }
         repeats = 0;
       }
