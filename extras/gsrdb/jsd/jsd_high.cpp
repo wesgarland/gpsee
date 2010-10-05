@@ -75,17 +75,15 @@ void JSD_ASSERT_VALID_CONTEXT(JSDContext* jsdc)
 }
 #endif
 
+#ifndef GPSEE
 static JSClass global_class = {
     "JSDGlobal", 
-#ifdef GPSEE
-    JSCLASS_GLOBAL_FLAGS | JSCLASS_HAS_PRIVATE,
-#else
     JSCLASS_GLOBAL_FLAGS,
-#endif
     JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,  JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub,   JS_ConvertStub,   JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
+#endif
 
 static JSBool
 _validateUserCallbacks(JSD_UserCallbacks* callbacks)
