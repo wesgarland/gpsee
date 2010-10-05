@@ -38,7 +38,7 @@
 ##                              Requires that GPSEE already be built and installed.
 ## @author      Wes Garland, PageMail, Inc., wes@page.ca
 ## @date        May 2010
-## @version     $Id: Makefile,v 1.2 2010/09/01 18:12:35 wes Exp $
+## @version     $Id: Makefile,v 1.3 2010/10/05 15:56:48 wes Exp $
 
 top: build
 
@@ -63,13 +63,13 @@ LIBOBJS 	+= jsdebug.o jsd_atom.o jsd_high.o jsd_hook.o jsd_lock.o jsd_obj.o jsd_
 
 JS		:= $(dir $(SPIDERMONKEY_SRC))
 VPATH		+= $(JSD) $(JSD)/jsdb $(JS)/src/editline
-CPPFLAGS	+= -I$(JSD) -I$(JSD)/jsdb -DGPSEE_DEBUGGER
-
+CPPFLAGS	+= -I$(JSD) -I$(JSD)/jsdb -DGPSEE_DEBUGGER -fno-exceptions
+WARNINGS	:= $(filter-out -Wstrict-prototypes -Wshadow -Wwrite-strings,$(WARNINGS))
 $(LIBRARY):	$(LIBOBJS)
 OBJS		+= $(LIBOBJS) gsrdb.o gsr.o
 
 jsdb.o: 	CPPFLAGS += "-DJSDB_LOAD_DEBUGGER=\"load('debugger.js')\""
-$(LIBOBJS):	CPPFLAGS	+= -DEXPORT_JSD_API -DMOZILLA_CLIENT
+$(LIBOBJS):	CPPFLAGS += -DEXPORT_JSD_API -DMOZILLA_CLIENT
 
 gsrdb: 		LOADLIBES += -L. -lgpsee-jsdb $(shell $(GPSEE_CONFIG) --ldflags)
 gsrdb.o:	CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}db\"" -DDEBUGGER_JS=\""$(SOLIB_DIR)/gsrdb/gsrdb.js\""
