@@ -76,7 +76,7 @@ invasive-bin-dist bin-dist:: install
 		$(foreach FILE, $(notdir $(EXPORT_PROGS)), "$(BIN_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBEXEC_OBJS)), "$(LIBEXEC_DIR)/$(FILE)")\
 		$(foreach FILE, $(notdir $(EXPORT_LIBS)), "$(SOLIB_DIR)/$(FILE)")\
-		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS) $(TARGET_LIBEXEC_JSC)\
+		$(LIB_MOZJS) $(LIB_FFI) $(INVASIVE_EXTRAS) $(TARGET_LIBEXEC_JS)\
 		$(BUILT_EXPORTED_PROGS) $(BUILT_EXPORTED_LIBS)
 	@echo
 	@echo Done $@: $(STREAM)_gpsee_$(TARGET)-$(DATE_STAMP)-$(COUNT).tar.gz
