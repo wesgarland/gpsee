@@ -43,7 +43,7 @@
 static const char __attribute__((unused)) rcsid[]="$Id: query_object.c,v 1.5 2010/06/14 22:12:00 wes Exp $";
 
 #include "gpsee.h"
-#include <cgi-lib.h>
+#include "cgihtml/cgi-lib.h"
 #include "cgi.h"
 
 #define OBJECT_ID MODULE_ID ".query"
