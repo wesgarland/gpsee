@@ -57,7 +57,7 @@
 #define GPSEE_H
 
 /* Forward declarations & primitive typedefs */
-typedef struct gpsee_realm gpsee_realm_t;               /**< @ingroup realms */
+typedef struct gpsee_realm 	gpsee_realm_t;		/**< @ingroup realms */
 typedef struct dataStore *      gpsee_dataStore_t;      /**< Handle describing a GPSEE data store */
 typedef struct moduleHandle     moduleHandle_t; 	/**< Handle describing a loaded module */
 typedef struct moduleMemo       moduleMemo_t; 		/**< Handle to module system's realm-wide memo */
@@ -310,6 +310,7 @@ struct gpsee_realm
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
+  JSObject		*requireDotMain;	/**< Pointer to the program module's "module free var" */
   gpsee_dataStore_t     moduleData;             /**< Scratch-pad for modules; keys are unique pointers */
   gpsee_dataStore_t     user_io_pendingWrites;  /**< Pending data which will be written on the next async callback */
 

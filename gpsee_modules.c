@@ -399,6 +399,7 @@ static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleH
   {
     jsProp_permanent = 0;
     jsProp_permanentReadOnly = 0;
+    GPSEE_ASSERT(module != realm->monitored.programModule);
   }
   else
   {
@@ -479,6 +480,14 @@ static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleH
   if (!modDotModObj)
     goto fail;
 
+  if (module == realm->monitored.programModule)
+    realm->requireDotMain = modDotModObj;
+
+  if (JS_DefineProperty(cx, (JSObject *)require, "main", 
+			OBJECT_TO_JSVAL(realm->requireDotMain), NULL, NULL,
+			JSPROP_ENUMERATE | jsProp_permanentReadOnly) != JS_TRUE)
+    goto fail;
+
   if (JS_DefineProperty(cx, moduleScope, "module", OBJECT_TO_JSVAL(modDotModObj), NULL, NULL,
 			JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
     goto fail;
@@ -489,7 +498,7 @@ static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleH
     goto fail;
 
   if (JS_DefineProperty(cx, modDotModObj, "id", STRING_TO_JSVAL(moduleId), NULL, NULL,
-		    JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
+			JSPROP_ENUMERATE | jsProp_permanentReadOnly) == JS_FALSE)
     goto fail;
 
   dpDepth(-1);
@@ -1569,6 +1578,10 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
     goto fail;
   }
 
+  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
+  realm->monitored.programModule = module;
+  gpsee_leaveAutoMonitor(realm->monitors.programModule);
+
   if (initializeModuleScope(cx, realm, module, realm->globalObject, JS_FALSE) == JS_FALSE)
   {
     dprintf("Could not initialize module scope for module at %p\n", module);
@@ -1584,10 +1597,6 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   {
     goto fail;
   }
-
-  gpsee_enterAutoMonitor(cx, &realm->monitors.programModule);
-  realm->monitored.programModule = module;
-  gpsee_leaveAutoMonitor(realm->monitors.programModule);
 
   /* Enable 'mhf_loaded' flag before calling initializeModule() */
   module->flags |= mhf_loaded;	
