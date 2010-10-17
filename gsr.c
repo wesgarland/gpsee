@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.26 2010/09/01 18:12:35 wes Exp $
+ * @version	$Id: gsr.c,v 1.27 2010/10/17 14:20:56 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.26 2010/09/01 18:12:35 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.27 2010/10/17 14:20:56 wes Exp $";
 
 #define PRODUCT_VERSION		"1.0-rc2"
 
@@ -335,12 +335,18 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
   JS_SetOptions(cx, jsOptions);
 }
 
+/**
+ * Process comment-embedded options, without affecting the JavaScript line count.
+ * Comments are in the block directly below the she-bang, with no intervening newline.
+ */
 static void processInlineFlags(JSContext *cx, FILE *scriptFile, signed int *verbosity_p)
 {
   char	buf[256];
   off_t	offset;
 
-  offset = ftello(scriptFile);
+  offset = ftello(scriptFile);	/* File is at \n of she-bang line */
+  buf[0] = fgetc(scriptFile);
+  GPSEE_ASSERT(buf[0] == '\n');
 
   while(fgets(buf, sizeof(buf), scriptFile))
   {
