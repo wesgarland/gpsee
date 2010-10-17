@@ -85,15 +85,11 @@ GPSEE_STATIC_ASSERT(sizeof(int64) == sizeof(long long int));
 int byteString_rangeCheck(JSContext *cx, byteString_handle_t * bs, int64 index, const char const * methodName)\
 {
   if (index < 0)
-  {
-    gpsee_throw(cx, CLASS_ID ".%s.range.underflow: " GPSEE_INT64_FMT "<0", methodName, (long long int) index);
-    return JS_FALSE;
-  }
+    return gpsee_throw(cx, CLASS_ID ".%s.range.underflow: " GPSEE_INT64_FMT "<0", methodName, (long long int) index);
+
   if (index >= bs->length)
-  {
-    gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=" GPSEE_SIZET_FMT, methodName, (long long int) index, bs->length);
-    return JS_FALSE;
-  }
+    return gpsee_throw(cx, CLASS_ID ".%s.range.overflow: " GPSEE_INT64_FMT ">=" GPSEE_SIZET_FMT, methodName, (long long int) index, bs->length);
+
   return JS_TRUE;
 }
 
