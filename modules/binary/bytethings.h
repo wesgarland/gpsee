@@ -92,7 +92,7 @@ JSBool byteThing_intAt(JSContext *cx, uintN argc, jsval *vp, const char *throwPr
 JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp);
 /* TODO toArray() needs to be like toString above and accept the direct JSAPI call */
 JSObject *byteThing_toArray(JSContext *cx, const unsigned char *bytes, size_t len);
-inline byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName);
+byteThing_handle_t * byteThing_getHandle(JSContext *cx, JSObject *obj, JSClass **claspp, const char const * methodName);
 JSBool byteThing_toSource(JSContext *cx, uintN argc, jsval *vp, JSClass *class);
 JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(const void *, int, size_t), const char const *methodName, JSClass *clasp);
 JSBool byteThing_getProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp, JSClass *clasp);

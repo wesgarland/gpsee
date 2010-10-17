@@ -559,10 +559,14 @@ JSBool transcodeString_toBuf(JSContext *cx, JSString *string, const char *charse
  */
 JSBool byteThing_getLength(JSContext *cx, JSObject *obj, JSClass *clasp, jsval id, jsval *vp)
 {
-  byteThing_handle_t *hnd = JS_GetPrivate(cx, obj);
+  byteThing_handle_t *hnd;
 
   if (!gpsee_isByteThing(cx, obj))
     return gpsee_throw(cx, "%s.length.get.invalid: property getter applied the wrong object type", clasp->name);
+
+  hnd = byteThing_getHandle(cx, obj, &clasp, "length.get");
+  if (!hnd)
+    return JS_FALSE;
 
   if (((jsval)hnd->length == hnd->length) && INT_FITS_IN_JSVAL(hnd->length))
   {
@@ -653,6 +657,11 @@ const char * byteThing_val2byte(JSContext *cx, jsval val, unsigned char *retval)
       return errmsg;
     }
     hnd = JS_GetPrivate(cx, obj);
+    if (!hnd)
+    {
+      snprintf(errmsg, sizeof(errmsg), "called object is not a valid %s", clasp->name);
+      return errmsg;
+    }
 
     /* Binary types must contain only one byte */
     if (hnd->length != 1)
@@ -1190,7 +1199,10 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
     return gpsee_throw(cx, MODULE_ID ".%s.decodeToString.type: Cannot call decodeToString on a %s object!", clasp->name, objClasp->name);
 
   /* Acquire our byteThing_handle_t */
-  hnd = JS_GetPrivate(cx, obj);
+  hnd = byteThing_getHandle(cx, JS_THIS_OBJECT(cx, vp), &clasp, "length.get");
+  if (!hnd)
+    return JS_FALSE;
+
   if (!hnd->length)
   {
     JS_SET_RVAL(cx, vp, JS_GetEmptyStringValue(cx));
@@ -1340,7 +1352,7 @@ JSBool byteThing_byarAt(JSContext *cx, uintN argc, jsval *vp, JSClass *clasp, JS
     return gpsee_throw(cx, MODULE_ID ".%s.%s.type: Cannot call byteAt/charAt on a %s object!", clasp->name, methodName, objClasp->name);
 
   /* Acquire our byteThing_handle_t */
-  hnd = JS_GetPrivate(cx, obj);
+  hnd = byteThing_getHandle(cx, obj, &clasp, methodName);
   if (!hnd)
     return JS_FALSE;
 
@@ -1396,7 +1408,7 @@ JSBool byteThing_findChar(JSContext *cx, uintN argc, jsval *vp, void *memchr_fn(
   if (!gpsee_isByteThingClass(cx, objClasp))
     return gpsee_throw(cx, MODULE_ID ".%s.byteAt.type: Cannot call %s on a %s object!", clasp->name, methodName, objClasp->name);
 
-  hnd = JS_GetPrivate(cx, obj);
+  hnd = byteThing_getHandle(cx, obj, &clasp, methodName);
   if (!hnd)
     return JS_FALSE;
 
@@ -1574,6 +1586,8 @@ JSBool byteThing_Cast(JSContext *cx, uintN argc, jsval *argv, jsval *rval,
     return gpsee_throw(cx, "%s.cast.type: %s objects are not castable to %s", throwPrefix, (obj ? JS_GET_CLASS(cx, obj)->name : "null"), clasp->name);
   
   hnd = JS_GetPrivate(cx, obj);
+  if (!hnd)
+    return gpsee_throw(cx, "%s.invalid: Invalid ByteThing", throwPrefix);
 
   if (argc == 1)
     length = hnd->length;
