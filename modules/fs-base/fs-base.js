@@ -108,7 +108,7 @@ function stat(thing)
   else
   {
     if (_stat.call(thing, sb) != 0)
-      throw new Error("Cannot stat path '"+path+"'" + syserr());
+      throw new Error("Cannot stat path '" + thing + "'" + syserr());
   }
 
   return sb;
