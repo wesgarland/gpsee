@@ -1,6 +1,6 @@
 /* cgi-lib.c - C routines that make writing CGI scripts in C a breeze
    Eugene Kim, <eekim@eekim.com>
-   $Id: cgi-lib.c,v 1.5 2010/06/14 22:12:00 wes Exp $
+   $Id: cgi-lib.c,v 1.6 2010/12/02 21:59:42 wes Exp $
    Motivation: Perl is a much more convenient language to use when
      writing CGI scripts.  Unfortunately, it is also a larger drain on
      the system.  Hopefully, these routines will make writing CGI
@@ -10,7 +10,7 @@
    All Rights Reserved
 */
 
-static const char rcsid[] = "$Id: cgi-lib.c,v 1.5 2010/06/14 22:12:00 wes Exp $";
+static const char rcsid[] = "$Id: cgi-lib.c,v 1.6 2010/12/02 21:59:42 wes Exp $";
 
 #include "gpsee.h"
 #include <stdio.h>

@@ -38,7 +38,7 @@
 ##
 ## @author	Wes Garland, PageMail, Inc., wes@page.ca
 ## @date	August 2007
-## @version	$Id: Makefile,v 1.41 2010/09/01 18:12:34 wes Exp $
+## @version	$Id: Makefile,v 1.42 2010/12/02 21:59:42 wes Exp $
 
 ifndef HAVE_TOP_RULE
 top: 	
