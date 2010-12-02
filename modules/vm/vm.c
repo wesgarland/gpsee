@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm.c,v 1.7 2010/06/14 22:12:01 wes Exp $
+ *  @version    $Id: vm.c,v 1.8 2010/12/02 21:47:28 wes Exp $
  *
  *  $Log: vm.c,v $
+ *  Revision 1.8  2010/12/02 21:47:28  wes
+ *  vm module: Added halt() method
+ *
  *  Revision 1.7  2010/06/14 22:12:01  wes
  *  Sync'd with mercurial
  *
@@ -64,7 +67,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.7 2010/06/14 22:12:01 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.8 2010/12/02 21:47:28 wes Exp $";
  
 #include "gpsee.h"
 
@@ -186,7 +189,7 @@ static JSBool vm_dumpValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
  js_DumpValue(argv[0]);
  return JS_TRUE;
 #else
-  return gpsee_throw(cx, MODULE_ID ".dumpObject.undefined: requires a debug JSAPI build");
+  return gpsee_throw(cx, MODULE_ID ".dumpValue.undefined: requires a debug JSAPI build");
 #endif  
 }
 
@@ -206,6 +209,11 @@ static JSBool vm_dumpObject(JSContext *cx, JSObject *obj, uintN argc, jsval *arg
 #else
   return gpsee_throw(cx, MODULE_ID ".dumpObject.undefined: requires a debug JSAPI build");
 #endif  
+}
+
+static JSBool vm_halt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  return JS_FALSE;
 }
 
 /**
@@ -378,6 +386,7 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
     { "dumpHeap",		vm_dumpHeap,			0, 0, 0 },
     { "dumpValue",		vm_dumpValue,			0, 0, 0 },
     { "dumpObject",		vm_dumpObject,			0, 0, 0 },
+    { "halt",			vm_halt,			0, 0, 0 },
     { NULL,			NULL,				0, 0, 0 },
   };
 
