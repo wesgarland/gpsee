@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.27 2010/10/17 14:20:56 wes Exp $
+ * @version	$Id: gsr.c,v 1.28 2010/12/02 21:57:03 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.27 2010/10/17 14:20:56 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.28 2010/12/02 21:57:03 wes Exp $";
 
 #define PRODUCT_VERSION		"1.0-rc2"
 
@@ -338,15 +338,22 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
 /**
  * Process comment-embedded options, without affecting the JavaScript line count.
  * Comments are in the block directly below the she-bang, with no intervening newline.
+ *
+ * @param	cs		JavaScript Context
+ * @param	scriptFile	Script file, with file pointer set to either first char or \n on first line,
+ * @param	verbosity_p	[in,out] verbosity_p parameter from processFlags
  */
 static void processInlineFlags(JSContext *cx, FILE *scriptFile, signed int *verbosity_p)
 {
   char	buf[256];
   off_t	offset;
+  int	c;
 
-  offset = ftello(scriptFile);	/* File is at \n of she-bang line */
-  buf[0] = fgetc(scriptFile);
-  GPSEE_ASSERT(buf[0] == '\n');
+  offset = ftello(scriptFile);	/* File is at \n of she-bang line or at start of line */
+  
+  c = fgetc(scriptFile);
+  if (c != '\n')
+    ungetc(c, scriptFile);
 
   while(fgets(buf, sizeof(buf), scriptFile))
   {
@@ -519,7 +526,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
   int			fiArg = 0;
   int			skipSheBang = 0;
-  int			exitCode = 1;
+  int			exitCode;
   int			verbosity;	                /* Verbosity to use before flags are processed */
 #ifdef GPSEE_DEBUGGER
   JSDContext            *jsdc;          
@@ -680,7 +687,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
 #if defined(__SURELYNX__)
   sl_set_debugLevel(gpsee_verbosity(0));
-  enableTerminalLogs(permanent_pool, gpsee_verbosity(0) > 0, NULL);
+  /* enableTerminalLogs(permanent_pool, gpsee_verbosity(0) > 0, NULL); */
 #else
   if (verbosity < GSR_MIN_TTY_VERBOSITY && isatty(STDERR_FILENO))
     verbosity = GSR_MIN_TTY_VERBOSITY;
@@ -712,6 +719,8 @@ PRIntn prmain(PRIntn argc, char **argv)
     char mydir[FILENAME_MAX];
     int i;
 
+    jsi->grt->exitType = et_unknown;
+
     i = snprintf(preloadScriptFilename, sizeof(preloadScriptFilename), "%s/.%s_preload", gpsee_dirname(argv[0], mydir, sizeof(mydir)), 
 		 gpsee_basename(argv[0]));
     if ((i == 0) || (i == (sizeof(preloadScriptFilename) -1)))
@@ -727,6 +736,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(cx, preloadScriptFilename, NULL, NULL, &script, realm->globalObject, &scrobj))
       {
+	jsi->grt->exitType = et_compileFailure;
 	gpsee_log(cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
 	goto out;
       }
@@ -737,18 +747,25 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!noRunScript)
       {
         JS_AddNamedObjectRoot(cx, &scrobj, "preload_scrobj");
-        if (JS_ExecuteScript(cx, realm->globalObject, script, &v) == JS_FALSE)
+	jsi->grt->exitType = et_execFailure;
+        if (JS_ExecuteScript(cx, realm->globalObject, script, &v) == JS_TRUE)
+	{
+	  jsi->grt->exitType = et_finished;
+	}
+	else
         {
 	  if (JS_IsExceptionPending(cx))
+	  {
 	    jsi->grt->exitType = et_exception;
-          JS_ReportPendingException(cx);
+	    JS_ReportPendingException(cx);
+	  }
         }
         JS_RemoveObjectRoot(cx, &scrobj);
         v = JSVAL_NULL;
       }
     }
 
-    if (jsi->grt->exitType & et_exception)
+    if (jsi->grt->exitType & et_errorMask)
       goto out;
   }
 
@@ -758,7 +775,11 @@ PRIntn prmain(PRIntn argc, char **argv)
 
   if (!scriptFilename)
   {
-    exitCode = scriptCode ? 0 : 1;
+    if (!scriptCode)	/* Command-line options did not include code to run */
+      usage(argv[0]);
+
+    if (jsi->grt->exitType == et_unknown)
+      jsi->grt->exitType = et_finished;
   }
   else
   {
@@ -767,7 +788,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     if (!scriptFile)
     {
       gpsee_log(cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
-      exitCode = 1;
+      jsi->grt->exitType = et_compileFailure;
       goto out;
     }
 
@@ -782,36 +803,44 @@ PRIntn prmain(PRIntn argc, char **argv)
 
       if (!gpsee_compileScript(cx, scriptFilename, scriptFile, NULL, &script, realm->globalObject, &scrobj))
       {
+	jsi->grt->exitType = et_exception;
         gpsee_reportUncaughtException(cx, JSVAL_NULL, 
 				      (gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
 				      ((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
-	exitCode = 1;
       }
       else
       {
-	exitCode = 0;
+	jsi->grt->exitType = et_finished;
       }
     }
     else /* noRunScript is false; run the program */
     {
-      if (!gpsee_runProgramModule(cx, scriptFilename, NULL, scriptFile, script_argv, script_environ))
+      jsi->grt->exitType = et_execFailure;
+
+      if (gpsee_runProgramModule(cx, scriptFilename, NULL, scriptFile, script_argv, script_environ) == JS_TRUE)
       {
-        int code = gpsee_getExceptionExitCode(cx);
-        if (code >= 0)
-        {
-          exitCode = code;
-        }
-        else
-        {
-	  gpsee_reportUncaughtException(cx, JSVAL_NULL, 
-					(gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
-					((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
-	  exitCode = 1;
-        }
+	jsi->grt->exitType = et_finished;
       }
       else
       {
-	exitCode = 0;
+        int code;
+
+	code = gpsee_getExceptionExitCode(cx);	
+        if (code >= 0)	/** e.g. throw 6 */
+        {
+	  jsi->grt->exitType = et_requested;
+          jsi->grt->exitCode = code;
+        }
+        else
+        {
+	  if (JS_IsExceptionPending(cx))
+	  {
+	    jsi->grt->exitType = et_exception;
+	    gpsee_reportUncaughtException(cx, JSVAL_NULL, 
+					(gpsee_verbosity(0) >= GSR_FORCE_STACK_DUMP_VERBOSITY) ||
+					((gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY) && isatty(STDERR_FILENO)));
+	  }
+        }
       }
     }
     fclose(scriptFile);
@@ -822,6 +851,50 @@ PRIntn prmain(PRIntn argc, char **argv)
 #ifdef GPSEE_DEBUGGER
   gpsee_finiDebugger(jsdc);
 #endif
+
+  if (jsi->grt->exitType & et_successMask)
+  {
+    exitCode = jsi->grt->exitCode;
+  }
+  else
+  {
+    const char *reason;
+
+    exitCode = 1;
+
+    switch(jsi->grt->exitType)
+    {
+      case et_successMask:
+      case et_errorMask:
+      case et_requested:
+      case et_finished:
+      default:
+	GPSEE_NOT_REACHED("impossible");
+	break;	
+      case et_execFailure:
+	reason = "execFailure - probable native module error, returning JS_FALSE without setting exception";
+	break;
+      case et_compileFailure:
+	reason = "script could not be compiled";
+        break;
+      case et_unknown:
+	reason = "unknown - probable native module error, returning JS_FALSE without setting exception";
+	break;
+      case et_exception:
+	reason = NULL;
+	break;
+    }
+
+    if (reason)
+    {
+      gpsee_log(cx, SLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
+      /* not gpsee_ */ fprintf(stderr, "*** Unexpected interpreter shutdown: %s", reason);
+      if (errno)
+	fprintf(stderr, " (%s)\n", strerror(errno));	
+      else
+	fputs("\n", stderr);
+    }
+  }
 
   gpsee_destroyInterpreter(jsi);
   JS_ShutDown();

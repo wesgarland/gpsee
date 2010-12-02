@@ -36,7 +36,7 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.36 2010/09/01 18:12:35 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.37 2010/12/02 21:57:03 wes Exp $
  *
  *  @defgroup   core            GPSEE Core API
  *  @{
@@ -204,12 +204,12 @@ typedef enum
    */
   et_requested          = 1 << 1,
 
-  et_compileFailure	= 1 << 16,			
-  et_execFailure	= 1 << 17,
-  et_exception		= 1 << 18,
+  et_compileFailure	= 1 << 16,			/* Unable to compile some code */
+  et_execFailure	= 1 << 17,			/* Exec failed, but not with exception */
+  et_exception		= 1 << 18,			/* Uncaught exception */
 
-  et_errorMask 		= et_exception,
-  et_successMask	= et_finished | et_requested
+  et_successMask	= et_finished | et_requested,
+  et_errorMask 		= ~et_successMask
 } exitType_t;
 
 #ifndef GPSEE_NO_ASYNC_CALLBACKS
