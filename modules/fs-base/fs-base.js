@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base.js,v 1.16 2010/10/05 01:16:48 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.17 2010/12/02 21:59:43 wes Exp $
  */
 
 const binary = require("binary");

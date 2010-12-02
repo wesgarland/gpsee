@@ -38,7 +38,7 @@
  *                              and ByteArray native JSAPI classes.
  *  @author     Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
  *  @date       June 2009
- *  @version    $Id: bytethings.h,v 1.5 2010/03/06 18:17:13 wes Exp $
+ *  @version    $Id: bytethings.h,v 1.6 2010/12/02 21:59:42 wes Exp $
  */
 
 #ifndef _BYTETHINGS_H

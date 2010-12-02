@@ -39,7 +39,7 @@
  *
  *  @author	Wes Garland
  *  @date	Apr 2006	
- *  @version	$Id: phpsess.c,v 1.2 2009/08/06 14:22:58 wes Exp $
+ *  @version	$Id: phpsess.c,v 1.3 2010/12/02 21:59:42 wes Exp $
  *
  *  @note	Determined primarily by reverse engineering. May have some
  *		unexpected consequences/bugs...  A full read of the PHP C source
@@ -50,6 +50,9 @@
 
 /*
  * $Log: phpsess.c,v $
+ * Revision 1.3  2010/12/02 21:59:42  wes
+ * Sync with mercurial
+ *
  * Revision 1.2  2009/08/06 14:22:58  wes
  * Updated non-SureLynx phpsess.c to compile in APR environment
  *
@@ -96,7 +99,7 @@ static
 #endif
 rc_list rc;
 
-const char rcsid[]="$Id: phpsess.c,v 1.2 2009/08/06 14:22:58 wes Exp $";
+const char rcsid[]="$Id: phpsess.c,v 1.3 2010/12/02 21:59:42 wes Exp $";
 
 /** Return the best ASCIZ string version of a phpSession variable that we can.
  *  @param	*pool		Pool for allocating return value (only if needed)
