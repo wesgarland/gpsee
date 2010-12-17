@@ -1,0 +1,49 @@
+errout()
+{
+  echo "GPSEE configure: $*" > /dev/stderr
+}
+
+locate()
+{
+  OLDIFS="$IFS"
+  for filename in $*
+  do
+    IFS=":"
+    for path in $PATH
+    do
+      if [ -f "${path}/${filename}" ]; then
+        echo "${path}/${filename}"
+	IFS="$OLDFIS"
+        return 0
+      fi
+    done
+  done
+
+  IFS="$OLDFIS"
+  return 1
+}
+
+cfg_pkg()
+{
+  NAME="$1"             # NAME_CPPFLAGS in GPSEE headers
+  name="$2"             # pkg-config --crap name
+  fd="$3"               # File descriptor for local_config.mk
+
+  if ! "$pkgconfig" "$name"; then
+    errout " *** Error: $pkgconfig could not find package $name"
+    exit 1
+  fi
+
+  echo "${NAME}_CPPFLAGS+=`$pkgconfig --cflags ${name}`" >&${fd}
+  echo "${NAME}_LDFLAGS+=`$pkgconfig --libs ${name}`" >&${fd}
+}
+
+uglob()
+{
+  if expr "$1" : '~[/A-Za-z0-9_].*' >/dev/null; then
+    eval echo "$1"
+  else
+    echo "$1"
+  fi
+}
+

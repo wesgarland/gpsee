@@ -1,0 +1,308 @@
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 1.1/GPL 2.0/LGPL 2.1
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 1.1 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Initial Developer of the Original Code is PageMail, Inc.
+#
+# Portions created by the Initial Developer are 
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
+#
+# Contributor(s):
+# 
+# Alternatively, the contents of this file may be used under the terms of
+# either of the GNU General Public License Version 2 or later (the "GPL"),
+# or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+# in which case the provisions of the GPL or the LGPL are applicable instead
+# of those above. If you wish to allow use of your version of this file only
+# under the terms of either the GPL or the LGPL, and not to allow others to
+# use your version of this file under the terms of the MPL, indicate your
+# decision by deleting the provisions above and replace them with the notice
+# and other provisions required by the GPL or the LGPL. If you do not delete
+# the provisions above, a recipient may use your version of this file under
+# the terms of any one of the MPL, the GPL or the LGPL.
+#
+# ***** END LICENSE BLOCK ***** 
+
+#
+# This file describes the tests that probe-jsapi.sh will run.  Tests are run
+# in alphabetical order, and must start with "test_"
+#
+# You can emit code in your header file by piping it into emit_code. You can
+# emit comments to emit_comment either on its stdin or argument vector. You
+# emit '#define X' with emit_define X.
+#
+# See dont_test_64bit_jsvals() for the most complete test. It shows how to
+# build a test program and check its return value and stdout.
+#
+
+test_000compiler()
+{
+  say "if your compiler works"
+build <<EOF  
+$headers
+$main
+{
+  return 0;
+}
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    say "yes"
+  else
+    say "no"
+    return 23
+  fi
+}
+
+# This test is just a demo test, and not actually useful
+dont_test_64bit_jsvals()
+{
+  say "if you have 64-bit jsvals"
+  build <<EOF
+$prologue
+printf("%u\n",sizeof(jsval));
+$epilogue
+EOF
+  out=`run_build $?`
+  success=$?
+
+  if [ "$success" = "0" ] && [ "$out" = "8" ]; then
+    emit_define JSAPI_HAS_64BIT_JSVALS
+    say "yes"
+  else
+    say "no"
+  fi
+}
+
+test_001fatvals()
+{
+  say "if you have fatvals"
+  build <<EOF
+$prologue
+printf("%p\n",JS_NewDouble);
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" != "0" ]; then
+    emit_comment <<EOF
+	When fatvals were introduced, JSAPI deprecated JS_NewDouble*, changed
+        the JSVAL_TO_DOUBLE macro to return a double instead of a double
+	pointer, and change the function signatures for JSPropertyOp, JSResolveOp, 
+        JSNewResolveOp, JSCheckAccessOp, JSGCRootMapFun, and JS_MarkGCThing.
+        Comparing jsvals, while never 'official API' no longer works as they are
+        now structs. Use JSVAL_IS_ and JSVAL_TO_ macros instead."
+EOF
+    emit_define JSAPI_HAS_FATVALS
+    say "yes"
+  else
+    emit_comment This JSAPI does not have fatvals. 
+    emit_comment Re-Implement DOUBLE_TO_JSVAL and JSVAL_TO_DOUBLE to match post-fatvals API.
+    emit_code <<EOF
+static JS_ALWAYS_INLINE jsval
+DOUBLEPTR_TO_JSVAL(jsdouble *dp)
+{
+    JS_ASSERT(((jsword) dp & JSVAL_TAGMASK) == 0);
+    return JSVAL_SETTAG((jsval) dp, JSVAL_DOUBLE);
+}  
+#ifdef DOUBLE_TO_JSVAL
+# undef DOUBLE_TO_JSVAL
+#endif
+#define DOUBLE_TO_JSVAL(dp) DOUBLEPTR_TO_JSVAL(*dp)
+
+static JS_ALWAYS_INLINE jsdouble *
+JSVAL_TO_DOUBLEPTR(jsval v)
+{
+    JS_ASSERT(JSVAL_IS_DOUBLE(v));
+    return (jsdouble *) JSVAL_TO_GCTHING(v);
+}
+#ifdef JSVAL_TO_DOUBLE
+# undef JSVAL_TO_DOUBLE
+#endif
+#define JSVAL_TO_DOUBLE(v) *JSVAL_TO_DOUBLEPTR(v)
+EOF
+    say "no"
+  fi
+}
+
+test_JS_NewDoubleValue()
+{
+  say "if you have JS_NewDoubleValue"
+  build <<EOF
+$prologue
+printf("%p\n",JS_NewDoubleValue);
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    say "yes"
+  else
+    say "no (fixing)"
+    emit_code <<EOF
+static inline JSBool __attribute__((deprecated)) JS_NewDoubleValue(JSContext *cx, jsdouble d, jsval *rval) {
+#if !defined(JSAPI_HAS_FATVALS)
+# error $argv_zero - Unrecognized configuration in $func!
+#endif
+    *rval = JSVAL_TO_DOUBLE(d);
+    return JS_TRUE;
+}
+EOF
+  fi
+}
+
+test_JS_NewGlobalObject()
+{
+  say "if you have JS_NewGlobalObject"
+  build <<EOF
+$prologue
+printf("%p\n",JS_NewGlobalObject);
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    say "yes"
+  else
+    say "no (fixing)"
+    emit_code <<EOF
+#if defined(JS_HAS_NEW_GLOBAL_OBJECT)
+# error $argv_zero - Unrecognized configuration in $func!
+#endif
+static inline int JSBool JS_NewGlobalObject(JSContext *cx, JSClass *clasp) {
+    JS_NewObject(cx, clasp, NULL, NULL);
+}
+EOF
+  fi
+}
+
+test_typedRootingAPI()
+{
+  say "if you have the typed rooting API"
+  build <<EOF
+$prologue
+printf("%p\n",JS_AddValueRoot);
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    say "yes"
+  else
+    say "no (fixing)"
+    emit_code <<EOF
+#if defined(JS_TYPED_ROOTING_API)
+# error $argv_zero - Unrecognized configuration in $func!
+#endif#define JS_AddValueRoot(cx, vp)                JS_AddRoot(cx, vp);
+#define JS_AddStringRoot(cx, rp)               JS_AddRoot(cx, rp);
+#define JS_AddObjectRoot(cx, rp)               JS_AddRoot(cx, rp);
+#define JS_AddDoubleRoot(cx, rp)               JS_AddRoot(cx, rp);
+#define JS_AddGCThingRoot(cx, rp)              JS_AddRoot(cx, rp);
+
+#define JS_AddNamedValueRoot(cx, vp, name)     JS_AddNamedRoot(cx, vp, name);
+#define JS_AddNamedStringRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+#define JS_AddNamedObjectRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+#define JS_AddNamedDoubleRoot(cx, rp, name)    JS_AddNamedRoot(cx, rp, name);
+#define JS_AddNamedGCThingRoot(cx, rp, name)   JS_AddNamedRoot(cx, rp, name);
+
+#define JS_RemoveValueRoot(cx, vp)             JS_RemoveRoot(cx, vp);
+#define JS_RemoveStringRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+#define JS_RemoveObjectRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+#define JS_RemoveDoubleRoot(cx, rp)            JS_RemoveRoot(cx, rp);
+#define JS_RemoveGCThingRoot(cx, rp)           JS_RemoveRoot(cx, rp);
+EOF
+  fi
+}
+
+# This test is superflous; js-config.h tells us via JS_GC_ZEAL
+dont_test_JS_SetGCZeal()
+{
+  say "if you have JS_SetGCZeal"
+  build <<EOF
+$prologue
+printf("%p\n",JS_SetGCZeal);
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    emit_define JSAPI_HAS_GCZEAL
+    say "yes"
+  else
+    emit_comment This JSAPI was not built with --enable-gczeal
+    say "no"
+  fi
+}
+
+# This test is superflous; js-config.h tells us via JS_THREADSAFE
+dont_test_JS_THREADSAFE()
+{
+  say "if your JSAPI was built with JS_THREADSAFE"
+  build <<EOF
+$prologue
+$needCx
+printf("%p\n",JS_GetClass(cx, JS_NewObject(cx, NULL, NULL, NULL)));
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    emit_define JSAPI_IS_JS_THREADSAFE
+    say "yes"
+  else
+    emit_comment This JSAPI was not built with --enable-threadsafe
+    say "no"
+  fi
+}
+
+test_JSExtendedClass()
+{
+  say "if you have JSExtendedClass (bug 571789)"
+  build <<EOF
+$prologue
+$needCx
+JSExtendedClass hello;
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    emit_define JSAPI_HAS_EXTENDEDCLASS
+    say "yes"
+  else
+    say "no"
+  fi
+}
+
+test_ObjectOps()
+{
+  say "if you have object ops (bug 571789)"
+  build <<EOF
+$prologue
+$needCx
+JSClass hello;
+hello.getObjectOps = NULL;
+$epilogue
+EOF
+  success=$?
+
+  if [ "$success" = "0" ]; then
+    emit_define JSAPI_HAS_OBJECT_OPS
+    say "yes"
+  else
+    say "no"
+  fi
+}
+
+
+
