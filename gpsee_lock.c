@@ -60,7 +60,18 @@ static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,
 #include <stdlib.h>
 
 #include "gpsee_config.h"
-#if defined(HAVE_ATOMICH_CAS)
+
+#if defined(__APPLE__)
+#include <libkern/OSAtomic.h>
+
+static JS_INLINE int __attribute__((unused))
+js_CompareAndSwap(volatile jsword *w, jsword ov, jsword nv)
+{
+  /* XXX Barrier needed on ppc? */
+  return OSAtomicCompareAndSwap32Barrier((int32_t)ov, (int32_t)nv, (volatile int32_t *)w);
+}
+
+#elif defined(HAVE_ATOMICH_CAS)
 #include <atomic.h>
 
 static JS_INLINE int __attribute__((unused))
