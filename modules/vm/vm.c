@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm.c,v 1.8 2010/12/02 21:47:28 wes Exp $
+ *  @version    $Id: vm.c,v 1.9 2010/12/17 21:37:02 wes Exp $
  *
  *  $Log: vm.c,v $
+ *  Revision 1.9  2010/12/17 21:37:02  wes
+ *  vm module: added object/string/jsvalPtrValue methods
+ *
  *  Revision 1.8  2010/12/02 21:47:28  wes
  *  vm module: Added halt() method
  *
@@ -67,7 +70,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.8 2010/12/02 21:47:28 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.9 2010/12/17 21:37:02 wes Exp $";
  
 #include "gpsee.h"
 
@@ -145,6 +148,75 @@ static JSBool vm_jsval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
   return JS_TRUE;
 }
 
+static JSBool vm_objectPtrValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  byteThing_handle_t    *hnd;
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".objectPtrValue.arguments.count");
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return gpsee_throw(cx, MODULE_ID ".objectPtrValue.arguments.0.type");
+
+  obj = JSVAL_TO_OBJECT(argv[0]);
+  if (!gpsee_isByteThing(cx, obj))
+    return gpsee_throw(cx, MODULE_ID ".objectPtrValue.notByteThing");
+
+  hnd = JS_GetPrivate(cx, obj);
+  if (hnd->length && hnd->length != sizeof(JSObject *))
+    return gpsee_throw(cx, MODULE_ID ".objectPtrValue.storageSize");
+
+  *rval = OBJECT_TO_JSVAL((JSObject *)hnd->buffer);
+
+  return JS_TRUE;
+}
+
+static JSBool vm_stringPtrValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  byteThing_handle_t    *hnd;
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".stringPtrValue.arguments.count");
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return gpsee_throw(cx, MODULE_ID ".stringPtrValue.arguments.0.type");
+
+  obj = JSVAL_TO_OBJECT(argv[0]);
+  if (!gpsee_isByteThing(cx, obj))
+    return gpsee_throw(cx, MODULE_ID ".stringPtrValue.notByteThing");
+
+  hnd = JS_GetPrivate(cx, obj);
+  if (hnd->length && hnd->length != sizeof(JSString *))
+    return gpsee_throw(cx, MODULE_ID ".stringPtrValue.storageSize");
+
+  *rval = STRING_TO_JSVAL((JSString *)hnd->buffer);
+
+  return JS_TRUE;
+}
+
+static JSBool vm_jsvalPtrValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  byteThing_handle_t    *hnd;
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".jsvalPtrValue.arguments.count");
+
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return gpsee_throw(cx, MODULE_ID ".jsvalPtrValue.arguments.0.type");
+
+  obj = JSVAL_TO_OBJECT(argv[0]);
+  if (!gpsee_isByteThing(cx, obj))
+    return gpsee_throw(cx, MODULE_ID ".jsvalPtrValue.notByteThing");
+
+  hnd = JS_GetPrivate(cx, obj);
+  if (hnd->length && hnd->length != sizeof(JSObject *))
+    return gpsee_throw(cx, MODULE_ID ".jsvalPtrValue.storageSize");
+
+  *rval = *(jsval *)hnd->buffer; /* cast-align ok */
+
+  return JS_TRUE;
+}
+	
 static JSBool vm_jschars(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSString      *str = NULL;
@@ -382,6 +454,9 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
     { "GC",			vm_gc,				0, 0, 0 },	
     { "isCompilableUnit",	vm_isCompilableUnit,		0, 0, 0 },
     { "jsval",			vm_jsval,			0, 0, 0 },
+    { "objectPtrValue",		vm_objectPtrValue,		0, 0, 0 },
+    { "stringPtrValue",		vm_stringPtrValue,		0, 0, 0 },
+    { "jsvalPtrValue",		vm_jsvalPtrValue,		0, 0, 0 },
     { "jschars",                vm_jschars,                     0, 0, 0 },
     { "dumpHeap",		vm_dumpHeap,			0, 0, 0 },
     { "dumpValue",		vm_dumpValue,			0, 0, 0 },
