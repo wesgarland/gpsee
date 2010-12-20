@@ -476,7 +476,7 @@ static JSBool initializeModuleScope(JSContext *cx, gpsee_realm_t *realm, moduleH
 			JSPROP_ENUMERATE | jsProp_permanentReadOnly) != JS_TRUE)
     goto fail;
 
-  modDotModObj = JS_NewObject(cx, NULL, NULL, moduleScope);
+  modDotModObj = JS_NewObject(cx, realm->moduleObjectClass, realm->moduleObjectProto, moduleScope);
   if (!modDotModObj)
     goto fail;
 

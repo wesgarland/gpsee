@@ -132,6 +132,7 @@ gpsee_realm_t *gpsee_getRealm(JSContext *cx)
  *   - an initialized module system (and hence module data store)
  *   - an initialized I/O hooks data store
  *   - an initialized global object
+ *   - a prototype for the module object
  *
  *  @param      grt     The GPSEE runtime to which the new realm will belong
  *  @param      name    A symbolic name, for use in debugging, to describe this realm. Does not need to be unique.
@@ -174,6 +175,31 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   realm->globalObject = JS_NewGlobalObject(cx, gpsee_getGlobalClass());
 #endif
   if (!realm->globalObject)
+    goto err_out;
+
+  if (1)
+  {
+    static JSClass moduleObjectClass = 
+    {
+      GPSEE_GLOBAL_NAMESPACE_NAME ".Module", 0,
+      JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+      JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+    };
+
+#undef JS_InitClass    
+    moduleObjectClass.name += sizeof(GPSEE_GLOBAL_NAMESPACE_NAME);
+    realm->moduleObjectProto = JS_InitClass(cx, realm->globalObject, NULL, &moduleObjectClass, 
+					    NULL, 0, NULL, NULL, NULL, NULL);
+    moduleObjectClass.name -= sizeof(GPSEE_GLOBAL_NAMESPACE_NAME);
+    realm->moduleObjectClass = &moduleObjectClass;
+#define JS_InitClass poison
+  }
+  else
+  {
+    realm->moduleObjectProto = JS_NewObject(cx, NULL, NULL, NULL);
+  }
+
+  if (!realm->moduleObjectProto)
     goto err_out;
 
   JS_AddNamedObjectRoot(cx, &realm->globalObject, "super-global");
