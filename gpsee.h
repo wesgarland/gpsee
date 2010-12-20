@@ -36,7 +36,7 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.37 2010/12/02 21:57:03 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.38 2010/12/20 18:34:56 wes Exp $
  *
  *  @defgroup   core            GPSEE Core API
  *  @{
@@ -309,6 +309,8 @@ struct gpsee_realm
   moduleHandle_t 	*unreachableModule_llist;/**< List of nearly-finalized modules waiting only for final free & dlclose */
   const char 		*moduleJail;		/**< Top-most UNIX directory allowed to contain modules, excluding libexec dir */
   modulePathEntry_t	modulePath;		/**< GPSEE module path */
+  JSObject		*moduleObjectProto;	/**< Prototype for all module objects */
+  JSClass		*moduleObjectClass;	/**< Class for all module objects */
   JSObject		*userModulePath;	/**< Module path augumented by user, e.g. require.paths */
   JSObject		*requireDotMain;	/**< Pointer to the program module's "module free var" */
   gpsee_dataStore_t     moduleData;             /**< Scratch-pad for modules; keys are unique pointers */
@@ -466,7 +468,7 @@ JSBool                  gpsee_native_break(JSContext *cx, JSObject *obj, uintN a
 int			gpsee_isatty(int fd);
 JS_EXTERN_API(signed int)           gpsee_verbosity(signed int changeBy);
 JS_EXTERN_API(void)                 gpsee_setVerbosity(signed int newValue);
-JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln);
+JS_EXTERN_API(void)                 gpsee_assert(const char *s, const char *file, JSIntn ln) __attribute__((noreturn));
 JS_EXTERN_API(JSBool)               gpsee_global_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JS_EXTERN_API(void)                 gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk);
 
