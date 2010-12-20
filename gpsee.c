@@ -353,7 +353,8 @@ JSBool gpsee_createJSArray_fromVector(JSContext *cx, JSObject *obj, const char *
   {
     for (argp = argv; *argp; argp++)
     {
-      if (JS_DefineElement(cx, argsObj, argp-argv, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, *argp)), 
+      JSString *str = JS_NewStringCopyZ(cx, *argp);
+      if (!str || JS_DefineElement(cx, argsObj, argp-argv, STRING_TO_JSVAL(str), 
 			   NULL, NULL, JSPROP_ENUMERATE) != JS_TRUE)
 	return JS_FALSE;
     }
