@@ -749,17 +749,9 @@ PRIntn prmain(PRIntn argc, char **argv)
         JS_AddNamedObjectRoot(cx, &scrobj, "preload_scrobj");
 	jsi->grt->exitType = et_execFailure;
         if (JS_ExecuteScript(cx, realm->globalObject, script, &v) == JS_TRUE)
-	{
 	  jsi->grt->exitType = et_finished;
-	}
 	else
-        {
-	  if (JS_IsExceptionPending(cx))
-	  {
-	    jsi->grt->exitType = et_exception;
-	    JS_ReportPendingException(cx);
-	  }
-        }
+	  jsi->grt->exitType = et_exception;
         JS_RemoveObjectRoot(cx, &scrobj);
         v = JSVAL_NULL;
       }
@@ -885,7 +877,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	break;
     }
 
-    if (reason)
+    if (reason) /* ignore unreached warning */
     {
       gpsee_log(cx, SLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
       /* not gpsee_ */ fprintf(stderr, "*** Unexpected interpreter shutdown: %s", reason);
