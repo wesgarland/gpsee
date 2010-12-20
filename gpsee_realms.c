@@ -126,6 +126,11 @@ gpsee_realm_t *gpsee_getRealm(JSContext *cx)
   return realm;
 }       
 
+static JSBool ModuleObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+  return JS_TRUE;
+}
+
 /**
  *  Create a new GPSEE Realm. New realm will be initialized to have all members NULL, except
  *   - the context and name provided (name only present in debug build)
@@ -177,7 +182,6 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
   if (!realm->globalObject)
     goto err_out;
 
-  if (1)
   {
     static JSClass moduleObjectClass = 
     {
@@ -189,14 +193,10 @@ gpsee_realm_t *gpsee_createRealm(gpsee_runtime_t *grt, const char *name)
 #undef JS_InitClass    
     moduleObjectClass.name += sizeof(GPSEE_GLOBAL_NAMESPACE_NAME);
     realm->moduleObjectProto = JS_InitClass(cx, realm->globalObject, NULL, &moduleObjectClass, 
-					    NULL, 0, NULL, NULL, NULL, NULL);
+					    ModuleObject, 0, NULL, NULL, NULL, NULL);
     moduleObjectClass.name -= sizeof(GPSEE_GLOBAL_NAMESPACE_NAME);
     realm->moduleObjectClass = &moduleObjectClass;
 #define JS_InitClass poison
-  }
-  else
-  {
-    realm->moduleObjectProto = JS_NewObject(cx, NULL, NULL, NULL);
   }
 
   if (!realm->moduleObjectProto)
