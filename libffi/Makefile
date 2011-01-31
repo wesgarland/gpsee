@@ -52,7 +52,7 @@ GPSEE_SRC_DIR := $(abspath $(GPSEE_SRC_DIR))
 
 include $(GPSEE_SRC_DIR)/local_config.mk
 include $(GPSEE_SRC_DIR)/system_detect.mk
--include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk   
+-include $(GPSEE_SRC_DIR)/$(UNAME_SYSTEM)_config.mk
 NO_BUILD_RULES=TRUE
 -include $(GPSEE_SRC_DIR)/$(STREAM)_stream.mk
 include $(GPSEE_SRC_DIR)/build.mk
@@ -65,7 +65,7 @@ ifneq ($(MAKECMDGOALS), help)
 LIBFFI_LIB_DIR		?= $(LIBFFI_PREFIX)/lib
 LIBFFI_INCLUDE_DIR	?= $(LIBFFI_PREFIX)/include
 include sanity.mk
-LIBFFI_BUILD     ?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
+LIBFFI_BUILD		?= $(abspath builds/$(shell echo $(BUILD) | $(TR) '[A-Z]' '[a-z]'))
 endif
 
 CONFIGURE_OPTIONS	+= --prefix=$(LIBFFI_PREFIX)
@@ -82,7 +82,7 @@ JS_CONFIG ?= $(JS_CONFIG_DIR)/js-config
 
 # Debug build?
 ifneq (X,X$(filter $(BUILD),DEBUG))
-CONFIGURE_OPTIONS       += --enable-debug
+CONFIGURE_OPTIONS	+= --enable-debug
 endif
 
 # Debug-Release or Profile build? Add debug symbols
@@ -188,7 +188,7 @@ vars.mk:
 	@echo "LIBFFI_LDFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --libs)" >> vars.mk
 	@echo "LIBFFI_CFLAGS=$(shell PKG_CONFIG_PATH=$(LIBFFI_LIB_DIR)/pkgconfig $(PKG_CONFIG) libffi --cflags)" >> vars.mk
 	@echo "LIBFFI_LIB_DIR=$(LIBFFI_LIB_DIR)" >> vars.mk
-        @[ "$(SUDO_USER)" = "" ] || chown $(SUDO_USER) vars.mk
+	@[ "$(SUDO_USER)" = "" ] || chown $(SUDO_USER) vars.mk
 
 clean:
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || [ X = X ]
