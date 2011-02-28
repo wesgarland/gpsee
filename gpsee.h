@@ -207,9 +207,9 @@ typedef enum
   et_compileFailure	= 1 << 16,			/* Unable to compile some code */
   et_execFailure	= 1 << 17,			/* Exec failed, but not with exception */
   et_exception		= 1 << 18,			/* Uncaught exception */
-
+  et_dummy		= 1 << 19,			/* Dummy, so that et_errorMask has a unique value */
   et_successMask	= et_finished | et_requested,
-  et_errorMask 		= ~et_successMask
+  et_errorMask 		= ~et_successMask | et_dummy
 } exitType_t;
 
 #ifndef GPSEE_NO_ASYNC_CALLBACKS

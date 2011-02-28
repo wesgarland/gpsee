@@ -860,6 +860,7 @@ PRIntn prmain(PRIntn argc, char **argv)
       case et_errorMask:
       case et_requested:
       case et_finished:
+      case et_dummy:
       default:
 	GPSEE_NOT_REACHED("impossible");
 	break;	
