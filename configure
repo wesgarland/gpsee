@@ -48,6 +48,7 @@
 # @date		May 2010
 #
 
+gpsee_dir="`dirname $0`"
 if [ ! "$BASH_VERSION" ]; then
   if [ ! -x "/bin/bash" ]; then
     . ${gpsee_dir}/configure.incl
@@ -77,7 +78,6 @@ fi
 
 argv_zero="$0"
 configure_cmd="$0 $*"
-gpsee_dir="`dirname $0`"
 
 isFunc="typeset -f"
 listFuncs="typeset -F"
@@ -318,7 +318,7 @@ do
   if echo "$1" | grep '^--' >/dev/null; then
     # --enable-option, --disable-option, or --option=value
     func="`echo \"$1\" | sed -e 's/^--//' -e 's/-/_/g' -e 's/=.*//'`"
-    arg="`echo \"$1\" | grep = | sed -e 's/.*=//'`"
+    arg="`echo \"$1\" | grep = | sed -e 's/[^=]*=//'`" 
     if ! $isFunc "$func" >/dev/null; then
       if echo "$func" | grep '^enable' >/dev/null; then
         func="`echo \"$func\" | sed 's/^enable/disable/'`"
