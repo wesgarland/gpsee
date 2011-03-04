@@ -987,7 +987,7 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
   }
 
   modulePath = JS_malloc(cx, sizeof(*modulePath) * arrlen);
-  pathEl = NULL;
+  pathEl = modulePath;
 
   for (idx = 0; idx < arrlen; idx++)
   {
@@ -1013,10 +1013,8 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
       continue;
     }
 
-    if (pathEl)
-      pathEl = pathEl->next;
-    pathEl = modulePath + idx;
     pathEl->dir = dir;
+    pathEl->next = pathEl++;
   }
   pathEl->next = NULL;
 
