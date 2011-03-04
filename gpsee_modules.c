@@ -968,7 +968,7 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
   jsval			v;
   JSString		*jsstr;
   jsuint		idx, arrlen;
-  modulePathEntry_t	modulePath, pathEl;
+  modulePathEntry_t	modulePath, pathEl, end;
   const char		*dir;
 
   if (JS_IsArrayObject(cx, arrObj) != JS_TRUE)
@@ -997,9 +997,6 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
       return JS_FALSE;
     }
 
-    if (v == JSVAL_VOID)
-      continue;
-
     if (JSVAL_IS_STRING(v))
       jsstr = JSVAL_TO_STRING(v);
     else
@@ -1014,11 +1011,20 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
     }
 
     pathEl->dir = dir;
-    pathEl->next = pathEl++;
+    end = pathEl;
+    pathEl = pathEl->next = pathEl + 1;
   }
-  pathEl->next = NULL;
 
-  *modulePath_p = modulePath;
+  if (pathEl == modulePath)
+  {
+    JS_free(cx, modulePath);
+    *modulePath_p = NULL;
+  }
+  else
+  {
+    end->next = NULL;
+    *modulePath_p = modulePath;
+  }
   return JS_TRUE;
 }
 
