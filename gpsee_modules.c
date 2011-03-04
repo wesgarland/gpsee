@@ -35,7 +35,7 @@
 
 /**
  *  @author	Wes Garland, PageMail, Inc., wes@page.ca
- *  @version	$Id: gpsee_modules.c,v 1.35 2010/12/02 21:59:42 wes Exp $
+ *  @version	$Id: gpsee_modules.c,v 1.36 2011/03/04 19:44:31 wes Exp $
  *  @date	March 2009
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
@@ -66,7 +66,7 @@
  *  GPSEE module path:  The first place non-(internal|relative) modules are searched for; libexec dir etc.
  */
 
-static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.35 2010/12/02 21:59:42 wes Exp $:";
+static const char __attribute__((unused)) rcsid[]="$Id: gpsee_modules.c,v 1.36 2011/03/04 19:44:31 wes Exp $:";
 
 #define _GPSEE_INTERNALS
 #include "gpsee.h"
@@ -1119,7 +1119,8 @@ static JSBool loadDiskModule_inDir(gpsee_realm_t *realm, JSContext *cx, const ch
       if (!success)
       {
         if (module) 
-          markModuleUnused(cx, module);
+	  releaseModuleHandle(cx, realm, module);
+
         *module_p = NULL;
         return JS_FALSE;
       }
@@ -1312,7 +1313,7 @@ static JSBool loadInternalModule(JSContext *cx, const char *moduleName, moduleHa
     }
   }
 
-  markModuleUnused(cx, module);
+  releaseModuleHandle(cx, realm, module);
   dprintf("module %s is not internal\n", moduleName);
 
   return JS_TRUE;
@@ -1377,6 +1378,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   moduleHandle_t        *parentModule;
   jsval			v;
   JSObject		*require_fn = JSVAL_TO_OBJECT(argv[-2]);
+  gpsee_realm_t         *realm = gpsee_getRealm(cx);
 
   if (argc != 1)
     return gpsee_throw(cx, GPSEE_GLOBAL_NAMESPACE_NAME ".loadModule.argument.count");
@@ -1423,7 +1425,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
 
   if (!module->init && !module->script)
   {
-    markModuleUnused(cx, module);
+    releaseModuleHandle(cx, realm, module);
     requireUnlock(cx);
 
     if (module->DSOHnd)
@@ -1439,7 +1441,7 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
 
   if (initializeModule(cx, module) == JS_FALSE)
   {
-    markModuleUnused(cx, module);
+    releaseModuleHandle(cx, realm, module);
     requireUnlock(cx);
     GPSEE_ASSERT(JS_IsExceptionPending(cx));
     dpDepth(-1);
@@ -1635,7 +1637,7 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
   gpsee_leaveAutoMonitor(realm->monitors.programModule);
 
   if (module)
-    markModuleUnused(cx, module);
+    releaseModuleHandle(cx, realm, module);
 
   dpDepth(-1);
  
