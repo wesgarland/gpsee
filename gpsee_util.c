@@ -540,7 +540,7 @@ JSBool gpsee_reportUncaughtException(JSContext *cx, jsval exval, int dumpStack)
 	  strcpy(new_longerror, longerror);
 	  nl = new_longerror + (nl - longerror);
 	  JS_free(cx, longerror);
-	  new_longerror = longerror;
+	  longerror = new_longerror;
 	}
 
 	memmove(nl + sizeof(NO_FUNCTION_NAME) - 1, nl, strlen(nl) + 1);

@@ -1013,11 +1013,9 @@ static JSBool JSArray_toModulePath(JSContext *cx, JSObject *arrObj, modulePathEn
       continue;
     }
 
-    if (!pathEl)
-      pathEl = modulePath;
-    else
-      pathEl = pathEl->next = modulePath + idx + 1;
-
+    if (pathEl)
+      pathEl = pathEl->next;
+    pathEl = modulePath + idx;
     pathEl->dir = dir;
   }
   pathEl->next = NULL;
