@@ -35,13 +35,13 @@
 
 /**
  *  @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
- *  @version	$Id: gpsee_xdrfile.c,v 1.5 2010/12/02 21:59:42 wes Exp $
+ *  @version	$Id: gpsee_xdrfile.c,v 1.6 2011/03/08 18:13:52 wes Exp $
  *  @date	May 2009
  *  @file	gpsee_xdrfile.c         JSXDR implementation using stdio.h FILE API (fwrite()
  *                                      et al.) and kernel API memory mapping when possible
  */
 
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.5 2010/12/02 21:59:42 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.6 2011/03/08 18:13:52 wes Exp $";
 
 #include "gpsee.h"
 #include "jsapi.h"
@@ -55,8 +55,6 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.5 20
 #include <string.h>
 #include <fcntl.h>
 #define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
-
-/* TODO JSXDR_FREE support? */
 
 /* XDRFile member variables */
 struct XDRFile {
@@ -116,12 +114,9 @@ JSXDRState * gpsee_XDRNewFile(JSContext *cx, JSXDRMode mode, const char *filenam
     case JSXDR_DECODE:
       fopen_mode = "r";
       break;
-    case JSXDR_FREE:
-      fopen_mode = "w+";
-      break;
     default:
-      gpsee_throw(cx, "gpsee_XDRNewFile() error: invalid mode argument (%d as opposed to %d, %d, or %d)",
-                  mode, JSXDR_ENCODE, JSXDR_DECODE, JSXDR_FREE);
+      gpsee_throw(cx, "gpsee_XDRNewFile() error: invalid mode argument (%d as opposed to %d or %d)",
+                  mode, JSXDR_ENCODE, JSXDR_DECODE);
       return NULL;
   }
 
