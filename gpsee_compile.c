@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** 
  *
  *  @author	Donny Viszneki, PageMail, Inc., hdon@page.ca
- *  @version	$Id: gpsee_compile.c,v 1.5 2010/09/01 18:12:35 wes Exp $
+ *  @version	$Id: gpsee_compile.c,v 1.6 2011/03/08 18:12:40 wes Exp $
  *  @file	gpsee_compile.c		Code to compile JavaScript, and to transparently
  *					cache compiled byte code to/from disk.
  */
@@ -188,7 +188,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       /* This invalidates the cache file. We will try to delete the cache file after goto cache_read_end */
       fclose(cache_file);
       cache_file = NULL;
-      gpsee_log(cx, SLOG_NOTICE,
+      if (gpsee_verbosity(0))
+	gpsee_log(cx, SLOG_NOTICE,
           "ownership/mode on cache file \"%s\" (%d:%d@0%o) does not match the expectation (%d:%d@0%o).",
           cache_filename,
           (int)cache_st.st_uid,  (int)cache_st.st_gid,  (unsigned int)cache_st.st_mode & 0777,
@@ -288,7 +289,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
         {
           useCompilerCache = 0;
           /* Report that we could not unlink the cache file */
-          gpsee_log(cx, SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+	  if (gpsee_verbosity(0))
+	    gpsee_log(cx, SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
         }
       }
       errno = 0;
