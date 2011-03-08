@@ -33,7 +33,7 @@
  * ***** END LICENSE BLOCK ***** 
  *
  *  @author	Donny Viszneki, PageMail, Inc., hdon@page.ca
- *  @version	$Id: gpsee_compile.c,v 1.6 2011/03/08 18:12:40 wes Exp $
+ *  @version	$Id: gpsee_compile.c,v 1.7 2011/03/08 18:52:42 wes Exp $
  *  @file	gpsee_compile.c		Code to compile JavaScript, and to transparently
  *					cache compiled byte code to/from disk.
  */
@@ -300,8 +300,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       if ((cache_fd = open(cache_filename, O_WRONLY|O_CREAT|O_EXCL, source_st.st_mode & 0666)) < 0)
       {
         umask(oldumask);
-	if (errno != EEXIST)
-	  gpsee_log(cx, SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
+	if (gpsee_verbosity(0))
+	  gpsee_log(cx, SLOG_NOTICE, "Could not create compiler cache '%s' (%m)", cache_filename);
         goto cache_write_end;
       }
       umask(oldumask);
@@ -313,8 +313,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       /* Ensure the owner of the cache file is the owner of the source file */
       if (fchown(cache_fd, source_st.st_uid, -1))
       {
-	if (errno != EEXIST)
-	  gpsee_log(cx, SLOG_NOTICE, "Could not create compiler cache '%s' (open(2) reports %m)", cache_filename);
+	if (gpsee_verbosity(0))
+	  gpsee_log(cx, SLOG_NOTICE, "Could not set create compiler cache ownership for '%s' to uid %i (%m)", cache_filename, (int)source_st.st_uid);
         goto cache_write_bail;
       }
       /* Create a FILE* for XDR */
