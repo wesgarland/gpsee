@@ -35,7 +35,7 @@
  *  @file	fs-base.js	Implementation of filesystem/a/0 for GPSEE.
  *  @author	Wes Garland
  *  @date	Aug 2009
- *  @version	$Id: fs-base.js,v 1.17 2010/12/02 21:59:43 wes Exp $
+ *  @version	$Id: fs-base.js,v 1.18 2011/03/08 18:14:56 wes Exp $
  */
 
 const binary = require("binary");
@@ -200,7 +200,14 @@ exports.openRaw = function(path, mode, permissions)
   _umask.call(oldUmask);
 
   if (fd == -1)
+  {
+    if (mode.exclusive && mode.create)
+    {
+      if (ffi.errno === dh.EEXIST)
+	return null;
+    }
     throw new Error("Unable to open file '" + path + "'" + syserr());
+  }
 
   if (!mode.write && exports.isDirectory(path)) /* open(2) already threw if writing a dir */
   {
