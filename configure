@@ -212,7 +212,7 @@ disable_async_callbacks()
   fi
 }
 
-with_curl()
+with_curl_prefix()
 {
   [ "$1" = "help" ] && echo "Specify cURL prefix directory" && return
 

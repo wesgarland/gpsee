@@ -1,3 +1,12 @@
+#
+# cURL module for GPSEE, 
+# Copyright 2009-2010 by Nick Galbreath, nickgsuperstar@gmail.com
+#
+# This module is disabled by default in GPSEE as it adds extra GPSEE dependencies,
+# such as cURL (a reasonably new version) and Python. To enable, you must
+# configure GPSEE with --enable-curl or --with-curl-prefix=/path/to/dir, such that
+# /path/to/dir/include/curl/curl.h exists.
+#
 
 10-Jan-2010
 

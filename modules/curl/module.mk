@@ -35,14 +35,17 @@
 #
 
 AUTOGEN_HEADERS += libcurl_constants.h
-
 LEADING_CPPFLAGS += $(CURL_CPPFLAGS)
 LDFLAGS += $(CURL_LDFLAGS)
 
-libcurl_constants.h: make_libcurl_constants.py
-	$(CPP) $(CURL_CPPFLAGS) $(CPPFLAGS) curl_system_headers.h | python make_libcurl_constants.py > $@
+ifndef CURL_HEADER
+CURL_HEADER := $(firstword $(wildcard $(foreach DIR, $(patsubst -I%,%,$(filter -I%,$(shell echo $(CPPFLAGS) | sed 's/-I */-I/g'))), $(DIR)/curl/curl.h)))
+endif
 
+libcurl_constants.h: make_libcurl_constants.py
+	[ -f "$(CURL_HEADER)" ] && python make_libcurl_constants.py <$(CURL_HEADER) > $@
+
+curl.o: libcurl_constants.h
 curl.o: LEADING_CPPFLAGS += $(CURL_CPPFLAGS)
 curl.$(SOLIB_EXT): LDFLAGS += $(CURL_LDFLAGS)
-
 
