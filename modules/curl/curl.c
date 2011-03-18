@@ -526,9 +526,10 @@ static void easycurl_finalize(JSContext* cx, JSObject* obj)
   struct callback_data* cb = (struct callback_data*)(JS_GetPrivate(cx, obj));
   if (cb)
   {
-    // On death, curl sends a "closing connection" debug message
-    // If we are in GC, we don't want to send a request back to JS
-    // (can occur only if verbose is 1)
+    /* On death, curl sends a "closing connection" debug message
+     * If we are in GC, we don't want to send a request back to JS
+     * (can occur only if verbose is 1)
+     */
     curl_easy_setopt(cb->handle, CURLOPT_VERBOSE, 0);
     curl_easy_cleanup(cb->handle);
     JS_free(cx, cb);
