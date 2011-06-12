@@ -108,6 +108,7 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
 JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scriptFile, const char *scriptCode,
                            JSScript **script, JSObject *scope, JSObject **scriptObject)
 {
+  JSBool                rval = JS_TRUE;
   char 			cache_filename[PATH_MAX];
   int 			haveCacheFilename = 0;
   int 			useCompilerCache;
@@ -115,6 +116,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
   struct stat 		source_st;
   struct stat 		cache_st;
   FILE 			*cache_file = NULL;
+  JSBool                own_scriptFile;
 
   *script = NULL;
   *scriptObject = NULL;
@@ -132,8 +134,13 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     gpsee_runtime_t *grt;
 
     /* Open the script file if it hasn't been yet */
-    if (!scriptFile && !(scriptFile = fopen(scriptFilename, "r")))
-      return gpsee_throw(cx, CSERR "fopen() error %m", scriptFilename);
+    if (scriptFile)
+      own_scriptFile = JS_FALSE;
+    else {
+      if (!(scriptFile = fopen(scriptFilename, "r")))
+        return gpsee_throw(cx, CSERR "fopen() error %m", scriptFilename);
+      own_scriptFile = JS_TRUE;
+    }
 
     gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
 
@@ -221,6 +228,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
        * invalidate any compiler cache resulting from a different "cstrRutf8" setting. */
       JS_XDRUint32(xdr, &cstrRutf8);
       /* Compare the results of the deserialization */
+      printf("mtime invalidation: %d\n", (int)(mtime != source_st.st_mtime));
       if (ino != source_st.st_ino || size != source_st.st_size || mtime != source_st.st_mtime
       ||  fileHeaderOffset != fho || cstrRutf8 != (uint32)JS_CStringsAreUTF8())
       {
@@ -260,6 +268,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       }
       /* We are done with our deserialization context */
       JS_XDRDestroy(xdr);
+      fclose(cache_file);
+      cache_file = NULL;
     }
   }
 
@@ -274,8 +284,10 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       JS_CompileScript(cx, scope, scriptCode, strlen(scriptCode), scriptFilename, 0):
       JS_CompileFileHandle(cx, scope, scriptFilename, scriptFile);  
 
-    if (!*script)
-      return JS_FALSE;
+    if (!*script) {
+      rval = JS_FALSE;
+      goto finish;
+    }
 
     /* Should we freeze the compiled script for the compiler cache? */
     if (useCompilerCache && haveCacheFilename)
@@ -366,11 +378,12 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
       /* We'll close the cache file's FILE handle. fclose(3) also calls close(2) on cache_fd for us */
       fclose(cache_file);
+      cache_file = NULL;
       goto cache_write_end;
 
       cache_write_bail:
       fclose(cache_file);
-      close(cache_fd);
+      cache_file = NULL;
       unlink(cache_filename);
     }
   }
@@ -379,7 +392,15 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
   /* We must associate a GC object with the JSScript to protect it from the GC */
   *scriptObject = JS_NewScriptObject(cx, *script);
   if (!*scriptObject)
-    return JS_FALSE;
+    goto fail;
 
-  return JS_TRUE;
+  goto finish;
+
+  fail:
+  rval = JS_FALSE;
+
+  finish:
+  if (own_scriptFile)
+    fclose(scriptFile);
+  return rval;
 }
