@@ -228,7 +228,6 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
        * invalidate any compiler cache resulting from a different "cstrRutf8" setting. */
       JS_XDRUint32(xdr, &cstrRutf8);
       /* Compare the results of the deserialization */
-      printf("mtime invalidation: %d\n", (int)(mtime != source_st.st_mtime));
       if (ino != source_st.st_ino || size != source_st.st_size || mtime != source_st.st_mtime
       ||  fileHeaderOffset != fho || cstrRutf8 != (uint32)JS_CStringsAreUTF8())
       {
