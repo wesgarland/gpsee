@@ -733,7 +733,6 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
         done = 1;
       else
       {
-        char *e;
         /* Look for repeated lines if we're at the beginning of the line */
         if (i == 0)
         {
