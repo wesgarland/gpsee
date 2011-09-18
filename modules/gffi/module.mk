@@ -106,7 +106,7 @@ gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl
 std_functions.o std_gpsee_no.h std_defs.dmp std_defs std_defs.o: CPPFLAGS += $(GFFI_CPPFLAGS) $(STD_CPPFLAGS)
-std_macro_consts.o std_functions.o: LEADING_CPPFLAGS += -I$(GPSEE_SRC_DIR)
+std_macro_consts.o std_functions.o: LEADING_CPPFLAGS += -I$(GPSEE_SRC_DIR) $(STD_CPPFLAGS)
 std_functions.o: std_gpsee_no.h
 
 std_gpsee_no.h: std_functions.h std_macro_consts.h
@@ -298,3 +298,6 @@ structs.incl: structs.decl module.mk
 
 
 defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
+
+test:
+	@echo STD_CPPFLAGS=$(STD_CPPFLAGS)
