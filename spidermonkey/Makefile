@@ -150,6 +150,8 @@ all:	build
 
 $(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
 	@echo " * Generating $@"
+	@[ -x $(AUTOCONF) ] || echo " *** $(AUTOCONF): command not found"
+	@[ -x $(AUTOCONF) ]
 	cd $(SPIDERMONKEY_SRC) && $(AUTOCONF)
 
 $(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Makefile local_config.mk 
@@ -258,8 +260,7 @@ build_debug:
 
 $(SPIDERMONKEY_SRC)/configure.in:
 	@echo > /dev/stderr
-	@echo " *** Please install autoconf-enabled SpiderMonkey in $(SPIDERMONKEY_SRC)," >/dev/stderr
-	@echo "     or edit ./local_config.mk to tell me where it is." >/dev/stderr
+	@echo " *** Please install SpiderMonkey in $(SPIDERMONKEY_SRC) (could not locate configure.in)" >/dev/stderr
 	@echo > /dev/stderr
 	@[ X = Y ]
 

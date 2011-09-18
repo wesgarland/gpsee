@@ -40,6 +40,11 @@ cfg_pkg()
 
 uglob()
 {
+  if expr "$1" : '\.\./' >/dev/null || expr "$1" : '\./' >/dev/null; then
+    echo "`pwd`/$1"
+    return 
+  fi
+
   if expr "$1" : '~[/A-Za-z0-9_].*' >/dev/null; then
     eval echo "$1"
   else
