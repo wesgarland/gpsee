@@ -68,7 +68,11 @@ static JS_INLINE int __attribute__((unused))
 js_CompareAndSwap(volatile jsword *w, jsword ov, jsword nv)
 {
   /* XXX Barrier needed on ppc? */
+#ifdef __LP64__
+  return OSAtomicCompareAndSwap64Barrier((int64_t)ov, (int64_t)nv, (volatile int64_t *)w);
+#else
   return OSAtomicCompareAndSwap32Barrier((int32_t)ov, (int32_t)nv, (volatile int32_t *)w);
+#endif
 }
 
 #elif defined(HAVE_ATOMICH_CAS)
