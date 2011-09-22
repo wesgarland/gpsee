@@ -206,7 +206,7 @@ JSBool ByteString_get(JSContext *cx, uintN argc, jsval *vp)
 static JSBool ByteString_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSObject 	*instance;        /* Constructor return value */
-  unsigned char	*buffer;          /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
+  unsigned char	*buffer = NULL;   /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   size_t	length;           /* Outvar to copyJSArray_toBuf() and transcodeString_toBuf() */
   int		stealBuffer = 0;  /* whether or not we want a further private constructor function to make its own copy */
 
