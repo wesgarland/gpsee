@@ -38,7 +38,7 @@
  *  @version	$Id: net.js,v 1.3 2010/03/31 18:32:29 wes Exp $
  */
 
-const fs = require("chiptic/fs-base")
+const fs = require("fs-base");
 const binary = require("binary");
 const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
