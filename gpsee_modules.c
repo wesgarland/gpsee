@@ -841,7 +841,6 @@ static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
   }
 
   GPSEE_ASSERT(hnd->module);
-  GPSEE_ASSERT(hnd->module->fini == NULL);      /* Should not be finalizing if fini handler is unrun */
 
   dprintf("module is %s, %p\n", moduleShortName(hnd->module->cname), hnd->module);
   releaseModuleHandle(cx, hnd->realm, hnd->module);
