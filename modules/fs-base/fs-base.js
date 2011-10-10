@@ -43,7 +43,13 @@ const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
 const dh = ffi.gpsee	/**< Header collection for #define'd constants */
 
-const _umask		= new dl.CFunction(ffi.mode_t,  "umask",		ffi.mode_t);
+const __umask		= new dl.CFunction(ffi.mode_t,  "umask",		ffi.mode_t);
+function _umask(old)
+{
+  var newv = +__umask.call(+old ? +old : 0);
+  return newv;
+}
+
 const _open 		= new dl.CFunction(ffi.int, 	"open", 		ffi.pointer, ffi.int, ffi.int);
 const _close		= new dl.CFunction(ffi.int,	"close",		ffi.int);
 const _fdopen 		= new dl.CFunction(ffi.pointer, "fdopen", 		ffi.int, ffi.pointer);
@@ -910,7 +916,10 @@ Stream.prototype.read = function Stream_read(howMuch)
 Stream.prototype.close = function Stream_close()
 {
   if (this.stream)
+  {
     this.stream.destroy();
+    this.stream.destroy = function() { throw new Error("Stream was already closed"); };
+  }
   else
     _close.call(this.fd);
 }
