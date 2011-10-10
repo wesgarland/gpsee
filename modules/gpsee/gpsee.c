@@ -458,7 +458,7 @@ const char *gpsee_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool gpsee_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool gpsee_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;
 }

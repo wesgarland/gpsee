@@ -291,8 +291,8 @@ JSBool MutableStruct(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 
 
 JSClass *mutableStruct_clasp = NULL;
-JSClass *immutableStruct_clasp = NULL;
-#warning need immutable struct class
+JSClass *immutableStruct_clasp = NULL;          /**< @todo Implement immutable structs */
+
 /**
  *  Initialize the MutableStruct class prototype.
  *

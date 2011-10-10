@@ -185,7 +185,7 @@ const char *system_InitModule(JSContext *cx, JSObject *module)
   return MODULE_ID; 
 }
 
-JSBool system_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool system_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;
 }

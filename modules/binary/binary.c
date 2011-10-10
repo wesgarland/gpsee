@@ -70,7 +70,7 @@ const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool binary_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool binary_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;
 }

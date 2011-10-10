@@ -269,7 +269,6 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
   gpsee_runtime_t       *grt = realm->grt;
 
   gpsee_uio_dumpPendingWrites(cx, realm);
-  gpsee_shutdownModuleSystem(cx, realm);
 
   /** Clean up any user I/O hooks belonging to the current realm */
   for (fd = 0; fd < grt->user_io.hooks_len; fd++)
@@ -279,11 +278,15 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
     gpsee_leaveAutoMonitor(grt->monitors.user_io);
   }
 
-  JS_RemoveObjectRoot(cx, &realm->globalObject);
   gpsee_removeAllGCCallbacks_forRealm(realm->grt, realm);
+  JS_RemoveObjectRoot(cx, &realm->globalObject);
+  JS_SetGlobalObject(cx, NULL);
+
   JS_EndRequest(cx);
   JS_GC(cx);
   JS_BeginRequest(cx);
+  gpsee_shutdownModuleSystem(cx, realm);
+
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
   realm->monitored.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);

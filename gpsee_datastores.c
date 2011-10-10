@@ -379,4 +379,28 @@ JSBool gpsee_ds_forEach(JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach
   return JS_TRUE;
 }
 
+/** Determine whether or not a data store is actually storing any data or not.
+ *
+ *  @param      cx      JavaScript Context passed to callback
+ *  @param      store   The GPSEE data store
+ * 
+ *  @returns	JS_TRUE when the data store is not empty, JS_FALSE when it is.
+ */
+JSBool gpsee_ds_hasData(JSContext *cx, gpsee_dataStore_t store)
+{
+  size_t        i;
+  JSBool	b = JS_FALSE;
+
+  gpsee_enterMonitor(store->monitor);
+  for (i=0; i < store->size; i++)
+  {
+    if (!store->data[i].key)
+      continue;
+    b = JS_TRUE;
+    break;
+  }
+
+  return b;
+}
+
 /** @} */

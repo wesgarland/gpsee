@@ -48,6 +48,14 @@
 #include <ffi.h>
 #include "gffi.h"
 
+/** A list of WillFinalize instances which have not yet been finalized;
+ *  these instances have C-side "weak" references to CFunction instances
+ *  which must be kept alive by the garbage collector.  The key of the
+ *  elements in the list is the WillFinalize instance; the value is the
+ *  CFunction instance (both JSObject *).
+ */
+static gpsee_dataStore_t pendingFinalizers;
+
 #define CLASS_ID MODULE_ID ".WillFinalize"
 
 /* @jazzdoc gffi.WillFinalize
@@ -149,9 +157,11 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
   /* Associate 'clos' to our WillFinalize instance */
   GPSEE_ASSERT(clos);
   if (clos)
+  {
     JS_SetPrivate(cx, thisObj, clos);
+    gpsee_ds_put(pendingFinalizers, thisObj, cfuncObj);
+  }
 
-#warning need to memoize cfun obj here for GC
   return JS_TRUE;
 }
 /** This function implements an API for objects to be finalized on-demand. The finalizer is executed and removed when
@@ -166,6 +176,7 @@ static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
   {
     cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
     cFunction_closure_call(cx, clos, hnd);
+    gpsee_ds_remove(pendingFinalizers, thisObj);
   }
 
   JS_SetPrivate(cx, thisObj, NULL);
@@ -180,9 +191,73 @@ static void WillFinalize_Finalize(JSContext *cx, JSObject *obj)
   {
     cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
     cFunction_closure_call(cx, clos, hnd);
+    gpsee_ds_remove(pendingFinalizers, obj);
   }
 }
 
+static JSBool markObject(JSContext *cx, const void *key, void *value, void *_private)
+{
+  cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, (JSObject *)key, WillFinalize_clasp, NULL);
+
+  GPSEE_ASSERT(hnd);
+  JS_MarkGCThing(cx, (JSObject *)value, hnd->functionName, NULL);
+
+  return JS_TRUE;
+}
+
+/** A callback which runs garbage-collection that marks the objects 
+ *  memoized by pendingFinalizers as "still alive", whether or not
+ *  they are reachable from the rooted object graphs, because there
+ *  are cFunction_closure finalizers have not yet been run which
+ *  depend on them.   (i.e. a cFunction_closure invoking fclose()
+ *  will depend on an instance of CFunction that exposes fclose()).
+ *
+ *  @param      cx      Any context in the current runtime
+ *  @param      realm   The realm upon which the callback should operate
+ *  @param      status  Phase the garbage collector is operating in
+ * 
+ *  @see        JS_SetGCCallback(), gpsee_addGCCallback()
+ * 
+ *  @returns    JS_TRUE on success, or JS_FALSE if we threw a JS exception   
+ */
+static JSBool WillFinalize_GCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCStatus status)
+{
+  if (status != JSGC_MARK_END)
+    return JS_TRUE;
+ 
+  if (gpsee_ds_forEach(cx, pendingFinalizers, markObject, NULL) != JS_TRUE)
+    return gpsee_throw(cx, CLASS_ID ".pendingFinalizers.iteration");
+
+  return JS_TRUE;
+}
+
+static JSBool forceFinalize(JSContext *cx, const void *key, void *value, void *_private)
+{
+  WillFinalize_Finalize(cx, (JSObject *)key);
+  JS_SetPrivate(cx,  (JSObject *)key, NULL);
+
+  return JS_TRUE;
+}
+
+/** Called from FiniModule, FiniClass cleans up outstanding resources
+ *  and returns JS_TRUE.  If there are pending finalizer CFunction
+ *  closures, we return JS_FALSE which cascades back to the module
+ *  loader, telling it not to unload this module.  The loader will
+ *  try again on a subsequent GC.  During platform shutdown, a GC
+ *  between global-object removal and context destruction should clear
+ *  all finalizers.
+ */ 
+JSBool WillFinalize_FiniClass(JSContext *cx, JSBool force)
+{
+  if (force)
+    gpsee_ds_forEach(cx, pendingFinalizers, forceFinalize, NULL);
+
+  if (gpsee_ds_hasData(cx, pendingFinalizers))
+    return JS_FALSE;
+
+  gpsee_ds_destroy(pendingFinalizers);
+  return JS_TRUE;
+}
 /**
  *  Initialize the WillFinalize JSClass and add its constructor to the JS object graph.
  *
@@ -230,7 +305,18 @@ JSObject *WillFinalize_InitClass(JSContext *cx, JSObject *obj, JSObject *parentP
                    NULL,                /* static_ps - props struct for constructor */
                    NULL);               /* static_fs - funcs struct for constructor (methods like Math.Abs()) */
 
+  gpsee_realm_t *realm = gpsee_getRealm(cx);
+
+  pendingFinalizers = gpsee_ds_create(realm->grt, 0, 16);
+  if (!pendingFinalizers)
+    return NULL;
+
+  if (gpsee_addGCCallback(realm->grt, realm, WillFinalize_GCCallback) != JS_TRUE)
+    return NULL;
+
   GPSEE_ASSERT(proto);
   return proto;
 }
+
+
 

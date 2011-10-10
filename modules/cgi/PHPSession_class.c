@@ -183,6 +183,7 @@ static JSBool PHPSession(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 
   return JS_TRUE;
 }
+#endif /* HAVE_APR */
 
 JSBool PHPSession_FiniClass(JSContext *cx, JSObject *proto)
 {
@@ -225,4 +226,3 @@ JSObject *PHPSession_InitClass(JSContext *cx, JSObject *obj)
 
   return proto;
 }
-#endif /* HAVE_APR */
