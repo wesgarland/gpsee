@@ -418,12 +418,19 @@ static JSBool gpseemod_sizeofByteThing(JSContext *cx, uintN argc, jsval *vp)
   return JS_TRUE;
 }
 
+/* Convenience method for use with the debugger */
+static JSBool gpseemod_breakpoint(JSContext *cx, uintN argc, jsval *vp)
+{
+  return JS_TRUE;
+}
+
 const char *gpsee_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   static JSFunctionSpec gpsee_static_methods[] = 
   {
     JS_FN("isByteThing",        gpseemod_isByteThing,           1, 0),
     JS_FN("sizeofByteThing",    gpseemod_sizeofByteThing,       1, 0),
+    JS_FN("breakpoint",         gpseemod_breakpoint,            1, 0),
     { "include",		gpsee_include,			0, 0, 0 },	/* char: filename */
     { "system",			gpsee_system,			0, 0, 0 },	/* char: cmd str returns int exit code */
     { "exit",			gpsee_exit,			0, 0, 0 },	/* int: exit code */
