@@ -43,8 +43,8 @@
 GPSEE_SRC_DIR ?= ../..
 
 all ::
-	@$(GPSEE_SRC_DIR)/gsr -ddzzF ./ByteString.js -- -q > ByteString.test.temp && touch ByteString ByteString.test && diff ByteString.test ByteString.test.temp
-	@$(GPSEE_SRC_DIR)/gsr -ddzzF ./ByteArray.js -- -q > ByteArray.test.temp && touch ByteArray.test && diff ByteArray.test ByteArray.test.temp
+	gsr -ddzzF ./ByteString.js -- -q > ByteString.test.temp && touch ByteString ByteString.test && diff ByteString.test ByteString.test.temp
+	gsr -ddzzF ./ByteArray.js -- -q > ByteArray.test.temp && touch ByteArray.test && diff ByteArray.test ByteArray.test.temp
 
 commit ::
 	-mv ByteString.test.temp ByteString.test

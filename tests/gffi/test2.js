@@ -29,7 +29,7 @@ function mmap(filename)
     if (_fstat(fd, sb) != 0)
       throw(new Error(perror("Cannot stat file " + filename)));
 
-    var mem = _mmap(null, sb.st_size, ffi.std.PROT_READ, ffi.std.MAP_PRIVATE, fd, 0);
+    var mem = _mmap.call(null, sb.st_size, ffi.std.PROT_READ, ffi.std.MAP_PRIVATE, fd, 0);
     if (mem == ffi.Memory(-1))
       throw(new Error(perror("Cannot read file " + filename)));
 
