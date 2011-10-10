@@ -64,7 +64,10 @@ exports.BoxedPrimitive.prototype.finalizeWith = function() {
 /* This will run and remove a finalizer */
 exports.BoxedPrimitive.prototype.destroy = function() {
   if (this.hasOwnProperty('finalizer'))
+  {
     this.finalizer.runFinalizer();
+    delete this.finalizer;
+  }
 }
 exports.BoxedPrimitive.prototype.toString = function() {
   return '[gpsee.module.ca.page.gffi.BoxedPrimitive ' + typeof this + ' ' + this.value + ']';

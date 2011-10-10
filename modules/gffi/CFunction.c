@@ -152,7 +152,10 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 
   if (hnd->rtype_abi != &ffi_type_void)
   {
-    clos->rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype_abi));
+    if (ffi_type_size(hnd->rtype_abi) < sizeof(long))
+      clos->rvaluep = JS_malloc(cx, sizeof(ffi_arg));
+    else
+      clos->rvaluep = JS_malloc(cx, ffi_type_size(hnd->rtype_abi));
     if (!clos->rvaluep)
       goto fail;
   }
@@ -173,22 +176,11 @@ fail:
   return JS_FALSE;
 }
 
-/* @jazzdoc gffi.CFunction.prototype.call()
- * Invokes a foreign function. Obsolete, can now invoke CFunction objects as functions.
- *
- * @form CFunctionInstance.call(arguments[])
- * The exact form of invocation depends on the instantiation of the CFunction. Please see gffi.CFunction for more
- * information.
- *
- * @returns an instance of gffi.WillFinalize
- */
-static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
+static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-  JSBool                ret;
-  jsrefcount            depth = 0;
   cFunction_closure_t   *clos;
-  JSObject              *obj = JS_THIS_OBJECT(cx, vp);
-  jsval                 *argv = JS_ARGV(cx, vp);
+  jsrefcount            depth = 0;
+  JSBool                ret;
 
   /* Prepare the FFI call */
   if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".call"))
@@ -200,7 +192,31 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
   ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
   if (!clos->hnd->noSuspend)
     JS_ResumeRequest(cx, depth);
-  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, &JS_RVAL(cx, vp), CLASS_ID ".call");
+
+  /* Massage the return type out of the ffi_arg/ffi_sarg special type if it is smaller than a long */
+  long l = sizeof l;
+  if (sizeof l > ffi_type_size(clos->hnd->rtype_abi))
+  {
+#define ffi_type(ftype, ctype)                                                                          \
+    if (clos->hnd->rtype_abi == &ffi_type_ ## ftype)                                                    \
+    {                                                                                                   \
+      if ((ctype)-1 > 0)                                                                                \
+        ret=ffiType_toValue(cx,  clos->rvaluep, &ffi_type_ulong, rval, CLASS_ID ".call");               \
+      else                                                                                              \
+        ret=ffiType_toValue(cx,  clos->rvaluep, &ffi_type_slong, rval, CLASS_ID ".call");               \
+    }                                                                                                   \
+    else
+#define FFI_TYPES_SIZED_ONLY
+#include "ffi_types.decl"
+#undef FFI_TYPES_SIZE_ONLY
+#undef ffi_type
+    {
+      GPSEE_NOT_REACHED("impossible");
+      return gpsee_throw(cx, CLASS_ID ".call.type: Could not coerce return value type");
+    }
+  }
+  else
+    ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, rval, CLASS_ID ".call");
 
   /* Clean up */
   cFunction_closure_free(cx, clos);
@@ -211,29 +227,30 @@ static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
 /**
  *  JSNative for use by JSClass.call to replace F.call() with F()
  */
+static JSBool cFunction_call(JSContext *cx, uintN argc, jsval *vp)
+{
+  JSObject              *obj = JS_THIS_OBJECT(cx, vp);
+  jsval                 *argv = JS_ARGV(cx, vp);
+  jsval                 *rval = &JS_RVAL(cx, vp);
+
+  return cFunction_call_guts(cx, obj, argc, argv, rval);
+}
+
+/* @jazzdoc gffi.CFunction.prototype.call()
+ * Invokes a foreign function. Obsolete, can now invoke CFunction objects as functions.
+ *
+ * @form CFunctionInstance.call(arguments[])
+ * The exact form of invocation depends on the instantiation of the CFunction. Please see gffi.CFunction for more
+ * information.
+ *
+ * @returns an instance of gffi.WillFinalize
+ */
 static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   JSBool                ret;
-  jsrefcount            depth = 0;
-  cFunction_closure_t   *clos;
   
   obj = JSVAL_TO_OBJECT(JS_ARGV_CALLEE(argv));
-
-  /* Prepare the FFI call */
-  if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".invoke"))
-    return JS_FALSE;
-
-  /* Make the call */
-  if (!clos->hnd->noSuspend)
-    depth = JS_SuspendRequest(cx);
-  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
-  if (!clos->hnd->noSuspend)
-    JS_ResumeRequest(cx, depth);
-  ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, rval, CLASS_ID ".invoke");
-
-  /* Clean up */
-  cFunction_closure_free(cx, clos);
-
+  ret = cFunction_call_guts(cx, obj, argc, argv, rval);
   if (ret == JS_FALSE)
     goto out;
 
