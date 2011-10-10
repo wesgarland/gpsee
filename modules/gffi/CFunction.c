@@ -190,9 +190,6 @@ static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsva
   if (!cFunction_prepare(cx, obj, argc, argv, &clos, &hnd, CLASS_ID ".call"))
     return JS_FALSE;
 
-  if (strstr(hnd->functionName, "fclose") || strstr(hnd->functionName, "fopen") || strstr(hnd->functionName, "fdopen"))
-    printf("XXX invoking %s\n", hnd->functionName);
-
   /* Make the call */
   if (!hnd->noSuspend)
     depth = JS_SuspendRequest(cx);
@@ -293,8 +290,6 @@ static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos, cFunction_handle_t *hnd)
 {
   /* Make the call */
-  if (strstr(hnd->functionName, "fclose") || strstr(hnd->functionName, "fopen") || strstr(hnd->functionName, "fdopen"))
-    printf("XXX invoking closure %s at %p, %p\n", hnd->functionName, clos, hnd);
   ffi_call(hnd->cif, hnd->fn, clos->rvaluep, clos->avalues);
   /* Clean up */
   cFunction_closure_free(cx, clos);

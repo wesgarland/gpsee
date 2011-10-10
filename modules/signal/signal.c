@@ -495,7 +495,7 @@ const char *signal_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool signal_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool signal_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   int sig;
 

@@ -504,19 +504,20 @@ JSBool Thread_YieldBCB(JSContext *cx, void *unused, GPSEEAsyncCallback *cb)
  *
  *  @see thread_joinAll()
  */
-JSBool thread_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool thread_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   JSObject		*proto = JS_GetPrivate(cx, moduleObject);
   thread_protected_t	*protected = JS_GetPrivate(cx, proto);
 
-  (void)thread_joinAll(cx, proto);
+  if (force)
+  {
+    (void)thread_joinAll(cx, proto);
+    JS_free(cx, protected);
+    JS_SetPrivate(cx, proto, NULL);
+    return JS_TRUE;
+  }
 
-  JS_GC(cx);
-
-  JS_free(cx, protected);
-  JS_SetPrivate(cx, proto, NULL);
-
-  return JS_TRUE;
+  return JS_FALSE;
 }
 
 /**

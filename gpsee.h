@@ -427,6 +427,7 @@ void                    gpsee_ds_empty                  (gpsee_dataStore_t store
 JSBool                  gpsee_ds_forEach                (JSContext *cx, gpsee_dataStore_t store, gpsee_ds_forEach_fn fn, void *_private);
 void                    gpsee_ds_destroy                (gpsee_dataStore_t store);
 gpsee_dataStore_t       gpsee_ds_create_unlocked        (size_t initialSizeHint) __attribute__((malloc));
+JSBool 			gpsee_ds_hasData		(JSContext *cx, gpsee_dataStore_t store);
 
 /**
  *  Flag to create an unlocked GPSEE Data Store.  An unlocked data store 

@@ -101,8 +101,8 @@ GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
 
 extern rc_list rc;
 
-typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	/**< Module initializer function type */
-typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *);		/**< Module finisher function type */
+typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	        /**< Module initializer function type */
+typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *, JSBool);		/**< Module finisher function type */
 typedef struct
 {
   moduleHandle_t        *module;
@@ -111,7 +111,7 @@ typedef struct
 
 /* Generate Init/Fini function prototypes for all internal modules */
 #define InternalModule(a) const char *a ## _InitModule(JSContext *, JSObject *);\
-                          JSBool a ## _FiniModule(JSContext *, JSObject *);
+                          JSBool a ## _FiniModule(JSContext *, JSObject *, JSBool);
 #include "modules.h"
 #undef InternalModule
 
@@ -651,7 +651,7 @@ static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
   dprintf("Marking module at %p (%s) as unused\n", module, module->cname?:"no name");
 
   if (module->flags & ~mhf_loaded && module->exports && module->fini)
-    module->fini(cx, module->exports);
+    module->fini(cx, module->exports, JS_TRUE);
 
   module->scope   = NULL;
   module->scrobj  = NULL;
@@ -1796,7 +1796,7 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 }
 
 /**
- *  Shut downt he module system for the given, cleaning up 
+ *  Shut down the module system for the given realm, cleaning up 
  *  all module-related resources which can be cleaned up at
  *  this time. gpsee_moduleSystemClean() will clean up the
  *  remaining resources.
@@ -1806,28 +1806,16 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
  */
 void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 {
-  modulePathEntry_t	node, nextNode;
   moduleHandle_t	*module;
+  size_t                danglingCount=0, lastDanglingCount;
 
   dprintf("Shutting down module system\n");
   dpDepth(+1);
 
-  /* Clean up modules by traversing the module memo tree */
-  SPLAY_FOREACH(module, moduleMemo, realm->modules)
-  {
-    dprintf("Fini'ing module at 0x%p\n", module);
-    if (module->fini)
-    {
-      module->fini(cx, module->exports);
-      module->fini = NULL;
-    }
-
-    markModuleUnused(cx, module);
-  }
-
   /* Clean up module paths */
   if (realm->userModulePath)
   {
+    modulePathEntry_t	node, nextNode;
     JS_RemoveObjectRoot(cx, &realm->userModulePath);
 
     for (node = realm->modulePath; node; node = nextNode)
@@ -1838,6 +1826,55 @@ void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 
     JS_free(cx, realm->modulePath);
   }
+
+  /* Clean up modules by traversing the module memo tree. Modules
+   * with fini methods are native modules which have special clean-up
+   * requirements. We cannot unload a module until the module tells
+   * us it's okay to do so.
+   */
+  do
+  {
+    lastDanglingCount = danglingCount;
+    danglingCount = 0;
+
+    SPLAY_FOREACH(module, moduleMemo, realm->modules)
+    {
+      dprintf("Fini'ing module at 0x%p\n", module);
+      if (module->fini)
+      {
+        if (module->fini(cx, module->exports, JS_FALSE) != JS_TRUE)
+        {
+          danglingCount++;
+          continue;
+        }
+        module->fini = NULL;
+      }
+      markModuleUnused(cx, module);
+    }
+
+    if (danglingCount)
+    {
+      JS_GC(cx);        /* Dangling module might be waiting for something to finalize */
+
+      if (danglingCount == lastDanglingCount)
+      {
+        SPLAY_FOREACH(module, moduleMemo, realm->modules)
+        {
+          dprintf("Force-fini'ing module at 0x%p\n", module);
+          if (module->fini)
+          {
+            (void)module->fini(cx, module->exports, JS_TRUE);
+            module->fini = NULL;
+            markModuleUnused(cx, module);
+          }
+        }
+        break;
+      }
+    }
+  } while(danglingCount);
+
+  if (realm->moduleData)
+    gpsee_ds_destroy(realm->moduleData);
 
   dpDepth(-1);
 }
@@ -1939,7 +1976,6 @@ void gpsee_moduleSystemCleanup(JSContext *cx, gpsee_realm_t *realm)
     }
     else
       releaseModuleHandle(cx, realm, module);
-//    destroyModuleHandle(cx, module);
   }
   
 #if defined(GPSEE_DEBUG_BUILD)

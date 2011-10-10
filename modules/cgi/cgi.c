@@ -57,17 +57,21 @@ const char *cgi_InitModule(JSContext *cx, JSObject *moduleObject)
   JS_DefineProperty(cx, moduleObject, "query", OBJECT_TO_JSVAL(queryObject), NULL, NULL, 
 		    JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
 
+#ifdef HAVE_APR
   if (PHPSession_InitClass(cx, moduleObject) == NULL)
     return NULL;
+#endif
 
   return MODULE_ID;
 }
 
-JSBool cgi_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool cgi_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   JSBool b = JS_TRUE;
 
+#ifdef HAVE_APR
   b &= PHPSession_FiniClass(cx, moduleObject);
+#endif
   b &= query_FiniObject(cx, moduleObject);
 
   return b;

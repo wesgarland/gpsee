@@ -109,11 +109,16 @@ const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool curses_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool curses_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
-  endwin();
-  puts("\n\n");
+  if (force)
+  {
+    endwin();
+    puts("\n\n");
+    return JS_TRUE;
+  }
 
-  return JS_TRUE;
+  /* GC-based unload could have undesirable, observable side-effects */
+  return JS_FALSE;
 }
 

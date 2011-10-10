@@ -258,7 +258,7 @@ const char *pairodice_InitModule(JSContext *cx, JSObject *moduleObject)
  *  Finalize Module.  If we return JS_TRUE, that means this module has no (important) internal state, 
  *  which means that it is safe to unload the module if it was loaded as a dynamic shared object (DSO).
  */
-JSBool pairodice_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool pairodice_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;	/* Safe to unload this if it was running as DSO module */
 }

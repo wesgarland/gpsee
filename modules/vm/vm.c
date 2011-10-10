@@ -485,7 +485,7 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool vm_FiniModule(JSContext *cx, JSObject *moduleObject)
+JSBool vm_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;
 }

@@ -52,6 +52,7 @@ JSObject *CType_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *WillFinalize_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
+JSBool WillFinalize_FiniClass(JSContext *cx, JSBool force);
 JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject);
 
 JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp);
