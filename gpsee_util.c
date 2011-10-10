@@ -627,6 +627,8 @@ static const char *spaces(size_t n, char *buf, size_t len)
   return buf;
 }
 
+static char spaceBuf[32];
+
 /** A convenient function for rendering fixed-width font tables. Like this one:
  *  @param  out   The place to print the table to.
  *  @param  s     The text to print.
@@ -639,7 +641,6 @@ static const char *spaces(size_t n, char *buf, size_t len)
  */
 void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char **pfix, int shrnk, size_t maxshrnk)
 {
-  char		spaceBuf[32];
   size_t 	shrinkamount;
   int 		screencols;
   size_t 	cols[ncols];
@@ -648,7 +649,10 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
   size_t 	tablewidth;
   int 		i;
   char 		*c;
-  
+
+  if (!spaceBuf[0])
+    memset(spaceBuf, ' ', sizeof(spaceBuf) - 1);
+
   /* How many characters wide is the terminal? */
   if (getenv("COLUMNS"))
     screencols = atoi(getenv("COLUMNS"));
@@ -723,7 +727,7 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
 
     /* Begin tokenizing and printing */
     i = 0;
-    c = s;
+    e = c = s;
     do
     {
       d = c;
@@ -756,7 +760,7 @@ void gpsee_printTable(JSContext *cx, FILE *out, char *s, int ncols, const char *
 
       /* Output column prefix, column content, and whitespace padding */
       gpsee_fprintf(cx, out, "%s%s%s", c[0] ? pfix[i] : spaces(strlen(pfix[i]), spaceBuf, sizeof(spaceBuf)), 
-                    c, space + widecol - cols[i] + strlen(c) - 1);
+                    c, space + widecol - cols[i] + (strlen(c) ? strlen(c) - 1 : 0));
 
       /* Advance the column counter */
       if (++i >= ncols)
