@@ -215,7 +215,7 @@ static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsva
     else
 #define FFI_TYPES_SIZED_ONLY
 #include "ffi_types.decl"
-#undef FFI_TYPES_SIZE_ONLY
+#undef FFI_TYPES_SIZED_ONLY
 #undef ffi_type
     {
       GPSEE_NOT_REACHED("impossible");
