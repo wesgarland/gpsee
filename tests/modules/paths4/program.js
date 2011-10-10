@@ -9,5 +9,13 @@ if (mod)
   throw new Error("require() should have failed! have you a module somewhere named \""+modname+"?\"");
 require.paths.push(void 0);
 require.paths.push('directory');
-mod = require(modname);
+try
+{
+  mod = require(modname);
+}
+catch(e)
+{
+  print("FAIL: could not load module directory/" + modname);
+  print("      (did you forget to invoke from within the paths4 directory?");
+}
 mod.finishTest();

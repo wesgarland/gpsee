@@ -15,6 +15,7 @@ JS_FRIEND_API(void) __attribute__((noreturn)) panic(const char *message)
 
 int main(int argc, char **argv)
 {
+#error Needs update to post-realms API
   gpsee_interpreter_t *jsi;
   JSContext *cx;
   GPSEEAsyncCallback *cb;
