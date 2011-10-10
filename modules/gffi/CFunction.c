@@ -93,7 +93,7 @@ void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos)
   if (clos->storage)
   {
     int i, l;
-    for (i=0, l=clos->hnd->nargs; i<l; i++)
+    for (i=0, l=clos->cfunNargs; i<l; i++)
       if (clos->storage[i])
         JS_free(cx, clos->storage[i]);
     JS_free(cx, clos->storage);
@@ -105,16 +105,17 @@ void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos)
  * vector and making the call.
  *
  * @param     cx
- * @param     obj         CFunction instance to be prepared for invocation
- * @param     argc        Length of argv
- * @param     argv        Argument vector to be prepared for invocation
- * @param     clospp      Outvar cFunction_closure_t
+ * @param     obj               CFunction instance to be prepared for invocation
+ * @param     argc              Length of argv
+ * @param     argv              Argument vector to be prepared for invocation
+ * @param     clospp      [out] cFunction_closure_t
+ @ @param     hdnp        [out] Private pointer from CFunction instance
  * @param     throwPrefix
  *
- * @returns   JS_TRUE on success
+ * @returns   JS_TRUE on success or throws
  */
 JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp,
-                                const char *throwPrefix)
+                         cFunction_handle_t **hndp, const char *throwPrefix)
 {
   cFunction_handle_t    *hnd;
   cFunction_closure_t   *clos;
@@ -124,6 +125,7 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
   if (!hnd)
     return gpsee_throw(cx, "%s.invalid: unable to locate function call details", throwPrefix);
+  *hndp = hnd;
 
   /* Verify arg count */
   if (hnd->nargs != argc)
@@ -135,7 +137,8 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   if (!clos)
     return JS_FALSE;
   memset(clos, 0, sizeof(*clos));
-  clos->hnd = hnd;
+  clos->cfunObj = obj; /* Need to keep obj alive until we are done with hnd */
+  clos->cfunNargs = hnd->nargs;
 
   if (hnd->nargs)
   {
@@ -179,26 +182,30 @@ fail:
 static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
   cFunction_closure_t   *clos;
+  cFunction_handle_t    *hnd;
   jsrefcount            depth = 0;
   JSBool                ret;
 
   /* Prepare the FFI call */
-  if (!cFunction_prepare(cx, obj, argc, argv, &clos, CLASS_ID ".call"))
+  if (!cFunction_prepare(cx, obj, argc, argv, &clos, &hnd, CLASS_ID ".call"))
     return JS_FALSE;
 
+  if (strstr(hnd->functionName, "fclose") || strstr(hnd->functionName, "fopen") || strstr(hnd->functionName, "fdopen"))
+    printf("XXX invoking %s\n", hnd->functionName);
+
   /* Make the call */
-  if (!clos->hnd->noSuspend)
+  if (!hnd->noSuspend)
     depth = JS_SuspendRequest(cx);
-  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
-  if (!clos->hnd->noSuspend)
+  ffi_call(hnd->cif, hnd->fn, clos->rvaluep, clos->avalues);
+  if (!hnd->noSuspend)
     JS_ResumeRequest(cx, depth);
 
   /* Massage the return type out of the ffi_arg/ffi_sarg special type if it is smaller than a long */
   long l = sizeof l;
-  if (sizeof l > ffi_type_size(clos->hnd->rtype_abi))
+  if (sizeof l > ffi_type_size(hnd->rtype_abi))
   {
 #define ffi_type(ftype, ctype)                                                                          \
-    if (clos->hnd->rtype_abi == &ffi_type_ ## ftype)                                                    \
+    if (hnd->rtype_abi == &ffi_type_ ## ftype)                                                    \
     {                                                                                                   \
       if ((ctype)-1 > 0)                                                                                \
         ret=ffiType_toValue(cx,  clos->rvaluep, &ffi_type_ulong, rval, CLASS_ID ".call");               \
@@ -216,7 +223,7 @@ static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsva
     }
   }
   else
-    ret = ffiType_toValue(cx, clos->rvaluep, clos->hnd->rtype_abi, rval, CLASS_ID ".call");
+    ret = ffiType_toValue(cx, clos->rvaluep, hnd->rtype_abi, rval, CLASS_ID ".call");
 
   /* Clean up */
   cFunction_closure_free(cx, clos);
@@ -283,10 +290,12 @@ static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
  * @param     cx
  * @param     clos    CFunction closure to call
  */
-void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos)
+void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos, cFunction_handle_t *hnd)
 {
   /* Make the call */
-  ffi_call(clos->hnd->cif, clos->hnd->fn, clos->rvaluep, clos->avalues);
+  if (strstr(hnd->functionName, "fclose") || strstr(hnd->functionName, "fopen") || strstr(hnd->functionName, "fdopen"))
+    printf("XXX invoking closure %s at %p, %p\n", hnd->functionName, clos, hnd);
+  ffi_call(hnd->cif, hnd->fn, clos->rvaluep, clos->avalues);
   /* Clean up */
   cFunction_closure_free(cx, clos);
 }

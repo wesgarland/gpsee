@@ -163,17 +163,19 @@ typedef struct
 /** A struct to represent all the intermediate preparation that goes into making a CFunction call */
 typedef struct 
 {
-  cFunction_handle_t    *hnd;          /**< Private data for the CFunction instance */
+  JSObject              *cfunObj;      /**< CFunction instance */
+  size_t                cfunNargs;     /**< Number of argument values to pass to C function */
   void                  *rvaluep;      /**< Pointer to the return value */
   void                  **avalues;     /**< Array of argument values */
   void                  **storage;
 } cFunction_closure_t;
 /* The function that produces a cFunction_closure_t */
-JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp, const char *throwPrefix);
+JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp,
+                         cFunction_handle_t **hndp, const char *throwPrefix);
 /* The function that frees a cFunction_closure_t */
 void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
 /* The function that invokes a cFunction_closure_t */
-void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos);
+void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos, cFunction_handle_t *hnd);
 void *findPreDefFunction(const char *functionName);
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);

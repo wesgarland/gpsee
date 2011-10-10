@@ -111,23 +111,30 @@ static JSBool WillFinalize(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
   return JS_TRUE;
 }
 
+/** FinalizeWith constructor. 
+ *  
+ *  Accepts N+1 arguments, where N is the number of arguments to the C function 
+ *  that gets invoked during the finalization of this object.
+ */
 static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
 {
-  cFunction_closure_t *clos, *closOld;
-  JSObject *cfuncObj = NULL;
-  JSObject *thisObj = JS_THIS_OBJECT(cx, vp);
-  jsval *argv = JS_ARGV(cx, vp);
+  cFunction_closure_t   *clos;
+  cFunction_handle_t    *hnd;
+  JSObject              *cfuncObj = NULL;
+  JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
+  jsval                 *argv = JS_ARGV(cx, vp);
 
-  /* Currently we only support one finalizer CFunction closure, so we will check for it here. */
-  closOld = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
-  if (closOld)
-    gpsee_log(cx, SLOG_WARNING, CLASS_ID ".finalizeWith.contention: a finalizer has already installed!");
-  /* TODO support multiple finalizers? */
+  if (!thisObj)
+    return JS_FALSE;
+
+  if (JS_GetPrivate(cx, thisObj))
+    return gpsee_throw(cx, CLASS_ID ".finalizeWith.contention: a finalizer has already installed!");
 
   /* Prepare a CFunction for calling. The product of this intermediate step will be pointed to by 'clos.'
    * FinalizeWith() argv begins with a CFunction instance and is followed by arguments for the invocation of said
    * CFunction. So we'll get a JSObject for the CFunction instance, and then supply cFunction_prepare() with what's
-   * left of the argument vector. */
+   * left of the argument vector.
+   */
 
   /* Grab 'cfuncObj' from 'argv' */
   if (!JSVAL_IS_OBJECT(argv[0]))
@@ -136,43 +143,44 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
   cfuncObj = JSVAL_TO_OBJECT(argv[0]);
 
   /* Prepare 'clos' */
-  if (!cFunction_prepare(cx, cfuncObj, argc-1, argv+1, &clos, CLASS_ID ".call"))
+  if (!cFunction_prepare(cx, cfuncObj, argc-1, argv+1, &clos, &hnd, CLASS_ID ".call"))
     return JS_FALSE;
 
   /* Associate 'clos' to our WillFinalize instance */
+  GPSEE_ASSERT(clos);
   if (clos)
-  {
     JS_SetPrivate(cx, thisObj, clos);
-    if (closOld)
-      cFunction_closure_free(cx, closOld);
-  }
 
+#warning need to memoize cfun obj here for GC
   return JS_TRUE;
 }
 /** This function implements an API for objects to be finalized on-demand. The finalizer is executed and removed when
  *  this is called. */
 static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
 {
-  cFunction_closure_t *clos;
-  JSObject *thisObj = JS_THIS_OBJECT(cx, vp);
+  cFunction_closure_t   *clos;
+  JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
 
-  /* Currently we only support one finalizer CFunction closure, so we will check for it here. */
   clos = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
   if (clos)
-    cFunction_closure_call(cx, clos);
+  {
+    cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
+    cFunction_closure_call(cx, clos, hnd);
+  }
 
-  /* Remove the finalizer now, maybe the user will add another one, who knows, but we shouldn't default to double-calling it */
   JS_SetPrivate(cx, thisObj, NULL);
   return JS_TRUE;
 }
+
 static void WillFinalize_Finalize(JSContext *cx, JSObject *obj)
 {
   /* If we have private data, it is a cFunction_closure_t waiting to be called */
   cFunction_closure_t *clos = JS_GetInstancePrivate(cx, obj, WillFinalize_clasp, NULL);
-  if (!clos)
-    return;
-
-  cFunction_closure_call(cx, clos);
+  if (clos)
+  {
+    cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
+    cFunction_closure_call(cx, clos, hnd);
+  }
 }
 
 /**

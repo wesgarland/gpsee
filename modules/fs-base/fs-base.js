@@ -883,7 +883,7 @@ Stream.prototype.write = function Stream_write(buffer, encoding)
 
   bytesWritten = _fwrite.call(buffer, 1, buffer.length, this.stream);
   if (bytesWritten != buffer.length)
-    throw new Error("Could not write entire buffer; only wrote " + bytesWritten + " of " + buffer.length + " bytes!" + syserr());
+    throw new Error("Could not write entire buffer; only wrote " + (+bytesWritten) + " of " + buffer.length + " bytes!" + syserr());
 }
 
 Stream.prototype.read = function Stream_read(howMuch)
@@ -906,7 +906,7 @@ Stream.prototype.read = function Stream_read(howMuch)
 
   bytesRead = _fread.call(buffer, 1, howMuch, this.stream);
   if (bytesRead != buffer.size)
-    throw new Error("Could not read enough to fill buffer; only read " + bytesRead + " of " + buffer.size + " bytes!" + syserr());
+    throw new Error("Could not read enough to fill buffer; only read " + (+bytesRead) + " of " + buffer.size + " bytes!" + syserr());
 
   buffer.toString = buffer.asString;
 

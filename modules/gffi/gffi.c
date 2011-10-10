@@ -129,6 +129,7 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
 
 JSBool gffi_FiniModule(JSContext *cx, JSObject *moduleObject)
 {
+  printf("XXX FiniModule\n");
   return JS_TRUE;
 }
 

@@ -607,7 +607,7 @@ JSBool Memory_Cast(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
     if (!other_hnd)
       return gpsee_throw(cx, MODULE_ID ".cast.arguments.0.invalid: invalid bytething (missing private handle)");
 
-    hnd->buffer         = other_hnd->buffer;
+    hnd->buffer         = (void *)other_hnd->buffer;
     hnd->length         = other_hnd->length;
     hnd->memoryOwner    = JSVAL_TO_OBJECT(argv[0]);
 
