@@ -47,6 +47,7 @@
 
 #include "gpsee.h"
 #include <prmon.h>
+#undef JS_THREADSAFE /* XXX */
 
 gpsee_monitor_t         nilMonitor = (gpsee_monitor_t)"NIL Monitor - using this monitor is like running unlocked";
 
@@ -70,6 +71,8 @@ JSBool gpsee_initializeMonitorSystem(JSContext *cx, gpsee_runtime_t *grt)
 
   /* Access to monitorList_unlocked is guarded by grt->monitors.monitor henceforth */
   grt->monitorList_unlocked = gpsee_ds_create(NULL, GPSEE_DS_UNLOCKED, 5);
+#else
+  grt->monitors.monitor = gpsee_getNilMonitor();
 #endif
 
   return JS_TRUE;
@@ -124,11 +127,9 @@ gpsee_monitor_t gpsee_getNilMonitor()
  */
 void gpsee_enterAutoMonitor(JSContext *cx, gpsee_autoMonitor_t *monitor_p)
 {
-#ifdef JS_THREADSAFE
   gpsee_runtime_t   *grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
   gpsee_enterAutoMonitorRT(grt, monitor_p);
-#endif
 }
 
 /** 
@@ -156,10 +157,12 @@ void gpsee_enterAutoMonitorRT(gpsee_runtime_t *grt, gpsee_autoMonitor_t *monitor
  */
 void gpsee_enterMonitor(gpsee_monitor_t monitor)
 {
-  if (monitor == nilMonitor)
+#ifdef JS_THREADSFE  
+if (monitor == nilMonitor)
     return;
 
   PR_EnterMonitor(monitor);
+#endif
 }
 
 /**
@@ -169,10 +172,10 @@ void gpsee_enterMonitor(gpsee_monitor_t monitor)
  */
 void gpsee_leaveMonitor(gpsee_monitor_t monitor)
 {
+  GPSEE_ASSERT(monitor);
+
 #ifdef JS_THREADSAFE
   PRStatus      status;
-  
-  GPSEE_ASSERT(monitor);
 
   if (monitor == nilMonitor)
     return;
@@ -190,7 +193,7 @@ void gpsee_leaveMonitor(gpsee_monitor_t monitor)
  */
 void gpsee_leaveAutoMonitor(gpsee_autoMonitor_t monitor)
 {
-  return gpsee_leaveMonitor(monitor);
+  gpsee_leaveMonitor(monitor);
 }
 
 /**
@@ -203,6 +206,7 @@ void gpsee_leaveAutoMonitor(gpsee_autoMonitor_t monitor)
  */
 void gpsee_destroyMonitor(gpsee_runtime_t *grt, gpsee_monitor_t monitor)
 {
+#ifdef JS_THREADSAFE
   if (monitor == nilMonitor)
     return;
 
@@ -210,6 +214,7 @@ void gpsee_destroyMonitor(gpsee_runtime_t *grt, gpsee_monitor_t monitor)
   gpsee_ds_remove(grt->monitorList_unlocked, monitor);
   PR_ExitMonitor(grt->monitors.monitor);
   PR_DestroyMonitor(monitor);
+#endif
 }
 
 #ifdef JS_THREADSAFE
