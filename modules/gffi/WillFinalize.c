@@ -113,6 +113,9 @@ static JSBool WillFinalize(JSContext *cx, JSObject *obj, uintN argc, jsval *argv
 
 static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
 {
+  return JS_TRUE;
+#warning XXX WillFinalize_FinalizeWith disabled
+
   cFunction_closure_t *clos, *closOld;
   JSObject *cfuncObj = NULL;
   JSObject *thisObj = JS_THIS_OBJECT(cx, vp);
