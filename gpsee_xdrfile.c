@@ -54,7 +54,12 @@ static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.6 20
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
-#define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
+
+#ifdef GPSEE_DEBUG_BUILD
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
+#else
+# define dprintf(a...) while(0) gpsee_printf(cx, a);
+#endif
 
 /* XDRFile member variables */
 struct XDRFile {

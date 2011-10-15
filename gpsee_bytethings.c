@@ -50,6 +50,12 @@
 
 #include "gpsee.h"
 
+#ifdef GPSEE_DEBUG_BUILD
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
+#else
+# define dprintf(a...) do { ; } while(0)
+#endif
+
 /** 
  *  All byteThings must have this JSTraceOp. It is used for two things:
  *  1. It identifies byteThings to other byteThings
@@ -64,7 +70,11 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
   byteThing_handle_t	*hnd = JS_GetPrivate(trc->context, obj);
 
   if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
+  {
+    JSContext *cx = trc->context;
+    dprintf("Marking bytething at %p owned by %p for %p\n", hnd->buffer, hnd->memoryOwner, obj);
     JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
+  }
 }
 
 /** 
