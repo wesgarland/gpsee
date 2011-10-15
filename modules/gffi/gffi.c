@@ -127,8 +127,8 @@ const char *gffi_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool gffi_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool gffi_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
-  return WillFinalize_FiniClass(cx, force);
+  return WillFinalize_FiniClass(cx, realm, force);
 }
 

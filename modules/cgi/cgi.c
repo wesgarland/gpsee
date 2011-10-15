@@ -65,7 +65,7 @@ const char *cgi_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool cgi_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool cgi_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
   JSBool b = JS_TRUE;
 

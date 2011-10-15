@@ -52,7 +52,7 @@ JSObject *CType_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSBool Memory_Constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
 JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
 JSObject *WillFinalize_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto);
-JSBool WillFinalize_FiniClass(JSContext *cx, JSBool force);
+JSBool WillFinalize_FiniClass(JSContext *cx, gpsee_realm_t *realm, JSBool force);
 JSBool defines_InitObjects(JSContext *cx, JSObject *moduleObject);
 
 JSBool pointer_toString(JSContext *cx, void *pointer, jsval *vp);
@@ -164,19 +164,17 @@ typedef struct
 /** A struct to represent all the intermediate preparation that goes into making a CFunction call */
 typedef struct 
 {
-  JSObject              *cfunObj;      /**< CFunction instance */
+  JSObject              *cfunObj;      /**< CFunction instance, rooted by GC Callback */
   size_t                cfunNargs;     /**< Number of argument values to pass to C function */
   void                  *rvaluep;      /**< Pointer to the return value */
   void                  **avalues;     /**< Array of argument values */
   void                  **storage;
 } cFunction_closure_t;
-/* The function that produces a cFunction_closure_t */
+/** The function that produces a cFunction_closure_t */
 JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, cFunction_closure_t **clospp,
                          cFunction_handle_t **hndp, const char *throwPrefix);
-/* The function that frees a cFunction_closure_t */
+/** The function that frees a cFunction_closure_t */
 void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos);
-/* The function that invokes a cFunction_closure_t */
-void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos, cFunction_handle_t *hnd);
 void *findPreDefFunction(const char *functionName);
 
 JSBool struct_getInteger(JSContext *cx, JSObject *obj, int memberIdx, jsval *vp, const char *throwLabel);
@@ -194,5 +192,5 @@ JSBool ffiType_toValue(JSContext *cx, void *abi_rvalp, ffi_type *rtype_abi, jsva
 JSBool ctypeStorageSize(JSContext *cx, jsval tival, size_t *size, const char *throwPrefix);
 JSBool setupCTypeDetails(JSContext *cx, jsval typeIndicator, ctype_handle_t *hnd, const char *throwPrefix);
 
-/** Extra headers required to support aux types */
+/* Extra headers required to support aux types */
 #include <sys/socket.h>

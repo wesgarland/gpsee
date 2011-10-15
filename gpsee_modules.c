@@ -40,6 +40,44 @@
  *  @file	gpsee_modules.c		GPSEE module load, unload, and management code
  *					for native, script, and blended modules.
  *
+ *  <b>C Module API</b>
+ *  
+ *  C modules are indistinguishable from JS modules from the POV of the module consumer, and follow
+ *  the exact loading conventions, etc as CommonJS modules.  If a native module and a script module
+ *  both exist for the same require() argument, both will be loaded; the C module will be loaded first,
+ *  and module object it decorates will be passed as the exports object to the script module. This is
+ *  how we create blended modules.  (Note that "internal" modules, i.e. those compiled directly into
+ *  libgpsee, do not have a true path and as such cannot collide with script modules)
+ *
+ *  When a C module is loaded, GPSEE invokes the ModuleName_InitModule function.  When the module is unloaded,
+ *  GPSEE invokes the optional ModuleName_FiniModule function. Modules which need to persist private C-visible
+ *  data must use the realm-based storage facility, realm->moduleData, to prevent private data from leaking
+ *  into other realms (e.g. when the module is used by more than one JS_Runtime, thread, sandbox, etc per UNIX
+ *  process). If C private data is used by the module, it is the module's responsibility to clean it up before
+ *  the module is unloaded.  Modules which maintain references between JS objects and C private data must
+ *  also tell the garbage collector about these references; this is best done by registering a GC callback
+ *  during InitModule, and cleaning it up during FiniModule.  GC callbacks should be registered with the GPSEE
+ *  gpsee_addGCCallback() facility.
+ *
+ *  Module unloading can be a very tricky operation when the module persists private data. GPSEE may ask to
+ *  unload a module during GC, any time the module's exports or scoping object is not reachable from a GC root.
+ *  The module unloader can run from a JSAPI Finalizer, which means it cannot call back into JS, allocate
+ *  memory, etc.  The GPSEE datastore functions are safe to run in a finalizer, as is gpsee_removeGCCallback().
+ *
+ *  Modules which have JS- or JSAPI-accessible resources that GPSEE is not aware of via the JS object graph can 
+ *  return JS_FALSE from FiniModule when the force parameter is JS_TRUE, to indicate that GPSEE should keep the 
+ *  module alive, even though it believes the module should be colleted.  When GPSEE is shutting down the realm, 
+ *  and able to guarantee that no more JS code will execute, it will pass force=JS_TRUE to the ModuleFini 
+ *  function. When this happens, the module MUST release all resources and return JS_TRUE.
+ *
+ *  Examples of JS- or JSAPI-accessible resources that must be cleared by a forced-shutdown:
+ *   - GC callback
+ *   - Context callback
+ *   - Async callback
+ *   - JSObjects which hold pointers to functions inside the module in their private slot
+ *
+ ***************
+ *
  * <b>Design Notes</b>
  *
  * Module handles are a private (to this file) data structure which describe everything
@@ -56,7 +94,9 @@
  *  - exports:	Marked during module initialization, afterwards rooted by scope or calling script
  *  - scrobj:	Marked during module initialization, afterwards not needed
  *  - scope:	Marked when object is NULL; otherwise by virtue of object.parent
- ************
+ *
+
+ **************
  *
  * Terminology
  * 
@@ -101,8 +141,8 @@ GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
 
 extern rc_list rc;
 
-typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	        /**< Module initializer function type */
-typedef JSBool (* moduleFini_fn)(JSContext *, JSObject *, JSBool);		/**< Module finisher function type */
+typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	                        /**< Module initializer function type */
+typedef JSBool (* moduleFini_fn)(JSContext *, gpsee_realm_t *, JSObject *, JSBool);		/**< Module finisher function type */
 typedef struct
 {
   moduleHandle_t        *module;
@@ -111,7 +151,7 @@ typedef struct
 
 /* Generate Init/Fini function prototypes for all internal modules */
 #define InternalModule(a) const char *a ## _InitModule(JSContext *, JSObject *);\
-                          JSBool a ## _FiniModule(JSContext *, JSObject *, JSBool);
+                          JSBool a ## _FiniModule(JSContext *, gpsee_realm_t *, JSObject *, JSBool);
 #include "modules.h"
 #undef InternalModule
 
@@ -132,7 +172,7 @@ typedef JSBool(*moduleLoader_t)(JSContext *, moduleHandle_t *, const char *);
 static void finalizeModuleScope(JSContext *cx, JSObject *exports);
 static JSBool setModuleScopeInfo(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleScope, moduleHandle_t *module);
 static moduleScopeInfo_t *getModuleScopeInfo(JSContext *cx, JSObject *moduleScope);
-static void markModuleUnused(JSContext *cx, moduleHandle_t *module);
+static void markModuleUnused(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module);
 
 /** Module-scope getter which retrieves properties from the true global */
 static JSBool getGlobalProperty(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -638,20 +678,20 @@ static moduleHandle_t *acquireModuleHandle(JSContext *cx, gpsee_realm_t *realm, 
   fail:
   dpDepth(-1);
   if (module)
-    markModuleUnused(cx, module);
+    markModuleUnused(cx, realm, module);
   return NULL;
 }
 
 /** Marking a module unused makes it eligible for immediate garbage 
  *  collection. Safe to call from a finalizer.
  */
-static void markModuleUnused(JSContext *cx, moduleHandle_t *module)
+static void markModuleUnused(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t *module)
 {
   dpDepth(+1);
   dprintf("Marking module at %p (%s) as unused\n", module, module->cname?:"no name");
 
   if (module->flags & ~mhf_loaded && module->exports && module->fini)
-    module->fini(cx, module->exports, JS_TRUE);
+    module->fini(cx, realm, module->exports, JS_TRUE);
 
   module->scope   = NULL;
   module->scrobj  = NULL;
@@ -742,7 +782,7 @@ static void releaseModuleHandle(JSContext *cx, gpsee_realm_t *realm, moduleHandl
     module->released = 1;
 
   SPLAY_REMOVE(moduleMemo, realm->modules, module);
-  markModuleUnused(cx, module);
+  markModuleUnused(cx, realm, module);
 
   /* Actually release OS resources after everything on JS
    * side has been finalized. This is especially important
@@ -841,6 +881,7 @@ static void finalizeModuleScope(JSContext *cx, JSObject *moduleScope)
   }
 
   GPSEE_ASSERT(hnd->module);
+  GPSEE_ASSERT(hnd->module->fini == NULL);      /* Should not be finalizing if fini handler is unrun */
 
   dprintf("module is %s, %p\n", moduleShortName(hnd->module->cname), hnd->module);
   releaseModuleHandle(cx, hnd->realm, hnd->module);
@@ -1800,7 +1841,7 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
  *  this time. gpsee_moduleSystemClean() will clean up the
  *  remaining resources.
  *
- *  @param      cx      A context in the referenced realm
+ *  @param      cx      A context in the referenced realm or the coreCx
  *  @param      realm   The realm for which we are shutting down the module system
  */
 void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
@@ -1838,17 +1879,17 @@ void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
 
     SPLAY_FOREACH(module, moduleMemo, realm->modules)
     {
-      dprintf("Fini'ing module at 0x%p\n", module);
+      dprintf("Fini'ing module at 0x%p (%s)\n", module, module->cname);
       if (module->fini)
       {
-        if (module->fini(cx, module->exports, JS_FALSE) != JS_TRUE)
+        if (module->fini(cx, realm, module->exports, JS_FALSE) != JS_TRUE)
         {
           danglingCount++;
           continue;
         }
         module->fini = NULL;
       }
-      markModuleUnused(cx, module);
+      markModuleUnused(cx, realm, module);
     }
 
     if (danglingCount)
@@ -1859,12 +1900,12 @@ void gpsee_shutdownModuleSystem(JSContext *cx, gpsee_realm_t *realm)
       {
         SPLAY_FOREACH(module, moduleMemo, realm->modules)
         {
-          dprintf("Force-fini'ing module at 0x%p\n", module);
           if (module->fini)
           {
-            (void)module->fini(cx, module->exports, JS_TRUE);
+            dprintf("Force-fini'ing module at 0x%p (%s)\n", module, module->cname);
+            (void)module->fini(cx, realm, module->exports, JS_TRUE);
             module->fini = NULL;
-            markModuleUnused(cx, module);
+            markModuleUnused(cx, realm, module);
           }
         }
         break;
@@ -1959,8 +2000,6 @@ JSBool gpsee_modulizeGlobal(JSContext *cx, gpsee_realm_t *realm, JSObject *glob,
 void gpsee_moduleSystemCleanup(JSContext *cx, gpsee_realm_t *realm)
 {
   moduleHandle_t	*module, *nextModule;
-
-  GPSEE_ASSERT(NULL == JS_SetGCCallback(cx, NULL));
 
   for (module = SPLAY_MIN(moduleMemo, realm->modules);
        module != NULL;

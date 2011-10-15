@@ -278,15 +278,16 @@ JSBool gpsee_destroyRealm(JSContext *cx, gpsee_realm_t *realm)
     gpsee_leaveAutoMonitor(grt->monitors.user_io);
   }
 
-  gpsee_removeAllGCCallbacks_forRealm(realm->grt, realm);
   JS_RemoveObjectRoot(cx, &realm->globalObject);
   JS_SetGlobalObject(cx, NULL);
 
   JS_EndRequest(cx);
   JS_GC(cx);
   JS_BeginRequest(cx);
-  gpsee_shutdownModuleSystem(cx, realm);
 
+  gpsee_shutdownModuleSystem(cx, realm);
+  gpsee_removeAllGCCallbacks_forRealm(realm->grt, realm);
+  
   gpsee_enterAutoMonitor(cx, &realm->monitors.programModuleDir);
   realm->monitored.programModuleDir = NULL;
   gpsee_leaveAutoMonitor(realm->monitors.programModuleDir);
@@ -358,7 +359,9 @@ JSContext *gpsee_createContext(gpsee_realm_t *realm)
   JS_SetOptions(cx, JS_GetOptions(realm->grt->coreCx));
   JS_SetGlobalObject(cx, realm->globalObject);
   JS_SetErrorReporter(cx, gpsee_errorReporter);
+#if !defined GPSEE_NO_ASYNC_CALLBACKS
   JS_SetOperationCallback(cx, gpsee_operationCallback);
+#endif
   JS_SetVersion(cx, JS_GetVersion(realm->grt->coreCx));
 
   return cx;
