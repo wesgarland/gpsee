@@ -123,6 +123,7 @@ void gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fm
   {
     char		fmtBuf[GPSEE_MAX_LOG_MESSAGE_SIZE];
 
+    gpsee_fputs(cx, " *** ", stderr);
     va_start(ap, fmt);
     gpsee_vfprintf(cx, stderr, gpsee_makeLogFormat(fmt, fmtBuf), ap);
     gpsee_fputc(cx, '\n', stderr);
