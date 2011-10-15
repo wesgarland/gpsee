@@ -209,10 +209,10 @@ static JSBool cFunction_call_guts(JSContext *cx, JSObject *obj, uintN argc, jsva
 
   /* Massage the return type out of the ffi_arg/ffi_sarg special type if it is smaller than a long */
   long l = sizeof l;
-  if (sizeof l > ffi_type_size(hnd->rtype_abi))
+  if ((hnd->rtype_abi != &ffi_type_void) && (sizeof l > ffi_type_size(hnd->rtype_abi)))
   {
 #define ffi_type(ftype, ctype)                                                                          \
-    if (hnd->rtype_abi == &ffi_type_ ## ftype)                                                    \
+    if (hnd->rtype_abi == &ffi_type_ ## ftype)                                                          \
     {                                                                                                   \
       if ((ctype)-1 > 0)                                                                                \
         ret=ffiType_toValue(cx,  clos->rvaluep, &ffi_type_ulong, rval, CLASS_ID ".call");               \
@@ -407,16 +407,11 @@ rtldDefault:
     if (!hnd->fn)
     {
       /* TODO what is a good value here? */
-      char functionName[1024];
+      char functionName[strlen(hnd->functionName) + 12];
       int n;
-      /* Mangle the function name (prepend "gffi_alias_") */
-      n = snprintf(functionName, sizeof functionName, "gffi_alias_%s", hnd->functionName);
-      GPSEE_ASSERT(n >= 0);
-      if (n >= sizeof functionName)
-        gpsee_log(cx, SLOG_WARNING, "gffi alias for \"%s\" exceeds " GPSEE_SIZET_FMT " characters", hnd->functionName, sizeof functionName);
-      else
-        /* Try dlsym() again with the new mangled name! */
-        hnd->fn = dlsym(RTLD_DEFAULT, functionName);
+      /* Mangle the function name (prepend "gffi_alias_"), then try again */
+      n = sprintf(functionName, "gffi_alias_%s", hnd->functionName);
+      hnd->fn = dlsym(RTLD_DEFAULT, functionName);
     }
   }
 
@@ -614,7 +609,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
 
 static  __attribute__((unused)) void CFunction_debug_dump(JSContext *cx)
 {
-#define ffi_type(ftype, ctype) gpsee_printf(cx, "FFI type %s is like C type %s and represented by jsve_%s, %i\n", #ftype, #ctype, #ftype, jsve_ ## ftype);
+#define ffi_type(ftype, ctype) gpsee_printf(cx, "FFI type %10.10s is like C type %14.14s and represented by jsve_%s=%i, at\t%p\n", #ftype, #ctype, #ftype, jsve_ ## ftype, &ffi_type_ ## ftype);
 #include "ffi_types.decl"
 #undef ffi_type
   return;
