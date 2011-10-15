@@ -52,8 +52,6 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.33 201
 #include "gpsee.h"
 #include "gpsee_private.h"
 
-#define	GPSEE_BRANCH_CALLBACK_MASK_GRANULARITY	0xfff
-
 extern rc_list rc;
 
 #if defined(GPSEE_DEBUG_BUILD)
@@ -384,9 +382,10 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
   return JS_TRUE;
 }
 
-#if !defined(GPSEE_NO_ASYNC_CALLBACKS)
+#if defined(GPSEE_NO_ASYNC_CALLBACKS)
+# warning Building without GPSEE's Async Callback facility
+#else
 /******************************************************************************************** Asynchronous Callbacks */
-
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp);
 /** Thread for triggering closures registered with gpsee_addAsyncCallback() */
 static void gpsee_asyncCallbackTriggerThreadFunc(void *grt_vp)
@@ -677,11 +676,11 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
 #endif
 
   gpsee_resetIOHooks(cx, grt);
-  JS_SetGCCallback(cx, NULL);
 
   if (gpsee_ds_forEach(cx, grt->realms, destroyRealm_cb, NULL) == JS_FALSE)
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ".destroyRuntime: Error destroying realm");
 
+  JS_SetGCCallback(cx, NULL);
   JS_EndRequest(cx);
 
   gpsee_ds_destroy(grt->realms);
