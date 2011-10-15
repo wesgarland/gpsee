@@ -109,12 +109,15 @@ const char *curses_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool curses_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool curses_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
   if (force)
   {
+    gpsee_runtime_t 	*grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
     endwin();
-    puts("\n\n");
+    puts("");
+    fflush(stdout);
+    grt->errorLogger = NULL;
     return JS_TRUE;
   }
 

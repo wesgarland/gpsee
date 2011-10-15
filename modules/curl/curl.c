@@ -668,7 +668,7 @@ const char *curl_InitModule(JSContext *cx, JSObject *obj)
   return MODULE_ID;
 }
 
-JSBool curl_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool Force)
+JSBool curl_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool Force)
 {
   return JS_TRUE;       /* Safe to unload this if it was running as DSO module */
 }

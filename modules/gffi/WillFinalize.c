@@ -48,6 +48,12 @@
 #include <ffi.h>
 #include "gffi.h"
 
+#if defined(GPSEE_DEBUG_BUILD)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "gpsee\t> "), gpsee_printf(cx, a); } while(0)
+#else
+# define dprintf(a...) while(0) gpsee_printf(cx, a)
+#endif
+
 /** A list of WillFinalize instances which have not yet been finalized;
  *  these instances have C-side "weak" references to CFunction instances
  *  which must be kept alive by the garbage collector.  The key of the
@@ -128,7 +134,7 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
 {
   cFunction_closure_t   *clos;
   cFunction_handle_t    *hnd;
-  JSObject              *cfuncObj = NULL;
+  JSObject              *cfunObj = NULL;
   JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
 
@@ -144,14 +150,14 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
    * left of the argument vector.
    */
 
-  /* Grab 'cfuncObj' from 'argv' */
+  /* Grab 'cfunObj' from 'argv' */
   if (!JSVAL_IS_OBJECT(argv[0]))
     return gpsee_throw(cx, CLASS_ID ".finalizeWith.arguments.0.invalidType: Arguments must begin with a CFunction"
                                     " instance, followed by a valid argument list.");
-  cfuncObj = JSVAL_TO_OBJECT(argv[0]);
+  cfunObj = JSVAL_TO_OBJECT(argv[0]);
 
   /* Prepare 'clos' */
-  if (!cFunction_prepare(cx, cfuncObj, argc-1, argv+1, &clos, &hnd, CLASS_ID ".call"))
+  if (!cFunction_prepare(cx, cfunObj, argc-1, argv+1, &clos, &hnd, CLASS_ID ".call"))
     return JS_FALSE;
 
   /* Associate 'clos' to our WillFinalize instance */
@@ -159,55 +165,88 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
   if (clos)
   {
     JS_SetPrivate(cx, thisObj, clos);
-    gpsee_ds_put(pendingFinalizers, thisObj, cfuncObj);
+    gpsee_ds_put(pendingFinalizers, thisObj, cfunObj);
   }
 
   return JS_TRUE;
 }
+
+
+/* cFunction_closure_use() calls and frees a prepared CFunction call represented by a
+ * cFunction_closure_t instance, created by a call to cFunction_prepare()
+ *
+ * @param     cx
+ * @param     WFObject          WillFinalize object which holds the closure to use
+ *                              in its private slot.
+ * @param       throwPrefix     Prefix to use for thrown errors, or NULL to not throw
+ *                              when returning JS_FALSE.
+ * @returns JS_TRUE on success
+ */
+static JSBool cFunction_closure_use(JSContext *cx, JSObject *WFObject, const char *throwPrefix)
+{
+  cFunction_closure_t   *clos = JS_GetInstancePrivate(cx, WFObject, WillFinalize_clasp, NULL);
+  cFunction_handle_t    *hnd;
+  
+  if (!clos)
+    return JS_TRUE;     /* Closure has previously been used */
+
+  hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL); 
+  GPSEE_ASSERT(hnd);
+  if (!hnd)
+    return throwPrefix ? gpsee_throw(cx, "%s: Missing CFunction data in cFunction_closure!", throwPrefix) : JS_FALSE;
+
+  ffi_call(hnd->cif, hnd->fn, clos->rvaluep, clos->avalues);
+  gpsee_ds_remove(pendingFinalizers, WFObject);
+  cFunction_closure_free(cx, clos);
+  JS_SetPrivate(cx, WFObject, NULL);
+
+  return JS_TRUE;
+}
+
 /** This function implements an API for objects to be finalized on-demand. The finalizer is executed and removed when
  *  this is called. */
 static JSBool WillFinalize_RunFinalizer(JSContext *cx, uintN argc, jsval *vp)
 {
-  cFunction_closure_t   *clos;
   JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
 
-  clos = (cFunction_closure_t*) JS_GetInstancePrivate(cx, thisObj, WillFinalize_clasp, NULL);
-  if (clos)
-  {
-    cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
-    cFunction_closure_call(cx, clos, hnd);
-    gpsee_ds_remove(pendingFinalizers, thisObj);
-  }
+  if (!thisObj)
+    return JS_FALSE;
 
-  JS_SetPrivate(cx, thisObj, NULL);
-  return JS_TRUE;
+  dprintf("%s %p\n", __func__, thisObj);
+
+  return cFunction_closure_use(cx, thisObj, CLASS_ID ".destroy");
 }
 
-static void WillFinalize_Finalize(JSContext *cx, JSObject *obj)
+static void WillFinalize_Finalize(JSContext *cx, JSObject *thisObj)
 {
-  /* If we have private data, it is a cFunction_closure_t waiting to be called */
-  cFunction_closure_t *clos = JS_GetInstancePrivate(cx, obj, WillFinalize_clasp, NULL);
-  if (clos)
-  {
-    cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL);
-    cFunction_closure_call(cx, clos, hnd);
-    gpsee_ds_remove(pendingFinalizers, obj);
-  }
+  dprintf("%s %p\n", __func__, thisObj);
+
+  (void)cFunction_closure_use(cx, thisObj, NULL);
 }
 
 static JSBool markObject(JSContext *cx, const void *key, void *value, void *_private)
 {
-  cFunction_handle_t    *hnd = JS_GetInstancePrivate(cx, (JSObject *)key, WillFinalize_clasp, NULL);
+  JSObject              *WFObject = (JSObject *)key;
+  JSObject              *cfunObj = value;
+  cFunction_closure_t   *clos = JS_GetInstancePrivate(cx, WFObject, WillFinalize_clasp, NULL);
+  cFunction_handle_t    *hnd;
 
+  GPSEE_ASSERT(clos);
+  if (!clos)
+    return JS_TRUE;     /* Closure has previously been used */
+
+  hnd = JS_GetInstancePrivate(cx, clos->cfunObj, cFunction_clasp, NULL); 
   GPSEE_ASSERT(hnd);
-  JS_MarkGCThing(cx, (JSObject *)value, hnd->functionName, NULL);
+
+  JS_MarkGCThing(cx, cfunObj, hnd->functionName, NULL);
+  dprintf("marking %p for %p, closure %p (%s)\n", WFObject, cfunObj, clos, hnd->functionName);
 
   return JS_TRUE;
 }
 
-/** A callback which runs garbage-collection that marks the objects 
- *  memoized by pendingFinalizers as "still alive", whether or not
- *  they are reachable from the rooted object graphs, because there
+/** A callback which runs during garbage-collection that marks the  
+ *  objects memoized by pendingFinalizers as "still alive", whether or
+ *  not they are reachable from the rooted object graphs, because there
  *  are cFunction_closure finalizers have not yet been run which
  *  depend on them.   (i.e. a cFunction_closure invoking fclose()
  *  will depend on an instance of CFunction that exposes fclose()).
@@ -224,6 +263,8 @@ static JSBool WillFinalize_GCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCS
 {
   if (status != JSGC_MARK_END)
     return JS_TRUE;
+
+  dprintf("%s\n", __func__);
  
   if (gpsee_ds_forEach(cx, pendingFinalizers, markObject, NULL) != JS_TRUE)
     return gpsee_throw(cx, CLASS_ID ".pendingFinalizers.iteration");
@@ -233,6 +274,7 @@ static JSBool WillFinalize_GCCallback(JSContext *cx, gpsee_realm_t *realm, JSGCS
 
 static JSBool forceFinalize(JSContext *cx, const void *key, void *value, void *_private)
 {
+  dprintf("forceFinalize %p\n", key);
   WillFinalize_Finalize(cx, (JSObject *)key);
   JS_SetPrivate(cx,  (JSObject *)key, NULL);
 
@@ -247,7 +289,7 @@ static JSBool forceFinalize(JSContext *cx, const void *key, void *value, void *_
  *  between global-object removal and context destruction should clear
  *  all finalizers.
  */ 
-JSBool WillFinalize_FiniClass(JSContext *cx, JSBool force)
+JSBool WillFinalize_FiniClass(JSContext *cx, gpsee_realm_t *realm, JSBool force)
 {
   if (force)
     gpsee_ds_forEach(cx, pendingFinalizers, forceFinalize, NULL);
@@ -255,7 +297,9 @@ JSBool WillFinalize_FiniClass(JSContext *cx, JSBool force)
   if (gpsee_ds_hasData(cx, pendingFinalizers))
     return JS_FALSE;
 
+  (void)gpsee_removeGCCallback(realm->grt, realm, WillFinalize_GCCallback);
   gpsee_ds_destroy(pendingFinalizers);
+  
   return JS_TRUE;
 }
 /**

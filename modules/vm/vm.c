@@ -76,18 +76,6 @@ static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.9 2010/12/17 21
 
 #define MODULE_ID GPSEE_GLOBAL_NAMESPACE_NAME	".module.ca.page.vm"
 
-/*
-JS_GetImplementationVersion
-JS_DumpNamedRoots
-JS_SetThreadStackLimit
-JS_SetScriptStackQuota
-JS_SealObject
-JS_SetBranchCallback
-JS_MakeStructImmutabl
-JS_DecodeBytes
-JS_SetLocaleCallbacks
-*/
-
 /** version getter */
 static JSBool vm_version_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -485,7 +473,7 @@ const char *vm_InitModule(JSContext *cx, JSObject *moduleObject)
   return MODULE_ID;
 }
 
-JSBool vm_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool vm_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
   return JS_TRUE;
 }

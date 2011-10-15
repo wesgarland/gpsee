@@ -50,6 +50,12 @@
 
 #define CLASS_ID MODULE_ID ".CFunction"
 
+#if defined(GPSEE_DEBUG_BUILD)
+# define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "gpsee\t> "), gpsee_printf(cx, a); } while(0)
+#else
+# define dprintf(a...) while(0) gpsee_printf(cx, a)
+#endif
+
 static JSBool cFunction_jsapiCall_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
   cFunction_handle_t *hnd = JS_GetInstancePrivate(cx, obj, cFunction_clasp, NULL);
@@ -86,6 +92,8 @@ static JSBool cFunction_jsapiCall_setter(JSContext *cx, JSObject *obj, jsval id,
  */
 void cFunction_closure_free(JSContext *cx, cFunction_closure_t *clos)
 {
+  dprintf("%s %p\n", __func__, clos);
+
   if (clos->rvaluep)
     JS_free(cx, clos->rvaluep);
   if (clos->avalues)
@@ -136,6 +144,8 @@ JSBool cFunction_prepare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
   clos = JS_malloc(cx, sizeof(cFunction_closure_t));
   if (!clos)
     return JS_FALSE;
+  dprintf("alloc'd clos at %p for %s\n", clos, hnd->functionName);
+
   memset(clos, 0, sizeof(*clos));
   clos->cfunObj = obj; /* Need to keep obj alive until we are done with hnd */
   clos->cfunNargs = hnd->nargs;
@@ -279,20 +289,6 @@ static JSBool CFunction_call(JSContext *cx, JSObject *obj, uintN argc, jsval *ar
 
   out:
   return ret;
-}
-
-/* cFunction_closure_call() calls and frees a prepared CFunction call represented by a cFunction_closure_t instance
- * created by a call to cFunction_prepare(), which in turn is intended to be called by 
- *
- * @param     cx
- * @param     clos    CFunction closure to call
- */
-void cFunction_closure_call(JSContext *cx, cFunction_closure_t *clos, cFunction_handle_t *hnd)
-{
-  /* Make the call */
-  ffi_call(hnd->cif, hnd->fn, clos->rvaluep, clos->avalues);
-  /* Clean up */
-  cFunction_closure_free(cx, clos);
 }
 
 /** 
@@ -487,6 +483,8 @@ static void CFunction_Finalize(JSContext *cx, JSObject *obj)
   if (!hnd)
     return;
 
+  dprintf("%s at %p (%s), hnd at %p\n", __func__, obj, hnd->functionName, hnd);
+
   if (hnd->cif)
     JS_free(cx, hnd->cif);
 
@@ -571,7 +569,7 @@ JSObject *CFunction_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProt
     JS_EnumerateStub, 			/**< enumerateProperty stub */
     JS_ResolveStub,   			/**< resolveProperty stub */
     JS_ConvertStub,   			/**< convertProperty stub */
-    CFunction_Finalize,		/**< it has a custom finalizer */
+    CFunction_Finalize,		        /**< it has a custom finalizer */
 
     JSCLASS_NO_OPTIONAL_MEMBERS
   };

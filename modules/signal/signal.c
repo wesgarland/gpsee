@@ -38,8 +38,6 @@
  *  @date       Oct 2007
  *  @version    $Id: signal.c,v 1.8 2010/06/14 22:12:01 wes Exp $
  *
- *  @bug	Not compatible with gpsee_context_private.c: both want the context callback. Will
- *		need to write some multiplexing code.
  *  @bug	May result in deadlock on certain platforms due to implementation of PR_AtomicSet().
  *              As of Feb 25 2009 hg tip for nspr, here's what I think of the likelihood of deadlock
  *		possibilities:
@@ -92,6 +90,8 @@ struct signal_hnd
   jsval			funv;			/**<< Function to call when signal is raised or JSVAL_VOID */
   struct sigaction	oact;			/**<< Signal action present when module was loaded */
 };
+
+static GPSEEAsyncCallback *acb; /**< Handle for callback that runs the signal handlers */
 
 /**
  * hnd->pending is used to indicate both that a signal is pending and to synchronize
@@ -468,6 +468,12 @@ const char *signal_InitModule(JSContext *cx, JSObject *moduleObject)
     { NULL, 0, 0, NULL, NULL }
   };
 
+  if (acb)
+  {
+    (void)gpsee_throw(cx, MODULE_ID "_InitModule: can only initialize this module in one realm per process");
+    return NULL;
+  }
+
   if (!JS_DefineFunctions(cx, moduleObject, signal_methods) || !JS_DefineProperties(cx, moduleObject, signal_props))
     return NULL;
 
@@ -486,20 +492,30 @@ const char *signal_InitModule(JSContext *cx, JSObject *moduleObject)
   }
 
   /* Register a callback function which is asynchronous with respect to the running Javascript program, to periodically
-   * interrupt the running Javascript program and run the signal handlers the Javascript program has registered. */
-  gpsee_addAsyncCallback(cx, signal_runHandlers, NULL);
+   * interrupt the running Javascript program and run the signal handlers the Javascript program has registered.
+   */
+  acb = gpsee_addAsyncCallback(cx, signal_runHandlers, NULL);
 
   /* Register a callback function to fire all pending callbacks when the JSContext is ready to finalize. */
-  gpsee_setContextCallback(cx, signal_contextCallback);
+#warning context callback removed until better API so we can clean up during Fini
+  // XXX gpsee_setContextCallback(cx, signal_contextCallback);
 
   return MODULE_ID;
 }
 
-JSBool signal_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool signal_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
   int sig;
+  JSContextCallback cb;
 
-  signal_runHandlers(cx, NULL, NULL);
+  if (!force)
+  {
+    for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
+    {
+      if (signalEvents[sig].pending == JSVAL_TRUE)
+        return JS_FALSE;
+    }
+  }
 
   for (sig = 1; sig <= OS_MAX_SIGNAL; sig++)
   {

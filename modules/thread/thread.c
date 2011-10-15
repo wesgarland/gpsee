@@ -504,7 +504,7 @@ JSBool Thread_YieldBCB(JSContext *cx, void *unused, GPSEEAsyncCallback *cb)
  *
  *  @see thread_joinAll()
  */
-JSBool thread_FiniModule(JSContext *cx, JSObject *moduleObject, JSBool force)
+JSBool thread_FiniModule(JSContext *cx, gpsee_realm_t *realm, JSObject *moduleObject, JSBool force)
 {
   JSObject		*proto = JS_GetPrivate(cx, moduleObject);
   thread_protected_t	*protected = JS_GetPrivate(cx, proto);
