@@ -881,11 +881,14 @@ PRIntn prmain(PRIntn argc, char **argv)
     if (reason) /* ignore unreached warning */
     {
       gpsee_log(cx, SLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
-      /* not gpsee_ */ fprintf(stderr, "*** Unexpected interpreter shutdown: %s", reason);
-      if (errno)
-	fprintf(stderr, " (%s)\n", strerror(errno));	
-      else
-	fputs("\n", stderr);
+      if (gpsee_verbosity(0) == 0)
+      {
+          /* not gpsee_ */ fprintf(stderr, "*** Unexpected interpreter shutdown: %s", reason);
+        if (errno)
+          fprintf(stderr, " (%s)\n", strerror(errno));	
+        else
+          fputs("\n", stderr);
+      }
     }
   }
 
