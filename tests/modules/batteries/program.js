@@ -1,6 +1,5 @@
 require("binary");
 require("cgi");
-require("curses");
 require("fs-base");
 require("gffi");
 require("gpsee");
@@ -11,5 +10,6 @@ require("syslog");
 require("system");
 require("util"); 
 require("vm"); 
-
 require("fs-base").openRaw("/dev/null", { read: true });
+require("curses");
+	

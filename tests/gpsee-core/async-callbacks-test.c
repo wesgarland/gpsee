@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "gpsee.h"
 
-JSBool callback(JSContext *cx, void *ignored)
+JSBool callback(JSContext *cx, void *ignored, GPSEEAsyncCallback *ignoredToo)
 {
   printf("callback() called\n");
   return JS_TRUE;
