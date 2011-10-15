@@ -894,16 +894,17 @@ Stream.prototype.read = function Stream_read(howMuch)
   var pos;
   var buffer;
 
-  if ((pos = _ftello.call(this.stream)) == -1)
+  if ((pos = _ftello(this.stream)) == -1)
     throw new Error("Could not determine current stream offset!" + syserr());
 
-  bytesLeft = sb.st_size - pos;
-
+  if (sb.st_size == 0)
+    bytesLeft = 0;
+  else
+    bytesLeft = sb.st_size - pos;
   if (typeof howMuch === "undefined" || howMuch > bytesLeft)
     howMuch = bytesLeft;
 
   buffer = new ffi.Memory(howMuch);
-
   bytesRead = _fread.call(buffer, 1, howMuch, this.stream);
   if (bytesRead != buffer.size)
     throw new Error("Could not read enough to fill buffer; only read " + (+bytesRead) + " of " + buffer.size + " bytes!" + syserr());
