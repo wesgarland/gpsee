@@ -47,7 +47,6 @@
 
 #include "gpsee.h"
 #include <prmon.h>
-#undef JS_THREADSAFE /* XXX */
 
 gpsee_monitor_t         nilMonitor = (gpsee_monitor_t)"NIL Monitor - using this monitor is like running unlocked";
 
@@ -157,7 +156,7 @@ void gpsee_enterAutoMonitorRT(gpsee_runtime_t *grt, gpsee_autoMonitor_t *monitor
  */
 void gpsee_enterMonitor(gpsee_monitor_t monitor)
 {
-#ifdef JS_THREADSFE  
+#ifdef JS_THREADSAFE  
 if (monitor == nilMonitor)
     return;
 
