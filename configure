@@ -302,9 +302,9 @@ do
   echo "# " >> "$file" 
   cat "$file.sample" >> "$file"
   eval "exec $fd>>\"$file\""
+  echo "" >&$fd
+  echo "# Changes made by $configure_cmd" >&$fd
   fd=`expr $fd + 1`
-  echo "" >> $fd
-  echo "# Changes made by $configure_cmd" >> $fd
 done
 
 a="`locate autoconf2.13 autoconf213 autoconf-2.13`" && echo "AUTOCONF=$a" >&5
