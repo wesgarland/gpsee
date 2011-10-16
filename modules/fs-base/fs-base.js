@@ -148,9 +148,7 @@ exports.openDescriptor = function openDescriptor(fd, mode)
     _close.call(fd);
     throw new Error("Unable to create stdio file stream" + syserr());
   }
-
-// XXX while WillFinalize_RunFinalizer is disabled
-// stream.finalizeWith(_fclose, stream);
+  stream.finalizeWith(_fclose, stream);
 
   return new Stream(stream, fd, mode);
 }
@@ -919,10 +917,9 @@ Stream.prototype.close = function Stream_close()
 {
   if (this.stream)
   {
-// XXX    this.stream.destroy();
-// XXX    this.stream.destroy = function() { throw new Error("Stream was already closed"); };
-// XXX while WillFinalize_RunFinalizer is disabled
-_fclose.call(this.stream);
+    this.stream.destroy();
+    this.stream.destroy = function() { throw new Error("Stream was already closed"); };
+    while WillFinalize_RunFinalizer is disabled
   }
   else
     _close.call(this.fd);

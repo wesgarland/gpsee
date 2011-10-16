@@ -138,9 +138,6 @@ static JSBool WillFinalize_FinalizeWith(JSContext *cx, uintN argc, jsval *vp)
   JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
   jsval                 *argv = JS_ARGV(cx, vp);
 
-  return JS_TRUE;
-#warning XXX WillFinalize_FinalizeWith disabled
-
   if (!thisObj)
     return JS_FALSE;
 
