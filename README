@@ -1,11 +1,14 @@
-Thanks for downloading GPSEE!
+Thanks for downloading GPSEE!  This is version 0.2.1.
 
 Please visit us on the web at http://code.google.com/p/gpsee/
 for the most recent documentation and build instructions.
 
-The most recent version of SpiderMonkey which has been tested and is known
-to work with GPSEE is revision 21e90d198613 from the TraceMonkey tree.
-This is "pre-fatvals", in Mozilla-speak.
+The most recent version of SpiderMonkey which has been tested and is 
+known to work with GPSEE is revision 4498af260a06 from the Mozilla-1.9.2 
+(FireFox 3.6) tree.
+
+The GPSEE-0.2 will not work with post-fatvals JSAPI. GPSEE-0.3 is in
+development now and will support JS-1.8.5.
 
 To select a specific version of SpiderMonkey, enter the repository directory
 and use the following command: hg revert --rev=XXX --all
@@ -86,7 +89,7 @@ General Prerequisites
      * GCC 3.4
      * GNU Make 3.81
 
-     * Tracemonkey prerequisites for multi-threaded build (we've listed the
+     * SpiderMonkey prerequisites for multi-threaded build (we've listed the
        current ones below, but Mozilla could change them on us)
      * autoconf-2.13 (exactly 2.13)
      * NSPR 4.7
@@ -95,9 +98,8 @@ General Prerequisites
 Suggested Distro Packages
 -------------------------
 Solaris 10
-     * ftp://ftp.sunfreeware.com/pub/freeware/sparc/8/autoconf-2.13-sol8-s
-       parc-local.gz
-     * NSPR in SUNWpr, SUNWprd packages which ship with Solaris 10
+     * ftp://ftp.sunfreeware.com/pub/freeware/sparc/8/autoconf-2.13-sol8-sparc-local.gz
+     * NSPR in SUNWpr, SUNWprd packages which ship with Solaris 10u5
 
 Mac Ports
      * sudo port install autoconf213
@@ -122,15 +124,12 @@ day, and almost always available during EST (GMT-0500) business hours.
 
 Get the sources into your homedir
      * cd
-     * wget ftp://sources.redhat.com/pub/libffi/libffi-3.0.8.tar.gz
-     * tar -zxvf libffi-3.0.8.tar.gz
+     * wget ftp://sources.redhat.com/pub/libffi/libffi-3.0.10.tar.gz
+     * tar -zxvf libffi-3.0.10.tar.gz
      * mkdir hg
      * cd hg
      * hg clone https://gpsee.googlecode.com/hg/ gpsee
-     * hg clone http://hg.mozilla.org/tracemonkey
-
-Note: libffi-3.0.9 is now available and is expected to work (but not yet
-tested)
+     * hg clone http://hg.mozilla.org/releases/mozilla-1.9.2/
 
 Configure GPSEE, LibFFI, and SpiderMonkey
      * cd gpsee
