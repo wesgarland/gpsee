@@ -919,7 +919,6 @@ Stream.prototype.close = function Stream_close()
   {
     this.stream.destroy();
     this.stream.destroy = function() { throw new Error("Stream was already closed"); };
-    while WillFinalize_RunFinalizer is disabled
   }
   else
     _close.call(this.fd);
