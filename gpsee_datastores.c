@@ -37,7 +37,7 @@
  *                                      pointer-sized value.
  * @author      Wes Garland
  * @date        May 2010
- * @version     $Id: gpsee_datastores.c,v 1.2 2010/09/01 18:12:35 wes Exp $
+ * @version     $Id: gpsee_datastores.c,v 1.3 2011/12/05 19:13:36 wes Exp $
  */
 
 #include "gpsee.h"

@@ -35,13 +35,13 @@
 
 /**
  *  @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
- *  @version	$Id: gpsee_xdrfile.c,v 1.6 2011/03/08 18:13:52 wes Exp $
+ *  @version	$Id: gpsee_xdrfile.c,v 1.7 2011/12/05 19:13:37 wes Exp $
  *  @date	May 2009
  *  @file	gpsee_xdrfile.c         JSXDR implementation using stdio.h FILE API (fwrite()
  *                                      et al.) and kernel API memory mapping when possible
  */
 
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.6 2011/03/08 18:13:52 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_xdrfile.c,v 1.7 2011/12/05 19:13:37 wes Exp $";
 
 #include "gpsee.h"
 #include "jsapi.h"

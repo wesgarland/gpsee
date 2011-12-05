@@ -36,7 +36,7 @@
  *  @file       signal_module.c		Module to expose POSIX signals as JavaScript events.
  *  @author     Wes Garland, wes@page.ca
  *  @date       Oct 2007
- *  @version    $Id: signal.c,v 1.8 2010/06/14 22:12:01 wes Exp $
+ *  @version    $Id: signal.c,v 1.9 2011/12/05 19:13:38 wes Exp $
  *
  *  @bug	May result in deadlock on certain platforms due to implementation of PR_AtomicSet().
  *              As of Feb 25 2009 hg tip for nspr, here's what I think of the likelihood of deadlock
@@ -63,7 +63,7 @@
  *		</pre>
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: signal.c,v 1.8 2010/06/14 22:12:01 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: signal.c,v 1.9 2011/12/05 19:13:38 wes Exp $";
  
 #include "gpsee.h"
 #include <stdlib.h>

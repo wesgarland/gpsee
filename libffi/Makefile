@@ -34,7 +34,7 @@
 
 ## @author	Wes Garland, PageMail, Inc. wes@page.ca
 ## @date	May 2009
-## @version	$Id: Makefile,v 1.9 2010/09/01 18:12:35 wes Exp $ 
+## @version	$Id: Makefile,v 1.10 2011/12/05 19:13:37 wes Exp $ 
 ## @file	Makefile 
 ## 
 ## GNU make Makefile to allow us to build libffi in a way that

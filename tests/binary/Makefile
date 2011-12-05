@@ -38,7 +38,7 @@
 ##				`make commit` commits test results.
 ## @author	Donny Viszneki, PageMail, Inc., donny.viszneki@gmail.com
 ## @date	June 2009
-## @version	$Id: Makefile,v 1.1 2010/01/22 16:34:08 wes Exp $
+## @version	$Id: Makefile,v 1.2 2011/12/05 19:13:38 wes Exp $
 
 GPSEE_SRC_DIR ?= ../..
 
