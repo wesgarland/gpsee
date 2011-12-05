@@ -122,6 +122,10 @@ main(int argc, char **argv, char **envp)
     JSBool jsdbc;
 #endif
 
+#if defined(__SURELYNX__)
+    static apr_pool_t *permanent_pool = apr_initRuntime();
+#endif
+
     jsi = gpsee_createInterpreter();
     global_class = *gpsee_getGlobalClass();
 
