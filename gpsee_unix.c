@@ -33,13 +33,13 @@
  * ***** END LICENSE BLOCK ***** 
  */
 
-static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.5 2010/06/14 22:11:59 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gpsee_unix.c,v 1.6 2011/12/05 19:13:36 wes Exp $";
 
 /**
  *  @file 	gpsee_unix.c		Functions for UNIX world normally provided by SureLynx libs.
  *  @author	Wes Garland
  *  @date	Jan 2008
- *  @version	$Id: gpsee_unix.c,v 1.5 2010/06/14 22:11:59 wes Exp $
+ *  @version	$Id: gpsee_unix.c,v 1.6 2011/12/05 19:13:36 wes Exp $
  */
 
 #include "gpsee.h"

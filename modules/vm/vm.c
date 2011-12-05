@@ -38,9 +38,12 @@
  *
  *  @author     Wes Garland
  *  @date       Jan 2008
- *  @version    $Id: vm.c,v 1.9 2010/12/17 21:37:02 wes Exp $
+ *  @version    $Id: vm.c,v 1.10 2011/12/05 19:13:38 wes Exp $
  *
  *  $Log: vm.c,v $
+ *  Revision 1.10  2011/12/05 19:13:38  wes
+ *  Synchronize with hg revision 344218a2a12a tip
+ *
  *  Revision 1.9  2010/12/17 21:37:02  wes
  *  vm module: added object/string/jsvalPtrValue methods
  *
@@ -70,7 +73,7 @@
  *
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.9 2010/12/17 21:37:02 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: vm.c,v 1.10 2011/12/05 19:13:38 wes Exp $";
  
 #include "gpsee.h"
 

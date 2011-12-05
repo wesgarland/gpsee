@@ -37,7 +37,7 @@
  * @file	gsr.c		GPSEE Script Runner ("scripting host")
  * @author	Wes Garland
  * @date	Aug 27 2007
- * @version	$Id: gsr.c,v 1.28 2010/12/02 21:57:03 wes Exp $
+ * @version	$Id: gsr.c,v 1.29 2011/12/05 19:13:37 wes Exp $
  *
  * This program is designed to interpret a JavaScript program as much like
  * a shell script as possible.
@@ -54,7 +54,7 @@
  * is the usage() function.
  */
  
-static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.28 2010/12/02 21:57:03 wes Exp $";
+static __attribute__((unused)) const char rcsid[]="$Id: gsr.c,v 1.29 2011/12/05 19:13:37 wes Exp $";
 
 #define PRODUCT_VERSION		"1.0-rc2"
 

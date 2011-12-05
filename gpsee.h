@@ -36,7 +36,7 @@
 /**
  *  @file	gpsee.h
  *  @author	Wes Garland, wes@page.ca
- *  @version	$Id: gpsee.h,v 1.38 2010/12/20 18:34:56 wes Exp $
+ *  @version	$Id: gpsee.h,v 1.39 2011/12/05 19:13:36 wes Exp $
  *
  *  @defgroup   core            GPSEE Core API
  *  @{

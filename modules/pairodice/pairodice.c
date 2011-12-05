@@ -42,7 +42,7 @@
  *              PageMail, Inc.
  *		wes@page.ca
  *  @date	Jan 2008
- *  @version	$Id: pairodice.c,v 1.3 2011/04/04 18:17:52 wes Exp $
+ *  @version	$Id: pairodice.c,v 1.4 2011/12/05 19:13:37 wes Exp $
  *
  *  @note	To use this module, you must remove it from the IGNORE_MODULES list in the
  *		main GPSEE Makefile, then re-build and re-install.
@@ -59,7 +59,7 @@
   * 	print("Third  roll: " + dice.roll());
   */
 
-static const char __attribute__((unused)) rcsid[]="$Id: pairodice.c,v 1.3 2011/04/04 18:17:52 wes Exp $";
+static const char __attribute__((unused)) rcsid[]="$Id: pairodice.c,v 1.4 2011/12/05 19:13:37 wes Exp $";
 
 #include "gpsee.h"
 

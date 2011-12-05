@@ -35,7 +35,7 @@
  *  @file	sockets.js	Simple sockets API for GPSEE
  *  @author	Wes Garland
  *  @date	March 2010
- *  @version	$Id: net.js,v 1.3 2010/03/31 18:32:29 wes Exp $
+ *  @version	$Id: net.js,v 1.6 2011/12/05 19:13:37 wes Exp $
  */
 
 const fs = require("fs-base");

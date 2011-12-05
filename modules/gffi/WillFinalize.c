@@ -41,7 +41,7 @@
  *              PageMail, Inc.
  *              hdon@page.ca
  *  @date       Sep 2009
- *  @version    $Id: WillFinalize.c,v 1.2 2010/06/14 22:12:00 wes Exp $
+ *  @version    $Id: WillFinalize.c,v 1.3 2011/12/05 19:13:37 wes Exp $
  */
 
 #include <gpsee.h>
