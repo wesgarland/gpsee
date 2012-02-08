@@ -553,11 +553,11 @@ exports.same = function same(pathA, pathB)
   var sb1 = new ffi.MutableStruct("struct stat");
   var sb2 = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb1) != 0)
+  if (_stat.call(pathA, sb1) != 0)
     sb1 = false;
   else
   {
-    if (_stat.call(path, sb1) != 0)
+    if (_stat.call(pathB, sb2) != 0)
       sb2 = false;
   }
 
@@ -573,7 +573,7 @@ exports.same = function same(pathA, pathB)
     if (sb1.st_dev != sb2.st_dev)
       return false;
 
-  if (typeof sb1.st_rdev != "undefined")
+  if (typeof sb2.st_rdev != "undefined")
     if (sb1.st_rdev != sb2.st_rdev)
       return false;
 
