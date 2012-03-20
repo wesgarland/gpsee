@@ -297,28 +297,24 @@ exports.poll = function poll(pollSockets, timeout)
   var maxfd = 0;
   var numfds;
 
-  if (timeout && timeout !== 0)
-  {
-    if (typeof timeout != "number")
-    {
-      if (!(timeout instanceof Date))
-	timeout = new Date(timeout);
-
-      timeout = timeout.valueOf() - Date.now();
-    }
-
-    if (timeout && timeout != Infinity)
-    {
+  if (arguments.length < 2 || timeout === null || +timeout === Infinity)
+  { 
+    tv = null;
+  }
+  else
+  { 
+    if (timeout instanceof Date)
+      timeout -= Date.now();
+    if (!isNaN(+timeout))
+    { 
       tv = new ffi.MutableStruct("struct timeval");
       tv.tv_sec = Math.floor(timeout / 1000);
       tv.tv_usec = timeout % 1000;
     }
-  }
-  else
-  {
-    tv = null;
+    else throw new Error('invalid timeout');
   }
   //print('  tv = '+tv)
+
 
   _FD_ZERO.call(rfds);
   _FD_ZERO.call(wfds);
