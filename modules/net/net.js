@@ -309,7 +309,7 @@ exports.poll = function poll(pollSockets, timeout)
     { 
       tv = new ffi.MutableStruct("struct timeval");
       tv.tv_sec = Math.floor(timeout / 1000);
-      tv.tv_usec = timeout % 1000;
+      tv.tv_usec = timeout % 1000 * 1000;
     }
     else throw new Error('invalid timeout');
   }
