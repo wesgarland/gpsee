@@ -60,8 +60,9 @@
 #    MYGROUP_defs.%: 	HEADERS  = list_of_headers_with_defines
 #    and then adding MYGROUP to do the DEFS variable.
 
-GFFI_DIR := $(shell pwd)
+VIRGIN_CPPFLAGS := $(CPPFLAGS)
 
+GFFI_DIR := $(shell pwd)
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
 ifneq ($(MAKECMDGOALS),clean)
@@ -75,8 +76,8 @@ std_cppflags.mk: mk_std_cppflags
 	./mk_std_cppflags "STD_CPPFLAGS=-std=gnu99" > $@
 mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
 
-DEFS	 	 	= gpsee std
-ND_AUTOGEN_HEADERS	+= compiler_dmp.re $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h std_macro_consts.h
+DEFS	 	 	 = gpsee std compiler
+ND_AUTOGEN_HEADERS	+= compiler_dmp.re empty.re empty.h $(foreach DEF,$(DEFS),$(DEF)_defs.dmp) defines.incl structs.incl std_gpsee_no.h std_macro_consts.h
 ND_AUTOGEN_SOURCE	+= $(foreach DEF,$(DEFS),$(DEF)_defs.c) aux_types.incl std_cppflags.mk
 EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o CFunction.o Memory.o Library.o WillFinalize.o CType.o
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags std_macro_consts
@@ -84,6 +85,7 @@ OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
 MDFLAGS 		+= $(LIBFFI_CFLAGS)
+SYMBOL_FILTER_FILE	 = compiler_dmp.re
 
 .PRECIOUS:		$(ND_AUTOGEN_SOURCE) $(ND_AUTOGEN_HEADERS)
 
@@ -121,8 +123,9 @@ std_gpsee_no.h: std_functions.h std_macro_consts.h
 std_macro_consts.h: std_macro_consts
 	./std_macro_consts > $@
 
+# compiler_dmp.re filters out the symbols from the compiler itself
 compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
-
+compiler_dmp.re: CPPFLAGS:=$(VIRGIN_CPPFLAGS)
 compiler_dmp.re:
 	$(CPP) $(CPPFLAGS) -dM - < /dev/null | $(SED) 's/[ 	][ 	]*/ /g' | $(sort) -u \
 	| $(SED) \
@@ -132,6 +135,16 @@ compiler_dmp.re:
 		-e 's/[.]/[.]/g' \
 		-e 's/[|]/[|]/g' \
 	> $@
+
+# compiler_defs.dmp gives us only the symbols from the compiler itself, for arch-testing etc
+empty.h:
+	touch $@
+empty.re:
+	echo "$$^" > $@
+compiler_defs.dmp: empty.h empty.re
+compiler_defs.dmp: CPPFLAGS=$(VIRGIN_CPPFLAGS)
+compiler_defs.dmp: SYMBOL_FILTER_FILE=empty.re
+
 INCLUDE_DIRS=$(GFFI_DIR) /usr/local/include /usr/include /
 std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 %.dmp: FP_HEADERS=$(sort $(wildcard $(foreach DIR,$(INCLUDE_DIRS),$(addprefix $(DIR)/,$(filter-out $^,$(HEADERS))))) $(addprefix $(GFFI_DIR)/,$(filter $^,$(HEADERS))))
@@ -143,7 +156,7 @@ std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 	$(CPP) $(CPPFLAGS) -dM $(FP_HEADERS)\
 		| $(SED) 's/[ 	][ 	]*/ /g' \
 		| $(sort) -u \
-		| $(EGREP) -vf compiler_dmp.re \
+		| $(EGREP) -vf $(SYMBOL_FILTER_FILE) \
 		| $(EGREP) -v '^#define *NULL '\
 		> $@ || [ X = X ]
 	[ -s $@ ] || rm $@
@@ -152,6 +165,7 @@ std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
 std_defs:	LEADING_CPPFLAGS += -I$(GFFI_DIR)
 std_defs.%:	HEADERS  = std_functions.h stdint.h std_macro_consts.h
 gpsee_defs.%: 	HEADERS  = $(GPSEE_SRC_DIR)/gpsee.h $(GPSEE_SRC_DIR)/gpsee-iconv.h std_macro_consts.h
+compiler_defs.%:HEADERS  = empty.h
 
 ############ BEWARE - Dragons Below ###############
 
