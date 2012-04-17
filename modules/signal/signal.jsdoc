@@ -1,0 +1,102 @@
+/** 
+ *  @file		Signal.jsdoc	description of the jsdoc file is. and here, and here.
+ *  @author		Wes Garland, PageMail, Inc., wes@page.ca
+ *  @description 	Module ID gpsee.module.ca.page.signal
+ *  @namespace 		gpsee.module.ca.page.signal - Module to expose POSIX signals to JavaScript. 
+ *                      <i>Requires SpiderMonkey 1.8.1 or better</i>.
+ *  <p>This module recognizes only signals numbered between 0 and 31  and the following signal names:</p>
+ *  <pre>
+ *  ABRT
+ *  ALRM
+ *  BUS
+ *  FPE
+ *  HUP
+ *  ILL
+ *  INT
+ *  KILL
+ *  PIPE
+ *  QUIT
+ *  SEGV
+ *  TERM
+ *  USR1
+ *  USR2
+ *  CHLD
+ *  CONT
+ *  STOP
+ *  TSTP
+ *  TTIN
+ *  TTOU
+ *  </pre>
+ *
+ *  These limits can be modified by changing MAX_OS_SIGNAL in Signal_module.c and editting signal_list.h.
+ *
+ *  <h3>Catching Signals</h3>
+ *  <p>
+ *    Signals are caught by registering a signal handler as an event handler named Signal.on<i>SignalName</i>. The signal
+ *    handler is passed one parameter, the signal number, and has itself as "this".  This gives the signal handler the ability
+ *    to set private variables without polluting the global namespace.
+ *  </p>
+ *  <p>
+ *    For example, to catch the HUP signal, one might write 
+ *    <code>Signal.onHUP = function(sig){ print("Caught Signal " + sig) };</code>
+ *  </p>
+ *
+ *  <h3>Interaction with Thread</h3>
+ *  <p>
+ *    This module was designed with GPSEE's Thread module in mind, and as such makes the assumption there exists a
+ *    1:1 relationship between threads and contexts in the active runtime. Catching a signal in one context will
+ *    always cause the signal handler to execute in that same context, regardless of the thread to which the OS
+ *    signal was delivered. Multiple runtimes in the same process is not supported.
+ *  </p>
+ *  <h3>Signal Timing</h3>
+ *  <p>
+ *    Signals are caught with SpiderMonkey's operation and context callbacks.  This means that signals will be processed only
+ *    when your program (or thread) branches or terminates. Since most programs either loop or terminate very quickly, signals
+ *    tend to be processed without undue delay. If for some strange reason (design error?) your program needs received signals
+ *    processed by a certain point, a one-cycle dummy for-loop at that point will encourage the operation callback to trigger.
+ *    As of this writing, the following code will trigger the operation callback without triggering a JIT trace or polluting
+ *    your namespace -- but this is highly version-dependent and subject to change without notice:
+ *  </p>
+ *  <p>
+ *    <code>(function(){for (var i=0; i < 1; i++);})();</code>
+ *  </p>
+ *  <p>
+ *    Future versions of SpiderMonkey may also call the operation callback when JS_SuspendRequest() is called. This means
+ *    that signals may also be caught immediately after certain native function calls without a branch. These native calls
+ *    would generally be those expected to yield or consume non-trivial, non-JS resources (like IO, mutex spinning, etc).
+ *  </p>
+ *  <p>
+ *    In a single-threaded program, you can count on raised POSIX signals to interrupt certain system operations 
+ *    (such as System.sleep()), which can in turn cause your JavaScript program to resume running, branch, and 
+ *    handle the signal.  This behaviour cannot be counted on in a multi-threaded program, because the OS-level
+ *    signal will not necessarily be received by the thread that is registered to catch the signal.
+ *  </p>
+ *   
+ */
+var Signal = function() {
+
+/** 
+ *  Raise a signal in the current process.
+ * 
+ *  @param	signal		Signal number or name as a String (e.g. "HUP" or 1)
+ */
+function raise(signal){};
+
+/** 
+ *  Send a signal to a process.
+ * 
+ *  @param	signal		Signal number or name as a String (e.g. "HUP" or 1)
+ *  @param	pid		Process ID, or process group ID when negative.
+ */
+function send(signal){};
+
+/** 
+ *  Send a signal to a process.
+ * 
+ *  @param	signal		Signal number or name as a String (e.g. "HUP" or 1)
+ *  @param	pid		[optional] Process ID, or process group ID when negative.
+ *				If pid is unspecified, the signal is raised in the current
+ *				process.
+ */
+function kill(signal){};
+};
