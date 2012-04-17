@@ -67,6 +67,9 @@ const _inet_ntop	= new dl.CFunction(ffi.pointer,	"inet_ntop",		ffi.int, ffi.poin
 const _shutdown         = new dl.CFunction(ffi.int,     "shutdown",             ffi.int, ffi.int);
 const _connect          = new dl.CFunction(ffi.int,     "connect",              ffi.int, ffi.pointer, ffi.socklen_t);
 
+/* If FD_SETSIZE is not defined, we'll just use 2^15 as a sane value */
+const FD_SETSIZE = exports.FD_SETSIZE = ffi.std.FD_SETSIZE;
+
 /**
  *  Return a string documenting the most recent OS-level error, if there was one.
  *  @param 	force	Always return an error, even if it's (No Error)
@@ -321,11 +324,14 @@ exports.poll = function poll(pollSockets, timeout)
 
   for each (let socket in pollSockets)
   {
-    if (socket.fd > maxfd)
-      maxfd = socket.fd;
-    _FD_SET.call(socket.fd, rfds);
+    var fd = +socket.fd;
+    if ('number' != typeof fd || fd < 0 || fd >= FD_SETSIZE)
+      throw new Error("Invalid file descriptor: "+fd+" from "+socket);
+    if (fd > maxfd)
+      maxfd = fd;
+    _FD_SET.call(fd, rfds);
     if (socket.onWriteable)
-      _FD_SET.call(socket.fd, wfds);
+      _FD_SET.call(fd, wfds);
   }
 
   numfds = _select.call(maxfd + 1, rfds, wfds, null, tv);
@@ -342,9 +348,9 @@ exports.poll = function poll(pollSockets, timeout)
 
   for each (let socket in pollSockets)
   {
-    let fd;     /* events could modify sock.fd */
-
-    fd = socket.fd;
+    var fd = +socket.fd; /* events could modify sock.fd */
+    if ('number' != typeof fd || fd < 0 || fd >= FD_SETSIZE)
+      throw new Error("Invalid file descriptor: "+fd+" from "+socket);
 
     if (_FD_ISSET.call(fd, rfds) != 0)
     {
@@ -489,7 +495,7 @@ exports.createServer = function createServer(connection_listener)
   return s;
 }
 
-exports.reactor = function(servers, quitObject)
+exports.reactor = function(servers, quitObject, extraSockets)
 {
   var pollSockets;
 
@@ -503,7 +509,7 @@ exports.reactor = function(servers, quitObject)
 
   do 
   {
-    pollSockets = [];
+    pollSockets = extraSockets ? extraSockets.slice(0) : [];
 
     for each (let server in servers)
     {
