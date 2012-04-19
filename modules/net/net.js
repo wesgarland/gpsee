@@ -232,11 +232,17 @@ var sockStream_methods =
     if (!this.listening)
       this.listen();
 
+    /* hdon: @todo why is the server socket's sockaddr struct being used? */
     fd = _accept.call(this.sockfd, this.sockaddr, addrlen);
     if (fd == -1)
       throw new Error("Could not accept connection on " + this.address + ":" + this.port + syserr());
-
+    
     sockStream = fs.openDescriptor(fd, "r+");
+
+    /* Pin a readable string representation of peer's address on the sockStream object */
+    var n = _ntohl(this.sockaddr.sin_addr);
+    sockStream.addr = (n>>24)+'.'+(n>>16&255)+'.'+(n>>8&255)+'.'+(n&255);
+
     return sockStream;
   },
 
