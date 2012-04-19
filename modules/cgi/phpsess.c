@@ -97,7 +97,7 @@ extern
 #else
 static
 #endif
-rc_list rc;
+cfgHnd cfg;
 
 const char rcsid[]="$Id: phpsess.c,v 1.3 2010/12/02 21:59:42 wes Exp $";
 
@@ -131,7 +131,7 @@ const char *phpSession_getString(apr_pool_t *pool, apr_hash_t *phpSession, const
  *  @note	Parse errors WILL NOT make this function fail. This is because, due to the
  *		absense of documentation, we believe it may have trouble parsing the odd
  *		exotic setting. This means that testing needs to be very coverage-oriented,
- *		and log files should be monitored. (Bad parse info is logged at SLOG_NOTICE).
+ *		and log files should be monitored. (Bad parse info is logged at GLOG_NOTICE).
  *
  *  @note	rc.php_session_dir stores the location of the session directory. 
  *
@@ -144,7 +144,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
   apr_file_t	*sessionFile;
   apr_mmap_t	*sessionImage;
   const char	*sessionFilename = apr_pstrcat(tempPool, 
-					       rc_default_value(rc, "php_session_dir", "/var/www/sessions"),
+					       cfg_default_value(cfg, "php_session_dir", "/var/www/sessions"),
 					       "/sess_", sessionID, NULL);
   apr_status_t	status;
   char		errbuf[128];
@@ -160,7 +160,6 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
   size_t	stringLen;
   php_value_t	*value_p;
   int		count = 0;
-  extern rc_list rc;
 
   *phpSession_p = NULL;
 
@@ -169,12 +168,12 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
   status = apr_file_open(&sessionFile, sessionFilename, APR_READ, 0, tempPool);
   if (status != APR_SUCCESS)
   {
-    apr_surelynx_log(SLOG_ERR, "PHP Session Parse: Unable to open session file '%s' (%s)!", 
+    apr_surelynx_log(GLOG_ERR, "PHP Session Parse: Unable to open session file '%s' (%s)!", 
 	sessionFilename, apr_strerror(status, errbuf, sizeof(errbuf)));
     return status;
   }
 
-  if (rc_bool_value(rc, "lock_php_session_files") != rc_false)
+  if (cfg_bool_value(cfg, "lock_php_session_files") != cfg_false)
   {
     status = apr_file_lock(sessionFile, APR_FLOCK_SHARED | APR_FLOCK_NONBLOCK);
     if (status != APR_SUCCESS)
@@ -185,25 +184,25 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
     
     if (status != APR_SUCCESS)
     {
-      apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Sleeping for lock; session %s", sessionID);
-      apr_sleep(atof(rc_default_value(rc, "php_session_lock_sleep", "1.0")) * APR_USEC_PER_SEC);
+      apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Sleeping for lock; session %s", sessionID);
+      apr_sleep(atof(cfg_default_value(cfg, "php_session_lock_sleep", "1.0")) * APR_USEC_PER_SEC);
       status = apr_file_lock(sessionFile, APR_FLOCK_SHARED | APR_FLOCK_NONBLOCK); 
     }
 
-    if ((status != APR_SUCCESS) && (rc_bool_value(rc, "block_for_php_session_locks") != rc_false))
+    if ((status != APR_SUCCESS) && (cfg_bool_value(rc, "block_for_php_session_locks") != cfg_false))
     {
       if (status != APR_SUCCESS)
       {
-	apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Blocking for lock; session %s", sessionID);
+	apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Blocking for lock; session %s", sessionID);
 	status = apr_file_lock(sessionFile, APR_FLOCK_SHARED);
-	apr_surelynx_log(SLOG_INFO, "PHP Session Parser: Got blocked lock; session %s", sessionID);
+	apr_surelynx_log(GLOG_INFO, "PHP Session Parser: Got blocked lock; session %s", sessionID);
       }
     }
   }
 
   if (status != APR_SUCCESS)
   {
-    apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Unable to acquire lock for session %s (%s)!", 
+    apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Unable to acquire lock for session %s (%s)!", 
 	sessionID, apr_strerror(status, errbuf, sizeof(errbuf)));
     apr_file_close(sessionFile);
     return status;
@@ -218,12 +217,12 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 
   if ((status != APR_SUCCESS) || (sessionImage->mm == NULL) || (sessionImage->mm == MAP_FAILED))
   {
-    apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Unable to mmap session file! (%s)", apr_strerror(status, errbuf, sizeof(errbuf)));
+    apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Unable to mmap session file! (%s)", apr_strerror(status, errbuf, sizeof(errbuf)));
     apr_file_close(sessionFile);
     return status;
   }
 
-  apr_surelynx_log(SLOG_DEBUG, "PHP Session Parser: Mapped %" APR_OFF_T_FMT "-byte file", finfo.size);
+  apr_surelynx_log(GLOG_DEBUG, "PHP Session Parser: Mapped %" APR_OFF_T_FMT "-byte file", finfo.size);
 
   for (s = sessionImage->mm, endOfImage = ((char *)sessionImage->mm + finfo.size), integrous = 1;
        (s < endOfImage) && (s != NULL);
@@ -233,7 +232,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
     pipeSymbol = strchr(s, '|');
     if (!pipeSymbol)
     {
-      apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find end of variable name '%20s'", 
+      apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find end of variable name '%20s'", 
 	  log_string(varname, endOfImage - s));
       break;
     }
@@ -255,12 +254,12 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
     switch(value_p->type)
     {
       case php_date:
-	apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Warning -- Date types are not supported!");
+	apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Warning -- Date types are not supported!");
 	integrous = 0;
       case php_string:
 	if (pipeSymbol[2] != ':')
 	{
-	  apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find length of string '%s'!", varname);
+	  apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find length of string '%s'!", varname);
 	  integrous = 0;
 	  break; /* switch */
 	}
@@ -270,7 +269,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 
 	if ((s == NULL) || (s[1] != '"'))
 	{
-	  apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find value for string '%s'!", varname);
+	  apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find value for string '%s'!", varname);
 	  integrous = 0;
 	  break; /* switch */
 	}
@@ -281,7 +280,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 	
 	if (strncmp(s + 2 + stringLen, "\";", 2) != 0)
 	{
-	  apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find end of value for string '%s'!", varname);
+	  apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Parse Error -- Unable to find end of value for string '%s'!", varname);
 	  integrous = 0;
 	  break; /* switch */
 	}
@@ -304,7 +303,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 	  s--;
 	break;
       default:
-	apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Unknown variable type '%c'!", value_p->type);
+	apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Unknown variable type '%c'!", value_p->type);
 	integrous = 0;
 	break;
     }
@@ -319,7 +318,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 
     if (!integrous && (s != NULL))
     {
-      apr_surelynx_log(SLOG_INFO, "PHP Session Parser: Performing recovery at offset %i", s - (char *)sessionImage->mm);
+      apr_surelynx_log(GLOG_INFO, "PHP Session Parser: Performing recovery at offset %i", s - (char *)sessionImage->mm);
       s = strchr(pipeSymbol + 1, ';');
       if (s)
 	s++;
@@ -327,7 +326,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 
     if (!s)
     {
-      apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Warning -- Unable to continue due to invalid state!");
+      apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Warning -- Unable to continue due to invalid state!");
       break; /* loop */
     }
 
@@ -338,12 +337,12 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
 	apr_hash_set(session, varname, APR_HASH_KEY_STRING, value_p);
 	count++;
 #ifdef TEST_DRIVER
-	apr_surelynx_log(SLOG_TTY, "%s=%s (type %c)", varname, value_p->data.string, value_p->type);
+	apr_surelynx_log(GLOG_TTY, "%s=%s (type %c)", varname, value_p->data.string, value_p->type);
 #endif
       }
     }
     else
-      apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Unable to parse entry for variable '%s'; ignoring",
+      apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Unable to parse entry for variable '%s'; ignoring",
 	  (varname ?: "(null)"));
   }
 
@@ -351,17 +350,17 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
     apr_mmap_delete(sessionImage);	/* Wierd core dumps here when size == 0. ?!?! APR 1.2.27 */
 
 
-  if (rc_bool_value(rc, "touch_php_session_files") == rc_true)
+  if (cfg_bool_value(cfg, "touch_php_session_files") == cfg_true)
   {
     status = apr_file_mtime_set(sessionFilename, apr_time_now(), pool);
     if (status != APR_SUCCESS)
-      apr_surelynx_log(SLOG_NOTICE, "PHP Session Parser: Warning -- Unable to touch session file %s! (%s)", sessionFilename, apr_strerror(status, errbuf, sizeof(errbuf)));
+      apr_surelynx_log(GLOG_NOTICE, "PHP Session Parser: Warning -- Unable to touch session file %s! (%s)", sessionFilename, apr_strerror(status, errbuf, sizeof(errbuf)));
   }
 
   apr_file_close(sessionFile);
   *phpSession_p = session;
 
-  apr_surelynx_log(SLOG_INFO, "Loaded PHP SessionID %s; %i variables recorded",
+  apr_surelynx_log(GLOG_INFO, "Loaded PHP SessionID %s; %i variables recorded",
       sessionID, count);
 
   return APR_SUCCESS;

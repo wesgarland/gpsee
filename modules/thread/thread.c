@@ -631,7 +631,7 @@ static JSBool th_start(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 {
   jsrefcount		depth;
   thread_private_t	*hnd = JS_GetPrivate(cx, obj);
-  extern rc_list	rc;
+  extern cfgHnd         cfg;
   JSContext		*new_cx;
   void			**thread_argv;
   const char		*e;
@@ -656,8 +656,8 @@ static JSBool th_start(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
    * be used by any other thread, and thread itself will clean it up.
    */
   new_cx = JS_NewContext(JS_GetRuntime(cx),atoi(
-      rc_default_value(rc, "gpsee_thread_stack_chunk_size", 
-		       rc_default_value(rc, "gpsee_stack_chunk_size", "8192"))));
+      cfg_default_value(cfg, "gpsee_thread_stack_chunk_size", 
+		       cfg_default_value(cfg, "gpsee_stack_chunk_size", "8192"))));
   if (!new_cx)
     return gpsee_throw(cx, MODULE_ID ".start.context: Cannot create thread context!");
 

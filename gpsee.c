@@ -52,7 +52,7 @@ static __attribute__((unused)) const char gpsee_rcsid[]="$Id: gpsee.c,v 1.34 201
 #include "gpsee.h"
 #include "gpsee_private.h"
 
-extern rc_list rc;
+extern cfgHnd cfg;
 
 #if defined(GPSEE_DEBUG_BUILD)
 # define dprintf(a...) do { if (gpsee_verbosity(0) > 2) gpsee_printf(cx, "gpsee\t> "), gpsee_printf(cx, a); } while(0)
@@ -88,7 +88,7 @@ void gpsee_setVerbosity(signed int newValue)
 void gpsee_assert(const char *s, const char *file, JSIntn ln)
 {
   fprintf(stderr, "Assertion failure: %s, at %s:%d\n", s, file, ln);
-  gpsee_log(NULL, SLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
+  gpsee_log(NULL, GLOG_ERR, "Assertion failure: %s, at %s:%d\n", s, file, ln);
   abort();
 }   
 
@@ -100,7 +100,7 @@ void gpsee_assert(const char *s, const char *file, JSIntn ln)
 void __attribute__((weak)) __attribute__((noreturn)) panic(const char *message)
 {
   fprintf(stderr, "GPSEE Fatal Error: %s\n", message);
-  gpsee_log(NULL, SLOG_NOTTY_NOTICE, "GPSEE Fatal Error: %s", message);
+  gpsee_log(NULL, GLOG_NOTTY_NOTICE, "GPSEE Fatal Error: %s", message);
   exit(1);
 }
 
@@ -111,9 +111,9 @@ static void output_message(JSContext *cx, gpsee_runtime_t *grt, const char *er_p
   else
   {
     if (JSREPORT_IS_WARNING(report->flags))
-      gpsee_log(cx, SLOG_NOTTY_INFO, "%s %s", er_pfx, log_message);
+      gpsee_log(cx, GLOG_NOTTY_INFO, "%s %s", er_pfx, log_message);
     else
-      gpsee_log(cx, SLOG_NOTTY_NOTICE, "%s %s", er_pfx, log_message);
+      gpsee_log(cx, GLOG_NOTTY_NOTICE, "%s %s", er_pfx, log_message);
   }
 
   if (printOnTTY)
@@ -143,7 +143,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
 
   if (!report)
   {
-    gpsee_log(cx, SLOG_NOTICE, "JS error from unknown source: %s\n", message);
+    gpsee_log(cx, GLOG_NOTICE, "JS error from unknown source: %s\n", message);
     return;
   }
 
@@ -153,7 +153,7 @@ void gpsee_errorReporter(JSContext *cx, const char *message, JSErrorReport *repo
     if (grt->errorReport & er_noWarnings)
       return;
 
-    if (rc_bool_value(rc, "gpsee_report_warnings") == rc_false)
+    if (cfg_bool_value(cfg, "gpsee_report_warnings") == cfg_false)
       return;
 
     if (gpsee_verbosity(0) >= GPSEE_WARNING_OUTPUT_VERBOSITY)
@@ -320,7 +320,7 @@ JSBool gpsee_throw(JSContext *cx, const char *fmt, ...)
   }
 
   if (JS_IsExceptionPending(cx) == JS_TRUE)
-    gpsee_log(cx, SLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
+    gpsee_log(cx, GLOG_ERR, GPSEE_GLOBAL_NAMESPACE_NAME ": Already throwing an exception; not throwing '%s'!", message);
   else
     JS_ReportError(cx, "%s", message);
 
@@ -383,7 +383,7 @@ static JSBool global_newresolve(JSContext *cx, JSObject *obj, jsval id, uintN fl
 }
 
 #if defined(GPSEE_NO_ASYNC_CALLBACKS)
-# warning Building without GPSEE's Async Callback facility
+# warning "Building without GPSEE's Async Callback facility"
 #else
 /******************************************************************************************** Asynchronous Callbacks */
 JSBool gpsee_removeAsyncCallbackContext(JSContext *cx, uintN contextOp);
@@ -663,10 +663,10 @@ int gpsee_destroyRuntime(gpsee_runtime_t *grt)
   PR_Unlock(grt->asyncCallbacks_lock);
   /* Interrupt the trigger thread in case it is in */
   if (PR_Interrupt(grt->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(cx, SLOG_WARNING, "PR_Interrupt(grt->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(cx, GLOG_WARNING, "PR_Interrupt(grt->asyncCallbackTriggerThread) failed!\n");
   /* Wait for the trigger thread to see this */
   if (PR_JoinThread(grt->asyncCallbackTriggerThread) != PR_SUCCESS)
-    gpsee_log(cx, SLOG_WARNING, "PR_JoinThread(grt->asyncCallbackTriggerThread) failed!\n");
+    gpsee_log(cx, GLOG_WARNING, "PR_JoinThread(grt->asyncCallbackTriggerThread) failed!\n");
   grt->asyncCallbackTriggerThread = NULL;
   /* Destroy mutex */
   PR_DestroyLock(grt->asyncCallbacks_lock);
@@ -805,16 +805,16 @@ gpsee_runtime_t *gpsee_createRuntime(void)
   grt = calloc(sizeof(*grt), 1);
 
   /* You need a runtime and one or more contexts to do anything with JS. */
-  if (!(rt = JS_NewRuntime(strtol(rc_default_value(rc, "gpsee_heap_maxbytes", "0x4000"), NULL, 0))))
+  if (!(rt = JS_NewRuntime(strtol(cfg_default_value(cfg, "gpsee_heap_maxbytes", "0x4000"), NULL, 0))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript runtime!");
 
   JS_SetRuntimePrivate(rt, grt);
 
   /* Control the maximum amount of memory the JS engine will allocate and default to infinite */
-  JS_SetGCParameter(rt, JSGC_MAX_BYTES, (size_t)strtol(rc_default_value(rc, "gpsee_gc_maxbytes", "0"), NULL, 0) ?: (size_t)-1);
+  JS_SetGCParameter(rt, JSGC_MAX_BYTES, (size_t)strtol(cfg_default_value(cfg, "gpsee_gc_maxbytes", "0"), NULL, 0) ?: (size_t)-1);
   
   /* Create the core context, used only by GPSEE internals */
-  if (!(cx = JS_NewContext(rt, atoi(rc_default_value(rc, "gpsee_stack_chunk_size", "8192")))))
+  if (!(cx = JS_NewContext(rt, atoi(cfg_default_value(cfg, "gpsee_stack_chunk_size", "8192")))))
     panic(GPSEE_GLOBAL_NAMESPACE_NAME ": unable to create JavaScript context!");
 
   if (gpsee_initializeMonitorSystem(cx, grt) == JS_FALSE)
@@ -826,10 +826,10 @@ gpsee_runtime_t *gpsee_createRuntime(void)
   grt->realmsByContext  = gpsee_ds_create(grt, 0, 1);
   grt->gcCallbackList   = gpsee_ds_create(grt, GPSEE_DS_OTM_KEYS, 1);
 
-  grt->useCompilerCache = rc_bool_value(rc, "gpsee_cache_compiled_modules") != rc_false ? 1 : 0;
+  grt->useCompilerCache = cfg_bool_value(cfg, "gpsee_cache_compiled_modules") != cfg_false ? 1 : 0;
 
   /* Set the JavaScript version for compatibility reasons if required. */
-  if ((jsVersion = rc_value(rc, "gpsee_javascript_version")))
+  if ((jsVersion = cfg_value(cfg, "gpsee_javascript_version")))
   {
     JSVersion version = atof(jsVersion) * 100; /* see: jspubtd.h -wg */
     JS_SetVersion(cx, version);
@@ -887,7 +887,7 @@ JSObject *gpsee_InitClass (JSContext *cx, JSObject *obj, JSObject *parent_proto,
 
   if ((strncmp(moduleID, clasp->name, moduleID_len) != 0) || (clasp->name[moduleID_len] != '.'))
   {
-    gpsee_log(cx, SLOG_NOTICE, "Initializing incorrectly-named class %s in module %s",
+    gpsee_log(cx, GLOG_NOTICE, "Initializing incorrectly-named class %s in module %s",
 	      clasp->name, moduleID);
   }
   else
