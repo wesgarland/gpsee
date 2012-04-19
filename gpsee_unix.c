@@ -143,54 +143,54 @@ void gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fm
  *  prefer.
  */
 
-rc_list rc;
+cfgHnd cfg;
 
 /** Return a value associated with a key.
- *  @param	rc	Runtime Configuration handle
+ *  @param	cfg	Runtime Configuration handle
  *  @param	key	The configuration parameter to look up
  *  @returns	The value, or NULL if not found
  */
-const char *rc_value(rc_list rc, const char *key)
+const char *cfg_value(cfgHnd cfg, const char *key)
 {
   return NULL;
 }
 
 /** Return a value associated with a key.
- *  @param	rc		Runtime Configuration handle
+ *  @param	cfg		Runtime Configuration handle
  *  @param	key		The configuration parameter to look up
  *  @param	defaultValue	Application-supplied default
  *  @returns	The value, or defaultValue if not found.
  */
-const char *rc_default_value(rc_list rc, const char *key, const char *defaultValue)
+const char *cfg_default_value(cfgHnd cfg, const char *key, const char *defaultValue)
 {
   return defaultValue;
 }
 
 /** Return a value, interpreted as boolean, associated with a key.
- *  @param	rc		Runtime Configuration handle
+ *  @param	cfg		Runtime Configuration handle
  *  @param	key		The configuration parameter to look up
- *  @returns	rc_true if the value is true, rc_false is the value is false, 
- *              or rc_undef if the value is not found.
+ *  @returns	cfg_true if the value is true, cfg_false is the value is false, 
+ *              or cfg_undef if the value is not found.
  */
-rc_bool rc_bool_value(rc_list rc, const char *key)
+cfg_bool cfg_bool_value(cfgHnd cfg, const char *key)
 {
-  return rc_undef;
+  return cfg_undef;
 }
 
 /** Open a runtime configuration file based on the calling program's arguments */
-rcFILE *rc_openfile(int argc, char * const argv[])
+cfgFILE *cfg_openfile(int argc, char * const argv[])
 {
-  return (rcFILE *)1;	/* 1 != NULL */
+  return (cfgFILE *)1;	/* 1 != NULL */
 }
 
 /** Close a runtime configuration file */
-int rc_close(rcFILE *rcFile)
+int cfg_close(cfgFILE *cfgFile)
 {
   return 0;
 }
 
 /** Read a runtime configuration file */
-rc_list rc_readfile(rcFILE *rcFile)
+cfgHnd cfg_readfile(cfgFILE *cfgFile)
 {
   return NULL;
 }

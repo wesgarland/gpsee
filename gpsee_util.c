@@ -364,7 +364,7 @@ static void gpsee_reportErrorSourceCode(JSContext *cx, const char *message, JSEr
   if (grt->pendingErrorMessage && gpsee_verbosity(0) >= GPSEE_ERROR_OUTPUT_VERBOSITY)
   {
     gpsee_fprintf(cx, stderr, "\n%sUncaught exception in %s: %s%s\n", bold?VT_BOLD:"", prefix, grt->pendingErrorMessage, bold?VT_UNBOLD:"");
-    gpsee_log(cx, SLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
+    gpsee_log(cx, GLOG_NOTTY_NOTICE, "Uncaught exception in %s: %s", prefix, grt->pendingErrorMessage);
   }
 
   if (report->linebuf && (gpsee_verbosity(0) >= GPSEE_ERROR_POINTER_VERBOSITY) && gpsee_isatty(STDERR_FILENO))

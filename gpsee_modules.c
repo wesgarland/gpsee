@@ -139,7 +139,7 @@ static const char *spaces(void)
 
 GPSEE_STATIC_ASSERT(sizeof(void *) >= sizeof(size_t));
 
-extern rc_list rc;
+extern cfgHnd cfg;
 
 typedef const char * (* moduleInit_fn)(JSContext *, JSObject *);	                        /**< Module initializer function type */
 typedef JSBool (* moduleFini_fn)(JSContext *, gpsee_realm_t *, JSObject *, JSBool);		/**< Module finisher function type */
@@ -1760,7 +1760,7 @@ static const char *libexecDir(void)
   const char *s = getenv("GPSEE_LIBEXEC_DIR");
 
   if (!s)
-    s = rc_default_value(rc, "gpsee_libexec_dir", DEFAULT_LIBEXEC_DIR);
+    s = cfg_default_value(cfg, "gpsee_libexec_dir", DEFAULT_LIBEXEC_DIR);
 
   return s;
 }
@@ -1784,7 +1784,7 @@ JSBool gpsee_initializeModuleSystem(JSContext *cx, gpsee_realm_t *realm)
   modulePathEntry_t	pathEl;
 
   /* Initialize basic module system data structures */
-  realm->moduleJail = rc_value(rc, "gpsee_module_jail");
+  realm->moduleJail = cfg_value(cfg, "gpsee_module_jail");
   dprintf("Initializing module system; jail starts at %s\n", realm->moduleJail ?: "/");
   dpDepth(+1);
 

@@ -71,7 +71,7 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
   if (snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
   {
     /* Report paths over PATH_MAX */
-    gpsee_log(cx, SLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%lu) bytes",
+    gpsee_log(cx, GLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%lu) bytes",
               filename, (unsigned long)PATH_MAX);
     return -1;
   }
@@ -116,7 +116,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
   struct stat 		source_st;
   struct stat 		cache_st;
   FILE 			*cache_file = NULL;
-  JSBool                own_scriptFile;
+  JSBool                own_scriptFile = JS_FALSE;
 
   *script = NULL;
   *scriptObject = NULL;
@@ -169,7 +169,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     {
       /* We have already opened the script file, I can think of no reason why stat() would fail. */
       useCompilerCache = 0;
-      gpsee_log(cx, SLOG_ERR, AT "could not fstat(filedes %d allegedly \"%s\") (%m)", fileno(scriptFile), scriptFilename);
+      gpsee_log(cx, GLOG_ERR, AT "could not fstat(filedes %d allegedly \"%s\") (%m)", fileno(scriptFile), scriptFilename);
       goto cache_read_end;
     }
 
@@ -196,7 +196,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       fclose(cache_file);
       cache_file = NULL;
       if (gpsee_verbosity(0))
-	gpsee_log(cx, SLOG_NOTICE,
+	gpsee_log(cx, GLOG_NOTICE,
           "ownership/mode on cache file \"%s\" (%d:%d@0%o) does not match the expectation (%d:%d@0%o).",
           cache_filename,
           (int)cache_st.st_uid,  (int)cache_st.st_gid,  (unsigned int)cache_st.st_mode & 0777,
@@ -232,7 +232,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       ||  fileHeaderOffset != fho || cstrRutf8 != (uint32)JS_CStringsAreUTF8())
       {
         /* Compiler cache invalidated by change in inode / filesize / mtime */
-        gpsee_log(cx, SLOG_DEBUG, "cache file \"%s\" invalidated"
+        gpsee_log(cx, GLOG_DEBUG, "cache file \"%s\" invalidated"
                   " (inode %d %d size %d %d mtime %d %d fho %d %d cstrRutf8 %d %d)",
                   cache_filename,
                   ino, (int)source_st.st_ino,
@@ -256,12 +256,12 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
           }
 
           /* Failure */
-          gpsee_log(cx, SLOG_NOTICE, "JS_XDRScript() failed deserializing \"%s\" from cache file \"%s\": \"%s\"", scriptFilename,
+          gpsee_log(cx, GLOG_NOTICE, "JS_XDRScript() failed deserializing \"%s\" from cache file \"%s\": \"%s\"", scriptFilename,
                     cache_filename, exception);
         } else {
           /* Success */
 	  if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY)
-	    gpsee_log(cx, SLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
+	    gpsee_log(cx, GLOG_DEBUG, "JS_XDRScript() succeeded deserializing \"%s\" from cache file \"%s\"", scriptFilename,
 		      cache_filename);
         }
       }
@@ -301,7 +301,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
           useCompilerCache = 0;
           /* Report that we could not unlink the cache file */
 	  if (gpsee_verbosity(0))
-	    gpsee_log(cx, SLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
+	    gpsee_log(cx, GLOG_NOTICE, "unlink(\"%s\") error: %m", cache_filename);
         }
       }
       errno = 0;
@@ -312,7 +312,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       {
         umask(oldumask);
 	if (gpsee_verbosity(0))
-	  gpsee_log(cx, SLOG_NOTICE, "Could not create compiler cache '%s' (%m)", cache_filename);
+	  gpsee_log(cx, GLOG_NOTICE, "Could not create compiler cache '%s' (%m)", cache_filename);
         goto cache_write_end;
       }
       umask(oldumask);
@@ -325,14 +325,14 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       if (fchown(cache_fd, source_st.st_uid, -1))
       {
 	if (gpsee_verbosity(0))
-	  gpsee_log(cx, SLOG_NOTICE, "Could not set create compiler cache ownership for '%s' to uid %i (%m)", cache_filename, (int)source_st.st_uid);
+	  gpsee_log(cx, GLOG_NOTICE, "Could not set create compiler cache ownership for '%s' to uid %i (%m)", cache_filename, (int)source_st.st_uid);
         goto cache_write_bail;
       }
       /* Create a FILE* for XDR */
       if ((cache_file = fdopen(cache_fd, "w")) == NULL)
       {
         close(cache_fd);
-        gpsee_log(cx, SLOG_NOTICE, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
+        gpsee_log(cx, GLOG_NOTICE, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
         goto cache_write_bail;
       }
       /* Let's ask Spidermonkey's XDR API for a serialization context */
@@ -363,12 +363,12 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
           }
 
           /* Failure */
-          gpsee_log(cx, SLOG_NOTICE, "JS_XDRScript() failed serializing \"%s\" to cache file \"%s\": \"%s\"", scriptFilename,
+          gpsee_log(cx, GLOG_NOTICE, "JS_XDRScript() failed serializing \"%s\" to cache file \"%s\": \"%s\"", scriptFilename,
                     cache_filename, exception);
         } else {
           /* Success */
 	  if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY)
-	    gpsee_log(cx, SLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
+	    gpsee_log(cx, GLOG_DEBUG, "JS_XDRScript() succeeded serializing \"%s\" to cache file \"%s\"",
 		      scriptFilename, cache_filename);
         }
         /* We are done with our serialization context */

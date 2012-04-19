@@ -90,7 +90,7 @@ static apr_pool_t *permanent_pool;
 #define xstr(s) str(s)
 #define str(s) #s
 
-extern rc_list rc;
+extern cfgHnd cfg;
 
 /** Handler for fatal errors. Generate a fatal error
  *  message to surelog, stdout, or stderr depending on
@@ -122,7 +122,7 @@ static void __attribute__((noreturn)) fatal(const char *message)
     fprintf(stderr, "\007Fatal Error in " PRODUCT_SHORTNAME ": %s\n", message);
   }
   else
-    gpsee_log(NULL, SLOG_EMERG, "Fatal Error: %s", message);
+    gpsee_log(NULL, GLOG_EMERG, "Fatal Error: %s", message);
 
   exit(1);
 }
@@ -316,7 +316,7 @@ static void processFlags(JSContext *cx, const char *flags, signed int *verbosity
 	break;	
 
       default:
-	gpsee_log(cx, SLOG_WARNING, "Error: Unrecognized option flag %c!", *f);
+	gpsee_log(cx, GLOG_WARNING, "Error: Unrecognized option flag %c!", *f);
 	break;
     }
   }
@@ -405,7 +405,7 @@ static FILE *openScriptFile(JSContext *cx, const char *scriptFilename, int skipS
   {
     if ((line[0] != '#') || (line[1] != '!'))
     {
-      gpsee_log(cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Warning: First line of "
+      gpsee_log(cx, GLOG_NOTICE, PRODUCT_SHORTNAME ": Warning: First line of "
 		"file-interpreter script does not contain #!");
       rewind(file);
     }
@@ -473,7 +473,7 @@ PRIntn findFileToInterpret(PRIntn argc, char **argv)
  */
 void loadRuntimeConfig(const char *scriptFilename, const char *flags, int argc, char * const *argv)
 { 
-  rcFILE	*rc_file;
+  cfgFILE	*cfg_file;
   
   if (strchr(flags, 'R'))
   {
@@ -497,18 +497,18 @@ void loadRuntimeConfig(const char *scriptFilename, const char *flags, int argc, 
     if ((s = strstr(fake_argv_zero, ".e4x")) && (s[4] == (char)0))
       *s = (char)0;
 
-    rc_file = rc_openfile(1, fake_argv);
+    cfg_file = cfg_openfile(1, fake_argv);
   }
   else
   {
-    rc_file = rc_openfile(argc, argv);
+    cfg_file = cfg_openfile(argc, argv);
   }
 
-  if (!rc_file)
+  if (!cfg_file)
     fatal("Could not open interpreter's RC file!");
   
-  rc = rc_readfile(rc_file);
-  rc_close(rc_file);
+  cfg = cfg_readfile(cfg_file);
+  cfg_close(cfg_file);
 }
 
 PRIntn prmain(PRIntn argc, char **argv)
@@ -559,7 +559,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	case 'D':
 	  redirect_output(permanent_pool, optarg);
 	  break;
-	case 'r': /* handled by rc_openfile() */
+	case 'r': /* handled by cfg_openfile() */
 	  break;
 #endif
 
@@ -667,7 +667,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   }
 
   loadRuntimeConfig(scriptFilename, flags, argc, argv);
-  if (strchr(flags, 'U') || (rc_bool_value(rc, "gpsee_force_no_utf8_c_strings") == rc_true) || getenv("GPSEE_NO_UTF8_C_STRINGS"))
+  if (strchr(flags, 'U') || (cfg_bool_value(cfg, "gpsee_force_no_utf8_c_strings") == cfg_true) || getenv("GPSEE_NO_UTF8_C_STRINGS"))
   {
     JS_DestroyRuntime(JS_NewRuntime(1024));
     putenv((char *)"GPSEE_NO_UTF8_C_STRINGS=1");
@@ -680,7 +680,7 @@ PRIntn prmain(PRIntn argc, char **argv)
   jsdc = gpsee_initDebugger(cx, realm, DEBUGGER_JS);
 #endif
 
-  gpsee_setThreadStackLimit(cx, &stackBasePtr, strtol(rc_default_value(rc, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));
+  gpsee_setThreadStackLimit(cx, &stackBasePtr, strtol(cfg_default_value(cfg, "gpsee_thread_stack_limit_bytes", "0x80000"), NULL, 0));
 
   processFlags(cx, flags, &verbosity);
   free(flags);
@@ -713,7 +713,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 #if defined(SYSTEM_GSR)
       && (strcmp(argv[0], SYSTEM_GSR) != 0) 
 #endif
-      && rc_bool_value(rc, "no_gsr_preload_script") != rc_true)
+      && cfg_bool_value(cfg, "no_gsr_preload_script") != cfg_true)
   {
     char preloadScriptFilename[FILENAME_MAX];
     char mydir[FILENAME_MAX];
@@ -724,7 +724,7 @@ PRIntn prmain(PRIntn argc, char **argv)
     i = snprintf(preloadScriptFilename, sizeof(preloadScriptFilename), "%s/.%s_preload", gpsee_dirname(argv[0], mydir, sizeof(mydir)), 
 		 gpsee_basename(argv[0]));
     if ((i == 0) || (i == (sizeof(preloadScriptFilename) -1)))
-      gpsee_log(cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
+      gpsee_log(cx, GLOG_EMERG, PRODUCT_SHORTNAME ": Unable to create preload script filename!");
     else
       errno = 0;
 
@@ -737,7 +737,7 @@ PRIntn prmain(PRIntn argc, char **argv)
       if (!gpsee_compileScript(cx, preloadScriptFilename, NULL, NULL, &script, realm->globalObject, &scrobj))
       {
 	jsi->grt->exitType = et_compileFailure;
-	gpsee_log(cx, SLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
+	gpsee_log(cx, GLOG_EMERG, PRODUCT_SHORTNAME ": Unable to compile preload script '%s'", preloadScriptFilename);
 	goto out;
       }
 
@@ -779,7 +779,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
     if (!scriptFile)
     {
-      gpsee_log(cx, SLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
+      gpsee_log(cx, GLOG_NOTICE, PRODUCT_SHORTNAME ": Unable to open' script '%s'! (%m)", scriptFilename);
       jsi->grt->exitType = et_compileFailure;
       goto out;
     }
@@ -880,7 +880,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 
     if (reason) /* ignore unreached warning */
     {
-      gpsee_log(cx, SLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
+      gpsee_log(cx, GLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
       if (gpsee_verbosity(0) == 0)
       {
           /* not gpsee_ */ fprintf(stderr, "*** Unexpected interpreter shutdown: %s", reason);

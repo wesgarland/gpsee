@@ -208,7 +208,7 @@ static void xdrfile_finalize (JSXDRState *xdr)
   if (self->map)
   {
     if (munmap(self->map, self->maplen))
-      gpsee_log(cx, SLOG_NOTICE, "munmap(%p, %u) failure: %m\n", self->map, self->maplen);
+      gpsee_log(cx, GLOG_NOTICE, "munmap(%p, %u) failure: %m\n", self->map, self->maplen);
     self->map = NULL;
     self->maplen = 0;
     self->mappos = NULL;
