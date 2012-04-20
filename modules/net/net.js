@@ -140,7 +140,7 @@ exports.IP_Address.prototype.toString = function IP_Address_toString()
   }
 
   buf = new ffi.Memory(dh.INET_ADDRSTRLEN);
-  if (_inet_ntop.call(dh.AF_INET, this.in4_addr, buf, buf.size) == null)
+  if (_inet_ntop.call(dh.AF_INET, new ffi.CType(ffi.int, this.in4_addr), buf, buf.size) == null)
     throw new Error("Cannot convert IP address toString" + syserr());
 
   return buf.asString(-1);
