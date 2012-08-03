@@ -71,7 +71,7 @@ function scriptHook(handle, creating)
         setAllBreakpointsForScript(handle);
 
         if(jsd.GetScriptLineExtent(handle) < 1) {
-            debugger;
+            // debugger;
             jsd.GetScriptLineExtent(handle);
         }
 
