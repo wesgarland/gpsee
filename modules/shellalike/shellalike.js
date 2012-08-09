@@ -239,6 +239,10 @@ function Process(command) {
     finalizer1.runFinalizer();
     finalizer2.runFinalizer();
   }
+
+  this.finishWriting = function() {
+    finalizer1.runFinalizer();
+  }
 }
 
 /* Digraph class */

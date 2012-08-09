@@ -189,7 +189,7 @@ apr_status_t	phpSession_load(apr_pool_t *pool, apr_pool_t *tempPool,
       status = apr_file_lock(sessionFile, APR_FLOCK_SHARED | APR_FLOCK_NONBLOCK); 
     }
 
-    if ((status != APR_SUCCESS) && (cfg_bool_value(rc, "block_for_php_session_locks") != cfg_false))
+    if ((status != APR_SUCCESS) && (cfg_bool_value(cfg, "block_for_php_session_locks") != cfg_false))
     {
       if (status != APR_SUCCESS)
       {
