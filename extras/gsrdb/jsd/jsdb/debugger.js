@@ -60,7 +60,7 @@ function scriptHook(handle, creating)
         setAllBreakpointsForScript(handle);
 
         if(jsd.GetScriptLineExtent(handle) < 1) {
-            debugger;
+            // debugger;
             jsd.GetScriptLineExtent(handle);
         }
 
@@ -77,11 +77,11 @@ function errorReporterHook(msg, filename, lineno, lineBuf, tokenOffset)
         return jsd.JSD_ERROR_REPORTER_PASS_ALONG;
 
     print("............................");
-    print("msg = "+msg);
-    print("filename = "+filename);
-    print("lineno = "+lineno);
-    print("lineBuf = "+lineBuf);
-    print("tokenOffset = "+tokenOffset);
+    print("msg         = " + msg);
+    print("filename    = " + filename);
+    print("lineno      = " + lineno);
+    print("lineBuf     = " + lineBuf);
+    print("tokenOffset = " + tokenOffset);
     print("............................");
 
     var answer = -1

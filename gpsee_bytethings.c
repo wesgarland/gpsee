@@ -71,6 +71,7 @@ void gpsee_byteThingTracer(JSTracer *trc, JSObject *obj)
 
   if (hnd && hnd->memoryOwner && (hnd->memoryOwner != obj))
   {
+    JSContext *cx = trc->context;
     dprintf("Marking bytething at %p owned by %p for %p\n", hnd->buffer, hnd->memoryOwner, obj);
     JS_CallTracer(trc, hnd->memoryOwner, JSTRACE_OBJECT);
   }
