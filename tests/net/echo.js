@@ -6,12 +6,13 @@
 //
 
 var tcp = require("net");
-var server = tcp.createServer(function (socket) {
+var server = tcp.createServer(function serverConnectionHandler(socket) {
 //  socket.setEncoding("utf8");
-  socket.addListener("connect", function () {
+
+  socket.addListener("connect", function clientConnectHandler () {
     socket.write("hello\r\n");
   });
-  socket.addListener("data", function (data) {
+  socket.addListener("data", function clientDataHandler(data) {
     socket.write(data);
   });
   socket.addListener("end", function () {
@@ -21,6 +22,5 @@ var server = tcp.createServer(function (socket) {
 });
 server.listen(7000);
 
-
-tcp.reactor([server]);
+require("reactor").start([server]);
 
