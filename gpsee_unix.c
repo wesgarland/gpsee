@@ -86,6 +86,8 @@ void gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fm
 {
   va_list	ap;
   int 		printToStderr;
+  char		buf[GPSEE_MAX_LOG_MESSAGE_SIZE];
+  int           n;
 
   if (extra & 1) /* 1==suppress TTY output */
   {
@@ -117,18 +119,26 @@ void gpsee_log(JSContext *cx, unsigned int extra, signed int pri, const char *fm
   }
 
   va_start(ap, fmt);
-  vsyslog(pri, fmt, ap);
+  n = vsnprintf(buf, GPSEE_MAX_LOG_MESSAGE_SIZE, fmt, ap);
+  va_end(ap);
+
+  if (n >= GPSEE_MAX_LOG_MESSAGE_SIZE)
+  {
+    buf[GPSEE_MAX_LOG_MESSAGE_SIZE-3] = '.';
+    buf[GPSEE_MAX_LOG_MESSAGE_SIZE-2] = '.';
+    buf[GPSEE_MAX_LOG_MESSAGE_SIZE-1] = '.';
+    buf[GPSEE_MAX_LOG_MESSAGE_SIZE-0] = '\0';
+  }
 
   if (cx && printToStderr)
   {
-    char		fmtBuf[GPSEE_MAX_LOG_MESSAGE_SIZE];
 
     gpsee_fputs(cx, " *** ", stderr);
-    va_start(ap, fmt);
-    gpsee_vfprintf(cx, stderr, gpsee_makeLogFormat(fmt, fmtBuf), ap);
-    gpsee_fputc(cx, '\n', stderr);
+    gpsee_fputs(cx, buf,     stderr);
+    gpsee_fputc(cx, '\n',    stderr);
   }
-  va_end(ap);
+
+  syslog(pri, buf, n);
 
   return;
 }
