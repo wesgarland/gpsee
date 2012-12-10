@@ -1,0 +1,150 @@
+<html>
+  <head>
+    <title>{{title}}</title>
+    <style>
+      td { padding-left: 2em; }
+      #page_top {
+        font-family: Helvetica,Arial,sans-serif;
+      }
+      #toolbar {
+        margin: none;
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-family: Helvetica,Arial,sans-serif;
+        font-size: 50%;
+      }
+      #toolbar ul {
+        display: inline;
+      }
+      #toolbar ul li {
+        list-style: none;
+      }
+      /* Try to keep the superficial stuff down here, and structural stuff above */
+      h1 {
+        border-bottom: 5px double black;
+        background-color: #eef;
+      }
+      h2 {
+        background-color: #cef;
+      }
+      h3 {
+        background-color: #ffd;
+      }
+    </style>
+    <script type="text/javascript"><!--
+{{dojo}}
+$ = dojo.byId;
+$$ = dojo.query;
+{{data}}
+function hashchange(hash) {
+  switch (hash) {
+    case '':
+      $$('#master_doc_index_page').style({display:'block'});
+      $('doc_page').style.display = 'none';
+      break;
+    default:
+      /* Hide master doc index page */
+      $$('#master_doc_index_page').style({display:'none'});
+      /* Get handle to doc_page node, the element which contains documentation */
+      var page = $('doc_page');
+      /* Erase previous documentation */
+      page.innerHTML = '';
+      /* Display the element */
+      page.style.display = 'block';
+      /* Look up documentation record */
+      /* Records can be found by name in all_records */
+      var record = all_records[hash];
+      /* If it was not found, try a search */
+      if (!record) {
+        /* Iterate over each record */
+        var matches = [];
+        for (var key in all_records) {
+          if (key.indexOf(hash) >= 0)
+            matches.push(key);
+        }
+        switch (matches.length) {
+          /* Report zero matches */
+          case 0:
+            page.innerHTML = 'No matching documentation found';
+            break;
+          /* If we got exactly one match, redirect */
+          case 1:
+            window.location.replace('#'+matches[0]);
+            break;
+          /* More than one match? Show all possible matches */
+          default:
+            mkel('h1', page, 'Possible matches');
+            var ul = mkel('ul', page);
+            for each(var match in matches)
+              link(match, mkel('li', ul), match);
+        }
+        return;
+      }
+      mkel('h1', page, hash);
+      mkel('div', page, null, record.description);
+      mkel('h2', page, 'Usage Forms');
+      for each(var {name,full} in record.forms) {
+        mkel('h3', page, name);
+        mkel('div', page, null, full);
+      }
+  }
+  return false;
+}
+function link(dest, container, content, html) {
+  var el = mkel('a', container);
+  el.href = '#'+dest;
+  if (content)
+    el.textContent = content;
+  if (html)
+    el.innerHTML = html;
+  return el;
+}
+function mkel(type, container, content, html) {
+  var el = document.createElement(type);
+  if (container)
+    container.appendChild(el);
+  if (content)
+    el.textContent = content;
+  if (html)
+    el.innerHTML = html;
+  return el;
+}
+function keys(ob) {
+  var keys = [];
+  for(var key in ob)
+    if (ob.hasOwnProperty(key))
+      keys.push(key);
+  return keys;
+}
+function main() {
+  /* Build index */
+  var serialList = $('master_doc_index');
+  var abcRecords = keys(all_records);
+  abcRecords.sort();
+  for each(var each in abcRecords) {
+    each = all_records[each];
+    link(each.name, mkel('li', serialList), each.name);
+  }
+  dojo.subscribe('/dojo/hashchange', this, hashchange);
+  hashchange(window.location.hash.substr(1));
+}
+dojo.addOnLoad(main);
+    --></script>
+  </head>
+  <body>
+    <div id=toolbar>
+      <ul>
+        <li><a href="#">Home</a></li>
+      </ul>
+    </div>
+    <div id=page_top>
+      <div id=master_doc_index_page>
+        <h1>Master Documentation Index</h1>
+        <ul id=master_doc_index></ul>
+      </div>
+      <div id=doc_page style="display:none">
+      </div>
+    </div>
+  </body>
+</html>
