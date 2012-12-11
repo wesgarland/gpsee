@@ -46,7 +46,7 @@ const dh = ffi.gpsee	/**< Header collection for #define'd constants */
 const __umask		= new dl.CFunction(ffi.mode_t,  "umask",		ffi.mode_t);
 function _umask(old)
 {
-  var newv = +__umask.call(+old ? +old : 0);
+  var newv = +__umask(+old ? +old : 0);
   return newv;
 }
 
@@ -91,7 +91,7 @@ const _ftello		= new dl.CFunction(ffi.off_t,	"ftello", 		ffi.pointer);
 function syserr(force)
 {
   if (ffi.errno || force)
-    return ' (' + _strerror.call(ffi.errno).asString() + ')';
+    return ' (' + _strerror(ffi.errno).asString() + ')';
   else
     return '';
 }
@@ -108,12 +108,12 @@ function stat(thing)
 
   if (thing instanceof Stream)
   {
-    if (_fstat.call(thing.fd, sb) != 0)
+    if (_fstat(thing.fd, sb) != 0)
       throw new Error("Cannot stat stream" + syserr());
   }
   else
   {
-    if (_stat.call(thing, sb) != 0)
+    if (_stat(thing, sb) != 0)
       throw new Error("Cannot stat path '" + thing + "'" + syserr());
   }
 
@@ -145,7 +145,7 @@ exports.openDescriptor = function openDescriptor(fd, mode)
   var stream = _fdopen.call(fd, streamMode);
   if (!stream)
   {
-    _close.call(fd);
+    _close(fd);
     throw new Error("Unable to create stdio file stream" + syserr());
   }
   stream.finalizeWith(_fclose, stream);
@@ -200,9 +200,9 @@ exports.openRaw = function(path, mode, permissions)
   if (mode.truncate && !mode.write)
     throw new Error("Cannot open '" + path + "' for truncate without write");
 
-  oldUmask = _umask.call(0);
-  fd = _open.call(path, m, p.toUnix());
-  _umask.call(oldUmask);
+  oldUmask = _umask(0);
+  fd = _open(path, m, p.toUnix());
+  _umask(oldUmask);
 
   if (fd == -1)
   {
@@ -216,7 +216,7 @@ exports.openRaw = function(path, mode, permissions)
 
   if (!mode.write && exports.isDirectory(path)) /* open(2) already threw if writing a dir */
   {
-    _close.call(fd);
+    _close(fd);
     throw new Error("Cannot open '" + path + "' - is a directory");
   }
 
@@ -232,7 +232,7 @@ exports.openRaw = function(path, mode, permissions)
  */
 exports.move = function move(source, target)
 {
-  if (_rename.call(source, target) != 0)
+  if (_rename(source, target) != 0)
     throw new Error("Cannot rename '" + source + "' to '" + target + "'" + syserr());
 }
 
@@ -243,13 +243,13 @@ exports.remove = function remove(path)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) != 0)
+  if (_stat(path, sb) != 0)
     throw new Error("Cannot remove '" + path + "'" + syserr());
 
   if ((sb.st_mode & (dh.S_IFREG | dh.S_IFLNK)) == 0)
     throw new Error("Cannot remove '" + path + "' - not a regular file nor a symbolic link");
 
-  if (_unlink.call(path) != 0)
+  if (_unlink(path) != 0)
     throw new Error("Cannot remove '" + path + "'" + syserr());
 }
 
@@ -266,7 +266,7 @@ exports.touch = function touch(path, when)
   var tb;
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) != 0)
+  if (_stat(path, sb) != 0)
   {
     if (ffi.errno != dh.ENOENT)
       throw new Error("Cannot touch '" + path + "'" + syserr());
@@ -285,7 +285,7 @@ exports.touch = function touch(path, when)
     tb.modtime = tb.actime;
   }
 
-  if (_utime.call(path, tb) != 0)
+  if (_utime(path, tb) != 0)
     throw new Error("Cannot touch '" + path + "'" + syserr());
 }
 
@@ -306,7 +306,7 @@ exports.makeDirectory = function makeDirectory(path, permissions)
 {
   var p = new Permissions(permissions);
   
-  if (_mkdir.call(path, p.toUnix()) != 0)
+  if (_mkdir(path, p.toUnix()) != 0)
     throw new Error("Cannot create directory '" + path + "'" + syserr());
 }
 
@@ -319,10 +319,10 @@ exports.makeDirectory = function makeDirectory(path, permissions)
  */
 exports.removeDirectory = function removeDirectory(path)
 {
-  if (_rmdir.call(path) != 0)
+  if (_rmdir(path) != 0)
   {
     if (exports.isLink(path) && exports.isDirectory(exports.canonical(path)))
-      if (_unlink.call(path) == 0)
+      if (_unlink(path) == 0)
 	return;
     throw new Error("Cannot remove directory '" + path + "'" + syserr());
   }
@@ -341,7 +341,7 @@ exports.canonical = function canonical(path)
   var	i;
   var	buf = new ffi.Memory(dh.FILENAME_MAX);
 
-  if (_gpsee_resolvepath.call(path, buf, buf.size) == -1)
+  if (_gpsee_resolvepath(path, buf, buf.size) == -1)
     throw new Error("Cannot resolve path '"+path+"'" + syserr());
 
   return buf.asString(-1);
@@ -356,7 +356,7 @@ exports.canonical = function canonical(path)
 exports.workingDirectory = function workingDirectory()
 {
   var 	buf = new ffi.Memory(dh.FILENAME_MAX);
-  var	dirp = _getcwd.call(buf, buf.size);
+  var	dirp = _getcwd(buf, buf.size);
 
   if (!dirp)
     throw new Error("Cannot determine working directory" + syserr());
@@ -370,7 +370,7 @@ exports.workingDirectory = function workingDirectory()
  */
 exports.changeWorkingDirectory = function changeWorkingDirectory(path)
 {
-  if (_chdir.call(path) != 0)
+  if (_chdir(path) != 0)
     throw new Error("Cannot change working directory to '" + path + "'" + syserr());
 }
 
@@ -409,7 +409,7 @@ exports.changeOwner = function changeOwner(path, owner)
       throw new Error("Cannot determine user ID for user '" + owner + "'" + syserr());
   }
 
-  if (_chown.call(path, owner, -1) != 0)
+  if (_chown(path, owner, -1) != 0)
     throw new Error("Cannot change ownership of  '" + path + "'" + syserr());
 }
 
@@ -432,7 +432,7 @@ exports.changePermissions = function changePermissions(path, permissions)
 {
   var p = new Permissions(permissions);
 
-  if (_chmod.call(path, p.toUnix()) != 0)
+  if (_chmod(path, p.toUnix()) != 0)
     throw new Error("Cannot change permissions on  '" + path + "'" + syserr());
 }
 
@@ -441,7 +441,7 @@ exports.changePermissions = function changePermissions(path, permissions)
  */
 exports.link = function link(source, target)
 {
-  if (_symlink.call(source, target) != 0)
+  if (_symlink(source, target) != 0)
     throw new Error("Cannot create symbolic link '" + target + "'" + syserr());
 }
 
@@ -452,7 +452,7 @@ exports.link = function link(source, target)
  */
 exports.hardLink = function hardLink(source, target)
 {
-  if (_link.call(source, target) != 0)
+  if (_link(source, target) != 0)
     throw new Error("Cannot create hard link '" + target + "'" + syserr());
 }
 
@@ -463,7 +463,7 @@ exports.readLink = function readLink(path)
 {
   var buf = new ffi.Memory(dh.FILENAME_MAX);
 
-  if (_readlink.call(path, buf, buf.size) != 0)
+  if (_readlink(path, buf, buf.size) != 0)
     throw new Error("Cannot read link '" + path + "'" + syserr());
 
   return buf.asString(-1);
@@ -477,7 +477,7 @@ exports.exists = function exists(path)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  return _stat.call(path, sb) == 0;
+  return _stat(path, sb) == 0;
 };
 
 /**
@@ -488,7 +488,7 @@ exports.isFile = function isFile(path)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) == 0)
+  if (_stat(path, sb) == 0)
     return (sb.st_mode & dh.S_IFREG) != 0;
   return false;
 };
@@ -501,7 +501,7 @@ exports.isDirectory = function isDirectory(path)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) == 0)
+  if (_stat(path, sb) == 0)
     return (sb.st_mode & dh.S_IFDIR) != 0;
   return false;
 };
@@ -513,7 +513,7 @@ exports.isLink = function isLink(path)
 {
   var sb = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(path, sb) == 0)
+  if (_stat(path, sb) == 0)
     return (sb.st_mode & dh.S_IFLNK) != 0;
   return false;
 };
@@ -524,7 +524,7 @@ exports.isLink = function isLink(path)
  */
 exports.isReadable = function isReadable(path)
 {
-  return (_access.call(path, dh.R_OK) == 0);
+  return (_access(path, dh.R_OK) == 0);
 };
 
 /**
@@ -534,7 +534,7 @@ exports.isReadable = function isReadable(path)
  */
 exports.isWritable = function isWritable(path) 
 {
-  return _access.call(path, dh.W_OK) == 0;
+  return _access(path, dh.W_OK) == 0;
 };
 
 /**
@@ -553,11 +553,11 @@ exports.same = function same(pathA, pathB)
   var sb1 = new ffi.MutableStruct("struct stat");
   var sb2 = new ffi.MutableStruct("struct stat");
 
-  if (_stat.call(pathA, sb1) != 0)
+  if (_stat(pathA, sb1) != 0)
     sb1 = false;
   else
   {
-    if (_stat.call(pathB, sb2) != 0)
+    if (_stat(pathB, sb2) != 0)
       sb2 = false;
   }
 
@@ -589,7 +589,7 @@ exports.sameFilesystem = function sameFilesystem(pathA, pathB)
 
     do
     {
-      if (_stat.call(path) == 0)
+      if (_stat(path) == 0)
 	return sb.st_dev;
 
       if (ffi.errno != dh.ENOENT)
@@ -642,10 +642,10 @@ exports.list = function list(path, sortArgument)
   if (!exports.isDirectory(path))
     throw new Error("'" + path + "' is not a directory");
   
-  if (!(dirp = _opendir.call(path)))
+  if (!(dirp = _opendir(path)))
     throw new Error("Cannot open directory '" + path + "'" + syserr());
 
-  while ((dent = _readdir.call(dirp)))
+  while ((dent = _readdir(dirp)))
   {
     dent = ffi.MutableStruct("struct dirent", dent);
     dirlist.push(dent.d_name.asString(-1));
@@ -668,10 +668,10 @@ exports.iterate = function iterate(path)
   if (!exports.isDirectory(path))
     throw StopIteration;
 
-  if (!(dirp = _opendir.call(path)))
+  if (!(dirp = _opendir(path)))
     throw new Error("Cannot open directory '" + path + "'" + syserr());
 
-  while ((dent = _readdir.call(dirp)))
+  while ((dent = _readdir(dirp)))
   {
     dent = ffi.MutableStruct("struct dirent", dent);
     yield dent.d_name.asString(-1);
@@ -778,8 +778,8 @@ Permissions.fromUnixUmask = function Permissions_static_fromUnixMask(uu)
  * establish default permissions. From now on, umask will be
  * ignored unless default permissions are explicitly reset.
  */
-var umask = _umask.call(0);
-_umask.call(umask);
+var umask = _umask(0);
+_umask(umask);
 Permissions.default = Permissions.fromUnixUmask(umask);
 
 /****** Simple Streams to test fs-base ******/
@@ -817,7 +817,7 @@ Stream.prototype.readlines = function Stream_readlines(encoding)
     var line;
     var buf = new ffi.Memory(1024);
 
-    while((line = _fgets.call(buf, buf.size, this.stream)))
+    while((line = _fgets(buf, buf.size, this.stream)))
     {
       line = binary.ByteArray(line, -1);
       yield line.decodeToString(encoding);
@@ -828,7 +828,7 @@ Stream.prototype.readlines = function Stream_readlines(encoding)
     var line;
     var buf = new ffi.Memory(1024);
  
-    while ((line = _fgets.call(buf, buf.size, this.stream)))
+    while ((line = _fgets(buf, buf.size, this.stream)))
     {
       var a = binary.ByteString(line, -1);
       a.memory = line;
@@ -841,7 +841,7 @@ Stream.prototype.readln = function Stream_readln()
 {
   var buf = new ffi.Memory(1024);
 
-  if (_fgets.call(buf, buf.size, this.stream))
+  if (_fgets(buf, buf.size, this.stream))
     return buf.asString(-1);
   else
     return null;
@@ -849,7 +849,7 @@ Stream.prototype.readln = function Stream_readln()
 
 Stream.prototype.writeln = function Stream_writeln(buffer)
 {
-  if (_fputs.call(buffer + "\n", this.stream) == dh.EOF)
+  if (_fputs(buffer + "\n", this.stream) == dh.EOF)
     throw new Error("Cannot write to stream!" + syserr());
 }
 
@@ -880,7 +880,7 @@ Stream.prototype.write = function Stream_write(buffer, encoding)
   if (encoding)
     throw new Error("Cannot pass encoding parameter when writing " + typeof(buffer) + " values");
 
-  bytesWritten = _fwrite.call(buffer, 1, buffer.length, this.stream);
+  bytesWritten = _fwrite(buffer, 1, buffer.length, this.stream);
   if (bytesWritten != buffer.length)
     throw new Error("Could not write entire buffer; only wrote " + (+bytesWritten) + " of " + buffer.length + " bytes!" + syserr());
 }
@@ -904,7 +904,7 @@ Stream.prototype.read = function Stream_read(howMuch)
     howMuch = bytesLeft;
 
   buffer = new ffi.Memory(howMuch);
-  bytesRead = _fread.call(buffer, 1, howMuch, this.stream);
+  bytesRead = _fread(buffer, 1, howMuch, this.stream);
   if (bytesRead != buffer.size)
     throw new Error("Could not read enough to fill buffer; only read " + (+bytesRead) + " of " + buffer.size + " bytes!" + syserr());
 
@@ -921,7 +921,7 @@ Stream.prototype.close = function Stream_close()
     this.stream.destroy = function() { throw new Error("Stream was already closed"); };
   }
   else
-    _close.call(this.fd);
+    _close(this.fd);
 }
 
 
