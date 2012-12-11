@@ -6,49 +6,25 @@
  * @date	Dec 2012
  */
 
-var quitObject;
-var pollSockets;
+var state;
 
-const NET = require("./net");
-
-exports.quitObject = { quit: false };		/**< Quit object; can be overridden at any time. Making quitObject.quit truey will halt the reactor at the bottom of the loop. */
-exports.granularity = 1000;			/**< Maximum amount of "waiting for nothing" time at the top of the event loop, in milliseconds */
-
-if (!require("system").global.quit)
-  require("signal").onINT = function () { exports.quitObject.quit = true; };	/* gpsee-js crashes when trapping signals */
-
-/** Main reactor loop.  Loop terminates only when quitObject.quit is truey.
+/** Main reactor loop.  Loop terminates only when state.quitObject.quit is truey.
+ *
+ *  @param 	boostrap	Function to execute when reactor is started
+ *  @param	maintenance	Function to execute each time the reactor loops
  */
-exports.start = function reactor$$start(servers, extraSockets)
+exports.start = function reactor$$start(bootstrap, maintenance)
 {
-  var idx, server, connection;
+  if (typeof state !== "undefined")
+    throw new Error("Reactor already started!");
 
-  do 
+  state = { quitObject: {} };
+
+  if (bootstrap)
+    bootstrap(state);
+
+  do
   {
-    pollSockets = extraSockets ? extraSockets.slice(0) : [];
-
-    for each (server in servers)
-    {
-      pollSockets.push(server.socket);
-
-      for each (connection in server.connections)
-      {
-        if (connection.readyState === "closed")
-        {
-          idx = server.connections.indexOf(connection);
-
-          if (idx === -1)
-            throw new Error("Socket on fd " + (0+this.fd) + "is not in server's connection list!");
-
-          server.connections.splice(idx, 1);
-          continue;
-        }
-
-	pollSockets.push(connection);
-      }
-    }
-
-    NET.poll(pollSockets, exports.granularity);
-  } while(!exports.quitObject.quit);
+    maintenance(state);
+  } while(!state.quitObject.quit);
 }
-
