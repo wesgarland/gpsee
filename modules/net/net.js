@@ -211,7 +211,8 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
   if (this.fd)
     throw new Error("socket fd has already been set");
 
-  this.fd	= fd;
+  this.fd	= +fd;
+  this.gcFd	= fd;		/* keep the boxed fd as a GC root to prevent finalization */
 
   if (options.hasOwnProperty("nonBlocking") && options.nonBlocking)
   {
@@ -226,10 +227,13 @@ Socket.prototype.createEndpoint = function Socket$create(port, address, options)
 {
   var fd;
 
-  this.ipv6 = options.ipv6 ? true : false;
-  fd = _socket(this.ipv6 ? dh.PF_INET6 : dh.PF_INET, dh.SOCK_STREAM, 0);
+  if (address && address.ipv6)
+    throw new Error("IPv6 support not yet implemented");
+
+  fd = _socket.call((address && address.ipv6) ? dh.PF_INET6 : dh.PF_INET, dh.SOCK_STREAM, 0);
   if (fd == -1)
     throw new Error("Could not create socket" + syserr());
+  fd.finalizeWith(_close, +fd);
 
   if (port)
     this.port	= typeof port === "number" ? port : parseInt(port);
@@ -240,9 +244,6 @@ Socket.prototype.createEndpoint = function Socket$create(port, address, options)
     this.address	= new exports.IP_Address(address);
   else
     this.address	= new exports.IP_Address(0);
-
-  if (this.ipv6)
-    throw new Error("IPv6 support not yet implemented");
 
   this.sockaddr		 	= new ffi.MutableStruct("struct sockaddr_in");
   this.sockaddr.sin_family 	= dh.AF_INET;
@@ -301,7 +302,7 @@ Socket.prototype.accept = function Socket$accept()
   if (!this.listening)
     this.listen();
 
-  fd = _accept(this.fd, this.sockaddr, addrlen);
+  fd = _accept.call(this.fd, this.sockaddr, addrlen);
   if (fd == -1)
   {
     if (ffi.errno == dh.EAGAIN)
@@ -309,6 +310,7 @@ Socket.prototype.accept = function Socket$accept()
     throw new Error("Could not accept connection on " + this.address + ":" + this.port + syserr());
   }
 
+  fd.finalizeWith(_close, +fd);
   return new Socket(fd, {nonBlocking: this.nonBlocking});
 }
 
@@ -342,7 +344,7 @@ Socket.prototype.close = function Socket$close()
       if (ffi.errno != dh.ENOTCONN)
 	throw new Error("Could not shutdown socket on fd " + (0+this.fd) + syserr());
 
-    if (_close(this.fd) != 0)
+    if (this.fd.destroy() != 0)
       throw new Error("Could not close socket on fd " + (0+this.fd) + syserr());
   }
 
@@ -367,10 +369,8 @@ exports.poll = function poll(pollSockets, timeout)
   var numfds;
   var i, socket;
 
-  if (!pollSockets.hasOwnProperty("_poll_objectCache"))
-  {
-    Object.defineProperty(pollSockets, "_poll_objCache", {value:{}, enumerable:false});
-  }
+  if (!pollSockets.hasOwnProperty("_poll_objCache"))
+    Object.defineProperty(pollSockets, "_poll_objCache", {value:{}, configurable: true, enumerable:false});
 
   if (arguments.length < 2 || timeout === null || +timeout === Infinity)
   { 
@@ -407,7 +407,7 @@ exports.poll = function poll(pollSockets, timeout)
   {
     socket = pollSockets[i];
     var fd = +socket.fd;
-    if ('number' != typeof fd || fd < 0 || fd >= FD_SETSIZE)
+    if (isNaN(fd) || fd < 0 || fd >= FD_SETSIZE)
       throw new Error("Invalid file descriptor: "+fd+" from "+socket);
     if (fd > maxfd)
       maxfd = fd;
@@ -463,7 +463,7 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
   var server = this;
 
   if (this.socket && this.socket.listening)
-    throw new Error("Cannot listen again; server is already listening to " + this.socket.address + ", on port " + ntohl(this.socket.sockaddr.sin_port));
+    throw new Error("Cannot listen again; server is already listening to " + this.socket.address + ":" + ntohl(this.socket.sockaddr.sin_port));
 
   listenSocket = this.socket;
   listenSocket.createEndpoint(port, host, {nonBlocking: true});
@@ -491,7 +491,7 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
     } while (clientSocket && listenSocket.nonBlocking);
   }
 
-  Object.defineProperty(listenSocket, "toString", {value: function() "[Socket listening on " + (host ? host : "") + ":" + port + "]", enumerable:false});
+  Object.defineProperty(listenSocket, "toString", {value: function() "[Socket fd=" + listenSocket.fd + " listening on " + (host ? host : "") + ":" + port + "]", enumerable:false});
 }
 
 exports.Server.prototype.close = function net$$Server$close()
@@ -629,3 +629,42 @@ function socketDrainQueue(socket)
   socket.emit("drain");
 }
 
+exports.startServers = function net$$startServers(servers, pollTimeout)
+{
+  function bootstrap(state)
+  {
+    var i;
+    var sockets = [];
+
+    for (i=0; i < servers.length; i++)
+      sockets.push(servers[i].socket);
+
+    state.serverSockets = sockets;
+    state.pollSockets = [];
+  }
+
+  function maintenance(state)
+  {
+    var i;
+    var clientSockets;
+
+    for (i=0; i < servers.length; i++)
+    {
+      if (servers[i].connections.length)
+      {
+	if (!clientSockets)
+	  clientSockets = [];
+	clientSockets.splice.apply(clientSockets, [0,0].concat(servers[i].connections));
+      }
+    }
+
+    state.pollSockets.length = 0;
+    if (clientSockets)
+      state.pollSockets.splice.apply(state.pollSockets, [0,0].concat(clientSockets));
+    state.pollSockets.splice.apply(state.pollSockets, [0,0].concat(state.serverSockets));
+
+    exports.poll(state.pollSockets, pollTimeout || 1000);
+  }
+
+  require("reactor").start(bootstrap, maintenance);
+}

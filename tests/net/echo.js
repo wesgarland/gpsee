@@ -22,5 +22,5 @@ var server = tcp.createServer(function serverConnectionHandler(socket) {
 });
 server.listen(7000);
 
-require("reactor").start([server]);
+require("net").startServers([server]);
 
