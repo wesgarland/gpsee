@@ -32,7 +32,8 @@
  *
  * ***** END LICENSE BLOCK ***** 
  *
- *  @file	sockets.js	Simple sockets API for GPSEE
+ *  @file	sockets.js	Simple sockets API for GPSEE. Very heavily influenced
+ *				by the net API in Node.js.
  *  @author	Wes Garland
  *  @date	March 2010
  *  @version	$Id: net.js,v 1.6 2011/12/05 19:13:37 wes Exp $
@@ -72,7 +73,8 @@ const FD_SETSIZE = ffi.std.FD_SETSIZE;
 
 exports.config = 
 {
-  readBufferSize:	8192
+  readBufferSize:	8192,
+  defaultBacklog:	32
 };
 
 /**
@@ -194,18 +196,26 @@ var ntohs = function ntohs_thunk(num)
 }
 
 /**
- *  Function to create a new TCP Socket
+ *  Constructor to create a new TCP Socket instance
  *
  *  @param	fd	[optional]	File descriptor associated with the socket object if the OS endpoint has already been created
  */
 function Socket(fd, options)
 {
-  if (fd)
+  if (typeof fd !== "undefined")
     this.setfd(fd, options);
 }
 
 Socket.prototype = new (require("./events").EventEmitter)();
 
+/** Associate a file descriptor with a Socket instance.  The file descriptor will be closed automatically during
+ *  garbage collection if the Socket is no longer reachable.  This should be avoided, as closing the file descriptor
+ *  alone does not invoke the shutdown() system call.
+ *
+ *  @param	fd		The file descriptor  (ffi boxed integer)
+ *  @param	options		Socket options
+ *				.nonBlocking		truey [default] to make the socket non-blocking
+ */
 Socket.prototype.setfd = function Socket$setfd(fd, options)
 {
   if (this.fd)
@@ -223,6 +233,12 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
   }
 }
 
+/** Create a TCP socket endpoint (3 points of the 5D vector for a connection).
+ *
+ *  @param	port		TCP port number
+ *  @param	address		IP address to bind to, or undefined for any/0
+ *  @param	options		Socket options (passed to setfd)
+ */
 Socket.prototype.createEndpoint = function Socket$create(port, address, options)
 {
   var fd;
@@ -253,6 +269,7 @@ Socket.prototype.createEndpoint = function Socket$create(port, address, options)
   this.setfd(fd, options);
 }
 
+/** Bind a socket so it can be used to listen */
 Socket.prototype.bind = function Socket$bind(options)
 {
   var i, flags;
@@ -270,13 +287,14 @@ Socket.prototype.bind = function Socket$bind(options)
   this.bound = true;
 }
 
+/** Cause a socket to listen for incoming connections */
 Socket.prototype.listen = function Socket$listen(backlog)
 {
   if (!this.bound)
     this.bind({reuse: true});
 
   if (!backlog && backlog !== 0)
-    backlog = 32;
+    backlog = exports.config.defaultBacklog;
 
   if (_listen(this.fd, backlog) == -1)
     throw new Error("Could not listen to socket on " + this.address + ":" + this.port + syserr());
@@ -298,6 +316,7 @@ Socket.prototype.accept = function Socket$accept()
   var fd;
   var el;
   var addrlen = new ffi.CType(ffi.socklen_t, 16);
+  var socket;
 
   if (!this.listening)
     this.listen();
@@ -311,7 +330,8 @@ Socket.prototype.accept = function Socket$accept()
   }
 
   fd.finalizeWith(_close, +fd);
-  return new Socket(fd, {nonBlocking: this.nonBlocking});
+  socket = new Socket(fd, {nonBlocking: this.nonBlocking});
+  return socket;
 }
 
 /** Open a [client] connection to a server */
@@ -328,11 +348,10 @@ Socket.prototype.connect = function Socket$connect()
   this.readyState = "open";
   this.addListener("end", this.close);
 
-  socket.server.connections.push(new_socket);
-  socket.server.emit("connection", new_socket);
   this.emit("connect");
 }
 
+/** Close a socket, discarding any pending data */
 Socket.prototype.close = function Socket$close()
 {
   delete this.onReadable;
@@ -344,12 +363,14 @@ Socket.prototype.close = function Socket$close()
       if (ffi.errno != dh.ENOTCONN)
 	throw new Error("Could not shutdown socket on fd " + (0+this.fd) + syserr());
 
-    if (this.fd.destroy() != 0)
-      throw new Error("Could not close socket on fd " + (0+this.fd) + syserr());
+    if (this.gcFd.destroy() != 0 ? false : false /* XXX GPSEE bug 101 */)
+      throw new Error("Could not close socket on fd " + (+this.fd) + syserr());
   }
 
   this.readyState = "closed";
+  this.emit("close", this.had_write_error ? true : false);
   delete this.fd;
+  delete this.gcFd;
 }
 
 /**
@@ -482,10 +503,20 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
 	clientSocket.write 		= socketWriteOrQueue;
 	clientSocket.onReadable 	= socketReadThenEmit;
 	clientSocket.readyState 	= "open";
-	clientSocket.addListener("end", clientSocket.close);
-
+	clientSocket.addListener("close", 
+				 function freshBindingWrapper(server, clientSocket) 
+				 { 
+				   return function removeSocketFromServer()
+				          {
+					    var idx = server.connections.indexOf(clientSocket);
+					    if (idx == -1)
+					      throw new Error("Server connection list corrupted");
+					    server.connections.splice(idx, 1);
+				          }
+				 }(server, clientSocket));
+	
 	server.connections.push(clientSocket);
-	server.emit("connection", clientSocket);
+ 	server.emit("connection", clientSocket);
 	clientSocket.emit("connect");
       }
     } while (clientSocket && listenSocket.nonBlocking);
@@ -561,10 +592,16 @@ function socketReadThenEmit(socket)
  *  data is deferred to the reactor, which regularly invokes the
  *  socketDrainQueue function to drain the buffers.
  */
-function socketWriteOrQueue(data)
+function socketWriteOrQueue(data, encoding, callback)
 {
   var bytesWritten;
   var tmp;
+
+  if (this.had_write_error)
+    throw new Error("Cannot write data; previous write had error " + this.had_write_error);
+
+  if (encoding || callback)
+    throw new Error("Not supported");
 
   switch (typeof data)
   {
@@ -584,7 +621,7 @@ function socketWriteOrQueue(data)
   if (this.pendingWrites.length)
   {
     this.pendingWrites.push(data);
-    return;
+    return false;
   }
 
   bytesWritten = _write(this.fd, data, data.length);
@@ -606,6 +643,8 @@ function socketWriteOrQueue(data)
       this.had_write_error = ffi.errno;
     }
   }
+
+  return bytesWritten == data.length;
 }
 
 function socketDrainQueue(socket)
@@ -629,6 +668,13 @@ function socketDrainQueue(socket)
   socket.emit("drain");
 }
 
+/** Start up the reactor module, running until the event loop terminates 
+ *  or throws an exception.
+ *
+ *  @param	servers		An array of servers that each represent a bound, listening socket.
+ *  @param	pollTimeout	Maximum time to poll for before servicing the non-network code in the
+ *				event loop.
+ */
 exports.startServers = function net$$startServers(servers, pollTimeout)
 {
   function bootstrap(state)
@@ -645,7 +691,7 @@ exports.startServers = function net$$startServers(servers, pollTimeout)
 
   function maintenance(state)
   {
-    var i;
+    var i, j;
     var clientSockets;
 
     for (i=0; i < servers.length; i++)
