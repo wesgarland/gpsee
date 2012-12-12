@@ -4,20 +4,20 @@
  * @author	Wes Garland, wes@page.ca
  * @date	Dec 2012
  */
-
-var listeners = {};
-
 exports.EventEmitter = function events$$EventEmitter()
 {
 }
 
 exports.EventEmitter.prototype.addListener = function events$$EventEmitter$addListener(eventName, eventHandler)
 {
-  if (!listeners.hasOwnProperty(eventName))
-    listeners[eventName] = [];
+  if (!this.hasOwnProperty("_listeners"))
+    this._listeners = {};
 
-  listeners[eventName].push(eventHandler);
-  this.emit("newListener", eventName, eventHandler)
+  if (!this._listeners.hasOwnProperty(eventName))
+    this._listeners[eventName] = [];
+
+  this._listeners[eventName].push(eventHandler);
+  this.emit("newListener", eventName, eventHandler);
 }
 
 exports.EventEmitter.prototype.on = exports.EventEmitter.prototype.addListener;
@@ -36,30 +36,30 @@ exports.EventEmitter.prototype.removeListener = function events$$EventEmitter$re
 {
   var i;
 
-  if (!listeners.hasOwnProperty(eventName))
+  if (!this._listeners.hasOwnProperty(eventName))
     return;
 
-  i = listeners[eventName].indexOf(eventHandler);
+  i = this._listeners[eventName].indexOf(eventHandler);
   if (i != -1)
   {
-    listeners[eventName].splice(i, 1);
-    if (listeners[eventName].length === 0)
-      delete listeners[eventName];
+    this._listeners[eventName].splice(i, 1);
+    if (this._listeners[eventName].length === 0)
+      delete this._listeners[eventName];
   }
 }
 
 exports.EventEmitter.prototype.removeAllListeners = function events$$EventEmitter$removeAllListeners(eventName)
 {
-  if (listeners)
-    delete listeners[eventName];
+  if (this._listeners)
+    delete this._listeners[eventName];
 }
 
 exports.EventEmitter.prototype.listeners = function events$$EventEmitter$listeners(eventName)
 {
-  if (!listeners.hasOwnProperty(eventName))
-    listeners[eventName] = [];
+  if (!this._listeners.hasOwnProperty(eventName))
+    this._listeners[eventName] = [];
 
-  return listeners[eventName];
+  return this._listeners[eventName];
 }
 
 exports.EventEmitter.prototype.setMaxListeners = function events$$EventEmitter$setMaxListeners(number)
@@ -71,11 +71,11 @@ exports.EventEmitter.prototype.vemit = function events$$EventEmitter$vemit(event
 {
   var i;
 
-  if (!listeners.hasOwnProperty(eventName))
+  if (!this._listeners.hasOwnProperty(eventName))
     return;
 
-  for (i=0; i < listeners[eventName].length; i++)
-    listeners[eventName][i].apply(this, args);
+  for (i=0; i < this._listeners[eventName].length; i++)
+    this._listeners[eventName][i].apply(this, args);
 }
 
 exports.EventEmitter.prototype.emit = function events$$EventEmitter$emit(eventName /* ... */)
@@ -87,4 +87,3 @@ exports.EventEmitter.prototype.emit = function events$$EventEmitter$emit(eventNa
 
   return this.vemit(eventName, args);
 }
-
