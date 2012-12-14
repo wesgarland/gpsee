@@ -5,22 +5,19 @@
 //  last line of this script must kick off a reactor (for now).
 //
 
-var tcp = require("net");
-var server = tcp.createServer(function serverConnectionHandler(socket) {
-//  socket.setEncoding("utf8");
+require("reactor").activate(function main() {
 
-  socket.addListener("connect", function clientConnectHandler () {
-    socket.write("hello\r\n");
+var net = require('net');
+var server = net.createServer(function echo_serverConnectionHandler(c) { //'connection' listener
+  print('server connected');
+  c.on('end', function echo_clientEndHandler() {
+    print('server disconnected');
   });
-  socket.addListener("data", function clientDataHandler(data) {
-    socket.write(data);
-  });
-  socket.addListener("end", function () {
-    socket.write("goodbye\r\n");
-    socket.close();
-  });
+  c.write('hello\r\n');
+  c.pipe(c);
 });
-server.listen(7000);
+server.listen(8124, function echo_serverCreateHandler() { //'listening' listener
+  print('server bound');
+});
 
-require("net").startServers([server]);
-
+});
