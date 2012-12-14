@@ -4,6 +4,9 @@
  * @author	Wes Garland, wes@page.ca
  * @date	Dec 2012
  */
+
+var REACTOR = require("reactor");
+
 exports.EventEmitter = function events$$EventEmitter()
 {
 }
@@ -71,11 +74,11 @@ exports.EventEmitter.prototype.vemit = function events$$EventEmitter$vemit(event
 {
   var i;
 
-  if (!this._listeners.hasOwnProperty(eventName))
+  if (!this._listeners || !this._listeners.hasOwnProperty(eventName))
     return;
 
   for (i=0; i < this._listeners[eventName].length; i++)
-    this._listeners[eventName][i].apply(this, args);
+    REACTOR.runSoon(this, this._listeners[eventName][i], args);
 }
 
 exports.EventEmitter.prototype.emit = function events$$EventEmitter$emit(eventName /* ... */)
@@ -87,3 +90,6 @@ exports.EventEmitter.prototype.emit = function events$$EventEmitter$emit(eventNa
 
   return this.vemit(eventName, args);
 }
+
+Function.prototype._toString = Function.prototype.toString;
+Function.prototype.toString = function() { return this.name ? "[Function " + this.name + "]" : this._toString() };

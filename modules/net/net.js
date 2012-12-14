@@ -73,7 +73,7 @@ const FD_SETSIZE = ffi.std.FD_SETSIZE;
 
 exports.config = 
 {
-  readBufferSize:	8192,
+  readBufferSize:	65536,
   defaultBacklog:	32
 };
 
@@ -157,17 +157,17 @@ function hton_detect()
 {
   if (_htonl(0x1) == 0x1)
   {
-    htonl = function(num) num;		/* big endian host */
+    htonl = function(num) +num;		/* big endian host */
     htons = htonl;
     ntohl = htonl;
     ntohs = htonl;
   }
   else
   {
-    htonl = function(num) _htonl(num);
-    htons = function(num) _htons(num);
-    ntohl = function(num) _ntohl(num);
-    ntohs = function(num) _ntohs(num);
+    htonl = function(num) _htonl(+num);
+    htons = function(num) _htons(+num);
+    ntohl = function(num) _ntohl(+num);
+    ntohs = function(num) _ntohs(+num);
   }
 }
 
@@ -208,6 +208,11 @@ function Socket(fd, options)
 
 Socket.prototype = new (require("./events").EventEmitter)();
 
+Socket.prototype.toString = function Socket$toString()
+{
+  return "[Socket fd=" + this.fd + "]";
+}
+
 /** Associate a file descriptor with a Socket instance.  The file descriptor will be closed automatically during
  *  garbage collection if the Socket is no longer reachable.  This should be avoided, as closing the file descriptor
  *  alone does not invoke the shutdown() system call.
@@ -231,6 +236,8 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
       throw new Error("Could not make socket with file descriptor " + this.fd + " non-blocking" + syserr());
     this.nonBlocking = true;
   }
+
+  addSocketToReactor(this);
 }
 
 /** Create a TCP socket endpoint (3 points of the 5D vector for a connection).
@@ -270,7 +277,7 @@ Socket.prototype.createEndpoint = function Socket$create(port, address, options)
 }
 
 /** Bind a socket so it can be used to listen */
-Socket.prototype.bind = function Socket$bind(options)
+Socket.prototype.sbind = function Socket$bind(options)
 {
   var i, flags;
 
@@ -291,7 +298,7 @@ Socket.prototype.bind = function Socket$bind(options)
 Socket.prototype.listen = function Socket$listen(backlog)
 {
   if (!this.bound)
-    this.bind({reuse: true});
+    this.sbind({reuse: true});
 
   if (!backlog && backlog !== 0)
     backlog = exports.config.defaultBacklog;
@@ -300,11 +307,6 @@ Socket.prototype.listen = function Socket$listen(backlog)
     throw new Error("Could not listen to socket on " + this.address + ":" + this.port + syserr());
 
   this.listening = true;
-}
-
-Socket.prototype.toString = function Socket$toString()
-{
-  return "[Socket fd=" + this.fd + "]";
 }
 
 /** Accept the first pending connection in the queue and return a Socket. If there is no pending connection, 
@@ -316,7 +318,6 @@ Socket.prototype.accept = function Socket$accept()
   var fd;
   var el;
   var addrlen = new ffi.CType(ffi.socklen_t, 16);
-  var socket;
 
   if (!this.listening)
     this.listen();
@@ -330,13 +331,30 @@ Socket.prototype.accept = function Socket$accept()
   }
 
   fd.finalizeWith(_close, +fd);
-  socket = new Socket(fd, {nonBlocking: this.nonBlocking});
-  return socket;
+  return new Socket(fd, {nonBlocking: this.nonBlocking});
 }
 
-/** Open a [client] connection to a server */
-Socket.prototype.connect = function Socket$connect()
+/** Disable/Enable the Nagle algorithm.
+ *  @param	noDelay		When falsey, cause us to enable the Nagle algorithm
+ */
+Socket.prototype.setNoDelay = function Socket$$setNoDelay(noDelay)
 {
+  var i = new ffi.CType(ffi.int, noDelay == false ? 0 : 1);
+
+  if (_setsockopt(this.fd, dh.IPPROTO_TCP, dh.TCP_NODELAY, i, i.size) != 0)
+    throw new Error("Could not set SO_REUSEADDR option on socket with file descriptor " + this.fd + syserr());
+}
+
+/** Open a [client] connection to a server
+ *  @param	options		Connection options
+ *				- .address	host to connect to
+ *				- .port		port to connect on
+ *  @param	connectionListener	Event handler invoked when connection is established
+ */
+Socket.prototype.connect = function Socket$connect(options, connectionListener)
+{
+  this.createEndpoint(options.port, options.address, {nonBlocking: true});
+
   if (_connect(this.fd, this.sockaddr, 16) == -1)
     throw new Error("Could not connect socket to " + this.address + ":" + this.port + syserr());
 
@@ -346,7 +364,10 @@ Socket.prototype.connect = function Socket$connect()
   this.onReadable = socketReadThenEmit;
 
   this.readyState = "open";
-  this.addListener("end", this.close);
+  this.addListener("end", this.close );
+
+  if (connectionListener)
+    this.addListener("connect", connectionListener);
 
   this.emit("connect");
 }
@@ -371,12 +392,40 @@ Socket.prototype.close = function Socket$close()
   this.emit("close", this.had_write_error ? true : false);
   delete this.fd;
   delete this.gcFd;
+
+  removeSocketFromReactor(this);
+}
+
+Socket.prototype.end = function Socket$end(data, encoding)
+{
+  if (data)
+  {
+    if (!this.write(data, encoding))
+    {
+      this.addListener("drain", this.close);
+      return;
+    }
+  }
+
+  if (_shutdown(this.fd, dh.SHUT_WR) != 0)
+    if (ffi.errno != dh.ENOTCONN)
+      throw new Error("Could not half-close socket on fd "  + (+this.fd) + syserr());
+
+  this.emit("end");
+}
+
+/** Connect this socket's reads to a socket's writes.  Modelled after Node's stream API call of the same name. */
+Socket.prototype.pipe = function Socket$pipe(destination)
+{
+  this.addListener("data", destination.write);
 }
 
 /**
  * Poll a series of Sockets, invoking their onReadable or onWriteable methods
  * as appropriate.  It is not supported to use pollSockets in a re-entrant way
  * (i.e. do not use the same pollSockets from an event as the event trigger).
+ *
+ * Polling zero sockets will result in zero delay regardless of timeout.
  *
  * @param	pollSockets	Array of instances of Socket
  * @param	timeout		How long to wait before giving up (ms)
@@ -389,6 +438,9 @@ exports.poll = function poll(pollSockets, timeout)
   var maxfd = 0;
   var numfds;
   var i, socket;
+
+  if (pollSockets.length === 0)
+    return 0;
 
   if (!pollSockets.hasOwnProperty("_poll_objCache"))
     Object.defineProperty(pollSockets, "_poll_objCache", {value:{}, configurable: true, enumerable:false});
@@ -453,7 +505,7 @@ exports.poll = function poll(pollSockets, timeout)
   {
     socket = pollSockets[i];
     var fd = +socket.fd; /* events could modify sock.fd */
-    if ('number' != typeof fd || fd < 0 || fd >= FD_SETSIZE)
+    if (isNaN(fd) || fd < 0 || fd >= FD_SETSIZE)
       throw new Error("Invalid file descriptor: "+fd+" from "+socket);
 
     if (_FD_ISSET(fd, rfds) != 0)
@@ -478,13 +530,25 @@ exports.Server.prototype = new (require("./events").EventEmitter);
 
 exports.Server.prototype.connections = [];
 
-exports.Server.prototype.listen = function net$$Server$listen(port, host, backlog)
+exports.Server.prototype.listen = function net$$Server$listen(port, host, backlog, callback)
 {
   var listenSocket, clientSocket;
   var server = this;
 
+  if (arguments.length === 2 && typeof host === "function")
+  {
+    callback = host;
+    host = undefined;
+  }
+
+  if (arguments.length === 3 && typeof backlog === "function")
+  {
+    callback = backlog;
+    backlog = undefined;
+  }
+
   if (this.socket && this.socket.listening)
-    throw new Error("Cannot listen again; server is already listening to " + this.socket.address + ":" + ntohl(this.socket.sockaddr.sin_port));
+    throw new Error("Server is already listening to " + this.socket.address + ":" + ntohl(this.socket.sockaddr.sin_port));
 
   listenSocket = this.socket;
   listenSocket.createEndpoint(port, host, {nonBlocking: true});
@@ -503,6 +567,7 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
 	clientSocket.write 		= socketWriteOrQueue;
 	clientSocket.onReadable 	= socketReadThenEmit;
 	clientSocket.readyState 	= "open";
+	clientSocket.addListener("end", this.close);
 	clientSocket.addListener("close", 
 				 function freshBindingWrapper(server, clientSocket) 
 				 { 
@@ -514,7 +579,7 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
 					    server.connections.splice(idx, 1);
 				          }
 				 }(server, clientSocket));
-	
+
 	server.connections.push(clientSocket);
  	server.emit("connection", clientSocket);
 	clientSocket.emit("connect");
@@ -538,7 +603,7 @@ exports.Server.prototype.close = function net$$Server$close()
 			     if (server.connections.length)
 			       return;
 
-			     this.emit("close");
+			     server.emit("close");
 			   });
 }
 
@@ -570,14 +635,14 @@ function socketReadThenEmit(socket)
   var bytesRead;
 
   if (!socket.readBuffer)
-    socket.readBuffer = new ffi.Memory(8192);
+    socket.readBuffer = new ffi.Memory(exports.config.readBufferSize);
 
   bytesRead = 0 + _read(socket.fd, socket.readBuffer, socket.readBuffer.size);
 
   switch(bytesRead)
   {
     case 0:
-      socket.emit("end");
+      socket.end();
       break;
     case -1:
       socket.emit("error");
@@ -665,52 +730,55 @@ function socketDrainQueue(socket)
     }
   }
 
+  delete socket.onWritable;
   socket.emit("drain");
 }
 
-/** Start up the reactor module, running until the event loop terminates 
- *  or throws an exception.
- *
- *  @param	servers		An array of servers that each represent a bound, listening socket.
- *  @param	pollTimeout	Maximum time to poll for before servicing the non-network code in the
- *				event loop.
- */
-exports.startServers = function net$$startServers(servers, pollTimeout)
+function setupReactorForSockets()
 {
-  function bootstrap(state)
+  setupReactorForSockets.socketList = [];
+  
+  function pollAllSockets()
   {
-    var i;
-    var sockets = [];
-
-    for (i=0; i < servers.length; i++)
-      sockets.push(servers[i].socket);
-
-    state.serverSockets = sockets;
-    state.pollSockets = [];
+    if (setupReactorForSockets.socketList.length === 0)
+      return false;
+    exports.poll(setupReactorForSockets.socketList, 1000);
   }
 
-  function maintenance(state)
-  {
-    var i, j;
-    var clientSockets;
-
-    for (i=0; i < servers.length; i++)
-    {
-      if (servers[i].connections.length)
-      {
-	if (!clientSockets)
-	  clientSockets = [];
-	clientSockets.splice.apply(clientSockets, [0,0].concat(servers[i].connections));
-      }
-    }
-
-    state.pollSockets.length = 0;
-    if (clientSockets)
-      state.pollSockets.splice.apply(state.pollSockets, [0,0].concat(clientSockets));
-    state.pollSockets.splice.apply(state.pollSockets, [0,0].concat(state.serverSockets));
-
-    exports.poll(state.pollSockets, pollTimeout || 1000);
-  }
-
-  require("reactor").start(bootstrap, maintenance);
+  require("reactor").registerMaintenance(pollAllSockets);
 }
+
+function addSocketToReactor(socket)
+{
+  if (!setupReactorForSockets.socketList)
+    setupReactorForSockets();
+
+  setupReactorForSockets.socketList.push(socket);
+}
+
+function removeSocketFromReactor(socket)
+{
+  var list = setupReactorForSockets.socketList;
+  var idx = list.indexOf(socket);
+
+  if (idx === -1)
+    throw new Error("Corrupted reactor socket list");
+
+  list.splice(idx, 1);
+}
+
+/** Establish a socket connection to a server.
+ *  @param	options		Connection options
+ *				- .address	host to connect to
+ *				- .port		port to connect on
+ *  @param	connectionListener	Event handler invoked when connection is established
+ */
+exports.connect = function net$$connect(options, connectionListener)
+{
+  var socket = new Socket();
+
+  socket.connect(options, connectionListener);
+
+  return socket;
+}
+exports.createConnection = exports.connect;
