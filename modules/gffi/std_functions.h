@@ -24,6 +24,9 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <net/if.h>
 #include <sys/wait.h>
 #include <aio.h>
@@ -44,10 +47,8 @@
 #include <ucontext.h>
 #include <grp.h>
 #include <sys/resource.h>
-#include <sys/socket.h>
 #include <glob.h>
 #include <search.h>
-#include <arpa/inet.h>
 #include <math.h>
 #include <ctype.h>
 #include <sys/mman.h>
