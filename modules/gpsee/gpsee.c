@@ -394,7 +394,7 @@ static JSBool gpsee_fork(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 static JSBool gpseemod_isByteThing(JSContext *cx, uintN argc, jsval *vp)
 {
   if (argc != 1)
-    return gpsee_throw(cx, MODULE_ID ".isByteThing() requires exactly argument");
+    return gpsee_throw(cx, MODULE_ID ".isByteThing() requires exactly one argument");
   jsval * argv = JS_ARGV(cx, vp);
   if (!JSVAL_IS_OBJECT(argv[0]))
     return JS_FALSE;
