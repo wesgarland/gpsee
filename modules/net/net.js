@@ -200,10 +200,12 @@ var ntohs = function ntohs_thunk(num)
  *
  *  @param	fd	[optional]	File descriptor associated with the socket object if the OS endpoint has already been created
  */
-function Socket(fd, options)
+var Socket = exports.Socket = function net$$Socket(fd, options)
 {
   if (typeof fd !== "undefined")
     this.setfd(fd, options);
+
+  this.pendingWrites = [];			/* Array of ffi.Memory or binary.ByteArray */
 }
 
 Socket.prototype = new (require("./events").EventEmitter)();
@@ -235,6 +237,13 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
     if (_fcntl(this.fd, dh.F_SETFL, flags | dh.O_NONBLOCK) == -1)
       throw new Error("Could not make socket with file descriptor " + this.fd + " non-blocking" + syserr());
     this.nonBlocking = true;
+  }
+
+  if (options.hasOwnProperty("reuse") && options.reuse != false)
+  {
+    i = new ffi.CType(ffi.int, 1);
+    if (_setsockopt(this.fd, dh.SOL_SOCKET, dh.SO_REUSEADDR, i, i.size) != 0)
+      throw new Error("Could not set SO_REUSEADDR option on socket with file descriptor " + this.fd + syserr());
   }
 
   addSocketToReactor(this);
@@ -276,29 +285,13 @@ Socket.prototype.createEndpoint = function Socket$create(port, address, options)
   this.setfd(fd, options);
 }
 
-/** Bind a socket so it can be used to listen */
-Socket.prototype.sbind = function Socket$bind(options)
+/** Cause a socket to listen for incoming connections */
+Socket.prototype.listen = function Socket$listen(backlog)
 {
-  var i, flags;
-
-  if (!options.hasOwnProperty("reuse") || options.reuse != false)
-  {
-    i = new ffi.CType(ffi.int, 1);
-    if (_setsockopt(this.fd, dh.SOL_SOCKET, dh.SO_REUSEADDR, i, i.size) != 0)
-      throw new Error("Could not set SO_REUSEADDR option on socket with file descriptor " + this.fd + syserr());
-  }
-
   if (_bind(this.fd, this.sockaddr, 16) == -1)
     throw new Error("Could not bind socket on " + this.address + ":" + this.port + syserr());
 
   this.bound = true;
-}
-
-/** Cause a socket to listen for incoming connections */
-Socket.prototype.listen = function Socket$listen(backlog)
-{
-  if (!this.bound)
-    this.sbind({reuse: true});
 
   if (!backlog && backlog !== 0)
     backlog = exports.config.defaultBacklog;
@@ -353,30 +346,39 @@ Socket.prototype.setNoDelay = function Socket$$setNoDelay(noDelay)
  */
 Socket.prototype.connect = function Socket$connect(options, connectionListener)
 {
+  var res;
+
   this.createEndpoint(options.port, options.address, {nonBlocking: true});
 
-  if (_connect(this.fd, this.sockaddr, 16) == -1)
+  res = _connect(this.fd, this.sockaddr, 16);
+  if (res == -1 && ffi.errno != dh.EINPROGRESS)
     throw new Error("Could not connect socket to " + this.address + ":" + this.port + syserr());
 
-  this.readyState = "connecting";
-  this.write = socketWriteOrQueue;
-  this.pendingWrites = [];
-  this.onReadable = socketReadThenEmit;
+  function connected()
+  {
+    delete this.onWritable;
 
-  this.readyState = "open";
-  this.addListener("end", this.close );
+    this.readyState = "connecting";
+    this.write = socketWriteOrQueue;
+    this.onReadable = socketReadThenEmit;
+    
+    this.readyState = "open";
+    this.addListener("end", this.close );
+    
+    if (connectionListener)
+      this.addListener("connect", connectionListener);
+    
+    this.emit("connect");
+  }
 
-  if (connectionListener)
-    this.addListener("connect", connectionListener);
-
-  this.emit("connect");
+  this.onWritable = connected;
 }
 
 /** Close a socket, discarding any pending data */
 Socket.prototype.close = function Socket$close()
 {
   delete this.onReadable;
-  delete this.onWriteable;
+  delete this.onWritable;
 
   if (typeof this.fd != "undefined")
   {
@@ -421,7 +423,7 @@ Socket.prototype.pipe = function Socket$pipe(destination)
 }
 
 /**
- * Poll a series of Sockets, invoking their onReadable or onWriteable methods
+ * Poll a series of Sockets, invoking their onReadable or onWritable methods
  * as appropriate.  It is not supported to use pollSockets in a re-entrant way
  * (i.e. do not use the same pollSockets from an event as the event trigger).
  *
@@ -485,13 +487,13 @@ exports.poll = function poll(pollSockets, timeout)
     if (fd > maxfd)
       maxfd = fd;
     _FD_SET(fd, rfds);
-    if (socket.onWriteable)
+    if (socket.onWritable)
       _FD_SET(fd, wfds);
   }
 
   numfds = _select(maxfd + 1, rfds, wfds, null, tv);
   if (numfds == 0)
-    return numfds;
+    return 0;
 
   if (numfds == -1)
   {
@@ -551,7 +553,7 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
     throw new Error("Server is already listening to " + this.socket.address + ":" + ntohl(this.socket.sockaddr.sin_port));
 
   listenSocket = this.socket;
-  listenSocket.createEndpoint(port, host, {nonBlocking: true});
+  listenSocket.createEndpoint(port, host, {nonBlocking: true, reuseAddr: true});
   listenSocket.listen(backlog);
   
   listenSocket.onReadable = function Server$onReadableHandler()
@@ -563,7 +565,6 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
       {
 	clientSocket.readyState		= "opening";
 	clientSocket.server 		= server;
-	clientSocket.pendingWrites 	= [];
 	clientSocket.write 		= socketWriteOrQueue;
 	clientSocket.onReadable 	= socketReadThenEmit;
 	clientSocket.readyState 	= "open";
@@ -655,12 +656,18 @@ function socketReadThenEmit(socket)
 
 /** Write data to this.fd. Writes are non-blocking; unwritten 
  *  data is deferred to the reactor, which regularly invokes the
- *  socketDrainQueue function to drain the buffers.
+ *  socketDrainQueue function to drain the buffers. This function
+ *  is normally used as the write() method of a Socket instance.
+ *
+ *  @param	data to write.  Must be either a String or an instace of a GPSEE ByteThing. 
+ *				Buffer copies are reduced when data is a ByteString.
+ *  @param	encoding	Ununused
+ *  @param	callback	Unused
  */
 function socketWriteOrQueue(data, encoding, callback)
 {
   var bytesWritten;
-  var tmp;
+  var privateMemory;
 
   if (this.had_write_error)
     throw new Error("Cannot write data; previous write had error " + this.had_write_error);
@@ -671,42 +678,62 @@ function socketWriteOrQueue(data, encoding, callback)
   switch (typeof data)
   {
     case "string":
-      tmp = new ffi.Memory(data.length);
-      tmp.length = data.length;
-      tmp.copyDataString(data);
-      data = tmp;
+      privateMemory = new ffi.Memory(data.length);
+      privateMemory.length = data.length;
+      privateMemory.copyDataString(data);
+      data = privateMemory;
       break;
     case "object":
-      if (data instanceof binary.Binary)
+      if (require("gpsee").isByteThing(data))
 	break;
     default:
-	throw("Cannot write data; invalid type");
+	throw new Error("Cannot write data; invalid type");
   }
+
+  /* Invariant here: data is either Memory or Binary */
 
   if (this.pendingWrites.length)
   {
+    /* Since there is already a queue, we simulate "queue immediately, did not write"
+     * as far as the application is concerned, but then we tickle the poll on this
+     * particular file descriptor so that we can send more data down the pipeline
+     * before control returns to the maintenance function in the event loop. This
+     * gives us better performance for situations where the application writes a 
+     * large amount of information in a tight loop, at a very marginal cost.
+     */
     this.pendingWrites.push(data);
+    exports.poll([this], 0);
     return false;
   }
 
   bytesWritten = _write(this.fd, data, data.length);
+  if (bytesWritten == -1 && ffi.errno == dh.EAGAIN)		/* Kernel buffer was too full to write anything - treat as non-error */
+    bytesWritten = 0;
 
-  if (bytesWritten != data.length)
+  switch(bytesWritten)
   {
-    if (bytesWritten != -1)
-    {
-      this.pendingWrites.push(data.slice(bytesWritten));
-      this.onWriteable = socketDrainQueue;
-    }
-    else
-    {
-      if (ffi.errno == dh.EPIPE)
+    case data.length:			/* Everything written */
+      break;
+
+    case -1:				/* Nothing written */
+      switch (ffi.errno)
       {
-        delete this.onWriteable;
-        this.readyState = "readOnly";
+	case dh.EPIPE:
+	  delete this.onWritable;
+	  this.readyState = "readOnly";
+	default:
+	  this.had_write_error = ffi.errno;
+	  break;
       }
-      this.had_write_error = ffi.errno;
-    }
+      break;
+
+    default:				/* Partial write */
+      if (!(data instanceof binary.ByteString))
+	data = binary.ByteString(data);
+
+      this.pendingWrites.push(data.slice(bytesWritten));
+      this.onWritable = socketDrainQueue;
+      break;
   }
 
   return bytesWritten == data.length;
@@ -719,14 +746,31 @@ function socketDrainQueue(socket)
   while(socket.pendingWrites.length)
   {
     bytesWritten = _write(socket.fd, socket.pendingWrites[0], socket.pendingWrites[0].length);
-    if (bytesWritten != socket.pendingWrites[0].length)
-    {
-      if (bytesWritten != -1)
-	socket.pendingWrites[0] = socket.pendingWrites[0].slice(bytesWritten);
-      else
-	socket.had_write_error = ffi.errno;
 
-      return;
+    switch(bytesWritten)
+    {
+      case socket.pendingWrites[0].length:	/* wrote all of buffer */
+	socket.pendingWrites.shift();
+	break;
+
+      case -1:					/* wrote none of buffer */
+	break;
+	
+      default:					/* wrote part of buffer */
+	switch (ffi.errno)
+	{
+	  case dh.EPIPE:
+	    delete this.onWritable;
+	    this.readyState = "readOnly";
+	  default:
+	    this.had_write_error = ffi.errno;
+	    break;
+	  case dh.EAGAIN:
+	    socket.pendingWrites[0] = socket.pendingWrites[0].slice(bytesWritten);
+	    this.onWritable = socketDrainQueue;
+	    break;
+	}
+	return;
     }
   }
 
@@ -736,16 +780,24 @@ function socketDrainQueue(socket)
 
 function setupReactorForSockets()
 {
-  setupReactorForSockets.socketList = [];
+  var i;
+  var socketList = setupReactorForSockets.socketList = [];
   
   function pollAllSockets()
   {
-    if (setupReactorForSockets.socketList.length === 0)
+    if (socketList.length === 0)
       return false;
-    exports.poll(setupReactorForSockets.socketList, 1000);
+    return exports.poll(socketList, 1000);
+  }
+
+  function closeAllSockets()
+  {
+    for (i=0; i < socketList.length; i++)
+      socketList[i].close();
   }
 
   require("reactor").registerMaintenance(pollAllSockets);
+  require("reactor").registerCleanup(closeAllSockets);
 }
 
 function addSocketToReactor(socket)
