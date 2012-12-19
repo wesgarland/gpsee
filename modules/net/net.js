@@ -73,8 +73,9 @@ const FD_SETSIZE = ffi.std.FD_SETSIZE;
 
 exports.config = 
 {
-  readBufferSize:	65536,
-  defaultBacklog:	32
+  readBufferSize:		65536,
+  defaultBacklog:		32,
+  pollAllSocketsTimeout:	100
 };
 
 /**
@@ -358,7 +359,6 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
   {
     delete this.onWritable;
 
-    this.readyState = "connecting";
     this.write = socketWriteOrQueue;
     this.onReadable = socketReadThenEmit;
     
@@ -371,6 +371,7 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
     this.emit("connect");
   }
 
+  this.readyState = "connecting";
   this.onWritable = connected;
 }
 
@@ -754,9 +755,6 @@ function socketDrainQueue(socket)
 	break;
 
       case -1:					/* wrote none of buffer */
-	break;
-	
-      default:					/* wrote part of buffer */
 	switch (ffi.errno)
 	{
 	  case dh.EPIPE:
@@ -766,11 +764,13 @@ function socketDrainQueue(socket)
 	    this.had_write_error = ffi.errno;
 	    break;
 	  case dh.EAGAIN:
-	    socket.pendingWrites[0] = socket.pendingWrites[0].slice(bytesWritten);
-	    this.onWritable = socketDrainQueue;
 	    break;
 	}
 	return;
+
+      default:					/* wrote part of buffer */
+	socket.pendingWrites[0] = socket.pendingWrites[0].slice(bytesWritten);
+	break;
     }
   }
 
@@ -778,26 +778,34 @@ function socketDrainQueue(socket)
   socket.emit("drain");
 }
 
+function flushAndCloseAllSockets(socketList)
+{
+  var socket;
+
+  for (i=0; i < socketList.length; i++)
+  {
+    socket = socketList[i];
+    if (socket.pendingWrites.length === 0)
+      socket.close();
+  }
+
+  return socketList.length === 0;
+}
+
+function pollAllSockets(socketList)
+{
+  if (socketList.length === 0)
+    return false;
+  return exports.poll(socketList, exports.config.pollAllSocketsTimeout);
+}
+
 function setupReactorForSockets()
 {
   var i;
   var socketList = setupReactorForSockets.socketList = [];
   
-  function pollAllSockets()
-  {
-    if (socketList.length === 0)
-      return false;
-    return exports.poll(socketList, 1000);
-  }
-
-  function closeAllSockets()
-  {
-    for (i=0; i < socketList.length; i++)
-      socketList[i].close();
-  }
-
-  require("reactor").registerMaintenance(pollAllSockets);
-  require("reactor").registerCleanup(closeAllSockets);
+  require("reactor").registerMaintenance(function(){return pollAllSockets(socketList)});
+  require("reactor").registerCleanup(function(){return flushAndCloseAllSockets(socketList)});
 }
 
 function addSocketToReactor(socket)
