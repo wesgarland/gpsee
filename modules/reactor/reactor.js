@@ -26,6 +26,14 @@ function whenCompare(a,b)
  *  nothing to do -- no pending events, no scheduled events, and all recurring events returning
  *  false.
  *
+ *  Once the loop terminates, all cleanups are run.  If a cleanup returns false and there are
+ *  maintenance functions defined, the cleanup will be re-run after the maintenance functions,
+ *  until it does not return false.  No cleanups will be run in the meantime, preserving the
+ *  LIFO semantic. This means that cleanups must NOT have interdependencies; it also means
+ *  that it is possible for a maintenance function to be run after its corresponding cleanup 
+ *  is called. During the cleanup phase, any maintenance function returning false will be
+ *  removed from the maintenance event list.
+ *
  *  @param	initializer		Function to run as we initialize the reactor. Reactor
  *					terminates after the initializer returns and there
  *					are no scheduled events, or when the quit object,
@@ -100,7 +108,16 @@ exports.activate = function reactor$$activate(initializer, exceptionHandler)
   finally
   {
     while(cleanupEvents.length)
-      cleanupEvents.pop()();
+    {
+      fn = cleanupEvents.pop();
+      if (fn() === false && maintenanceEvents.length)
+      {
+	cleanupEvents.unshift(fn);
+	for (i=0; i < maintenanceEvents.length; i++)
+	  if (maintenanceEvents[i]() === false)
+	    maintenanceEvents.splice(i,1);
+      }
+    }
   }
 }
 
@@ -151,7 +168,7 @@ exports.registerMaintenance = function reactor$$registerMaintenance(callback, ar
  */
 exports.registerCleanup = function reactor$$registerCleanup(callback, arg /* ... */)
 {
-  var args, fn, id;
+  var args, fn;
 
   if (arg)
   {
@@ -164,7 +181,7 @@ exports.registerCleanup = function reactor$$registerCleanup(callback, arg /* ...
 
   cleanupEvents.push(fn);
 
-  return id;
+  return;
 }
 
 exports.setTimeout = function reactor$$setTimeout(callback, delay, arg /* ... */)
