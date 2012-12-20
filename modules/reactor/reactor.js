@@ -231,7 +231,7 @@ exports.setInterval = function reactor$$setInterval(callback, delay, arg /* ... 
     delay = exports.config.intervalClamp;
 
   recurringEvents.dirty = true;
-  id = {fn: fn, when: +delay};
+  id = {fn: fn, when: +delay, delay: +delay};
   recurringEvents.push(id);
 
   return id;
