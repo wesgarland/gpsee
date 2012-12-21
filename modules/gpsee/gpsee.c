@@ -397,8 +397,10 @@ static JSBool gpseemod_isByteThing(JSContext *cx, uintN argc, jsval *vp)
     return gpsee_throw(cx, MODULE_ID ".isByteThing() requires exactly one argument");
   jsval * argv = JS_ARGV(cx, vp);
   if (!JSVAL_IS_OBJECT(argv[0]))
-    return JS_FALSE;
-  JS_SET_RVAL(cx, vp, gpsee_isByteThing(cx, JSVAL_TO_OBJECT(argv[0])) ? JSVAL_TRUE : JSVAL_FALSE);
+    JS_SET_RVAL(cx, vp, JSVAL_FALSE);
+  else
+    JS_SET_RVAL(cx, vp, gpsee_isByteThing(cx, JSVAL_TO_OBJECT(argv[0])) ? JSVAL_TRUE : JSVAL_FALSE);
+
   return JS_TRUE;
 }
 
