@@ -359,9 +359,7 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
   {
     delete this.onWritable;
 
-    this.write = socketWriteOrQueue;
     this.onReadable = socketReadThenEmit;
-    
     this.readyState = "open";
     this.addListener("end", this.close );
     
@@ -422,6 +420,30 @@ Socket.prototype.pipe = function Socket$pipe(destination)
 {
   this.addListener("data", destination.write);
 }
+
+Socket.prototype.write = socketWriteOrQueue;
+Socket.prototype.writev = function socket$writev(dataArray)
+{
+  var writevBuf = new binary.ByteArray(0);
+  var i, tmp;
+
+  if (dataArray.length === 1)
+    return this.write(dataArray[0]);
+
+  for (dataLen = i = 0; i < dataArray.length; i++)
+  {
+    if (!require("gpsee").isByteThing(dataArray[i]))
+    {
+      tmp = new ffi.Memory(dataArray[i].length);
+      tmp.copyDataString(dataArray[i]);
+      dataArray[i] = tmp;
+    }
+    writevBuf.concat(dataArray[i]);
+  }
+
+  return this.write(writevBuf);
+}
+ 
 
 /**
  * Poll a series of Sockets, invoking their onReadable or onWritable methods
@@ -499,7 +521,7 @@ exports.poll = function poll(pollSockets, timeout)
   if (numfds == -1)
   {
     if (ffi.errno == dh.EINTR)
-      return numfds;
+      return 0;
 
     throw new Error("Error polling sockets" + syserr());
   }
@@ -566,7 +588,6 @@ exports.Server.prototype.listen = function net$$Server$listen(port, host, backlo
       {
 	clientSocket.readyState		= "opening";
 	clientSocket.server 		= server;
-	clientSocket.write 		= socketWriteOrQueue;
 	clientSocket.onReadable 	= socketReadThenEmit;
 	clientSocket.readyState 	= "open";
 	clientSocket.addListener("end", this.close);
@@ -725,6 +746,8 @@ function socketWriteOrQueue(data, encoding, callback)
 	default:
 	  this.had_write_error = ffi.errno;
 	  break;
+	case dh.EINTR:
+	  break;
       }
       break;
 
@@ -735,47 +758,28 @@ function socketWriteOrQueue(data, encoding, callback)
       this.pendingWrites.push(data.slice(bytesWritten));
       this.onWritable = socketDrainQueue;
       break;
-  }
+   }
 
   return bytesWritten == data.length;
 }
 
 function socketDrainQueue(socket)
 {
-  var bytesWritten;
+  var res;
+  var pendingWrites = socket.pendingWrites;
 
-  while(socket.pendingWrites.length)
+  socket.pendingWrites.length = 0;
+
+  if (pendingWrites.length == 1)
+    res = socket.write(pendingWrites[0]);
+  else
+    res = socket.writev(pendingWrites);
+  
+  if (res !== false)
   {
-    bytesWritten = _write(socket.fd, socket.pendingWrites[0], socket.pendingWrites[0].length);
-
-    switch(bytesWritten)
-    {
-      case socket.pendingWrites[0].length:	/* wrote all of buffer */
-	socket.pendingWrites.shift();
-	break;
-
-      case -1:					/* wrote none of buffer */
-	switch (ffi.errno)
-	{
-	  case dh.EPIPE:
-	    delete this.onWritable;
-	    this.readyState = "readOnly";
-	  default:
-	    this.had_write_error = ffi.errno;
-	    break;
-	  case dh.EAGAIN:
-	    break;
-	}
-	return;
-
-      default:					/* wrote part of buffer */
-	socket.pendingWrites[0] = socket.pendingWrites[0].slice(bytesWritten);
-	break;
-    }
+    delete socket.onWritable;
+    socket.emit("drain");
   }
-
-  delete socket.onWritable;
-  socket.emit("drain");
 }
 
 function flushAndCloseAllSockets(socketList)
@@ -806,6 +810,9 @@ function setupReactorForSockets()
   
   require("reactor").registerMaintenance(function(){return pollAllSockets(socketList)});
   require("reactor").registerCleanup(function(){return flushAndCloseAllSockets(socketList)});
+
+  exports.onSigPIPE = Function;
+  require("signal").onPIPE = function() { exports.onSigPIPE };
 }
 
 function addSocketToReactor(socket)
@@ -842,3 +849,4 @@ exports.connect = function net$$connect(options, connectionListener)
   return socket;
 }
 exports.createConnection = exports.connect;
+
