@@ -1,0 +1,7 @@
+/**
+ * @namespace       gpsee.module.ca.page.pairodice - Pair'O'Dice module
+ * @author          Wes Garland, PageMail, Inc., wes@page.ca
+ * @description     Example module demonstrates GPSEE module implementation basics
+ */
+var pairodice = {};
+

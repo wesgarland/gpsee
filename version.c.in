@@ -1,0 +1,35 @@
+#include "./version.h"
+
+static char  __attribute__((unused)) 
+version[]="$Built: " PROJECT " " VERSION ", built " __DATE__ " " __TIME__ 
+#if defined(__OPTIMIZE__)
+" (optimized)"
+#endif
+" $";
+
+#ifndef __VERSION__ 
+# if defined(MSC_VER)
+#  define __VERSION__ "Microsoft Visual C " MSC_VER
+# else
+#  define __VERSION__ "Unknown Compiler"
+# endif
+#endif
+
+#if (defined(_REENTRANT) && !defined(_WIN32)) || defined(_MT) && defined(_WIN32)
+# define MTSTATE " with thread-safe system headers"
+#else
+# define MTSTATE ""
+#endif
+
+static char  __attribute__((unused)) 
+compiler[]="$Compiler: " 
+#if defined(__GNUG__)
+"GNU C++ "
+#elif defined(__GNUC__)
+"GNU C "
+#endif
+MTSTATE __VERSION__ " $";
+
+static char __attribute__((unused)) rcsid[]="$Id: version.c.in,v 1.1 2009/10/27 20:16:20 wes Exp $";
+static char __attribute__((unused)) state[]="$State: Exp $";
+static char __attribute__((unused)) hginfo[]="$Hg: @@HG_VERSION@@ $";
