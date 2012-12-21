@@ -69,8 +69,8 @@ exports.activate = function reactor$$activate(initializer, exceptionHandler)
 	if (ev.when >= now)
 	  break;
 
-	ev.fn();
 	scheduledEvents.splice(i--,1);
+	ev.fn();
       }
 
       if (recurringEvents.dirty)
@@ -96,6 +96,7 @@ exports.activate = function reactor$$activate(initializer, exceptionHandler)
 	res = maintenanceEvents[i]();
 	didWork = didWork || res !== false;
       }
+      require('gpsee').sleep(1);
     }
   }
   catch (e) 
