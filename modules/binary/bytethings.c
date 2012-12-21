@@ -718,8 +718,8 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
                            JSBool *stealBuffer, JSClass *clasp, const char const *methodName)
 {
   jsval *end = vals + nvals;
-  unsigned char *buf=NULL, *bufpos;
-  size_t buflen = 0; /* actual size of 'buf' */
+  unsigned char *buf, *bufpos;
+  size_t buflen;
 
   /* Given a single byte thing as an argument list, this simple case can just return a pointer to that bytething's buffer */
   if (nvals == 1 && !*stealBuffer && JSVAL_IS_OBJECT(*vals))
@@ -745,10 +745,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
   buflen = 64;
   buf = JS_malloc(cx, buflen);
   if (!buf)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
   bufpos = buf;
 
   /* Iterate over each member of 'vals' */
@@ -783,10 +780,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
             buflen = bufpos - buf + arrLen;
             buf = JS_realloc(cx, buf, buflen);
             if (!buf)
-            {
-              JS_ReportOutOfMemory(cx);
               return JS_FALSE;
-            }
             bufpos = bufpos - oldbuf + buf;
           }
 
@@ -801,14 +795,14 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
         bufpos += bytesRead;
       }
       /* Binary types work */
-      else if (oclasp == byteString_clasp || oclasp == byteArray_clasp)
+      else if (gpsee_isByteThingClass(cx, oclasp))
       {
         byteThing_handle_t * hnd;
 
         /* This should never return NULL */
         hnd = JS_GetPrivate(cx, obj);
         if (!hnd)
-          return gpsee_throw(cx, MODULE_ID ".%s.%s.internalerror: %s object missing private data!", 
+          return gpsee_throw(cx, MODULE_ID ".%s.%s.internalerror: %s ByteThing missing private data!", 
                              clasp->name, methodName, oclasp->name);
 
         /* Grow buffer if necessary */
@@ -818,10 +812,8 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
           buflen = bufpos - buf + hnd->length;
           buf = JS_realloc(cx, buf, buflen);
           if (!buf)
-          {
-            JS_ReportOutOfMemory(cx);
             return JS_FALSE;
-          }
+
           bufpos = bufpos - oldbuf + buf;
         }
 
@@ -829,6 +821,8 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
         memcpy(bufpos, hnd->buffer, hnd->length);
         bufpos += hnd->length;
       }
+      else
+	return gpsee_throw(cx, MODULE_ID ".%s.%s.type: object for output byte %i is a not a ByteThing", clasp->name, methodName, bufpos-buf);
     }
     /* Try numeric coercion */
     else
@@ -1269,10 +1263,7 @@ JSBool byteThing_toString(JSContext *cx, uintN argc, jsval *vp)
   /* Make a JSString from our C string */
   s = JS_NewStringCopyZ(cx, buf);
   if (!s)
-  {
-    JS_ReportOutOfMemory(cx);
     return JS_FALSE;
-  }
 
   /* Return the string! */
   JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(s));

@@ -415,7 +415,6 @@ static JSBool ByteArray_concat(JSContext *cx, uintN argc, jsval *vp)
 /** Implements ByteArray.extendRight() and ByteArray.concat() */
 static JSBool byteArray_append(JSContext *cx, uintN argc, jsval *vp, const char * methodName)
 {
-  /* Results from byteThing_val2bytes() */
   unsigned char *       buffer      = NULL;
   unsigned char *       oldBuffer   = NULL;
   size_t                len;
@@ -423,40 +422,26 @@ static JSBool byteArray_append(JSContext *cx, uintN argc, jsval *vp, const char 
   jsval *               argv        = JS_ARGV(cx, vp);
   byteArray_handle_t *  hnd;
 
-  /* Acquire our byteArray_handle_t */
   hnd = byteArray_getHandle(cx, JS_THIS_OBJECT(cx, vp), methodName);
   if (!hnd)
     return JS_FALSE;
 
-  /* Convert argument vector  */
   if (!byteThing_val2bytes(cx, argv, argc, &buffer, &len, &stealBuffer, byteArray_clasp, methodName))
     return JS_FALSE;
 
-  /* Easy case */
   if (len == 0)
     return JS_TRUE;
 
-  /* Reallocate if necessary */
-  /* Save a pointer to our internal buffer for pointer comparison later */
+  /* Reallocate as necessary */
   oldBuffer = hnd->buffer;
   if (!byteArray_requestSize(cx, hnd, hnd->length + len))
     return JS_FALSE;
 
-  /* Watch out for the case of myByteArray.concat(myByteArray) */
-  if (oldBuffer == buffer)
-    /* memcpy() any faster than memmove()? */
-    memcpy(hnd->buffer + len, hnd->buffer, len);
-  else
-  {
-    /* Copy new contents into our ByteArray's buffer at the beginning */
-    memcpy(hnd->buffer + hnd->length, buffer, len);
+  /* Watch out for the case of myByteArray.concat(myByteArray) or other overlapping copies */
+  memmove(hnd->buffer + hnd->length, buffer, len);
+  if (stealBuffer && oldBuffer != buffer)
+    JS_free(cx, buffer);
 
-    /* Free memory if necessary */
-    if (stealBuffer)
-      JS_free(cx, buffer);
-  }
-
-  /* Update our ByteArray's length */
   hnd->length += len;
 
   return JS_TRUE;
