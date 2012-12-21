@@ -246,8 +246,8 @@ static JSBool memory_asDataString(JSContext *cx, uintN argc, jsval *vp)
  */
 /* @jazzdoc gffi.Memory.copyDataString()
  * 
- * Turn a JS String into a C character buffer into a JS String, ignoring the
- * current rules for JS C Strings -- this will be always be a ive uint16-uchar cast.
+ * Turn a JS String into a C character buffer, ignoring the current rules
+ * JS C Strings -- this will be always be a naive uint16-uchar cast.
  * Strings using characters > 255 will have those characters truncated to eight bits.
  *
  * @form (instance of Memory).copyDataString(instance of String)
@@ -275,7 +275,7 @@ static JSBool memory_copyDataString(JSContext *cx, uintN argc, jsval *vp)
 
   if (!hnd->buffer)
   {
-    *vp = JSVAL_NULL;
+    *vp = INT_TO_JSVAL(0);
     return JS_TRUE;
   }
 
@@ -313,7 +313,9 @@ static JSBool memory_copyDataString(JSContext *cx, uintN argc, jsval *vp)
   
   for (i=0; i < min(length, JS_GetStringLength(str)); i++)
     hnd->buffer[i] = buf[i];
-  
+
+  *vp = INT_TO_JSVAL(i);
+
   return JS_TRUE;
 }
 
