@@ -90,13 +90,16 @@ exports.activate = function reactor$$activate(initializer, exceptionHandler)
 	recurringEvents.dirty = true;
       }
 
-      didWork = !!pendingEvents.length || !!scheduledEvents.length || !!recurringEvents.length;
+      didWork = false;
       for (i=0; i < maintenanceEvents.length; i++)
       {
 	res = maintenanceEvents[i]();
 	didWork = didWork || res !== false;
       }
-      require('gpsee').sleep(1);
+      if (!didWork)
+	require('gpsee').sleep(0);
+
+      didWork = didWork || !!pendingEvents.length || !!scheduledEvents.length || !!recurringEvents.length;
     }
   }
   catch (e) 
