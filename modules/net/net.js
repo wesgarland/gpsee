@@ -422,6 +422,12 @@ Socket.prototype.pipe = function Socket$pipe(destination)
 }
 
 Socket.prototype.write = socketWriteOrQueue;
+
+/** Write an array of Strings or ByteThings to the socket in a single system call.
+ *  @param 	dataArray	The array of things to write
+ *  @returns 	true		if all data was written to the kernel's buffer, false if some data was queued for later writing.
+ *  @see 	Socket.prototype.write()
+ */
 Socket.prototype.writev = function socket$writev(dataArray)
 {
   var writevBuf = new binary.ByteArray(0);
@@ -430,7 +436,7 @@ Socket.prototype.writev = function socket$writev(dataArray)
   if (dataArray.length === 1)
     return this.write(dataArray[0]);
 
-  for (dataLen = i = 0; i < dataArray.length; i++)
+  for (i = 0; i < dataArray.length; i++)
   {
     if (!require("gpsee").isByteThing(dataArray[i]))
     {
