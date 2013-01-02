@@ -349,7 +349,7 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
 {
   var res;
 
-  this.createEndpoint(options.port, options.address, {nonBlocking: true});
+  this.createEndpoint(options.port, options.address, {nonBlocking: options.hasOwnProperty('nonBlocking')?options.nonBlocking:true});
 
   res = _connect(this.fd, this.sockaddr, 16);
   if (res == -1 && ffi.errno != dh.EINPROGRESS)
@@ -359,7 +359,8 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
   {
     delete this.onWritable;
 
-    this.onReadable = socketReadThenEmit;
+    if (this.nonBlocking)
+      this.onReadable = socketReadThenEmit;
     this.readyState = "open";
     this.addListener("end", this.close );
     
