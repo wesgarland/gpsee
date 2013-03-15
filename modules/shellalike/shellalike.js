@@ -219,7 +219,7 @@ function Process(command) {
    * TODO figure out why fsync(2) is returning an error on simple cat test
    */
   this.flush = function() {
-    print("SYNCING", snk);
+//     print("SYNCING", snk);
     var result = _fsync.call(snk);
     if (result<0) {
       if (this.check())
