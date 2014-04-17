@@ -49,8 +49,6 @@
  *		have every possible opportunity to inline this code.
  */ 
 
-/*#ifdef JS_THREADSAFE*/
-
 static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,v 1.5 2011/12/05 19:13:36 wes Exp $";
 
 /*
@@ -84,9 +82,18 @@ js_CompareAndSwap(volatile jsword *w, jsword ov, jsword nv)
   return atomic_cas_ptr(w, (void *)ov, (void *)nv) == (void *)ov;
 }
 
-#else
 
-#ifndef NSPR_LOCK
+#elif __GNUC__ > 4 \
+  || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 5 )
+  
+static inline JSBool
+js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
+{
+    return __sync_bool_compare_and_swap( w, ov, nv ) ? JS_TRUE : JS_FALSE;
+}
+
+
+#else
 
 #include <memory.h>
 
@@ -219,14 +226,8 @@ js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
 #else
 
 #if !defined(MAKEDEPEND)
-# error "Define NSPR_LOCK if your platform lacks a compare-and-swap instruction."
-#endif
+# error "Compare-and-swap appears not to be implemented on your platform."
+#endif /* !MAKEDEPEND */
 
 #endif /* HAVE_ATOMICH_CAS */
 #endif /* arch-tests */
-
-#endif /* !NSPR_LOCK */
-
-/*#endif*/ /* JS_THREADSAFE */
-
-
