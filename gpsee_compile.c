@@ -184,6 +184,8 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
     if (fstat(fileno(cache_file), &cache_st))
     {
       dprintf(AT "could not stat() compiler cache \"%s\"\n", cache_filename);
+      fclose(cache_file);
+      cache_file = NULL;
       goto cache_read_end;
     }
 
