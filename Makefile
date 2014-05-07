@@ -153,7 +153,8 @@ build: _prebuild
 _prebuild: $(SPIDERMONKEY_BUILD) $(LIBFFI_BUILD)
 _build: $(AUTOGEN_HEADERS) $(AUTOGEN_SOURCE) $(GPSEE_OBJS) $(EXPORT_LIBS) $(PROGS) \
 	$(EXPORT_PROGS) $(EXPORT_LIBEXEC_OBJS) $(EXPORT_HEADERS) $(SO_MODULE_FILES) \
-	$(addsuffix .o, $(notdir $(BUILT_EXPORTED_PROGS))) $(EXPORT_EXTRA_FILES) $(VERSION_O)
+	$(addsuffix .o, $(notdir $(BUILT_EXPORTED_PROGS))) $(EXPORT_EXTRA_FILES) $(VERSION_O) \
+	gpsee.pc
 
 $(SPIDERMONKEY_BUILD):
 	cd spidermonkey && $(MAKE) build
