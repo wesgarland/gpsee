@@ -142,12 +142,20 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       own_scriptFile = JS_TRUE;
     }
 
-    gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH);
-
     /* Should we use the compiler cache at all? */
     /* Check the compiler cache setting in our gpsee_runtime_t struct */
     grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
     useCompilerCache = grt->useCompilerCache;
+
+    if (useCompilerCache)
+    {
+      /* Only lock script when using the cache - needed then for stability of invariants  */
+      if (gpsee_flock(fileno(scriptFile), GPSEE_LOCK_SH) != 0)
+      {
+	fclose(scriptFile);
+	return gpsee_throw(cx, CSERR "lock error %m", scriptFilename);
+      }
+    }
 
     /* One criteria we will use to verify that our source code is the same is to check for a "pre-seeked" stdio FILE. If
      * it has seeked/read past the zeroth byte, then we should store that in the cache file along with other metadta. */
@@ -180,7 +188,14 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       goto cache_read_end;
     }
 
-    gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH);
+    if (gpsee_flock(fileno(cache_file), GPSEE_LOCK_SH) != 0)
+    {
+      gpsee_log(cx, GLOG_ERR, AT "could not lock cache file '%s' (%m)", cache_filename);
+      fclose(cache_file);
+      cache_file = NULL;
+      goto cache_read_end;
+    }
+
     if (fstat(fileno(cache_file), &cache_st))
     {
       dprintf(AT "could not stat() compiler cache \"%s\"\n", cache_filename);
@@ -320,11 +335,17 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       umask(oldumask);
 
       /* Acquire write lock for file */
-      gpsee_flock(cache_fd, GPSEE_LOCK_EX);
+      if (gpsee_flock(cache_fd, GPSEE_LOCK_EX) != 0)
+      {
+	if (gpsee_verbosity(0))
+	  gpsee_log(cx, GLOG_NOTICE, "Could not lock compiler cache '%s'", cache_filename);
+        goto cache_write_bail;
+      }
+
       /* Truncate file again now that we have the lock */
       ftruncate(cache_fd, 0);
       /* Ensure the owner of the cache file is the owner of the source file */
-      if (fchown(cache_fd, source_st.st_uid, -1))
+      if (fchown(cache_fd, source_st.st_uid, source_st.st_gid))
       {
 	if (gpsee_verbosity(0))
 	  gpsee_log(cx, GLOG_NOTICE, "Could not set create compiler cache ownership for '%s' to uid %i (%m)", cache_filename, (int)source_st.st_uid);
