@@ -342,15 +342,17 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
         goto cache_write_bail;
       }
 
-      /* Truncate file again now that we have the lock */
-      ftruncate(cache_fd, 0);
       /* Ensure the owner of the cache file is the owner of the source file */
       if (fchown(cache_fd, source_st.st_uid, source_st.st_gid))
       {
 	if (gpsee_verbosity(0))
-	  gpsee_log(cx, GLOG_NOTICE, "Could not set create compiler cache ownership for '%s' to uid %i (%m)", cache_filename, (int)source_st.st_uid);
+	  gpsee_log(cx, GLOG_NOTICE, "Could not set compiler cache ownership for '%s' to uid/gid %i/%i (%m)", cache_filename, (int)source_st.st_uid, (int)source_st.st_gid);
         goto cache_write_bail;
       }
+
+      /* Truncate file again now that we have the lock */
+      ftruncate(cache_fd, 0);
+
       /* Create a FILE* for XDR */
       if ((cache_file = fdopen(cache_fd, "w")) == NULL)
       {
@@ -404,9 +406,12 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       goto cache_write_end;
 
       cache_write_bail:
-      fclose(cache_file);
-      cache_file = NULL;
       unlink(cache_filename);
+      if (cache_file)
+	fclose(cache_file);
+      else if (cache_fd >= 0)
+	close(cache_fd);
+      cache_file = NULL;
     }
   }
 
