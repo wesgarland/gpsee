@@ -51,6 +51,11 @@
  */
 
 #include "std_gpsee_no.h"
+#if defined(_GNU_SOURCE)
+# define __deprecated__  
+# define __attribute_deprecated__  
+# define GPSEE_NO_gets
+#endif
 #include "std_functions.h"
 
 struct fn_s
