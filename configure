@@ -1,0 +1,394 @@
+#! /bin/sh -f
+#
+# Configure script for GPSEE. This is not autoconf, and it requires bash
+# somewhere on your PATH. It may also work with a real SVR4 Korn shell,
+# although that is not a supported configuration at this time.
+#
+# ***** BEGIN LICENSE BLOCK *****
+# Version: MPL 1.1/GPL 2.0/LGPL 2.1
+#
+# The contents of this file are subject to the Mozilla Public License Version
+# 1.1 (the "License"); you may not use this file except in compliance with
+# the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS" basis,
+# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+# for the specific language governing rights and limitations under the
+# License.
+#
+# The Initial Developer of the Original Code is PageMail, Inc.
+#
+# Portions created by the Initial Developer are 
+# Copyright (c) 2007-2010, PageMail, Inc. All Rights Reserved.
+#
+# Contributor(s):
+# 
+# Alternatively, the contents of this file may be used under the terms of
+# either of the GNU General Public License Version 2 or later (the "GPL"),
+# or the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+# in which case the provisions of the GPL or the LGPL are applicable instead
+# of those above. If you wish to allow use of your version of this file only
+# under the terms of either the GPL or the LGPL, and not to allow others to
+# use your version of this file under the terms of the MPL, indicate your
+# decision by deleting the provisions above and replace them with the notice
+# and other provisions required by the GPL or the LGPL. If you do not delete
+# the provisions above, a recipient may use your version of this file under
+# the terms of any one of the MPL, the GPL or the LGPL.
+#
+# ***** END LICENSE BLOCK ***** 
+#
+# @file         configure
+#               A build configuration automation script for GPSEE. This
+#               script augments the original GPSEE, SureLynx-derived 
+#               build system by creating local_config.mk files via 
+#               auto-detection rules and a GNU autoconf-like user interface.
+#
+# @author	Wes Garland, we@page.ca
+# @date		May 2010
+#
+
+gpsee_dir="`dirname $0`"
+if [ ! "$BASH_VERSION" ]; then
+  if [ ! -x "/bin/bash" ]; then
+    . ${gpsee_dir}/configure.incl
+    bash="`locate bash`"
+  else
+    bash=/bin/bash
+  fi
+
+  if [ "$bash" ]; then
+    BASH_VERSION=dontrecurse $bash $0 $*
+    exit $?
+  fi
+fi
+
+if [ "$BASH_VERSION" = "dontrecurse" ] || [ ! "$BASH_VERSION" ]; then
+  echo "Sorry, you need a bash shell to run this program"
+  exit 1
+fi
+
+#cat <<EOF
+#
+#*** Work in progress -- if you have trouble with this script, ***
+#*** you can still use the old build system; instructions are  ***
+#*** at http://code.google.com/p/gpsee/wiki/Building           ***
+#
+#EOF
+
+argv_zero="$0"
+configure_cmd="$0 $*"
+
+isFunc="typeset -f"
+listFuncs="typeset -F"
+
+[ ! "$USER" ] && [ "$LOGNAME" ] && USER="$LOGNAME"
+
+_printf_fmt_opt_help()
+{
+  printf "  %30.30s %s\n" "$1                                                         " "$2"
+}
+
+_echo_fmt_opt_help()
+{
+  echo -- "  $1\t$2"
+}
+_help()
+{
+cat <<EOF
+configure - Configuration automator for GPSEE.
+Copyright (c) 2010, PageMail, Inc. All Rights Reserved.
+
+Usage: $argv_zero [options]
+
+Note: This is not autoconf; it simply automates specifying common options in
+      GPSEE's local_config.mk files with a more familiar user interface.
+
+Example:
+  $argv_zero --with-mozilla=~/hg/tracemonkey
+
+Options:
+EOF
+
+  if printf "" 2>/dev/null; then 
+    fmt=_printf_fmt_opt_help
+  else
+    fmt=_echo_fmt_opt_help
+  fi
+
+  $fmt "--help" "Display this help"
+
+  $listFuncs | grep -v ' _' | sed -e 's/^.* //'  | while read func
+  do
+    opt="`echo \"$func\" | sed -e 's/_/-/g'`"
+    echo "$func" | egrep -v '^enable|disable|help' >/dev/null && opt="$opt=value"
+    $fmt "--$opt" "`$func help`"
+  done
+
+  echo
+  exit 2
+}
+
+prefix()
+{
+  [ "$1" = "help" ] && echo "Specify location of GPSEE install" && return
+  echo "GPSEE_PREFIX_DIR=$1" >&5
+}
+
+with_build()
+{
+  [ "$1" = "help" ] && echo "Specify GPSEE build type (DEBUG or RELEASE)" && return
+  echo "BUILD=$1" >&5
+}
+
+with_stream()
+{
+  [ "$1" = "help" ] && echo "Specify GPSEE build stream (unix or surelynx)" && return
+  echo "STREAM=$1" >&5
+}
+
+with_gnu_make()
+{
+  [ "$1" = "help" ] && echo "Specify location of GNU Make (3.81 or better) executable" && return
+}
+
+with_pkg_config()
+{
+  [ "$1" = "help" ] && echo "Specify location of pkg-config executable" && return
+  echo "PKG_CONFIG=$1" >&5
+}
+
+with_autoconf213()
+{
+  [ "$1" = "help" ] && echo "Specify location of autoconf 2.13 executable" && return
+  echo "AUTOCONF=$1" >&5
+}
+
+with_jsapi_build()
+{
+  [ "$1" = "help" ] && echo "Specify SpiderMonkey build type (DEBUG or RELEASE)" && return
+  echo "BUILD=$1" >&6
+}
+
+with_jsapi()
+{
+  [ "$1" = "help" ] && echo "Specify location of js/src (if not using Mozilla tree)" && return
+  echo "SPIDERMONKEY_SRC=$1" >&6
+}
+
+with_jsapi_options()
+{
+  [ "$1" = "help" ] && echo "Add options to js/src/configure command" && return
+  echo "CONFIGURE_OPTIONS += $1" >&6
+}
+
+with_jsapi_cppflags()
+{
+  [ "$1" = "help" ] && echo "Add C pre-processor flags to spidermonkey build" && return
+  echo "CONFIGURE_ENV_VARS += CPPFLAGS=$1" >&6
+}
+
+with_mozilla()
+{
+  [ "$1" = "help" ] && echo "Specify location of Mozilla tree" && return
+  echo "SPIDERMONKEY_SRC=$1/js/src" >&6
+}
+
+with_gcc_prefix()
+{
+  [ "$1" = "help" ] && echo "Specify prefix of GCC to use" && return
+  echo "GCC_PREFIX=$1" >&5
+  echo "CC=gcc" >&5
+}
+
+disable_async_callbacks()
+{
+  [ "$1" = "help" ] && echo "Disable async callback facility (breaks require('signals'))" && return
+
+  if [ "$1" = "enable" ]; then
+    echo "EXTRA_CPPFLAGS += -UGPSEE_NO_ASYNC_CALLBACKS" >&5
+  else
+    echo "EXTRA_CPPFLAGS += -DGPSEE_NO_ASYNC_CALLBACKS" >&5
+  fi
+}
+
+with_curl_prefix()
+{
+  [ "$1" = "help" ] && echo "Specify cURL prefix directory" && return
+
+  echo "CURL_CPPFLAGS=-I$1/include" >&5
+  echo "CURL_LDFLAGS=$1/lib/libcurl.\$(SOLIB_EXT)" >&5
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+
+  if [ ! -f "$1/include/curl/curl.h" ]; then
+    errout " *** Error: $1/curl/curl.h: file not found"
+    exit 1
+  fi
+}
+
+with_curl_ldflags()
+{
+  [ "$1" = "help" ] && echo "Specify cURL linker flags" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  echo "CURL_LDFLAGS+=$1" >&5
+}
+
+with_curl_cppflags()
+{
+  [ "$1" = "help" ] && echo "Specify cURL pre-processor flags" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  echo "CURL_CPPFLAGS+=$1" >&5
+}
+
+enable_curl()
+{
+  [ "$1" = "help" ] && echo "Enable cURL (do not use with --with-curl*)" && return
+
+  echo 'IGNORE_MODULES := $(filter-out curl,$(IGNORE_MODULES))' >&5
+  cfg_pkg CURL libcurl 5
+}
+
+with_system_gsr()
+{
+  [ "$1" = "help" ] && echo "Specify alternate location for /usr/bin/gsr symlink" && return
+  echo "GSR_SHEBANG_LINK=$1" >&5
+}
+
+disable_gsr_symlink()
+{
+  [ "$1" = "help" ] && echo "Do not emit system gsr symlink (does not erase existing)" && return
+  echo "GSR_SHEBANG_LINK=" >&5
+}
+
+# main
+
+case "$1" in 
+  "--help"|"-h"|"help")
+    _help
+    ;;
+esac
+
+. ${gpsee_dir}/configure.incl
+
+# first pass: configure configure
+originalArgs="$*"
+while [ "$1" ]
+do
+  if expr "$1" : '--with-pkg-config=.*' >/dev/null ; then
+    pkgconfig="`echo \"$1\" | sed 's/.*=//'`"
+  fi
+  if expr "$1" : '--with-gnu-make=.*' >/dev/null ; then
+    make="`echo \"$1\" | sed 's/.*=//'`"
+    echo MAKE IS $make
+  fi
+  shift
+done
+
+[ "$pkgconfig" ] || pkgconfig="`locate pkg-config`"
+[ "$make" ] || make="`locate make gmake`"
+
+set -- $originalArgs
+
+fd=5
+confdirs=". spidermonkey libffi"
+for dir in $confdirs
+do
+  file="$gpsee_dir/$dir/local_config.mk"
+  [ -f "$file" ] && head -1 "$file" | grep -v "Generated" >/dev/null && mv "$dir/local_config.mk" "$dir/local_config.mk.old"
+  echo "# Generated `date` by $USER on `hostname`" > "$file"
+  echo "# Configuration command: $0 $originalArgs" >> "$file"
+  echo "# " >> "$file" 
+  cat "$file.sample" >> "$file"
+  eval "exec $fd>>\"$file\""
+  echo "" >&$fd
+  echo "# Changes made by $configure_cmd" >&$fd
+  fd=`expr $fd + 1`
+done
+
+a="`locate autoconf2.13 autoconf213 autoconf-2.13`" && echo "AUTOCONF=$a" >&5
+
+if expr "$PWD" : .*surelynx >/dev/null; then
+  with_stream surelynx
+fi
+
+while [ "$1" ]
+do
+  if echo "$1" | grep '^--' >/dev/null; then
+    # --enable-option, --disable-option, or --option=value
+    func="`echo \"$1\" | sed -e 's/^--//' -e 's/-/_/g' -e 's/=.*//'`"
+    arg="`echo \"$1\" | grep = | sed -e 's/[^=]*=//'`" 
+    if ! $isFunc "$func" >/dev/null; then
+      if echo "$func" | grep '^enable' >/dev/null; then
+        func="`echo \"$func\" | sed 's/^enable/disable/'`"
+        arg="enable"
+      else
+        if echo "$func" | grep '^disable' >/dev/null; then
+          func="`echo \"$func\" | sed 's/^disable/enable/'`"
+          arg="disable"
+        fi
+      fi
+    fi
+
+    if ! $isFunc "$func" >/dev/null; then
+      errout "$1: invalid option"
+      exit 1
+    else
+#      echo "$arg" | grep '^~/' >/dev/null && arg="`echo \"$arg\" | sed 's/^~\//$(HOME)\//'`"
+      $func "`uglob \"$arg\"`"
+    fi
+  else
+    errout "$1: invalid option"
+    exit 3
+  fi
+  shift
+done
+
+echo
+echo " * Configuring SpiderMonkey"
+echo
+(cd spidermonkey && $make QUIET=True force_configure)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not configure SpiderMonkey. Stop."
+  errout ""
+  exit 4
+fi
+
+echo
+echo " * Configuring LibFFI"
+echo
+(cd libffi && $make QUIET=True force_configure)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not configure LibFFI. Stop."
+  errout ""
+  exit 5
+fi
+
+echo
+echo " * Building SpiderMonkey"
+echo
+(cd spidermonkey && $make QUIET=True build && $make QUIET=True install)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not build SpiderMonkey. Stop."
+  errout ""
+  exit 4
+fi
+
+echo
+echo " * Building LibFFI"
+echo
+(cd libffi && $make QUIET=True build && $make QUIET=True install)
+if [ "$?" != "0" ]; then
+  errout ""
+  errout " *** Could not build LibFFI. Stop."
+  errout ""
+  exit 5
+fi
+
+echo
+echo "Done. You may now build GPSEE."
+echo
