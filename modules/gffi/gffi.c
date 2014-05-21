@@ -46,7 +46,7 @@ static const char __attribute__((unused)) rcsid[]="$Id: gffi.c,v 1.11 2011/12/05
 
 #include "gpsee.h"
 #include "gffi.h"
-
+#include <sys/resource.h>
 
 static JSBool gffi_errno_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
