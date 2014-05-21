@@ -62,7 +62,8 @@
 
 VIRGIN_CPPFLAGS := $(CPPFLAGS)
 
-GFFI_DIR := $(shell pwd)
+GFFI_DIR := $(GPSEE_SRC_DIR)/modules/gffi
+
 include $(GPSEE_SRC_DIR)/ffi.mk
 include $(GPSEE_SRC_DIR)/iconv.mk
 ifneq ($(MAKECMDGOALS),clean)
@@ -73,7 +74,7 @@ include sanity.mk
 std_cppflags.mk: mk_std_cppflags
 	@echo " * Building $@"
 	$(CC) $(CFLAGS) $(CPPFLAGS) mk_std_cppflags.c -o mk_std_cppflags
-	./mk_std_cppflags "STD_CPPFLAGS=-std=gnu99" > $@
+	$(GFFI_DIR)/mk_std_cppflags "STD_CPPFLAGS=-std=gnu99" > $@
 mk_std_cppflags: CPPFLAGS := -I$(GPSEE_SRC_DIR) $(GFFI_CPPFLAGS) -std=gnu99
 
 DEFS	 	 	 = gpsee std compiler
@@ -85,7 +86,7 @@ OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
 LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
 MDFLAGS 		+= $(LIBFFI_CFLAGS)
-SYMBOL_FILTER_FILE	 = compiler_dmp.re
+SYMBOL_FILTER_FILE	 = $(GFFI_DIR)/compiler_dmp.re
 
 .PRECIOUS:		$(ND_AUTOGEN_SOURCE) $(ND_AUTOGEN_HEADERS)
 
@@ -121,7 +122,7 @@ std_gpsee_no.h: std_functions.h std_macro_consts.h
 		$(SED) -e 's/^#define //' -e 's/[ (].*//' -e 's/^_*//' -e 's/.*/#define GPSEE_NO_&/' >> $@
 
 std_macro_consts.h: std_macro_consts
-	./std_macro_consts > $@
+	$(GFFI_DIR)/std_macro_consts > $@
 
 # compiler_dmp.re filters out the symbols from the compiler itself
 compiler_dmp.re %.dmp defines.incl: sort=LC_COLLATE=C sort
@@ -143,7 +144,7 @@ empty.re:
 	echo "$$^" > $@
 compiler_defs.dmp: empty.h empty.re
 compiler_defs.dmp: CPPFLAGS=$(VIRGIN_CPPFLAGS)
-compiler_defs.dmp: SYMBOL_FILTER_FILE=empty.re
+compiler_defs.dmp: SYMBOL_FILTER_FILE=$(GFFI_DIR)/empty.re
 
 INCLUDE_DIRS=$(GFFI_DIR) /usr/local/include /usr/include /
 std_defs.dmp gpsee_defs.dmp: std_macro_consts.h
@@ -256,7 +257,7 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 	| $(EGREP) -v '($(START)$(STRING_EXPR))' \
 	| $(EGREP) -v '($(START)$(INT_EXPR))' \
 	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' \
-	| $(SED) -f tmse_parse.sed \
+	| $(SED) -f $(GFFI_DIR)/tmse_parse.sed \
 		>>$@
 #	@echo " - Argument Macro Expressions"
 #	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
@@ -293,7 +294,7 @@ defines.incl: $(foreach DEF,$(DEFS),$(DEF)_defs)
 	@for DEF in $(DEFS); do echo "haveDef($${DEF})"; done >> $@
 
 aux_types.incl: aux_types aux_types.decl 
-	./aux_types > $@
+	$(GFFI_DIR)/aux_types > $@
 
 structs.incl: structs.decl module.mk
 	@echo " * Building $@"
