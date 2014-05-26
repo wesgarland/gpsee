@@ -98,6 +98,7 @@ const char *gpsee_makeLogFormat(const char *fmt, char *fmtNew); /**< @ingroup ut
 #  include <fcntl.h>
 #  include <sys/wait.h>
 #  include <stdarg.h>
+#  include <math.h>
 # endif
 #endif
 
