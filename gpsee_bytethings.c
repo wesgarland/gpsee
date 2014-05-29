@@ -112,6 +112,7 @@ static void ByteThing_Finalize(JSContext *cx, JSObject *obj)
  *
  *  @note       It is an error to request a copy of a zero-byte buffer.
  */
+#warning Rooting Error in gpsee_newByteThing API
 JSObject *gpsee_newByteThing(JSContext *cx, void *buffer, size_t length, JSBool copy)
 {
   static JSClass byteThing_class =
