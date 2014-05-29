@@ -869,6 +869,11 @@ Stream.prototype.write = function Stream_write(buffer, encoding)
       }
       if ((buffer instanceof require("binary").ByteString) || (buffer instanceof require("binary").ByteArray))
 	break;
+      if (require("gpsee").isByteThing(buffer))
+      {
+        buffer = require("binary").ByteString(buffer);
+        break;
+      }
     default:
       buffer = buffer.toString();
     case "string":
