@@ -79,7 +79,7 @@ SOLIB_DIRS      += $(SOLIB_DIR)
 
 # Implicit Rules for building libraries
 %.$(SOLIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
-		$(SO_AR) $@ $(filter-out $(VERSION_O),$^) $(VERSION_O)
+		$(LINK_SOLIB) 
 
 ifndef SUDO_USER
 %.$(LIB_EXT):	$(if $(wildcard $(VERSION_H)),$(VERSION_O))
