@@ -59,7 +59,7 @@ LEX		?= lex
 YACC		?= yacc
 AR		?= ar
 AR_RU		?= $(AR) -ru
-SO_AR		?= $(LINKER) $(LDFLAGS) -o
+LINK_SOLIB	?= $(LINKER) -o $@ $(filter-out $(VERSION_O),$^) $(VERSION_O) $(LDFLAGS) $(LOADLIBES) $(LDLIBS)
 RANLIB		?= ranlib
 
 # Shell tools

@@ -57,8 +57,8 @@ ifndef AR_RU
 $(error AR_RU is not specified)
 endif
 
-ifndef SO_AR
-$(error SO_AR is not specified)
+ifndef LINK_SOLIB
+$(error LINK_SOLIB is not specified)
 endif
 
 ifndef RANLIB

@@ -139,8 +139,8 @@ EXPORT_LIBEXEC_JS	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE
 TARGET_LIBEXEC_JS	:= $(addprefix $(LIBEXEC_DIR)/, $(notdir $(EXPORT_LIBEXEC_JS)))
 TARGET_LIBEXEC_JSC 	:= $(join $(dir $(TARGET_LIBEXEC_JS)), $(addsuffix c,$(addprefix .,$(notdir $(TARGET_LIBEXEC_JS)))))
 
-LOADLIBES		+= -lgpsee
-$(BUILT_EXPORTED_PROGS): LDFLAGS	+= $(JSAPI_INSTALL_LIBS)
+$(BUILT_EXPORTED_PROGS): LOADLIBES		+= -lgpsee
+$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT) $(BUILT_EXPORTED_PROGS): LOADLIBES	+= $(JSAPI_INSTALL_LIBS)
 
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS) $(notdir $(BUILD_EXPORTED_PROGS)) $(EXPORT_PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
@@ -273,7 +273,6 @@ $(BIN_DIR)/%: %.o
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
-
 $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT): $(JSAPI_LIB_DIR)/$(notdir $@)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	$(CP) $(JSAPI_LIB_DIR)/$(notdir $@) $@
@@ -282,8 +281,6 @@ ifeq ($(UNAME_SYSTEM),Darwin)
 endif
 
 $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
-$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LDFLAGS += $(JSAPI_INSTALL_LIBS)
-
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 
 ifneq (X$(GSR_SHEBANG_LINK),X)
@@ -320,10 +317,10 @@ TEMPLATE_MARKUP =\
 		-e 's;@@CC@@;$(CC);g'\
 		-e 's;@@CXX@@;$(CXX);g'\
 		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
-		-e 's;@@LDFLAGS@@;$(LDFLAGS) -lgpsee $(JSAPI_INSTALL_LIBS);g'\
+		-e 's;@@LDFLAGS@@;$(LDFLAGS) -lgpsee;g'\
 		-e 's;@@CPPFLAGS@@;$(filter-out -I $(GPSEE_SRC_DIR) -I$(GPSEE_SRC_DIR),$(CPPFLAGS));g'\
 		-e 's;@@CXXFLAGS@@;$(CXXFLAGS);g'\
-		-e 's;@@LOADLIBES@@;$(LOADLIBES);g'\
+		-e 's;@@LOADLIBES@@;$(LOADLIBES) $(JSAPI_INSTALL_LIBS);g'\
 		-e 's;@@GPSEE_PREFIX_DIR@@;$(GPSEE_PREFIX_DIR);g'\
 		-e 's;@@LIBEXEC_DIR@@;$(LIBEXEC_DIR);g'\
 		-e 's;@@BIN_DIR@@;$(BIN_DIR);g'\
