@@ -111,6 +111,8 @@ static void ByteThing_Finalize(JSContext *cx, JSObject *obj)
  *  @returns    The object, or NULL if an exception was thrown.
  *
  *  @note       It is an error to request a copy of a zero-byte buffer.
+ *  @note       Requesting a copy of a NULL buffer will cause the same behaviour as a regular copy,
+ *              except the new memory will be left uninitialized.
  */
 #warning Rooting Error in gpsee_newByteThing API
 JSObject *gpsee_newByteThing(JSContext *cx, void *buffer, size_t length, JSBool copy)
@@ -157,7 +159,8 @@ JSObject *gpsee_newByteThing(JSContext *cx, void *buffer, size_t length, JSBool 
   {
     hnd->memoryOwner = robj;
     hnd->buffer = JS_malloc(cx, length);
-    memcpy(hnd->buffer, buffer, length);
+    if (buffer)
+      memcpy(hnd->buffer, buffer, length);
   }
   else
   {
