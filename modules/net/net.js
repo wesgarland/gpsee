@@ -45,6 +45,10 @@ const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
 const dh = ffi.std	/**< Header collection for #define'd constants */
 
+/* Temporary patch until build system under Linux 3 sorted out */
+if (!dh.SOCK_STREAM)
+  dh.SOCK_STREAM = require("gffi").gpsee.SOCK_STREAM
+
 const _close		= new dl.CFunction(ffi.int,	"close",		ffi.int);
 const _strerror		= new dl.CFunction(ffi.pointer, "strerror",		ffi.int);
 const _socket		= new dl.CFunction(ffi.int, 	"socket",		ffi.int, ffi.int, ffi.int);
