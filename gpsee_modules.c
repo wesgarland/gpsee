@@ -1546,7 +1546,10 @@ JSBool gpsee_runProgramModule(JSContext *cx, const char *scriptFilename, const c
 
     i = gpsee_resolvepath(tmpBuf, cnBuf, sizeof(cnBuf));
   }
-  if ((i >= sizeof(cnBuf)) || (i == -1))
+  if (i == -1)
+    return gpsee_throw(cx, RUNPROERR "could not resolve script path (%m)", scriptFilename);
+  else
+  if (i >= sizeof(cnBuf))
     return gpsee_throw(cx, RUNPROERR "filename buffer overrun", scriptFilename);
   else
     cnBuf[i] = (char)0;

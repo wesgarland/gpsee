@@ -152,8 +152,6 @@ const char *gpsee_dirname(const char *fullpath, char *buf, size_t bufLen)
  *
  *  If bufsize < PATH_MAX, malloc() is used to allocate PATH_MAX bytes during the call to this function.
  *
- *  TODO remove use of malloc()
- *
  *  @param      path      Input path string to opreate upon
  *  @param      buf       Output buffer for resolved path
  *  @param      bufsize   Size of 'buf'
@@ -173,10 +171,12 @@ int gpsee_resolvepath(const char *path, char *buf, size_t bufsiz)
 
   errno = 0;
 
-  /* Require buf (this behavior is *nearly* consistent with what was here before I came'a bugfixin') */
   if (!buf)
   {
-    errno = EINVAL;
+    if (bufsiz)
+      errno = EINVAL;
+    else
+      errno = ENAMETOOLONG;
     return -1;
   }
 
