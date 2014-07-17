@@ -46,8 +46,16 @@
 #include "jsapi.h"
 #include "jsxdrapi.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 JSXDRState * gpsee_XDRNewFile(JSContext *cx, JSXDRMode mode, const char *filename, FILE *f);
 int gpsee_XDRFileNo(JSXDRState *xdr);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif/*GPSEE_XDRFILE_H*/
 
