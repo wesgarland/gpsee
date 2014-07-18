@@ -138,9 +138,10 @@ EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 EXPORT_LIBEXEC_JS	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE_DSOS:.$(SOLIB_EXT)=.js))))
 TARGET_LIBEXEC_JS	:= $(addprefix $(LIBEXEC_DIR)/, $(notdir $(EXPORT_LIBEXEC_JS)))
 TARGET_LIBEXEC_JSC 	:= $(join $(dir $(TARGET_LIBEXEC_JS)), $(addsuffix c,$(addprefix .,$(notdir $(TARGET_LIBEXEC_JS)))))
+GPSEE_LOADLIBES		:= -lgpsee
+LOADLIBES		+= $(GPSEE_LOADLIBES) $(JSAPI_INSTALL_LIBS)
 
-$(BUILT_EXPORTED_PROGS): LOADLIBES		+= -lgpsee
-$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT) $(BUILT_EXPORTED_PROGS): LOADLIBES	+= $(JSAPI_INSTALL_LIBS)
+$(BUILT_EXPORTED_PROGS): $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT) $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
 
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS) $(notdir $(BUILD_EXPORTED_PROGS)) $(EXPORT_PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
@@ -281,6 +282,7 @@ ifeq ($(UNAME_SYSTEM),Darwin)
 endif
 
 $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
+$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LOADLIBES := $(filter-out $(LOADLIBES),$(GPSEE_LOADLIBES))
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 
 ifneq (X$(GSR_SHEBANG_LINK),X)
