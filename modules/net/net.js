@@ -238,7 +238,7 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
 
   if (options.hasOwnProperty("nonBlocking") && options.nonBlocking)
   {
-    flags = _fcntl(this.fd, dh.F_GETFL, 0);
+    var flags = _fcntl(this.fd, dh.F_GETFL, 0);
     if (_fcntl(this.fd, dh.F_SETFL, flags | dh.O_NONBLOCK) == -1)
       throw new Error("Could not make socket with file descriptor " + this.fd + " non-blocking" + syserr());
     this.nonBlocking = true;
@@ -797,7 +797,7 @@ function flushAndCloseAllSockets(socketList)
 {
   var socket;
 
-  for (i=0; i < socketList.length; i++)
+  for (var i=0; i < socketList.length; i++)
   {
     socket = socketList[i];
     if (socket.pendingWrites.length === 0)
