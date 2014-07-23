@@ -282,9 +282,11 @@ ifeq ($(UNAME_SYSTEM),Darwin)
 endif
 
 $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
-$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LOADLIBES := $(filter-out $(LOADLIBES),$(GPSEE_LOADLIBES))
+$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LOADLIBES := $(filter-out $(LOADLIBES),$(GPSEE_LOADLIBES)) $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
-
+libgpsee.$(SOLIB_EXT):
+	@echo " * Cannot build this target; please sudo make install instead"
+	@false
 ifneq (X$(GSR_SHEBANG_LINK),X)
 gsr.o: CPPFLAGS += -DSYSTEM_GSR="\"${GSR_SHEBANG_LINK}\""
 endif
