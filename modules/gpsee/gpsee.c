@@ -374,7 +374,7 @@ static JSBool gpsee_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, 
 
   grt->exitType = et_requested;
 
-  return JS_FALSE; /* not reached */
+  return JS_FALSE;
 }
 
 /** Fork the running application. 
