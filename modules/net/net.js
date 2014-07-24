@@ -45,6 +45,12 @@ const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
 const dh = ffi.std	/**< Header collection for #define'd constants */
 
+function dprint()
+{
+  if (exports.debug)
+    print.apply(print, ["DEBUG: " + (module.id.split("/").pop()) + ":\t"].concat(Array.prototype.slice.call(arguments)));
+}
+
 /* Temporary patch until build system under Linux 3 sorted out */
 if (!dh.SOCK_STREAM)
   dh.SOCK_STREAM = require("gffi").gpsee.SOCK_STREAM
@@ -108,7 +114,7 @@ exports.IP_Address = function IP_Address(address)
 {
   this.ipv6 = false;
 
-  var addrBuf = new ffi.CType(ffi.int32_t);
+  var addrBuf = new ffi.CType(ffi.uint32_t);
 
   if (typeof address === "string")
   {
@@ -353,6 +359,8 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
 {
   var res;
 
+  dprint("connecting to "+ options.address +":"+ options.port +"...")
+
   this.createEndpoint(options.port, options.address, {nonBlocking: options.hasOwnProperty('nonBlocking')?options.nonBlocking:true});
 
   res = _connect(this.fd, this.sockaddr, 16);
@@ -370,6 +378,8 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
     
     if (connectionListener)
       this.addListener("connect", connectionListener);
+    
+    dprint("Connected to "+ options.address +":"+ options.port );
     
     this.emit("connect");
   }
