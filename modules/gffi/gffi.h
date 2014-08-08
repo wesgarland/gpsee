@@ -118,12 +118,13 @@ typedef struct
 structShape *struct_findShape(const char *name);
 int struct_findMemberIndex(structShape *shape, const char *name);
 
+typedef enum { libFlag_dlclose=1, libFlag_freeName } library_flags_t;   /* For internal use by Library.c */
 /** Handle describing a shared object / Library instance */
 typedef struct 
 {
   void                  *dlHandle;    /**< Handle returned by dlopen() */
   char                  *name;        /**< Name of the library */
-  int                   flags;
+  library_flags_t       flags;
 } library_handle_t;
 
 extern JSClass *library_clasp;
