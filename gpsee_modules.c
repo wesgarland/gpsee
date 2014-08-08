@@ -1485,7 +1485,6 @@ JSBool gpsee_loadModule(JSContext *cx, JSObject *thisObject, uintN argc, jsval *
   {
     releaseModuleHandle(cx, realm, module);
     requireUnlock(cx);
-    GPSEE_ASSERT(JS_IsExceptionPending(cx));
     dpDepth(-1);
     return JS_FALSE;
   }

@@ -198,7 +198,25 @@ with_gcc_prefix()
 {
   [ "$1" = "help" ] && echo "Specify prefix of GCC to use" && return
   echo "GCC_PREFIX=$1" >&5
-  echo "CC=gcc" >&5
+  [ "$CC" ] || echo "CC=gcc" >&5
+}
+
+with_gcc_prefix()
+{
+  [ "$1" = "help" ] && echo "Specify prefix of GCC to use" && return
+  echo "GCC_PREFIX=$1" >&5
+}
+
+with_cc()
+{
+  [ "$1" = "help" ] && echo "Specify C compiler to use" && return
+  echo "CC=$1" >&5
+}
+
+with_cxx()
+{
+  [ "$1" = "help" ] && echo "Specify C++ compiler to use" && return
+  echo "CXX=$1" >&5
 }
 
 disable_async_callbacks()

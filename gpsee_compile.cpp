@@ -42,6 +42,7 @@
 #include "gpsee_private.h"
 #include "gpsee_xdrfile.h"
 #include <jsxdrapi.h>
+#include <jsscript.h>
 
 #if defined(GPSEE_DEBUG_BUILD)
 # define dprintf(a...) do { if (gpsee_verbosity(0) >= GPSEE_XDR_DEBUG_VERBOSITY) gpsee_printf(cx, "> "), gpsee_printf(cx, a); } while(0)
@@ -68,11 +69,11 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
   if (!gpsee_dirname(filename, dir, PATH_MAX))
     return -1;
 
-  if (snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
+  if ((size_t)snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
   {
     /* Report paths over PATH_MAX */
-    gpsee_log(cx, GLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds PATH_MAX (%lu) bytes",
-              filename, (unsigned long)PATH_MAX);
+    gpsee_log(cx, GLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds buffer size (%lu bytes)",
+              filename, buflen);
     return -1;
   }
 
@@ -144,7 +145,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
     /* Should we use the compiler cache at all? */
     /* Check the compiler cache setting in our gpsee_runtime_t struct */
-    grt = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+    grt = (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
     useCompilerCache = grt->useCompilerCache;
 
     if (useCompilerCache)
@@ -351,13 +352,18 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
       }
 
       /* Truncate file again now that we have the lock */
-      ftruncate(cache_fd, 0);
+      if (ftruncate(cache_fd, 0))
+      {
+        close(cache_fd);
+        gpsee_log(cx, GLOG_NOTICE, "Could not truncate compiler cache file '%s' (%m)", cache_filename);
+        goto cache_write_bail;
+      }
 
       /* Create a FILE* for XDR */
       if ((cache_file = fdopen(cache_fd, "w")) == NULL)
       {
         close(cache_fd);
-        gpsee_log(cx, GLOG_NOTICE, "Could not create compiler cache '%s' (fdopen(3) reports %m)", cache_filename);
+        gpsee_log(cx, GLOG_NOTICE, "Could not write compiler cache file '%s' (%m)", cache_filename);
         goto cache_write_bail;
       }
       /* Let's ask Spidermonkey's XDR API for a serialization context */
@@ -417,6 +423,13 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
 
   cache_write_end:
   /* We must associate a GC object with the JSScript to protect it from the GC */
+  if ((*script)->length < 2)
+  {
+    if (gpsee_verbosity(0))
+      gpsee_log(cx, GLOG_DEBUG, "Script at '%s' is empty", scriptFilename);
+    goto finish;
+  }
+
   *scriptObject = JS_NewScriptObject(cx, *script);
   if (!*scriptObject)
     goto fail;

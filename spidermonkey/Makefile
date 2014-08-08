@@ -233,6 +233,7 @@ vars.mk: $(JS_CONFIG)
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
+	rm $(SPIDERMONKEY_BUILD)/config.cache
 	[ ! -f vars.mk ] || rm vars.mk
 
 distclean dist-clean: clean

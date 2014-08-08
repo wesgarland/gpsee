@@ -51,9 +51,6 @@
 
 JSClass *library_clasp;
 
-/* library_handle_t::flags */
-#define LIBRARY_DLCLOSE 1
-#define LIBRARY_FREENAME 2
 /**
  *  Implements the Library constructor representing DSOs loaded for FFI binding.
  *
@@ -69,6 +66,7 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 {
   library_handle_t      *hnd;
   JSObject              *cFunction_proto;
+  int                   openFlag;
 
   /* Require we are constructing a new object instance with 'new' */
   if (!JS_IsConstructing(cx))
@@ -93,20 +91,17 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
    * the argument 'filename'. Please see gffi.CFunction for more information.
    */
 
-  /* Require a single argument from caller */
-  if (argc != 1)
-    return gpsee_throw(cx, CLASS_ID ".arguments.count: An argument is required!");
+  if (argc != 1 && argc != 2)
+    return gpsee_throw(cx, CLASS_ID ".constructor.arguments.count");
 
-  /* Allocate our instance private struct */
   hnd = JS_malloc(cx, sizeof(*hnd));
   if (!hnd)
   {
     JS_ReportOutOfMemory(cx);
     return JS_FALSE;
   }
-  /* Initialize our instance private struct */
+
   memset(hnd, 0, sizeof(*hnd));
-  /* Associate the instance private with our new JSObject */
   JS_SetPrivate(cx, obj, hnd);
 
   /* Handle dlopen() calls that don't actually open a new DSO */
@@ -135,14 +130,29 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 
     /* Open a real DSO */
     default:
-      /* Retrieve the name of the DSO */
+      hnd->flags = libFlag_dlclose;
       hnd->name = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-      /* Open the DSO */
-      hnd->dlHandle = dlopen(hnd->name, RTLD_LAZY);
+      if (argc == 1)
+        openFlag = RTLD_LAZY;
+      else
+      {
+        if (JSVAL_IS_INT(argv[1]))
+          openFlag = JSVAL_TO_INT(argv[1]);
+        else
+        {
+          jsdouble d;
+
+          if (JS_ValueToNumber(cx, argv[1], &d) == JS_FALSE)
+            return JS_FALSE;
+          openFlag = d;
+          if (d != openFlag)
+            return gpsee_throw(cx, CLASS_ID ".constructor.overflow: second argument could not be converted to an integer");
+        }
+      }
+
+      hnd->dlHandle = dlopen(hnd->name, openFlag);
       if (!hnd->dlHandle)
-        return gpsee_throw(cx, CLASS_ID ".error: Could not dlopen(\"%s\", RTLD_LAZY) (%m)", hnd->name);
-      /* Remember to dlclose() later */
-      hnd->flags |= LIBRARY_DLCLOSE;
+        return gpsee_throw(cx, CLASS_ID ".constructor.dlopen: Could not open library \"%s\" (%m)", hnd->name);
       break;
   }
 
@@ -154,6 +164,7 @@ static JSBool Library(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 
   return JS_TRUE;
 }
+
 /** Library finalizer.
  *
  *  @param    cx    Valid JS Context
@@ -163,17 +174,54 @@ static void Library_Finalize(JSContext *cx, JSObject *obj)
 {
   library_handle_t *hnd;
 
-  /* Fetch our instance private */
   hnd = JS_GetPrivate(cx, obj);
   if (!hnd)
     return;
 
-  if (hnd->flags & LIBRARY_DLCLOSE)
+  if (hnd->dlHandle && (hnd->flags & libFlag_dlclose))
     dlclose(hnd->dlHandle);
-  if (hnd->flags & LIBRARY_FREENAME)
+  if (hnd->name && (hnd->flags & libFlag_freeName))
     JS_free(cx, hnd->name);
   JS_free(cx, hnd);
 }
+
+/**
+ *  JS method to find a symbol in the library and return its address back to JS wrapped in an instance 
+ *  of Memory, or throw an exception.
+ */
+static JSBool library_dlsym(JSContext *cx, uintN argc, jsval *vp)
+{
+  jsval                 *argv    = JS_ARGV(cx, vp);
+  JSObject              *thisObj = JS_THIS_OBJECT(cx, vp);
+  JSObject              *obj;
+  void                  *p;
+  const char            *symbol, *error;
+  library_handle_t      *hnd;
+
+  if (argc != 1)
+    return gpsee_throw(cx, CLASS_ID ".dlsym.arguments.count");
+
+  symbol = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+  if (!symbol || !symbol[0])
+    return gpsee_throw(cx, CLASS_ID ".dlsym.symbol: symbol cannot be null or the empty string");
+
+  hnd = JS_GetInstancePrivate(cx, thisObj, library_clasp, argv);
+  if (!hnd)
+    return gpsee_throw(cx, CLASS_ID ".dlsym.hnd");
+
+  (void)dlerror();
+  p = dlsym(hnd->dlHandle, symbol);
+  if (!p && (error = dlerror()))
+    return gpsee_throw(cx, CLASS_ID ".dlsym.error: %s", error);
+  
+  obj = gpsee_newByteThing(cx, p, 0, JS_FALSE);
+  if (!obj)
+    return JS_FALSE;
+
+  JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(obj));
+  return JS_TRUE;
+}
+
 /**
  *  Initalize the Library JSClass and prototype.
  *
@@ -203,6 +251,7 @@ JSObject *Library_InitClass(JSContext *cx, JSObject *obj, JSObject *parentProto)
   };
   static JSFunctionSpec instance_methods[] =
   {
+    JS_FN("dlsym",      library_dlsym, 	0, JSPROP_ENUMERATE),
     JS_FS_END
   };
   static JSPropertySpec instance_props[] =

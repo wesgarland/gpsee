@@ -41,9 +41,10 @@ $(error Sorry, your compiler is not yet supported)
 else
 ifdef GCC_PREFIX
 GCC_BIN_DIR_SLASH ?= $(GCC_PREFIX)/bin/
+GXX_BIN_DIR_SLASH ?= $(GCC_BIN_DIR_SLASH)
 endif
 GCC		?= $(GCC_BIN_DIR_SLASH)gcc
-GXX		?= $(GCC_BIN_DIR_SLASH)g++
+GXX		?= $(if $(CXX),$(CXX),(GXX_BIN_DIR_SLASH)g++)
 CC		?= $(GCC)
 
 CXX		?= $(GXX)
@@ -51,8 +52,9 @@ LINKER		?= $(GCC) -shared
 CC		:= $(GCC_BIN_DIR_SLASH)$(CC)
 CXX		:= $(GCC_BIN_DIR_SLASH)$(CXX)
 
-CPP		?= $(GCC) -E
-MAKEDEPEND	?= gcc -E -MM -MG
+GXX_INSTALL_DIR	?= $(shell $(GXX) -print-search-dirs | grep '^install: ' | head -1 | sed 's/^install: //')
+CPP		?= $(GCC) -E -B $(GXX_INSTALL_DIR)
+MAKEDEPEND	?= $(GCC) -E -MM -MG -B $(GXX_INSTALL_DIR)
 endif
 
 LEX		?= lex
