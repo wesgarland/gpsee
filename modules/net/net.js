@@ -45,6 +45,12 @@ const ffi = require("gffi");
 const dl = ffi;		/**< Dynamic lib handle for pulling symbols */
 const dh = ffi.std	/**< Header collection for #define'd constants */
 
+function dprint()
+{
+  if (exports.debug)
+    print.apply(print, ["DEBUG: " + (module.id.split("/").pop()) + ":\t"].concat(Array.prototype.slice.call(arguments)));
+}
+
 /* Temporary patch until build system under Linux 3 sorted out */
 if (!dh.SOCK_STREAM)
   dh.SOCK_STREAM = require("gffi").gpsee.SOCK_STREAM
@@ -108,7 +114,7 @@ exports.IP_Address = function IP_Address(address)
 {
   this.ipv6 = false;
 
-  var addrBuf = new ffi.CType(ffi.int32_t);
+  var addrBuf = new ffi.CType(ffi.uint32_t);
 
   if (typeof address === "string")
   {
@@ -238,7 +244,7 @@ Socket.prototype.setfd = function Socket$setfd(fd, options)
 
   if (options.hasOwnProperty("nonBlocking") && options.nonBlocking)
   {
-    flags = _fcntl(this.fd, dh.F_GETFL, 0);
+    var flags = _fcntl(this.fd, dh.F_GETFL, 0);
     if (_fcntl(this.fd, dh.F_SETFL, flags | dh.O_NONBLOCK) == -1)
       throw new Error("Could not make socket with file descriptor " + this.fd + " non-blocking" + syserr());
     this.nonBlocking = true;
@@ -353,6 +359,8 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
 {
   var res;
 
+  dprint("connecting to "+ options.address +":"+ options.port +"...")
+
   this.createEndpoint(options.port, options.address, {nonBlocking: options.hasOwnProperty('nonBlocking')?options.nonBlocking:true});
 
   res = _connect(this.fd, this.sockaddr, 16);
@@ -370,6 +378,8 @@ Socket.prototype.connect = function Socket$connect(options, connectionListener)
     
     if (connectionListener)
       this.addListener("connect", connectionListener);
+    
+    dprint("Connected to "+ options.address +":"+ options.port );
     
     this.emit("connect");
   }
@@ -797,7 +807,7 @@ function flushAndCloseAllSockets(socketList)
 {
   var socket;
 
-  for (i=0; i < socketList.length; i++)
+  for (var i=0; i < socketList.length; i++)
   {
     socket = socketList[i];
     if (socket.pendingWrites.length === 0)
