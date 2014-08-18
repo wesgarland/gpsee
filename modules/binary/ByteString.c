@@ -490,7 +490,7 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
 
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, (end - start) + 1, NULL,
                                 byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
@@ -575,7 +575,7 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
   }
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, (end - start) + 1, NULL,
                                 byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
