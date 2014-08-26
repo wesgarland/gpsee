@@ -158,7 +158,7 @@ static JSBool query_readQuery(JSContext *cx, JSObject *obj, uintN argc, jsval *a
 			     JS_PropertyStub, JS_PropertyStub, JSPROP_ENUMERATE) != JS_TRUE)
 	  return gpsee_throw(cx, OBJECT_ID ".readQuery.property.%s.element.%u", n->entry.name, length);
 
-	if (JS_SetArrayLength(cx, JSVAL_TO_OBJECT(val), length) != JS_TRUE)
+	if (JS_SetArrayLength(cx, JSVAL_TO_OBJECT(val), length + 1) != JS_TRUE)
 	  return gpsee_throw(cx, OBJECT_ID ".readQuery.property.%s.length.set", n->entry.name);
       }
     }
