@@ -166,7 +166,6 @@ install: install-dirs install-spidermonkey install-libffi install-built-exported
 install: EXPORT_PROGS += $(EXPORT_SCRIPTS)
 install-built-exported:  $(BUILT_EXPORTED_LIBS) $(BUILT_EXPORTED_PROGS) $(SOLIB_DIR)/pkgconfig/gpsee.pc
 
-clean: EXPORT_LIBEXEC_OBJS:=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
 clean: EXTRA_CLEAN_RULE=clean_modules clean_makefile_depends
 clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log libgpsee.a
 clean: OBJS += $(addsuffix .o,$(notdir $(BUILT_EXPORTED_PROGS)))

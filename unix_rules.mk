@@ -24,10 +24,11 @@ endif # goal = top
 endif # goal = none
 endif # ndef SUDO_USER
 
+clean: _EXPORT_LIBEXEC_OBJS=$(filter-out %.js,$(EXPORT_LIBEXEC_OBJS))
 clean:
 	-$(if $(strip $(OBJS)), $(RM) $(OBJS))
 	-$(if $(strip $(EXPORT_LIBS)), $(RM) $(EXPORT_LIBS))
-	-$(if $(strip $(EXPORT_LIBEXEC_OBJS)), $(RM) $(EXPORT_LIBEXEC_OBJS)) 
+	-$(if $(strip $(_EXPORT_LIBEXEC_OBJS)), $(RM) $(_EXPORT_LIBEXEC_OBJS)) 
 	-$(if $(strip $(PROGS)), $(RM) $(PROGS))
 	-$(if $(strip $(EXPORT_PROGS)), $(RM) $(EXPORT_PROGS))
 	-$(if $(strip $(AUTOGEN_HEADERS)), $(RM) $(AUTOGEN_HEADERS))
