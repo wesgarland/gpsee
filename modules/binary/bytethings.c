@@ -822,7 +822,7 @@ JSBool byteThing_val2bytes(JSContext *cx, jsval *vals, int nvals, unsigned char 
         bufpos += hnd->length;
       }
       else
-	return gpsee_throw(cx, MODULE_ID ".%s.%s.type: object for output byte %i is a not a ByteThing", clasp->name, methodName, bufpos-buf);
+	return gpsee_throw(cx, MODULE_ID ".%s.%s.type: object for output byte " GPSEE_PTRDIFF_FMT " is a not a ByteThing", clasp->name, methodName, bufpos-buf);
     }
     /* Try numeric coercion */
     else

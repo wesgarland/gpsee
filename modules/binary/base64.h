@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is PageMail, Inc.
  *
  * Portions created by the Initial Developer are 
- * Copyright (c) 2007-2009, PageMail, Inc. All Rights Reserved.
+ * Copyright (c) 2009, PageMail, Inc. All Rights Reserved.
  *
  * Contributor(s): 
  * 
@@ -34,25 +34,12 @@
  */
 
 /**
- *  @file 	gpsee_formats.h		Portable printf-style formats
- *  @author	Wes Garland
- *  @date	Jul 2009
- *  @version	$Id: gpsee_formats.h,v 1.3 2010/04/14 00:37:58 wes Exp $
+ *  @file	base64.h
+ *  @author	Wes Garland, PageMail, Inc., wes@page.ca
+ *  @date	Aug 2014
  */
 
-#define GPSEE_SIZET_FMT       "%zu"
-#define GPSEE_SSIZET_FMT      "%zd"
-#if defined(GPSEE_SUNOS_SYSTEM)
-#define GPSEE_PTR_FMT         "0x%p"
-#else
-#define GPSEE_PTR_FMT         "%p"
-#endif
-#define GPSEE_INT_FMT         "%d"
-#define GPSEE_UINT_FMT        "%u"
-#define GPSEE_INT32_FMT       "%ld"
-#define GPSEE_INT64_FMT       "%lld"
-#define GPSEE_UINT32_FMT      "%lu"
-#define GPSEE_UINT64_FMT      "%llu"
-#define GPSEE_HEX_UINT32_FMT  "0x%lx"
-#define GPSEE_HEX_UINT_FMT    "0x%x"
-#define GPSEE_PTRDIFF_FMT     "%li"
+size_t binary_to_b64(const unsigned char *in, size_t inLen, char *out);
+unsigned char *b64_to_binary(JSContext *cx, const char *b64, unsigned char *buf, size_t *outChars_p);
+unsigned char *qp_to_binary(JSContext *cx, const char *qp, unsigned char *outBuf, size_t *outLen_p);
+char *binary_to_qp_alloc(JSContext *cx, unsigned char *in_buf, size_t n_els, const char *force);

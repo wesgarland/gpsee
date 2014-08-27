@@ -48,14 +48,112 @@ static const char __attribute__((unused)) rcsid[]="$Id: binary.c,v 1.4 2011/12/0
 #include "gpsee.h"
 #define _BINARY_MODULE_C
 #include "binary.h"
+#include "base64.h"
 
 JSClass *byteString_clasp;
 JSClass *byteArray_clasp;
+
+/** Static method of binary module which can convert a bytething into
+ *  a JS String, encoding in base 64 along the way.
+ */
+static JSBool binary_toBase64(JSContext *cx, int argc, jsval *vp)
+{
+  jsval                 *argv = JS_ARGV(cx, vp);
+  JSObject              *obj;
+  byteThing_handle_t    *hnd;
+  char                  *s;
+  JSString              *str;
+  
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".toBase64.arguments.count");
+  if (!JSVAL_IS_OBJECT(argv[0]))
+    return gpsee_throw(cx, MODULE_ID ".toBase64.arguments.0: not an object");
+  obj = JSVAL_TO_OBJECT(argv[0]);
+  if (!gpsee_isByteThing(cx, obj))
+    return gpsee_throw(cx, MODULE_ID ".toBase64.arguments.0: not a ByteThing");
+  hnd = JS_GetPrivate(cx, obj);
+  if (!hnd)
+    return gpsee_throw(cx, MODULE_ID ".toBase64.arguments.0: ByteThing handle missing!");
+
+  if (hnd->length)
+  {
+    s = JS_malloc(cx, ((((hnd->length) + 2) / 3) * 4) + 1);
+    if (!s)
+      return JS_FALSE;
+    (void)binary_to_b64(hnd->buffer, hnd->length, s);
+
+    str = JS_NewStringCopyZ(cx, s);
+    JS_free(cx, s);
+  }
+  else
+  {
+    str = JS_NewStringCopyN(cx, "", 0);
+  }
+
+  if (!str)
+    return JS_FALSE;
+
+  JS_SET_RVAL(cx, vp, STRING_TO_JSVAL(str));
+  return JS_TRUE;
+}
+
+/** Static method of binary module which can convert a JS string
+ *  into a bytething, decoding base 64 along the way
+ */
+static JSBool binary_fromBase64(JSContext *cx, int argc, jsval *vp)
+{
+  jsval                 *argv = JS_ARGV(cx, vp);
+  JSString              *str;
+  const char            *s;
+  unsigned char         *buf;
+  JSObject              *obj;
+  byteThing_handle_t    *hnd;
+
+  if (argc != 1)
+    return gpsee_throw(cx, MODULE_ID ".fromBase64.arguments.count");
+
+  if (JSVAL_IS_STRING(argv[0]))
+    str = JSVAL_TO_STRING(argv[0]);
+  else
+  {
+    str = JS_ValueToString(cx, argv[0]);
+    if (!str)
+      return JS_FALSE;
+  }
+
+  s = JS_GetStringBytesZ(cx, str);
+  if (!s)
+    return JS_FALSE;
+  
+  obj = gpsee_newByteThing(cx, NULL, ((strlen(s) / 4) * 3) + 2, JS_TRUE);
+  hnd = JS_GetPrivate(cx, obj);
+  buf = b64_to_binary(cx, s, hnd->buffer, &hnd->length);
+  if (!buf)
+    return JS_FALSE;
+
+  JS_SET_RVAL(cx, vp, OBJECT_TO_JSVAL(obj));
+  return JS_TRUE;
+}  
+  
 
 /** Initialize the module */
 const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
 {
   JSObject *proto;
+
+  static JSFunctionSpec binary_static_methods[] = 
+  {
+    JS_FN("toBase64",               binary_toBase64,                0, 0),
+    JS_FN("fromBase64",             binary_fromBase64,              0, 0),
+/** @todo
+    JS_FN("toQuotedPrintable",      binary_toQuotedPrintable,       0, 0),
+    JS_FN("fromQuotedPrintable",    binary_fromQuotePrintable,      0, 0),
+*/
+    { NULL, NULL, 0, 0, 0 },
+  };
+
+  if (JS_DefineFunctions(cx, moduleObject, binary_static_methods) != JS_TRUE)
+    return NULL;
 
   proto = Binary_InitClass(cx, moduleObject);
   if (proto == NULL)
@@ -67,6 +165,7 @@ const char *binary_InitModule(JSContext *cx, JSObject *moduleObject)
   if (ByteArray_InitClass(cx, moduleObject, proto) == NULL)
     return NULL;
 
+  
   return MODULE_ID;
 }
 

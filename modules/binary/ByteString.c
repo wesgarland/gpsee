@@ -192,8 +192,14 @@ JSBool ByteString_get(JSContext *cx, uintN argc, jsval *vp)
 }
 
 /** 
- *  Implements the ByteString constructor.
- *  new ByteString(file descriptor number, mode string, [buffered boolean])
+ * Implements the ByteString constructor:
+ *
+ * ByteString()                 - Construct an empty byte string. 
+ * ByteString(byteString)       - Copies byteString. 
+ * ByteString(byteArray)        - Use the contents of byteArray. 
+ * ByteString(arrayOfNumbers)   - Use the numbers in arrayOfNumbers as the bytes. 
+ *                                If any element is outside the range 0...255, a RangeError is thrown. 
+ * ByteString(string, charset)  - Convert a string. The ByteString will contain string encoded with charset. 
  *
  *  @param	cx	JavaScript context
  *  @param	obj	Pre-allocated ByteString object
