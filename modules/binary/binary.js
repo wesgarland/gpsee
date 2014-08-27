@@ -151,3 +151,33 @@ exports.ByteArray.prototype.reduceRight = function(f) {
     rval = f(rval, this[i]);
   return rval;
 }
+
+/** Converts a string to a ByteArray encoded in charset. */
+String.prototype.toByteArray = function(charset)
+{
+  return new exports.ByteArray(this, charset ? charset : "utf-16");
+}
+
+/** Converts a string to a ByteString encoded in charset.  */
+String.prototype.toByteString = function(charset)
+{
+  return new exports.ByteString(this, charset ? charset : "utf-16");
+}
+
+/** Returns an array of Unicode code points (as numbers).  */
+String.prototype.charCodes = function()
+{
+  throw new Error("not implemented");
+}
+
+/** Converts an array of Unicode code points to a ByteArray encoded in charset.  */
+Array.prototype.toByteArray = function (charset)
+{
+  return new exports.ByteArray(this, charset);
+}
+
+/** Converts an array of Unicode code points to a ByteString encoded in charset.  */
+Array.prototype.toByteString = function(charset)
+{
+  return new exports.ByteString(this, charset);
+}

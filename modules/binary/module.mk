@@ -32,6 +32,6 @@
 #
 # ***** END LICENSE BLOCK ***** 
 #
-EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o BinaryStub.o
+EXTRA_MODULE_OBJS	= bytethings.o ByteString.o ByteArray.o BinaryStub.o base64.o
 
 include $(GPSEE_SRC_DIR)/iconv.mk
