@@ -55,4 +55,4 @@
 #define GPSEE_UINT64_FMT      "%llu"
 #define GPSEE_HEX_UINT32_FMT  "0x%lx"
 #define GPSEE_HEX_UINT_FMT    "0x%x"
-#define GPSEE_PTRDIFF_FMT     "%i"
+#define GPSEE_PTRDIFF_FMT     "%li"
