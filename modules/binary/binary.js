@@ -153,31 +153,38 @@ exports.ByteArray.prototype.reduceRight = function(f) {
 }
 
 /** Converts a string to a ByteArray encoded in charset. */
-String.prototype.toByteArray = function(charset)
+function binary$$String$toByteArray(charset)
 {
   return new exports.ByteArray(this, charset ? charset : "utf-16");
 }
+Object.defineProperty(String.prototype, 'toByteArray', {enumerable: false, value: binary$$String$toByteArray});
 
 /** Converts a string to a ByteString encoded in charset.  */
-String.prototype.toByteString = function(charset)
+function binary$$String$toByteString(charset)
 {
   return new exports.ByteString(this, charset ? charset : "utf-16");
 }
+Object.defineProperty(String.prototype, 'toByteString', {enumerable: false, value: binary$$String$toByteString});
+
 
 /** Returns an array of Unicode code points (as numbers).  */
-String.prototype.charCodes = function()
+function binary$$String$charCodes()
 {
   throw new Error("not implemented");
 }
+Object.defineProperty(String.prototype, 'charCodes', {enumerable: false, value: binary$$String$charCodes});
 
 /** Converts an array of Unicode code points to a ByteArray encoded in charset.  */
-Array.prototype.toByteArray = function (charset)
+function binary$$Array$toByteArray(charset)
 {
   return new exports.ByteArray(this, charset);
 }
+Object.defineProperty(Array.prototype, 'toByteArray', {enumerable: false, value: binary$$Array$toByteArray});
+
 
 /** Converts an array of Unicode code points to a ByteString encoded in charset.  */
-Array.prototype.toByteString = function(charset)
+function binary$$Array$toByteString(charset)
 {
   return new exports.ByteString(this, charset);
 }
+Object.defineProperty(Array.prototype, "toByteString", {enumerable: false, value: binary$$Array$toByteString});
