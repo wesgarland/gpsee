@@ -690,13 +690,13 @@ static void markModuleUnused(JSContext *cx, gpsee_realm_t *realm, moduleHandle_t
   dpDepth(+1);
   dprintf("Marking module at %p (%s) as unused\n", module, module->cname?:"no name");
 
-  if (module->flags & ~mhf_loaded && module->exports && module->fini)
-    module->fini(cx, realm, module->exports, JS_TRUE);
+  if (module->flags & mhf_loaded && module->exports && module->fini)
+    if (module->fini(cx, realm, module->exports, JS_TRUE) == JS_TRUE)
+      module->fini = NULL;
 
   module->scope   = NULL;
   module->scrobj  = NULL;
   module->exports = NULL;
-  module->fini	  = NULL;
 
   module->flags	 &= ~mhf_loaded;
   dpDepth(-1);
