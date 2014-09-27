@@ -153,7 +153,7 @@ static void __attribute__((noreturn)) usage(const char *argv_zero)
                   "SureLynx "
 #endif
                   PRODUCT_SHORTNAME " " PRODUCT_VERSION " - " PRODUCT_SUMMARY " " GPSEE_CURRENT_VERSION_STRING "\n"
-                  "Copyright (c) 2007-2010 PageMail, Inc. All Rights Reserved.\n"
+                  "Copyright (c) 2007-2014 PageMail, Inc. All Rights Reserved.\n"
                   "\n"
                   "As an interpreter: #! %s {-/*flags*/}\n"
                   "As a command:      %s "
