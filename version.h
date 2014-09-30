@@ -1,0 +1,4 @@
+#include "gpsee_version.h"
+#define PROJECT		"GPSEE"
+#define VERSION		_xstr(GPSEE_MAJOR_VERSION_NUMBER) "." _xstr(GPSEE_MINOR_VERSION_NUMBER) "." _xstr(GPSEE_MICRO_VERSION_NUMBER)
+#define PATCHLEVEL	GPSEE_PATCHLEVEL
