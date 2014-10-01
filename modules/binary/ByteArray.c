@@ -645,7 +645,7 @@ static JSBool ByteArray_lice(JSContext *cx, uintN argc, jsval *vp, JSBool splice
   if (!byteThing_arg2ssize(cx, argc, vp, &start, 0, -size, size-1, JS_FALSE, 0, byteArray_clasp, methodName))
     return JS_FALSE;
 
-  if (!byteThing_arg2ssize(cx, argc, vp, &end,   1, -size, size, JS_TRUE, hnd->length-1, byteArray_clasp, methodName))
+  if (!byteThing_arg2ssize(cx, argc, vp, &end,   1, -size, size, JS_TRUE, hnd->length, byteArray_clasp, methodName))
     return JS_FALSE;
 
   /* Negative indexes are relative to the end of ByteArray
@@ -666,8 +666,10 @@ static JSBool ByteArray_lice(JSContext *cx, uintN argc, jsval *vp, JSBool splice
   }
   /* Instantiate a new ByteArray from a subsection of the buffer */
   else
+  {
     retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
                                   byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), 0);
+  }
 
   /* Failure; pass downstream exceptions up the call stack */
   if (!retval)
