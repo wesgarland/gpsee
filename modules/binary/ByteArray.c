@@ -666,7 +666,7 @@ static JSBool ByteArray_lice(JSContext *cx, uintN argc, jsval *vp, JSBool splice
   }
   /* Instantiate a new ByteArray from a subsection of the buffer */
   else
-    retval = byteThing_fromCArray(cx, hnd->buffer + start, (end - start) + 1, NULL,
+    retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
                                   byteArray_clasp, byteArray_proto, sizeof(byteArray_handle_t), 0);
 
   /* Failure; pass downstream exceptions up the call stack */
