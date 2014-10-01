@@ -128,12 +128,7 @@ const gobbledygook = '2~`E 6_BV JGrK 4*I<f 0^B,g Ctks ;~Sn dA:Z )#h/qp4 I3p^C';
 const BASE = 'gpsee.module.ca.page';
 const BYTESTRING = BASE + '.binary.ByteString';
 const SUBSTR = BYTESTRING + '.substr';
-const EX_SUBSTR_OVERFLOW = function(n){return SUBSTR+'.arguments.'+n+'.overflow'};
-const EX_SUBSTR_UNDERFLOW = function(n){return SUBSTR+'.arguments.'+n+'.underflow'};
 const SUBSTRING = BYTESTRING + '.substring';
-const EX_SUBSTRING_OVERFLOW = function(n){return SUBSTRING+'.arguments.'+n+'.overflow'};
-const EX_SUBSTRING_UNDERFLOW = function(n){return SUBSTRING+'.arguments.'+n+'.underflow'};
-const EX_SUBSTRING_INVALID_RANGE = 'gpsee.module.ca.page.binary.ByteString.substring.range.invalid';
 const EX_INDEXOF_INVALID_BYTE = BYTESTRING + '.indexOf.arguments.0.byte.invalid';
 const EX_LASTINDEXOF_INVALID_BYTE = BYTESTRING + '.lastIndexOf.arguments.0.byte.invalid';
 
@@ -184,13 +179,8 @@ function(t) { return t.eq([s.decodeToString('US-ASCII') for each (s in (new Byte
 function(t) { return t.eq(new ByteString('1234').substr(0,1).decodeToString('US-ASCII'), '1') },
 function(t) { return t.eq(new ByteString('1234').substr(1,1).decodeToString('US-ASCII'), '2') },
 function(t) { return t.eq(new ByteString('1234').substr(2,2).decodeToString('US-ASCII'), '34') },
-function(t) { t.ex = t.sw(EX_SUBSTR_OVERFLOW(1)); new ByteString('1234').substr(2,3) },
-function(t) { t.ex = t.sw(EX_SUBSTR_UNDERFLOW(0)); new ByteString('1234').substr(-1,3) },
-function(t) { t.ex = t.sw(EX_SUBSTR_UNDERFLOW(1)); new ByteString('invalid').substr(0,0) },
 /* substring tests */
 function(t) { return t.eq(new ByteString('1234').substring(0,1).decodeToString('US-ASCII'), '1') },
-function(t) { t.ex = t.sw(EX_SUBSTRING_OVERFLOW(0)); new ByteString('overflow').substring(17,19) },
-function(t) { t.ex = t.sw(EX_SUBSTRING_UNDERFLOW(0)); new ByteString('underflow').substring(-10) },
 function(t) { return t.eq(new ByteString('Institutionalized education is a test of obedience!').substring(17,31).decodeToString('US-ASCII'), ' education is ') },
 /* toSource tests */
 /* TODO add unit test support for string comparison intended for comparing source code. In this case, the quotes around 'binary' may be double or single! Stupid Javascript! */

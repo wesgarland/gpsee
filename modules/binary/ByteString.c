@@ -432,9 +432,13 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
 {
   jsval 		*argv = JS_ARGV(cx, vp);
   byteString_handle_t	*hnd;
-  int64                 start, end;
+  size_t                start, end;
   JSObject              *retval;
-  
+  jsdouble              d;
+
+  if (argc < 1)
+    return gpsee_throw(cx, CLASS_ID ".slice.arguments.count");
+
   /* Acquire a pointer to our internal bytestring data */
   hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "slice");
   if (!hnd)
@@ -445,58 +449,40 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
    * @param   start
    * @param   end       optional
    */
-  switch (argc)
+  if (!JS_ValueToNumber(cx, argv[0], &d))
+    return JS_FALSE;
+  if (d < 0)
+    start = hnd->length + d > 0 ? hnd->length + d : 0;
+  else if (isnan(d))
+    start = 0;
+  else
+    start = d;
+  if (start > hnd->length)
+    start = hnd->length;
+
+  if (argc == 1)
   {
-    default:
-      return gpsee_throw(cx, CLASS_ID ".slice.arguments.count");
-    case 1:
-      /* TODO to number! */
-      if (JSVAL_IS_INT(argv[0]))
-        start = JSVAL_TO_INT(argv[0]);
-      else
-	return gpsee_throw(cx, CLASS_ID ".slice,arguments.0.type: must specify an actual number");
+    end = hnd->length;
+  }
+  else
+  {
+    if (!JS_ValueToNumber(cx, argv[1], &d))
+      return JS_FALSE;
+    if (d < 0)
+      end = hnd->length + d > 0 ? hnd->length + d : 0;
+    else if (isnan(d))
+      end = 0;
+    else
+      end = d;
+    if (end > hnd->length)
       end = hnd->length;
-      /* Wrap negative indexes around the end */
-      if (start < 0)
-        start = hnd->length + start - 1;
-      /* Range checks */
-      if (!byteString_rangeCheck(cx, hnd, start, "slice"))
-        return JS_FALSE;
-      break;
-    case 2:
-      /* TODO to number! */
-      if (JSVAL_IS_INT(argv[0]))
-        start = JSVAL_TO_INT(argv[0]);
-      else
-	return gpsee_throw(cx, CLASS_ID ".slice,arguments.0.type: must specify an actual number");
-
-      if (JSVAL_IS_INT(argv[1]))
-        end = JSVAL_TO_INT(argv[1]);
-      else
-	return gpsee_throw(cx, CLASS_ID ".slice,arguments.1.type: must specify an actual number");
-
-      /* Wrap negative indexes around the end */
-      if (end < 0)
-        end = hnd->length + end;
-      if (start < 0)
-        start = hnd->length + start - 1;
-      /* Range checks */
-      if (start >= end)
-        return
-        gpsee_throw(cx, CLASS_ID ".slice.arguments.range: 'start' argument ("
-		    GPSEE_INT64_FMT ") must be lesser than 'end' argument ("
-		    GPSEE_INT64_FMT ")", (long long int) start, (long long int) end);
-      /* Validate range of operation */
-      /* TODO fix inaccurate end-1 error reporting */
-      if (!byteString_rangeCheck(cx, hnd, start, "slice") ||
-          !byteString_rangeCheck(cx, hnd, end-1, "slice"))
-        return JS_FALSE;
-      break;
   }
 
+  if (end < start)
+    end = start;
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteThing_fromCArray(cx, hnd->buffer + start, (end - start) + 1, NULL,
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
                                 byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
@@ -514,15 +500,15 @@ JSBool ByteString_slice(JSContext *cx, uintN argc, jsval *vp)
 JSBool ByteString_substr(JSContext *cx, uintN argc, jsval *vp)
 {
   byteString_handle_t	*hnd;
-  size_t                start, len, size;
+  size_t                start, len;
   JSObject              *retval;
-  
+  jsdouble              d;
+  jsval                 *argv = JS_ARGV(cx, vp);
+
   /* Acquire a pointer to our internal bytestring data */
   hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substr");
   if (!hnd)
     return JS_FALSE;
-
-  size = hnd->length;
 
   /* @function
    * @name    ByteString.substr
@@ -531,11 +517,52 @@ JSBool ByteString_substr(JSContext *cx, uintN argc, jsval *vp)
    */
 
   /* Get Javascript arguments */
-  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, byteString_clasp, "substr"))
+  if (argc < 1)
+    return gpsee_throw(cx, CLASS_ID ".substr.arguments.count");
+  if (!JS_ValueToNumber(cx, argv[0], &d))
     return JS_FALSE;
+  if (isnan(d))
+    start = 0;
+  else if (d < 0)
+  {
+    if (hnd->length + d < 0)
+      start = 0;
+    else
+      start = hnd->length + d;
+  }
+  else
+  {
+    start = d;
+    if (start >= hnd->length)
+    {
+      len = 0;
+      goto copyOut;
+    }
+  }
 
-  if (!byteThing_arg2size(cx, argc, vp, &len, 1, 1, size-start, JS_TRUE, hnd->length-start, byteString_clasp, "substr"))
-    return JS_FALSE;
+  if (argc == 1)
+  {
+    len = hnd->length - start;
+  }
+  else
+  {
+    if (!JS_ValueToNumber(cx, argv[1], &d))
+      return JS_FALSE;
+    len = d;
+    if (isnan(d) || d <= 0)
+    {
+      len = 0;
+      goto copyOut;
+    }
+    if (len > hnd->length)
+      len = hnd->length;
+  }
+
+  copyOut:
+  GPSEE_ASSERT(start >= 0);
+  GPSEE_ASSERT(len >= 0);
+  GPSEE_ASSERT(start < hnd->buffer + hnd->length);
+  GPSEE_ASSERT(start + len < hnd->buffer + hnd->length);
 
   /* Instantiate a new ByteString from a subsection of the buffer */
   retval = byteThing_fromCArray(cx, hnd->buffer + start, len, NULL,
@@ -551,29 +578,50 @@ JSBool ByteString_substr(JSContext *cx, uintN argc, jsval *vp)
 JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
 {
   byteString_handle_t	*hnd;
-  size_t                start, end, size;
+  size_t                start, end;
   JSObject              *retval;
-  
+  jsdouble              d;
+  jsval                 *argv = JS_ARGV(cx, vp);
+
   /* Acquire a pointer to our internal bytestring data */
   hnd = byteString_getHandle(cx, JS_THIS_OBJECT(cx, vp), "substring");
   if (!hnd)
     return JS_FALSE;
-  size = hnd->length;
 
   /* @function
    * @name    ByteString.substring
    * @param   start
    * @param   end       optional
    */
-  /* Get Javascript arguments */
-  if (!byteThing_arg2size(cx, argc, vp, &start, 0, 0, size-1, JS_FALSE, 0, byteString_clasp, "substring"))
-    return JS_FALSE;
 
-  if (!byteThing_arg2size(cx, argc, vp, &end,   1, 0, size-1, JS_TRUE, hnd->length-1, byteString_clasp, "substring"))
+  /* Get Javascript arguments */
+  if (argc < 1)
+    return gpsee_throw(cx, CLASS_ID ".substring.arguments.count");
+  if (!JS_ValueToNumber(cx, argv[0], &d))
     return JS_FALSE;
+  start = d;
+  if (start != d)   /* Handle NaN and -ve at once, treat overflow like NaN */
+    start = 0;
+  if (start > hnd->length)
+    start = hnd->length;
+
+  if (argc == 1)
+  {
+    end = hnd->length;
+  }
+  else
+  {
+    if (!JS_ValueToNumber(cx, argv[1], &d))
+      return JS_FALSE;
+    end = d;
+    if (end != d)   /* Handle NaN and -ve at once, treat overflow like NaN */
+      end = 0;
+    if (end > hnd->length)
+      end = hnd->length;
+  }
 
   /* This behavior corresponds with String.substring() */
-  if (end < start)
+  if (argc >= 2 && end < start)
   {
     size_t temp = start;
     start = end;
@@ -581,7 +629,7 @@ JSBool ByteString_substring(JSContext *cx, uintN argc, jsval *vp)
   }
 
   /* Instantiate a new ByteString from a subsection of the buffer */
-  retval = byteThing_fromCArray(cx, hnd->buffer + start, (end - start) + 1, NULL,
+  retval = byteThing_fromCArray(cx, hnd->buffer + start, end - start, NULL,
                                 byteString_clasp, byteString_proto, sizeof(byteString_handle_t), 0);
 
   /* Success! */
