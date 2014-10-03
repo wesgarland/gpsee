@@ -221,44 +221,28 @@ TMS_EXPR=([A-Za-z0-9_()~!+-][\" A-Za-z0-9_()~!^&|<>,+-]*)
 %_defs.c: %_defs.dmp
 	@echo " * Building $@"
 	@echo "/* `date` */" > $@
-		@echo " - Integer Expression"
+
+	@echo " - Integer Expression"
 	@$(foreach HEADER, $(HEADERS), echo "#include \"$(HEADER)\"" >> $@;)
 	@echo "#include <stdio.h>" >> $@
 	@echo "#include \"../../gpsee_formats.h\"" >> $@
 	@echo "#undef main" >> $@
 	@echo "int main(int argc, char **argv) {" >> $@
-	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp \
-	| $(SED) \
-		-e 's/  */ /g' \
-		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		#ifdef \2\
-		printf("haveInt(\2,"); \
-	        printf(((\2 < 0) ? "%lld,1," GPSEE_SIZET_FMT ")\\n":"%llu,0," GPSEE_SIZET_FMT ")\\n"),(long long)(\2),sizeof(\2));\
-		#else\
-		#warning "Missing integer define \2"\
-		#endif/' \
-	>> $@
+	@$(EGREP) '$(START)$(INT_EXPR)$$' $*_defs.dmp | $(SED) -f inte_parse.sed >> $@
+
 	@echo " - Floating-point Expression"
-	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp \
-		| $(SED) \
-		-e 's/  */ /g' \
-		-e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveFloat(\2,%100e," GPSEE_SIZET_FMT ")\\n",(\2),sizeof(\2));/' \
-	>> $@
+	@$(EGREP) '$(START)$(FLOAT_EXPR)$$' $*_defs.dmp	| $(SED) -f fpe_parse.sed >> $@
+
 	@echo " - Strings"
-	@$(EGREP) '$(START)$(STRING_EXPR)$$' $*_defs.dmp \
-	| $(SED) -e 's/^\(#define \)\([^ ][^ ]*\)\(.*\)/\
-		printf("haveString(\2,\\\"%s\\\")\\n",(\2));/' \
-	>> $@
+	@$(EGREP) '$(START)$(STRING_EXPR)$$' $*_defs.dmp | $(SED) -f stre_parse.sed >> $@
 
 	@echo " - Transitive Macros & Simple Expressions"
 	@$(EGREP) '$(START)$(TMS_EXPR)$$' $*_defs.dmp\
 	| $(EGREP) -v '($(ARGMACRO_START))|($(START)$(STRING_EXPR))' \
 	| $(EGREP) -v '($(START)$(STRING_EXPR))' \
 	| $(EGREP) -v '($(START)$(INT_EXPR))' \
-	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' \
-	| $(SED) -f $(GFFI_DIR)/tmse_parse.sed \
-		>>$@
+	| $(EGREP) -v '($(START)$(FLOAT_EXPR))' | $(SED) -f $(GFFI_DIR)/tmse_parse.sed >>$@
+
 #	@echo " - Argument Macro Expressions"
 #	$(EGREP) '$(ARGMACRO_START) *..*$$' $*_defs.dmp\
 #	| $(SED) \
@@ -314,7 +298,6 @@ structs.incl: structs.decl module.mk
 		-e '/^#undef member_offset/p' \
 		-e 's/member_offset/member_size/' \
 	< structs.decl >> $@
-
 
 defines-test:	LDFLAGS = $(shell $(GPSEE_SRC_DIR)/gpsee-config --ldflags)
 

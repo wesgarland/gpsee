@@ -49,8 +49,6 @@ CC		?= $(GCC)
 
 CXX		?= $(GXX)
 LINKER		?= $(GCC) -shared
-CC		:= $(GCC_BIN_DIR_SLASH)$(CC)
-CXX		:= $(GCC_BIN_DIR_SLASH)$(CXX)
 
 GXX_INSTALL_DIR	?= $(shell $(GXX) -print-search-dirs | grep '^install: ' | head -1 | sed 's/^install: //')
 CPP		?= $(GCC) -E -B $(GXX_INSTALL_DIR)
