@@ -59,7 +59,17 @@ static __attribute__((unused)) const char gpsee_lock_rcsid[]="$Id: gpsee_lock.c,
 
 #include "gpsee_config.h"
 
-#if defined(__APPLE__)
+#if __GNUC__ > 4 \
+  || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 5 )
+  
+static inline JSBool
+js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
+{
+    return __sync_bool_compare_and_swap( w, ov, nv ) ? JS_TRUE : JS_FALSE;
+}
+
+
+#elif defined(__APPLE__)
 #include <libkern/OSAtomic.h>
 
 static JS_INLINE int __attribute__((unused))
@@ -81,18 +91,6 @@ js_CompareAndSwap(volatile jsword *w, jsword ov, jsword nv)
 {
   return atomic_cas_ptr(w, (void *)ov, (void *)nv) == (void *)ov;
 }
-
-
-#elif __GNUC__ > 4 \
-  || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 5 )
-  
-static inline JSBool
-js_CompareAndSwap(jsword *w, jsword ov, jsword nv)
-{
-    return __sync_bool_compare_and_swap( w, ov, nv ) ? JS_TRUE : JS_FALSE;
-}
-
-
 #else
 
 #include <memory.h>
