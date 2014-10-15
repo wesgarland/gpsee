@@ -141,7 +141,7 @@ $(LIBFFI_BUILD)/Makefile: $(LIBFFI_SRC)/configure #Makefile local_config.mk
 
 configure: $(LIBFFI_BUILD)/Makefile vars.mk
 force_configure:
-	$(RM) $(LIBFFI_BUILD)/Makefile $(LIBFFI_BUILD)/config.status vars.mk
+	$(RM) $(LIBFFI_BUILD)/Makefile $(LIBFFI_BUILD)/config.status $(LIBFFI_BUILD)/config.cache vars.mk
 	$(MAKE) configure
 
 build: $(LIBFFI_BUILD)/Makefile
@@ -192,11 +192,14 @@ vars.mk:
 
 clean:
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || [ X = X ]
-	$(RM) $(LIBFFI_BUILD)/Makefile || [ X = X ]
 	[ ! -f vars.mk ] || $(RM) vars.mk || [ X = X ]
 	$(RM) -r .libs || [ X = X ]
 	rmdir $(shell find $(LIBFFI_BUILD) -type d) 2>/dev/null || [ X = X ]
 	@echo " * Done clean - ignore errors" 
+
+conf-clean: 
+	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) clean || [ X = X ]
+	$(RM) $(LIBFFI_BUILD)/Makefile $(LIBFFI_BUILD)/config.cache || [ X = X ]
 
 distclean dist-clean: clean
 	cd $(LIBFFI_BUILD) && $(LIBFFI_MAKE) distclean || [ X = X ]
