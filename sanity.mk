@@ -2,7 +2,7 @@ ifndef GPSEE_SRC_DIR
 $(error	GPSEE_SRC_DIR unspecified)
 endif
 
-ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean))
+ifneq (X,X$(filter $(MAKECMDGOALS),install build all))
 ifndef BUILD
 $(error	BUILD unspecified)
 endif
@@ -24,11 +24,11 @@ $(error EGREP unspecified)
 endif
 
 ifndef SPIDERMONKEY_SRC
-$(error SPIDERMONKEY_SRC unspecified: did you forget to read the build instructions?)
+$(error SPIDERMONKEY_SRC unspecified - configuration invalid (target: $(MAKECMDGOALS)))
 endif
 
 ifndef SPIDERMONKEY_BUILD
-$(error SPIDERMONKEY_BUILD unspecified: did you forget to read the build instructions?)
+$(error SPIDERMONKEY_BUILD unspecified - configuration invalid (target: $(MAKECMDGOALS)))
 endif
 
 ifneq ($(BUILD),DEBUG)
