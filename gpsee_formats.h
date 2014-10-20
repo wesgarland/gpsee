@@ -44,8 +44,10 @@
 #define GPSEE_SSIZET_FMT      "%zd"
 #if defined(GPSEE_SUNOS_SYSTEM)
 #define GPSEE_PTR_FMT         "0x%p"
+#define GPSEE_PTRDIFF_FMT     "%i"
 #else
 #define GPSEE_PTR_FMT         "%p"
+#define GPSEE_PTRDIFF_FMT     "%li"
 #endif
 #define GPSEE_INT_FMT         "%d"
 #define GPSEE_UINT_FMT        "%u"
@@ -55,4 +57,4 @@
 #define GPSEE_UINT64_FMT      "%llu"
 #define GPSEE_HEX_UINT32_FMT  "0x%lx"
 #define GPSEE_HEX_UINT_FMT    "0x%x"
-#define GPSEE_PTRDIFF_FMT     "%li"
+
