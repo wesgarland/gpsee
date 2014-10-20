@@ -34,6 +34,7 @@
 #
 UNAME_MACHINE		?= $(shell uname -m)
 UNAME_SYSTEM		?= $(shell uname -s)
+UNAME_CPU		?= $(shell uname -p)
 UNAME_RELEASE		?= $(shell uname -r)
 _UNAME_REL		:= $(subst ., ,$(UNAME_RELEASE))
 UNAME_RELEASE_MAJOR	?= $(word 1 $(_UNAME_REL))

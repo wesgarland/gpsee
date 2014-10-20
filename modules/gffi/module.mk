@@ -104,7 +104,7 @@ clean:	OBJS += aux_types.o
 clean:	AUTOGEN_HEADERS = $(ND_AUTOGEN_HEADERS)
 clean:  AUTOGEN_SOURCE = $(ND_AUTOGEN_SOURCE)
 
-gffi.$(SOLIB_EXT):   LDFLAGS += -lffi
+gffi.$(SOLIB_EXT): LINK_SOLIB += -lffi
 gffi.o: aux_types.incl jsv_constants.decl
 structs.o: structs.incl
 defines.o: defines.incl

@@ -1,0 +1,19 @@
+APR_PROJECT 	= TRUE
+#include $(SURELYNX_SRC)/vars.mk
+
+DEFAULT_GPSEE_PREFIX_DIR = $(PREFIX_DIR)/gpsee
+GPSEE_PREFIX_DIR	 = $(PREFIX_DIR)/gpsee
+LIBEXEC_DIR		:= $(LIBEXEC_DIR)/gpsee
+
+INTERNAL_MODULE_NAMES	+= SmartRC
+
+GPSEE_LIBNAME	= gpsee
+GPSEE_C_DEFINES	+= NO_GPSEE_FLOCK HAVE_ICONV HAVE_APR
+GPSEE_LIBRARY	?= lib$(GPSEE_LIBNAME).$(SOLIB_EXIT)
+LDFLAGS		+= -lapr_surelynx
+
+NO_VERSION_O_RULES = True
+include $(GPSEE_SRC_DIR)/unix_stream.mk
+
+CPPFLAGS := -I/var/surelynx/include $(CPPFLAGS)
+LDFLAGS	 := -L/var/surelynx/
