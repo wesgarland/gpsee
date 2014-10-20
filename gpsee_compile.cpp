@@ -72,7 +72,7 @@ static int make_jsc_filename(JSContext *cx, const char *filename, char *buf, siz
   if ((size_t)snprintf(buf, buflen, "%s/.%sc", dir, gpsee_basename(filename)) >= buflen)
   {
     /* Report paths over PATH_MAX */
-    gpsee_log(cx, GLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds buffer size (%lu bytes)",
+    gpsee_log(cx, GLOG_NOTICE, "Would-be compiler cache for source code filename \"%s\" exceeds buffer size (" GPSEE_SIZET_FMT ") bytes)",
               filename, buflen);
     return -1;
   }
@@ -113,7 +113,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
   char 			cache_filename[PATH_MAX];
   int 			haveCacheFilename = 0;
   int 			useCompilerCache;
-  unsigned int 		fileHeaderOffset;
+  uint32 		fileHeaderOffset;
   struct stat 		source_st;
   struct stat 		cache_st;
   FILE 			*cache_file = NULL;
@@ -246,7 +246,7 @@ JSBool gpsee_compileScript(JSContext *cx, const char *scriptFilename, FILE *scri
        * invalidate any compiler cache resulting from a different "cstrRutf8" setting. */
       JS_XDRUint32(xdr, &cstrRutf8);
       /* Compare the results of the deserialization */
-      if (ino != source_st.st_ino || size != source_st.st_size || mtime != source_st.st_mtime
+      if (ino != (uint32)source_st.st_ino || size != (uint32)source_st.st_size || mtime != (uint32)source_st.st_mtime
       ||  fileHeaderOffset != fho || cstrRutf8 != (uint32)JS_CStringsAreUTF8())
       {
         /* Compiler cache invalidated by change in inode / filesize / mtime */

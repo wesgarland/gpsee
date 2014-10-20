@@ -62,7 +62,7 @@ JSObject *byteArray_proto;
  *  @returns    A pointer to a byteArray_handle_t or NULL if an exception is thrown
  *  @throws     type
  */
-inline byteArray_handle_t * byteArray_getHandle(JSContext *cx, JSObject *obj, const char const * methodName)
+byteArray_handle_t * byteArray_getHandle(JSContext *cx, JSObject *obj, const char const * methodName)
 {
   byteArray_handle_t *hnd;
   hnd = JS_GetInstancePrivate(cx, obj, byteArray_clasp, NULL);
