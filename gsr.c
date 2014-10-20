@@ -863,6 +863,7 @@ PRIntn prmain(PRIntn argc, char **argv)
       case et_dummy:
       default:
 	GPSEE_NOT_REACHED("impossible");
+	reason = NULL;	/* quell compiler warning below */
 	break;	
       case et_execFailure:
 	reason = "execFailure - probable native module error, returning JS_FALSE without setting exception";
@@ -878,7 +879,7 @@ PRIntn prmain(PRIntn argc, char **argv)
 	break;
     }
 
-    if (reason) /* ignore unreached warning */
+    if (reason)
     {
       gpsee_log(cx, GLOG_NOTICE, "Unexpected interpreter shutdown: %s (%m)", reason);
       if (gpsee_verbosity(0) == 0)
