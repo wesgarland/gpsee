@@ -1179,7 +1179,7 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
 {
   byteThing_handle_t    *hnd;
   JSString		*s;
-  unsigned char		*buf;
+  jschar		*buf;
   size_t		length;
   const char		*sourceCharset;
   jsval			*argv = JS_ARGV(cx, vp);
@@ -1219,12 +1219,12 @@ JSBool byteThing_decodeToString(JSContext *cx, uintN argc, jsval *vp, JSClass *c
 
   /* TODO not always necessary to do this! */
   /* Transcode from one character encoding to another */
-  if (!transcodeBuf_toBuf(cx, NULL, sourceCharset, &buf, &length, hnd->buffer, hnd->length,
+  if (!transcodeBuf_toBuf(cx, NULL, sourceCharset, (unsigned char **)&buf, &length, hnd->buffer, hnd->length,
                           clasp == byteString_clasp ? "ByteString.decodeToString" : "ByteArray.decodeToString"))
     return JS_FALSE;
 
   /* Instantiate a JSString return value */
-  s = JS_NewUCStringCopyN(cx, (jschar *)buf, length / 2);
+  s = JS_NewUCStringCopyN(cx, buf, length / 2);
   if (!s)
     return JS_FALSE;
 
@@ -1657,7 +1657,7 @@ JSBool byteThing_intAt(JSContext *cx, uintN argc, jsval *vp, const char *throwPr
   if (err)
     return gpsee_throw(cx, "%s.argument.0.invalid: %s", throwPrefix, err);
 
-  rval = *((int*)&hnd->buffer[idx]);
+  memcpy(&rval, &hnd->buffer[idx], sizeof rval);
   JS_SET_RVAL(cx, vp, INT_TO_JSVAL(rval));
   return JS_TRUE;
 
