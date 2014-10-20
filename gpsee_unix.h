@@ -69,7 +69,7 @@
 # define gpsee_fputc(cx, c, f)          fputc(c, f)
 # define gpsee_puts(cx, s)              puts(s)
 #else
-static inline gpsee_runtime_t *_grt(JSContext *cx)
+static __attribute__((unused)) gpsee_runtime_t *_grt(JSContext *cx)
 {
   return (gpsee_runtime_t *)JS_GetRuntimePrivate(JS_GetRuntime(cx));
 }
