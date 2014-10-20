@@ -38,10 +38,6 @@ ifeq ($(APR_PROJECT),TRUE)
 EXTRA_MODULE_OBJS	+= PHPSession_class.o phpsess.o
 endif
 
-ifeq ($(STREAM),surelynx)
-LDFLAGS 		+= -lphpsess
-endif
-
 EXTRA_MODULE_OBJS	+= cgihtml/cgihtml.a
 CPPFLAGS		+= -Icgihtml
 

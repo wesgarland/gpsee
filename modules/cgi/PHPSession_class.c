@@ -45,7 +45,7 @@ static __attribute__((unused)) const char rcsid[]="$Id: PHPSession_class.c,v 1.4
 #include "cgi.h"
 
 #if defined(HAVE_APR)
-#include <phpsess.h>
+#include "phpsess.h"
 
 #define CLASS_ID MODULE_ID ".PHPSession"
 

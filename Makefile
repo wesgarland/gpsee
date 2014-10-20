@@ -123,10 +123,7 @@ GPSEE_SOURCES	 	= gpsee.c gpsee_$(STREAM).c gpsee_lock.c gpsee_flock.c gpsee_uti
 			  gpsee_bytethings.c gpsee_p2open.c
 
 GPSEE_OBJS	 	= $(GPSEE_SOURCES:.c=.o) $(AR_MODULE_FILES)
-
-ifneq ($(STREAM),surelynx)
 GPSEE_OBJS		+= gpsee_$(STREAM).o
-endif
 
 EXPORT_PROGS		= gpsee-config
 BUILT_EXPORTED_PROGS	= $(BIN_DIR)/gsr $(BIN_DIR)/gpsee_precompiler
