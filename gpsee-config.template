@@ -14,6 +14,7 @@ Options:
         [--cc]
         [--cxx]
         [--cflags]
+        [--ldflags]
         [--cppflags]
         [--cxxflags]
         [--lib-filenames]
@@ -62,6 +63,9 @@ do
     "--cxx")
 	echo "@@CXX@@"
 	;;
+    "--cflags")
+	echo "-I@@INCLUDE_DIR@@ @@CFLAGS@@"
+	;;
     "--cppflags")
 	echo "-I@@INCLUDE_DIR@@ @@CPPFLAGS@@"
 	;;
@@ -88,6 +92,12 @@ do
 	;;
     "--stream")
         echo "@@STREAM@@"
+	;;
+    "--module-dir")
+	echo "@@LIBEXEC_DIR@@"
+	;;
+    "--solib-ext")
+	echo "@@SOLIB_EXT@@"
 	;;
     *)
 	echo "Error: invalid option $1" >/dev/stderr

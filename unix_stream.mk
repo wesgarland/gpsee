@@ -59,8 +59,9 @@ LEX		?= lex
 YACC		?= yacc
 AR		?= ar
 AR_RU		?= $(AR) -ru
-LINK_SOLIB	?= $(LINKER) -o $@ $(filter-out $(VERSION_O),$^) $(VERSION_O) $(LDFLAGS) $(LOADLIBES) $(LDLIBS)
+LINK_SOLIB	?= $(LINKER) -o $@ $(filter-out $(VERSION_O),$^) $(VERSION_O) $(LDFLAGS)
 RANLIB		?= ranlib
+RPATH		?= -Wl,rpath=
 
 # Shell tools
 CP		?= cp -f

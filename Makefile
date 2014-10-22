@@ -135,8 +135,10 @@ EXPORT_HEADERS		+= $(wildcard gpsee_$(STREAM).h)
 EXPORT_LIBEXEC_JS	:= $(wildcard $(sort $(JS_MODULE_FILES) $(wildcard $(SO_MODULE_DSOS:.$(SOLIB_EXT)=.js))))
 TARGET_LIBEXEC_JS	:= $(addprefix $(LIBEXEC_DIR)/, $(notdir $(EXPORT_LIBEXEC_JS)))
 TARGET_LIBEXEC_JSC 	:= $(join $(dir $(TARGET_LIBEXEC_JS)), $(addsuffix c,$(addprefix .,$(notdir $(TARGET_LIBEXEC_JS)))))
-GPSEE_LOADLIBES		:= -lgpsee
-LOADLIBES		+= $(GPSEE_LOADLIBES) $(JSAPI_INSTALL_LIBS)
+GPSEE_LDLIBS		:= -lgpsee
+LDLIBS			+= $(GPSEE_LDLIBS) $(JSAPI_INSTALL_LIBS)
+SOLIB_DIRS		+= $(SOLIB_DIR)
+LDFLAGS			+= $(RPATH)$(SOLIB_DIR) -L$(SOLIB_DIR)
 
 $(BUILT_EXPORTED_PROGS): $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT) $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
 
@@ -264,7 +266,7 @@ build_debug: build_debug_sudo build_debug_modules
 
 $(BIN_DIR)/%: %.o
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
+	$(LINK.o) $(filter %.o,$^) $(LOADLIBES) $(LDLIBS) -o $@
 
 $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT): $(JSAPI_LIB_DIR)/$(notdir $@)
 	@[ -d $(dir $@) ] || mkdir -p $(dir $@)
@@ -274,7 +276,7 @@ ifeq ($(UNAME_SYSTEM),Darwin)
 endif
 
 $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): $(GPSEE_OBJS) $(AR_MODULE_FILES)
-$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LOADLIBES := $(filter-out $(LOADLIBES),$(GPSEE_LOADLIBES)) $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
+$(SOLIB_DIR)/libgpsee.$(SOLIB_EXT): LDLIBS := $(filter-out $(LDLIBS),$(GPSEE_LDLIBS)) $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
 libgpsee.$(LIB_EXT): $(filter %.o,$(GPSEE_OBJS)) $(foreach MODULE_DIR, $(AR_MODULE_DIRS_ALL), $(wildcard $(MODULE_DIR)/*.o))
 libgpsee.$(SOLIB_EXT):
 	@echo " * Cannot build this target; please sudo make install instead"
@@ -313,14 +315,15 @@ TEMPLATE_MARKUP =\
 		-e 's;@@CC@@;$(CC);g'\
 		-e 's;@@CXX@@;$(CXX);g'\
 		-e 's;@@CFLAGS@@;$(CFLAGS);g'\
-		-e 's;@@LDFLAGS@@;$(LDFLAGS) -lgpsee;g'\
+		-e 's;@@LDFLAGS@@;$(LDFLAGS);g'\
 		-e 's;@@CPPFLAGS@@;$(filter-out -I $(GPSEE_SRC_DIR) -I$(GPSEE_SRC_DIR),$(CPPFLAGS));g'\
 		-e 's;@@CXXFLAGS@@;$(CXXFLAGS);g'\
-		-e 's;@@LOADLIBES@@;$(LOADLIBES) $(JSAPI_INSTALL_LIBS);g'\
+		-e 's;@@LDLIBS@@;-lgpsee $(LDLIBS) $(JSAPI_INSTALL_LIBS);g'\
 		-e 's;@@GPSEE_PREFIX_DIR@@;$(GPSEE_PREFIX_DIR);g'\
 		-e 's;@@LIBEXEC_DIR@@;$(LIBEXEC_DIR);g'\
 		-e 's;@@BIN_DIR@@;$(BIN_DIR);g'\
 		-e 's;@@SOLIB_DIR@@;$(SOLIB_DIR);g'\
+		-e 's;@@SOLIB_EXT@@;$(SOLIB_EXT);g'\
 		-e 's;@@GPSEE_RELEASE@@;$(GPSEE_RELEASE);g'\
 		-e 's;@@STREAM@@;$(STREAM);g'\
 		-e 's;@@GCC_PREFIX@@;$(GCC_PREFIX);g'\

@@ -48,7 +48,6 @@ GPSEE_C_DEFINES += HAVE_ATOMICH_CAS
 endif
 
 NCURSES_LIB_NAME = curses
-LDFLAGS_SOLIB_DIRS = $(foreach SOLIB_DIR, $(SOLIB_DIRS), -L$(SOLIB_DIR) -R$(SOLIB_DIR))
 
 GPSEE_C_DEFINES         += HAVE_NDBM
 
@@ -64,3 +63,4 @@ CURL_CPPFLAGS	?= -I/opt/sfw/include
 endif
 
 GNU_TAR		= gtar
+RPATH		= -R

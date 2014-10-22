@@ -51,7 +51,7 @@ build_debug:
 	@echo "CXXFLAGS:        $(CXXFLAGS)"      
 	@echo "LINKER:          $(LINKER)"
 	@echo "LDFLAGS:         $(LDFLAGS)"
-	@echo "LOADLIBES:       $(LOADLIBES)"
+	@echo "LDLIBS:          $(LDLIBS)"
 	@echo "ICONV_LDFLAGS:   $(ICONV_LDFLAGS)"
 	@echo "ICONV_CPPFLAGS:  $(ICONV_CPPFLAGS)"
 	@echo "ICONV_HEADER:    $(ICONV_HEADER)"

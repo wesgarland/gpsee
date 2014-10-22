@@ -39,7 +39,8 @@ top: build install bin-dist
 
 include Makefile
 
-gpsee_version: LOADLIBES=
+gpsee_version: LOADLIBES= 
+gpsee_version: LDLIBS=
 $(GPSEE_SRC_DIR)/gpsee_release.mk: gpsee_version
 	@echo GPSEE_RELEASE="$(shell ./gpsee_version)"	 > $@
 include $(GPSEE_SRC_DIR)/gpsee_release.mk
