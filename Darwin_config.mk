@@ -36,7 +36,6 @@
 DEFAULT_GPSEE_PREFIX_DIR = /opt/local/gpsee
 LEADING_CPPFLAGS	+= -D_GNU_SOURCE
 SOLIB_EXT	 	 = dylib
-LDFLAGS_SOLIB_DIRS	 = $(foreach DIR, $(SOLIB_DIRS), -L$(DIR))
 LINKER		 	 ?= $(GCC) -dynamiclib -undefined dynamic_lookup
 CC			 ?= $(GCC)
 

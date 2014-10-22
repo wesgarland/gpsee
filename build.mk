@@ -38,11 +38,8 @@ INCLUDE_DIR		?= $(GPSEE_PREFIX_DIR)/include
 LIBEXEC_DIR		?= $(GPSEE_PREFIX_DIR)/libexec
 LIB_MOZJS		?= $(SOLIB_DIR)/libmozjs.$(SOLIB_EXT)
 
-LDFLAGS_SOLIB_DIRS 	?= $(foreach DIR, $(SOLIB_DIRS), -L$(DIR) -Wl,-rpath=$(DIR))
-LDFLAGS_ARLIB_DIRS	?= $(foreach DIR, $(ARLIB_DIRS), -L$(DIR))
 PIC_CFLAG 		?= -fPIC
-
-LDFLAGS		+= $(LEADING_LDFLAGS) -L$(GPSEE_SRC_DIR) $(LDFLAGS_SOLIB_DIRS)
+LDFLAGS		+= $(LEADING_LDFLAGS)
 CPPFLAGS	+= $(LEADING_CPPFLAGS) -DGPSEE -I$(GPSEE_SRC_DIR) $(INCLUDES) $(JSAPI_CFLAGS)
 
 WARNINGS	?= -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Winline

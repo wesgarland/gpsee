@@ -1,3 +1,7 @@
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 extern void surelog(int pri, const char *fmt, ...) __attribute__((format(printf,2,3)));
 
 #define NO_SURELYNX_INT_TYPEDEFS
@@ -74,3 +78,6 @@ extern void surelog(int pri, const char *fmt, ...) __attribute__((format(printf,
 #define cfg_true 				rc_true
 #define cfg_undef 				rc_undef
 
+#ifdef  __cplusplus
+}
+#endif

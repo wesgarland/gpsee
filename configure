@@ -188,6 +188,12 @@ with_jsapi_cppflags()
   echo "CONFIGURE_ENV_VARS += CPPFLAGS=$1" >&6
 }
 
+with_jsapi_ldflags()
+{
+  [ "$1" = "help" ] && echo "Add C linker flags to spidermonkey build" && return
+  echo "CONFIGURE_ENV_VARS += LDFLAGS=$1" >&6
+}
+
 with_mozilla()
 {
   [ "$1" = "help" ] && echo "Specify location of Mozilla tree" && return
@@ -268,6 +274,24 @@ enable_curl()
   cfg_pkg CURL libcurl 5
 }
 
+with_ldflags()
+{
+  [ "$1" = "help" ] && echo "Add C linker flags for GPSEE targets" && return
+  echo "LDFLAGS+=$1" >&5
+}
+
+with_cppflags()
+{
+  [ "$1" = "help" ] && echo "Add C pre-processor flags for GPSEE sources" && return
+  echo "CPPFLAGS+=$1" >&5
+}
+
+with_cxxflags()
+{
+  [ "$1" = "help" ] && echo "Add C++ pre-processor flags for GPSEE sources" && return
+  echo "CXXFLAGS+=$1" >&5
+}
+
 with_system_gsr()
 {
   [ "$1" = "help" ] && echo "Specify alternate location for /usr/bin/gsr symlink" && return
@@ -299,7 +323,6 @@ do
   fi
   if expr "$1" : '--with-gnu-make=.*' >/dev/null ; then
     make="`echo \"$1\" | sed 's/.*=//'`"
-    echo MAKE IS $make
   fi
   shift
 done
