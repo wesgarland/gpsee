@@ -8,8 +8,10 @@
 
 exports.config =
 {
-  intervalClamp: 4	/* Do not run recurring events more than once every 4ms, like the browser */
-}
+  intervalClamp: 4,	       /* Do not run recurring events more than once every 4ms, like the browser */
+  idleSleepTime: 10,           /* How long to sleep when the loop did no work */
+  minLoopTime: 4,              /* Minimum amount of time one pass of the loop is allowed to take */
+};
 
 var maintenanceEvents	= [/* fn  */];	/**< Events which recurr every single event loop iteration - not for end-user code, only "friend"ly modules */
 var pendingEvents	= [/* fn  */];	/**< One-time events to run ASAP */
@@ -44,13 +46,13 @@ function whenCompare(a,b)
  */
 exports.activate = function reactor$$activate(initializer, exceptionHandler)
 {
-  var i, ev, now, fn, didWork, res;
+  var i, ev, now, fn, didWork, res, loopTime;
   var quitObject = {};
 
   initializer(quitObject);
   try
   {
-    for (didWork = true; !quitObject.quit && didWork;)
+    while(!quitObject.quit)
     {
       now = Date.now();
 
@@ -96,10 +98,18 @@ exports.activate = function reactor$$activate(initializer, exceptionHandler)
 	res = maintenanceEvents[i]();
 	didWork = didWork || res !== false;
       }
-      if (!didWork)
-	require('gpsee').sleep(0);
 
-      didWork = didWork || !!pendingEvents.length || !!scheduledEvents.length || !!recurringEvents.length;
+      if (pendingEvents.length === scheduledEvents.length === recurringEvents.length === 0)
+        break; /* nothing to do! */
+
+      if (!didWork)
+	require('gpsee').sleep(exports.config.idleSleepTime / 1000);
+      else
+      {
+        loopTime = Date.now() - now;
+        if (loopTime < exports.config.minLoopTime)
+          require('gpsee').sleep((exports.config.minLoopTime - loopTime) / 1000);
+      }
     }
   }
   catch (e) 
@@ -146,7 +156,8 @@ exports.runOnce = function reactor$$runOnce(fn)
 }
 
 /** Register a maintenance function. Maintenance functions are run once per 
- *  iteration of the reactor loop, in FIFO order.
+ *  iteration of the reactor loop, in FIFO order.  A maintenance function should
+ *  return false when it does no work, to help with CPU resource management.
  */
 exports.registerMaintenance = function reactor$$registerMaintenance(callback, arg /* ... */)
 {
