@@ -184,7 +184,7 @@ static JSBool gpsee_sleep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
       return gpsee_throw(cx, MODULE_ID ".sleep.arguments.0.NaN: Could not convert argument to jsdouble!");
   }
 
-  if (d == JS_GetNaNValue(cx))
+  if (isnan(d))
     return gpsee_throw(cx, MODULE_ID ".sleep.arguments.0.NaN");
 
   saveDepth = JS_SuspendRequest(cx);
