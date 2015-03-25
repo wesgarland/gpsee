@@ -148,7 +148,7 @@ help:
 
 all:	build
 
-$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
+$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in
 	@echo " * Generating $@"
 	@[ -x $(AUTOCONF) ] || echo " *** $(AUTOCONF): command not found"
 	@[ -x $(AUTOCONF) ]
@@ -161,7 +161,7 @@ $(JS_CONFIG) $(SPIDERMONKEY_BUILD)/Makefile: $(SPIDERMONKEY_SRC)/configure #Make
 
 configure: $(SPIDERMONKEY_BUILD)/Makefile vars.mk
 force_configure:
-	$(RM) $(SPIDERMONKEY_BUILD)/Makefile vars.mk
+	$(RM) vars.mk $(SPIDERMONKEY_BUILD)/Makefile $(SPIDERMONKEY_BUILD)/config.cache $(SPIDERMONKEY_BUILD)/ctypes/libffi/config.cache
 	$(MAKE) configure
 
 ifeq ($(UNAME_SYSTEM),Darwin)
@@ -233,8 +233,11 @@ vars.mk: $(JS_CONFIG)
 
 clean:
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
-	rm $(SPIDERMONKEY_BUILD)/config.cache
-	[ ! -f vars.mk ] || rm vars.mk
+	[ ! -f vars.mk ] || $(RM) vars.mk
+
+conf-clean: clean
+	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) clean
+	$(RM) $(SPIDERMONKEY_BUILD)/config.cache $(SPIDERMONKEY_BUILD)/ctypes/libffi/config.cache
 
 distclean dist-clean: clean
 	cd $(SPIDERMONKEY_BUILD) && $(SM_MAKE) distclean

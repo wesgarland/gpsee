@@ -84,7 +84,7 @@ EXTRA_MODULE_OBJS	+= util.o structs.o defines.o std_functions.o MutableStruct.o 
 PROGS			+= $(foreach DEF,$(DEFS),$(DEF)_defs) defines-test aux_types mk_std_cppflags std_macro_consts std_functions
 OBJS			+= $(EXTRA_MODULE_OBJS)
 CFLAGS			+= $(LIBFFI_CFLAGS)
-LDFLAGS			+= $(LIBFFI_LDFLAGS) $(GFFI_LDFLAGS)
+LDFLAGS			+= $(filter-out -lffi,$(LIBFFI_LDFLAGS)) $(GFFI_LDFLAGS)
 MDFLAGS 		+= $(LIBFFI_CFLAGS)
 SYMBOL_FILTER_FILE	 = $(GFFI_DIR)/compiler_dmp.re
 

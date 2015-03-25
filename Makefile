@@ -91,7 +91,7 @@ INTERNAL_MODULES 	+= vm gpsee system
 
 include $(GPSEE_SRC_DIR)/ffi.mk
 
-ifneq (X,X$(filter $(MAKECMDGOALS),install build all real-clean build_debug))
+ifneq (X,X$(filter $(MAKECMDGOALS),install build all build_debug))
 include $(GPSEE_SRC_DIR)/sanity.mk
 endif
 
@@ -146,7 +146,7 @@ $(BUILT_EXPORTED_PROGS): $(SOLIB_DIR)/libgpsee.$(SOLIB_EXT) $(SOLIB_DIR)/libmozj
 DEPEND_FILES_X	 = $(addsuffix .X,$(PROGS) $(notdir $(BUILD_EXPORTED_PROGS)) $(EXPORT_PROGS)) $(GPSEE_OBJS:.o=.X)
 DEPEND_FILES 	+= $(sort $(wildcard $(DEPEND_FILES_X:.X=.c) $(DEPEND_FILES_X:.X=.cpp)))
 
-.PHONY:	all build _build _prebuild clean real-clean depend build_debug build_debug_modules \
+.PHONY:	all build _build _prebuild clean depend build_debug build_debug_modules \
 	show_modules clean_modules src-dist bin-dist top help install-%
 
 build: _prebuild
@@ -169,10 +169,6 @@ install-built-exported:  $(BUILT_EXPORTED_LIBS) $(BUILT_EXPORTED_PROGS) $(SOLIB_
 clean: EXTRA_CLEAN_RULE=clean_modules clean_makefile_depends
 clean: OBJS += $(wildcard $(GPSEE_OBJS) $(PROGS:=.o) $(AR_MODULES) $(SO_MODULES) $(wildcard ./gpsee_*.o)) doxygen.log libgpsee.a
 clean: OBJS += $(addsuffix .o,$(notdir $(BUILT_EXPORTED_PROGS)))
-
-real-clean: clean
-	cd spidermonkey && $(MAKE) clean
-	cd libffi && $(MAKE) clean
 
 gsr-link:
 ifneq (X$(GSR_SHEBANG_LINK),X)
@@ -299,7 +295,7 @@ $(SPIDERMONKEY_BUILD)/libjs_static.a:
 	make libjs_static.a
 
 gpsee_config.h depend.mk: STREAM_UCASE=$(shell echo $(STREAM) | $(TR) '[a-z]' '[A-Z]')
-ifeq (X,X$(filter $(MAKECMDGOALS),install depend real-clean clean clean_modules))
+ifeq (X,X$(filter $(MAKECMDGOALS),install depend clean clean_modules))
 gpsee_config.h: Makefile $(filter-out depend.mk,$(wildcard *.mk))
 endif
 gpsee_config.h:
