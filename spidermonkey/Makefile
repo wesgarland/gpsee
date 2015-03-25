@@ -148,7 +148,7 @@ help:
 
 all:	build
 
-$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in local_config.mk
+$(SPIDERMONKEY_SRC)/configure: $(SPIDERMONKEY_SRC)/configure.in
 	@echo " * Generating $@"
 	@[ -x $(AUTOCONF) ] || echo " *** $(AUTOCONF): command not found"
 	@[ -x $(AUTOCONF) ]
